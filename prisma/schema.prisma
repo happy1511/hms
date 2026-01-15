@@ -1,0 +1,317 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// --------------------
+// Configurations
+// --------------------
+datasource db {
+  provider = "mysql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// --------------------
+// Enums
+// --------------------
+enum Status {
+  active
+  inactive
+}
+
+enum DoctorType {
+  referring
+  consulting
+}
+
+enum Days {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum MaritalStatus {
+  Single
+  Married
+  Divorced
+  Widowed
+}
+
+enum PatientType {
+  General
+  Emergency
+  VIP
+}
+
+enum IdentityType {
+  Passport
+  DriverLicense
+  NationalID
+}
+
+enum AppointmentType {
+  CONSULTATION
+  CONTRACEPTION
+  EDD
+  EYE_CARE
+  GETTING_STARTED
+  MAMMOGRAMS
+  OPERATION
+  OTHER
+  ROUTINE_CHECKUP
+  SAME_DAY_ASSISTANCE
+  SICK_VISIT
+  SURGERY
+  TRAVEL_CLINIC
+  VACCINATIONS
+}
+
+enum ServiceType {
+  LAB_TEST
+  IMAGING
+  PHARMACY
+  CONSULTATION
+  SURGERY
+  THERAPY
+}
+
+enum ServiceApplicableOn {
+  INPATIENT
+  OUTPATIENT
+  CONSULTATION
+  BOTH
+}
+
+enum SampleType {
+  BLOOD
+  URINE
+  SALIVA
+  STOOL
+  TISSUE
+}
+
+enum ContainerType {
+  VIAL
+  TUBE
+  BOTTLE
+  BAG
+}
+
+enum ResultType {
+  NUMERIC
+  TEXT
+  BOOLEAN
+  DETECTION
+  IMAGE
+  PDF
+}
+
+
+// --------------------
+// Models
+// --------------------
+
+// -------------------- User Management --------------------
+model Role {
+  id      Int      @id @default(autoincrement()) 
+  name   String   @unique
+  users   User[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  loginId   String   @unique
+  password  String
+  roleId    Int
+  role      Role     @relation(fields: [roleId], references: [id])
+  status    Status   @default(active)
+  name     String?
+  doctor    Doctor?
+
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+model Doctor {
+  userId            Int      @id
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber     String   @unique
+  specialization    String
+  qualifications    String
+  yearsExperience   Int
+  department        String?
+  designation       String?
+  doctorType        DoctorType
+  email             String   @unique
+  phoneNumber       String   @unique
+  emergencyContact  String?
+  availableDays     Days?
+  consultationStartingTime DateTime?
+  consultationEndingTime DateTime?
+
+  appointment     Appointment[]
+}
+
+model Patient {
+  id              Int      @id @default(autoincrement())
+  name            String
+  dob             DateTime
+  gender          Gender
+  maritalStatus   MaritalStatus
+  mobileNumber    String?   @unique
+  email           String   @unique
+  relativeName    String?
+  relativeContact String?
+  relativeRelation String?
+  religion        String?
+  type            PatientType
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String?
+  identityType   IdentityType?
+  identityNumber String?   @unique
+
+  appointment     Appointment[]
+}
+
+// -------------------- Facility Management --------------------
+model Floor {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  description String?
+  departments Ward[]
+  status    Status   @default(active)
+}
+
+model Ward {
+  id         Int      @id @default(autoincrement())
+  floorId    Int
+  floor      Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  name        String   @unique
+  description String?
+  status     Status   @default(active)
+  beds       Bed[]
+}
+
+model Bed {
+  id        Int      @id @default(autoincrement())
+  wardId    Int
+  ward      Ward     @relation(fields: [wardId], references: [id], onDelete: Cascade)
+  bedNumber String   @unique
+  status    Status   @default(active)
+  occupied  Boolean  @default(false)
+}
+
+// -------------------- Appointment Management --------------------
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    Int
+  doctor      Doctor   @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  appointmentDate DateTime
+  reason      String?
+  type        AppointmentType
+  status      Status   @default(active)
+}
+
+// -------------------- Service Management --------------------
+model BillingSection{
+  id         Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  status      Status   @default(active)
+}
+
+model Service {
+  id         Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  type        ServiceType
+  price       Float
+  discountAvailable    Boolean    @default(false)
+  maxDiscount Float?
+  applicableOn ServiceApplicableOn
+  status      Status   @default(active)
+}
+
+// -------------------- Pathology Lab Test Management --------------------
+model LabTest {
+  id         Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  price       Float
+  status      Status   @default(active)
+
+  parameters LabTestParameter[]
+}
+
+model LabTestParameter {
+  id         Int      @id @default(autoincrement())
+  labTestCode  Int    @unique
+  labTest    LabTest  @relation(fields: [id], references: [id], onDelete: Cascade)
+  name        String
+  unit        String
+  status      Status   @default(active)
+  interpretation String?
+  methodology String?
+
+  referenceRanges ReferenceRange[]
+  isOutsourced  Boolean  @default(false)
+}
+
+model ReferenceRange {
+  id                String   @id @default(cuid())
+
+  labTestParameterId Int
+  labTestParameter   LabTestParameter @relation(fields: [labTestParameterId], references: [id], onDelete: Cascade)
+
+  gender             Gender
+  ageFrom            Int?
+  ageTo              Int?
+  rangeMin          Float?
+  rangeMax          Float?
+  criticalLow        Float?
+  criticalHigh       Float?
+  notes              String?
+  createdAt           DateTime @default(now())
+}
+
+// -------------------- Radiology Test Management --------------------
+model RadiologyTest {
+  id         Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  price       Float
+  status      Status   @default(active)
+
+  templates   RadiologyTemplate[]
+}
+
+model RadiologyTemplate {
+  id         Int      @id @default(autoincrement())
+  radiologyTestId Int
+  radiologyTest RadiologyTest @relation(fields: [radiologyTestId], references: [id], onDelete: Cascade)
+  content    String
+  status     Status   @default(active)
+}
