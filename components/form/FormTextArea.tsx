@@ -1,0 +1,78 @@
+"use client";
+
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import clsx from "clsx";
+import { useId } from "react";
+import { FieldValues, useWatch } from "react-hook-form";
+import { Textarea } from "../ui/textarea";
+import { FormTextareaProps } from "@/lib/type";
+
+export function FormTextarea<T extends FieldValues>({
+  name,
+  control,
+  label,
+  className = "",
+  placeholder,
+  required = false,
+  rows = 4,
+  showCount = false,
+  maxChar,
+}: FormTextareaProps<T>) {
+  const id = useId();
+  const value = useWatch({ control, name }) ?? "";
+
+  const charCount = value?.length || 0;
+  const hasExceeded = maxChar !== undefined && charCount > maxChar;
+
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="gap-1 relative pb-6 text-primary">
+          {label && (
+            <FormLabel className="text-tiny font-semibold font-quicksand">
+              {label}
+              {required && (
+                <span className="text-[#FFA600] !text-xl ms-1">*</span>
+              )}
+            </FormLabel>
+          )}
+
+          <FormControl>
+            <Textarea
+              id={id}
+              placeholder={placeholder}
+              rows={rows}
+              maxLength={maxChar}
+              className={clsx(
+                "rounded-sm bg-primary focus-visible:border-accent-blue",
+                className
+              )}
+              {...field}
+            />
+          </FormControl>
+
+          {showCount && maxChar && (
+            <div
+              className={clsx(
+                "absolute bottom-1 right-1 text-tiny font-medium",
+                hasExceeded ? "text-red-500" : "text-gray-500"
+              )}
+            >
+              {charCount}/{maxChar}
+            </div>
+          )}
+
+          <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
+        </FormItem>
+      )}
+    />
+  );
+}
