@@ -1,7 +1,7 @@
 // ----------------------------------
 // -----------RESPONSE TYPE----------
 
-import { Status } from "@/generated/prisma/enums";
+import { DoctorType, Status } from "@/generated/prisma/enums";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Control,
@@ -113,6 +113,20 @@ export interface FormDatePickerProps<T extends FieldValues> {
   >;
   hideError?: boolean;
 }
+export interface FormDateRangePickerProps<T extends FieldValues> {
+  nameFrom: Path<T>;
+  nameTo: Path<T>;
+  control: Control<T>;
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
+  className?: string;
+  formItemClassName?: string;
+  hideError?: boolean;
+}
 
 export interface FormRadioGroupProps<T extends FieldValues> {
   name: FieldPath<T>;
@@ -175,11 +189,11 @@ export interface Permissions {
 
 export interface UserPermissions {
   module: {
-    id: number;
+    id: string;
     name: string;
   };
   actions: {
-    id: number;
+    id: string;
     name: string;
     assigned: boolean;
   }[];
@@ -200,5 +214,38 @@ export interface User {
 export interface UserFilterValues {
   name?: string;
   status?: string;
+  createdAt?: string;
+}
+
+export interface Doctor extends Pick<
+  User,
+  | "permissions"
+  | "status"
+  | "loginId"
+  | "createdAt"
+  | "updatedAt"
+  | "name"
+  | "password"
+> {
+  user: User;
+  userId: string;
+  licenseNumber: string;
+  specialization: string;
+  qualifications: string;
+  yearsExperience: number;
+  department: string;
+  designation: string;
+  doctorType: DoctorType;
+  email: string;
+  phoneNumber: string;
+  emergencyContact: string;
+  consultationStartingTime: string;
+  consultationEndingTime: string;
+}
+
+export interface DoctorFilterValues {
+  name?: string;
+  status?: string;
+  doctorType?: DoctorType;
   createdAt?: string;
 }

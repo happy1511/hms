@@ -12,3 +12,8 @@ export const PERMISSION = "/permission";
 // ---------USERS ENDPOINTS----------
 // ----------------------------------
 export const USERS = "/user";
+
+// ----------------------------------
+// ---------DOCTORS ENDPOINTS--------
+// ----------------------------------
+export const DOCTORS = "/doctor";

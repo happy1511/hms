@@ -11,7 +11,7 @@ import { generateUUID } from "@/lib/utils";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { Prisma } from "@/generated/prisma/client";
 
-const updatePermissions = async (
+export const updatePermissions = async (
   permissions: UserValidatorType["permissions"],
   userId: number,
 ) => {

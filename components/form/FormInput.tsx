@@ -39,9 +39,9 @@ export function FormInput<T extends FieldValues>({
         return (
           <FormItem
             className={cn(
-              "text-primary",
+              "text-primary relative",
               hideError ? "" : "pb-4 gap-1",
-              formItemClassName
+              formItemClassName,
             )}
           >
             {label && (
@@ -58,7 +58,7 @@ export function FormInput<T extends FieldValues>({
                   disabled={disabled}
                   id={id}
                   type={showPassword ? "text" : type}
-                  className={`rounded-sm pr-10 selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 ${
+                  className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 ${
                     fieldState.invalid
                       ? "border-red-500 focus-visible:border-red-500"
                       : ""
@@ -91,7 +91,7 @@ export function FormInput<T extends FieldValues>({
             </FormControl>
 
             {!hideError && (
-              <FormMessage className="absolute bottom-1 font-semibold text-tiny text-red-500 ms-1" />
+              <FormMessage className="absolute bottom-1 font-semibold text-tiny! text-red-500 ms-1" />
             )}
           </FormItem>
         );

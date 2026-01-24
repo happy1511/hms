@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useId } from "react";
-import { Control, FieldValues, Path } from "react-hook-form";
+import { FieldValues } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,21 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-interface FormDateRangePickerProps<T extends FieldValues> {
-  nameFrom: Path<T>;
-  nameTo: Path<T>;
-  control: Control<T>;
-  label?: string;
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  minDate?: Date;
-  maxDate?: Date;
-  className?: string;
-  formItemClassName?: string;
-  hideError?: boolean;
-}
+import { FormDateRangePickerProps } from "@/lib/type";
 
 export function FormDateRangePicker<T extends FieldValues>({
   nameFrom,
@@ -61,7 +47,7 @@ export function FormDateRangePicker<T extends FieldValues>({
           className={cn(
             "gap-1 relative text-primary",
             hideError ? "" : "pb-4 gap-1",
-            formItemClassName
+            formItemClassName,
           )}
         >
           {label && (
@@ -83,7 +69,7 @@ export function FormDateRangePicker<T extends FieldValues>({
                     !field.value && "text-muted-foreground",
                     fieldState.invalid &&
                       "border-red-500 focus-visible:border-red-500",
-                    className
+                    className,
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />

@@ -1,14 +1,26 @@
-import { createAPI, deleteAPI, updateAPI } from "@/controllers/doctor/doctor";
+import { createAPI, getAPI } from "@/controllers/doctor/doctor";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { withErrorHandling } from "@/lib/errorHandler";
+import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
+
+export async function GET(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      ModuleType["DOCTOR_MASTER"],
+      ActionType["VIEW"],
+      () => getAPI(request),
+    ),
+  );
+}
 
 export async function POST(request: Request) {
-  return withErrorHandling(() => createAPI(request));
-}
-
-export async function PUT(request: Request) {
-  return withErrorHandling(() => updateAPI(request));
-}
-
-export async function DELETE(request: Request) {
-  return withErrorHandling(() => deleteAPI(request));
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      ModuleType["DOCTOR_MASTER"],
+      ActionType["CREATE"],
+      () => createAPI(request),
+    ),
+  );
 }

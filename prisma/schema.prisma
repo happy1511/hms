@@ -206,8 +206,8 @@ model Doctor {
   email                    String     @unique
   phoneNumber              String     @unique
   emergencyContact         String?
-  consultationStartingTime DateTime?
-  consultationEndingTime   DateTime?
+  consultationStartingTime String?
+  consultationEndingTime   String?
 
   availableDays DoctorAvailableDay[]
   appointment   Appointment[]

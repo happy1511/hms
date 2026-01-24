@@ -130,9 +130,9 @@ const UserForm = () => {
   return (
     <CustomLayout title={userId ? "Edit User" : "Create User"}>
       {userId ? (
-        <UpdateCreateForm data={data} permissions={data?.permissions} />
+        <UpdateCreateForm data={data} permissions={data?.permissions || []} />
       ) : (
-        <UpdateCreateForm permissions={permissions} />
+        <UpdateCreateForm permissions={permissions || []} />
       )}
     </CustomLayout>
   );
