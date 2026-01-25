@@ -2,13 +2,11 @@
 
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useId } from "react";
 import { FieldValues } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
@@ -21,60 +19,59 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { FormDateRangePickerProps } from "@/lib/type";
+import { DateRange } from "react-day-picker";
 
 export function FormDateRangePicker<T extends FieldValues>({
-  nameFrom,
-  nameTo,
+  name,
   control,
   label,
-  placeholder = "Pick a date range",
+  placeholder = "Pick a date",
   required = false,
   disabled = false,
+  numberOfMonths = 2,
   minDate,
   maxDate,
-  className = "",
-  formItemClassName = "",
+  className,
   hideError = false,
 }: FormDateRangePickerProps<T>) {
-  const id = useId();
-
   return (
     <FormField
       control={control}
-      name={nameFrom}
-      render={({ field, fieldState }) => (
-        <FormItem
-          className={cn(
-            "gap-1 relative text-primary",
-            hideError ? "" : "pb-4 gap-1",
-            formItemClassName,
-          )}
-        >
-          {label && (
-            <FormLabel className="text-tiny font-semibold font-quicksand">
-              {label}
-              {required && <span className="text-[#FFA600] text-tiny">*</span>}
-            </FormLabel>
-          )}
+      name={name}
+      render={({ field, fieldState }) => {
+        const value = field.value as DateRange | undefined;
 
-          <FormControl className="h-6 flex items-center">
+        return (
+          <FormItem className="relative">
+            {label && (
+              <FormLabel>
+                {label}
+                {required && <span className="text-[#FFA600]">*</span>}
+              </FormLabel>
+            )}
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  id={id}
                   variant="outline"
                   disabled={disabled}
                   className={cn(
-                    "w-full justify-start rounded-sm bg-primary text-left font-normal border border-border focus-visible:ring-0 text-tiny",
-                    !field.value && "text-muted-foreground",
-                    fieldState.invalid &&
-                      "border-red-500 focus-visible:border-red-500",
+                    "justify-start px-2.5 font-normal w-full",
+                    !value?.from && "text-muted-foreground",
+                    fieldState.invalid && "border-red-500",
                     className,
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {field.value ? (
-                    format(field.value, "PPP")
+                  {value?.from ? (
+                    value.to ? (
+                      <>
+                        {format(value.from, "LLL dd, y")} –{" "}
+                        {format(value.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(value.from, "LLL dd, y")
+                    )
                   ) : (
                     <span>{placeholder}</span>
                   )}
@@ -84,30 +81,22 @@ export function FormDateRangePicker<T extends FieldValues>({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="range"
-                  selected={{
-                    from: field.value,
-                  }}
-                  onSelect={(range) => {
-                    field.onChange(range?.from ?? undefined);
-                    control._formValues[nameTo] = range?.to;
-                  }}
-                  disabled={(date) => {
-                    if (minDate && date < minDate) return true;
-                    if (maxDate && date > maxDate) return true;
-                    return false;
-                  }}
+                  selected={value}
+                  onSelect={field.onChange}
+                  defaultMonth={value?.from}
+                  numberOfMonths={numberOfMonths}
+                  // disabled={(date) =>
+                  //   (minDate && date < minDate) || (maxDate && date > maxDate)
+                  // }
                   initialFocus
-                  className="text-tiny"
                 />
               </PopoverContent>
             </Popover>
-          </FormControl>
 
-          {!hideError && (
-            <FormMessage className="absolute bottom-1 font-semibold text-tiny text-red-500 ms-1" />
-          )}
-        </FormItem>
-      )}
+            {!hideError && <FormMessage className="absolute bottom-[-18px]" />}
+          </FormItem>
+        );
+      }}
     />
   );
 }

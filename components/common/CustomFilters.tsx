@@ -21,6 +21,12 @@ const CustomFilters = <T extends FieldValues>({
     mode: "onSubmit",
   });
 
+  const handleReset = () => {
+    const defaultValues = {} as T;
+    form.reset(defaultValues);
+    onSubmit(defaultValues);
+  };
+
   const renderFilter = (filter: FilterConfig<T>) => {
     const { label, valueKey, type, options, required, placeholder } = filter;
 
@@ -79,6 +85,13 @@ const CustomFilters = <T extends FieldValues>({
                 name={valueKey}
                 rules={{
                   required: required ? `${label} is required` : false,
+                  validate: (value) => {
+                    if (!required) return true;
+                    if (!value?.from || !value?.to) {
+                      return `${label} is required`;
+                    }
+                    return true;
+                  },
                 }}
                 control={form.control}
                 placeholder={placeholder || ""}
@@ -98,9 +111,7 @@ const CustomFilters = <T extends FieldValues>({
             <div className="col-span-3">
               <FormDateRangePicker
                 control={form.control}
-                nameFrom={valueKey}
-                nameTo={valueKey}
-                label="Date Range"
+                name={valueKey}
                 className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
                 hideError
               />
@@ -115,13 +126,28 @@ const CustomFilters = <T extends FieldValues>({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mb-3">
+      <form
+        onReset={handleReset}
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mb-3"
+      >
         <div className="grid gap-2 grid-cols-3 mb-2">
           {filters.map((filter) => (
             <div key={filter.valueKey}>{renderFilter(filter)}</div>
           ))}
         </div>
-        <CustomButton type="submit">Apply Filters</CustomButton>
+        <div className="w-fit">
+          <div className="grid grid-cols-2 space-x-2">
+            <CustomButton type="submit">Apply Filters</CustomButton>
+            <CustomButton
+              type="reset"
+              variant="outline"
+              className="bg-white text-primary shadow-none"
+            >
+              Reset Filters
+            </CustomButton>
+          </div>
+        </div>
       </form>
     </Form>
   );

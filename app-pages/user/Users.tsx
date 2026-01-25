@@ -52,7 +52,7 @@ const neededFilters: FilterConfig<UserFilterValues>[] = [
       value: s,
     })),
   },
-  { label: "Created Date", valueKey: "createdAt", type: "date" },
+  { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
 const Users = () => {

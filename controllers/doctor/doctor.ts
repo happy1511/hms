@@ -49,6 +49,8 @@ export const getAPI = async (req: Request) => {
       const search = query.search ?? "";
       const status = query.status ?? "";
       const doctorType = query.doctorType ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
 
       const skip = (page - 1) * limit;
       const and: Prisma.DoctorWhereInput[] = [];
@@ -66,6 +68,17 @@ export const getAPI = async (req: Request) => {
 
       if (doctorType) {
         and.push({ doctorType: { equals: doctorType } });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          user: {
+            createdAt: {
+              ...(createdAtFrom && { gte: createdAtFrom }),
+              ...(createdAtTo && { lte: createdAtTo }),
+            },
+          },
+        });
       }
 
       const where: Prisma.DoctorWhereInput = and.length ? { AND: and } : {};

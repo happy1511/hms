@@ -68,16 +68,35 @@ export const getAPI = async (req: Request) => {
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
+      const status = query.status ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
 
       const skip = (page - 1) * limit;
-      const where: Prisma.UserWhereInput = search
-        ? {
-            OR: [
-              { name: { contains: search } },
-              { loginId: { contains: search } },
-            ],
-          }
-        : {};
+
+      const and: Prisma.UserWhereInput[] = [];
+
+      if (search) {
+        and.push(
+          { name: { contains: search } },
+          { loginId: { contains: search } },
+        );
+      }
+
+      if (status) {
+        and.push({ status: { equals: status } });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      const where: Prisma.UserWhereInput = and.length ? { AND: and } : {};
 
       const [items, total] = await prisma.$transaction([
         prisma.user.findMany({

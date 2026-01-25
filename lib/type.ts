@@ -120,8 +120,7 @@ export interface FormDatePickerProps<T extends FieldValues> {
   hideError?: boolean;
 }
 export interface FormDateRangePickerProps<T extends FieldValues> {
-  nameFrom: Path<T>;
-  nameTo: Path<T>;
+  name: Path<T>;
   control: Control<T>;
   label?: string;
   placeholder?: string;
@@ -132,6 +131,7 @@ export interface FormDateRangePickerProps<T extends FieldValues> {
   className?: string;
   formItemClassName?: string;
   hideError?: boolean;
+  numberOfMonths?: number;
 }
 
 export interface FormRadioGroupProps<T extends FieldValues> {

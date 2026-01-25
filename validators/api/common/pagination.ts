@@ -7,6 +7,9 @@ const paginationValidator = z.object({
   search: z.string().optional(),
   status: z.enum(Status).optional(),
   doctorType: z.enum(DoctorType).optional(),
+
+  "createdAt[from]": z.coerce.date().optional(),
+  "createdAt[to]": z.coerce.date().optional(),
 });
 
 type PaginationValidatorType = z.infer<typeof paginationValidator>;

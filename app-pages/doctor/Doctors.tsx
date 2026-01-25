@@ -62,7 +62,7 @@ const neededFilters: FilterConfig<DoctorFilterValues>[] = [
       value: s,
     })),
   },
-  { label: "Created Date", valueKey: "createdAt", type: "date" },
+  { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
 const Doctors = () => {

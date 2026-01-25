@@ -39,7 +39,7 @@ export function FormSelect<T extends FieldValues>({
         <FormItem
           className={cn(
             "gap-1 relative text-primary",
-            hideError ? "" : "pb-4 gap-1"
+            hideError ? "" : "pb-4 gap-1",
           )}
         >
           {label && (
@@ -55,8 +55,8 @@ export function FormSelect<T extends FieldValues>({
             <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger
                 className={clsx(
-                  "rounded-sm h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full",
-                  className
+                  "rounded-sm h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
+                  className,
                 )}
               >
                 <SelectValue placeholder={placeholder} />
