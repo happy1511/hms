@@ -68,7 +68,6 @@ export const getAPI = async (req: Request) => {
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
-      console.log(query, "search");
 
       const skip = (page - 1) * limit;
       const where: Prisma.UserWhereInput = search
@@ -324,12 +323,11 @@ export const deleteAPI = async (
   { params }: { params: { id: string } },
 ) => {
   return validateRequest({
-    bodySchema: partialUserValidator,
     paramsSchema: partialUserValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       const existingUser = await prisma.user.findUnique({
         where: { id: data.id },
       });

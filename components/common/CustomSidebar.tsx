@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ForwardRefExoticComponent, RefAttributes, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +17,7 @@ import {
   Stethoscope,
   User,
   Bolt,
+  LucideProps,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,9 +35,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
+import { cn, hasModulePermission } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useProfile } from "@/hooks/query/auth";
+import { ModuleType } from "@/generated/prisma/enums";
+
+interface SidebarItem {
+  title: string;
+  url: string;
+  icon: ForwardRefExoticComponent<
+    Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+  >;
+  module: ModuleType;
+}
 
 const opdItems = [
   { title: "PATIENTS (OPD/IPD)", url: "/opd/patients", icon: Users },
@@ -60,9 +72,19 @@ const financeItems = [
   { title: "PAYMENTS", url: "/finance/payments", icon: DollarSign },
 ];
 
-const masters = [
-  { title: "DOCTORS", url: "/doctors", icon: Stethoscope },
-  { title: "USERS", url: "/users", icon: User },
+const masters: SidebarItem[] = [
+  {
+    title: "DOCTORS",
+    url: "/doctors",
+    icon: Stethoscope,
+    module: ModuleType.DOCTOR_MASTER,
+  },
+  {
+    title: "USERS",
+    url: "/users",
+    icon: User,
+    module: ModuleType.USER,
+  },
 ];
 
 export function CustomSidebar() {
@@ -73,6 +95,15 @@ export function CustomSidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
+  const { data } = useProfile();
+
+  if (!data) {
+    return <></>;
+  }
+
+  const visibleMasters = masters.filter(
+    (item) => hasModulePermission(data.data, item.module)?.length,
+  );
 
   return (
     <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-primary/10 text-tiny">
@@ -84,7 +115,7 @@ export function CustomSidebar() {
               "flex items-center gap-3 px-4 py-1.5 h-auto hover:text-white font-semibold transition-colors",
               isActive("/")
                 ? "bg-primary text-primary-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent"
+                : "text-sidebar-foreground hover:bg-sidebar-accent",
             )}
           >
             <LayoutDashboard className="size-3" />
@@ -106,7 +137,7 @@ export function CustomSidebar() {
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    opdOpen ? "rotate-180" : ""
+                    opdOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -146,7 +177,7 @@ export function CustomSidebar() {
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    ipdOpen ? "rotate-180" : ""
+                    ipdOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -186,7 +217,7 @@ export function CustomSidebar() {
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    financeOpen ? "rotate-180" : ""
+                    financeOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -226,7 +257,7 @@ export function CustomSidebar() {
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    masterOpen ? "rotate-180" : ""
+                    masterOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -234,7 +265,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-white">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {masters.map((item) => (
+                  {visibleMasters.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

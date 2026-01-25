@@ -1,7 +1,7 @@
 import { CustomSidebar } from "@/components/common/CustomSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

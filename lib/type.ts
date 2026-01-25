@@ -1,7 +1,12 @@
 // ----------------------------------
 // -----------RESPONSE TYPE----------
 
-import { DoctorType, Status } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  DoctorType,
+  ModuleType,
+  Status,
+} from "@/generated/prisma/enums";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Control,
@@ -94,6 +99,7 @@ export interface FormInputProps<T extends FieldValues> {
     "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
   >;
   hideError?: boolean;
+  readOnly?: boolean;
 }
 
 export interface FormDatePickerProps<T extends FieldValues> {
@@ -190,11 +196,11 @@ export interface Permissions {
 export interface UserPermissions {
   module: {
     id: string;
-    name: string;
+    name: ModuleType;
   };
   actions: {
     id: string;
-    name: string;
+    name: ActionType;
     assigned: boolean;
   }[];
 }

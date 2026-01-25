@@ -25,6 +25,7 @@ const getInitialValues = (
       name: data.name,
       password: data.password,
       status: data.status,
+      loginId: data.loginId,
       permissions,
     };
   } else {
@@ -64,7 +65,6 @@ const UpdateCreateForm = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-2 gap-x-2">
-          {" "}
           <FormField<UserValidatorType>
             label="Name"
             type="text"
@@ -72,6 +72,16 @@ const UpdateCreateForm = ({
             control={form.control}
             required
           />
+          {data && (
+            <FormField<UserValidatorType>
+              label="LoginId"
+              type="text"
+              name="loginId"
+              control={form.control}
+              required
+              readOnly
+            />
+          )}
           <FormField<UserValidatorType>
             label="Password"
             type="text"

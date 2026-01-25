@@ -19,6 +19,10 @@ const updateUser = createRequest<ApiResponse<User>, undefined, { id: string }>(
   (p) => `${USERS}/${p.id}`,
   "PUT",
 );
+const deleteUser = createRequest<ApiResponse<null>, undefined, { id: string }>(
+  (p) => `${USERS}/${p.id}`,
+  "DELETE",
+);
 const getUser = createRequest<ApiResponse<User>, undefined, { id: string }>(
   (p) => `${USERS}/${p.id}`,
   "GET",
@@ -94,6 +98,24 @@ export const useUpdateUser = () => {
     onSuccess: () => {
       toast.success("User Updated Successfully");
       router.back();
+    },
+    onError: (data) => {
+      toast.error(data.message || "Something went wrong");
+    },
+  });
+};
+
+export const useDeleteUser = (
+  filters: UserFilterValues,
+  page: number,
+  limit: number,
+) => {
+  return useMutation<ApiResponse<null>, Error, PartialUserValidatorType>({
+    mutationKey: ["delete-user"],
+    mutationFn: (data) =>
+      deleteUser({ urlHelpers: { id: data.id.toString() } }),
+    onSuccess: () => {
+      toast.success("User Deleted Successfully");
     },
     onError: (data) => {
       toast.error(data.message || "Something went wrong");

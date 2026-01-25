@@ -9,19 +9,22 @@ export const checkAuth = async (req: NextRequest) => {
   const refreshTokenCookie = reqCookies.get("refreshToken")?.value;
 
   if (!accessToken && !refreshTokenCookie) {
-    return false;
+    return null;
   }
 
-  if (!accessToken && refreshTokenCookie) {
+  if (
+    (!accessToken && refreshTokenCookie) ||
+    (refreshTokenCookie && accessToken)
+  ) {
     const payload = verifyToken(refreshTokenCookie);
-    if (!payload) return false;
+    if (!payload) return null;
 
     const user = await prisma.user.findUnique({
       where: { id: Number(payload.userId) },
     });
 
     if (!user) {
-      return false;
+      return null;
     }
 
     const newRefreshToken = signRefreshToken({ userId: user.id.toString() });
@@ -50,8 +53,6 @@ export const checkAuth = async (req: NextRequest) => {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return true;
+    return user;
   }
-
-  return true;
 };

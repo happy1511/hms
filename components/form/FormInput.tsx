@@ -25,6 +25,7 @@ export function FormInput<T extends FieldValues>({
   formItemClassName = "",
   rules,
   hideError = false,
+  readOnly = false,
 }: FormInputProps<T>) {
   const id = useId();
   const [showPassword, setShowPassword] = useState(false);
@@ -73,6 +74,7 @@ export function FormInput<T extends FieldValues>({
                   aria-describedby={
                     isPassword ? `${id}-description` : undefined
                   }
+                  readOnly={readOnly}
                 />
                 {isPassword && (
                   <button

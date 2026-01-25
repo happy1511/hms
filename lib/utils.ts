@@ -1,5 +1,7 @@
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { User } from "./type";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -9,3 +11,33 @@ export function cn(...inputs: ClassValue[]) {
 export function generateUUID(): string {
   return crypto.randomUUID();
 }
+
+export const hasModulePermission = (data: User, module: ModuleType) => {
+  const permissionMap: Partial<Record<ModuleType, ActionType[]>> =
+    data.permissions.reduce(
+      (acc, item) => {
+        acc[item.module.name as ModuleType] = item.actions.map((a) => a.name);
+        return acc;
+      },
+      {} as Partial<Record<ModuleType, ActionType[]>>,
+    ) ?? {};
+
+  return permissionMap[module];
+};
+
+export const hasActionPermission = (
+  data: User,
+  module: ModuleType,
+  action: ActionType,
+) => {
+  const permissionMap: Partial<Record<ModuleType, ActionType[]>> =
+    data.permissions.reduce(
+      (acc, item) => {
+        acc[item.module.name as ModuleType] = item.actions.map((a) => a.name);
+        return acc;
+      },
+      {} as Partial<Record<ModuleType, ActionType[]>>,
+    ) ?? {};
+
+  return permissionMap[module]?.includes(action);
+};
