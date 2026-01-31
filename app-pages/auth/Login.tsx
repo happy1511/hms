@@ -5,7 +5,7 @@ import { authValidator, AuthValidatorType } from "@/validators/api/auth/auth";
 import { useLogin } from "@/hooks/query/auth";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import FormField from "@/components/form/FormField";
+import FormField from "@/components/form-inputs/FormField";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 
@@ -65,7 +65,8 @@ const Login = () => {
         <CardFooter className="flex flex-col items-center pb-6 pt-2">
           {/* Made with love */}
           <p className="text-sm text-card-foreground flex items-center gap-1">
-            Made with <Heart className="w-4 h-4 fill-red-500 text-red-500" /> in
+            Made with{" "}
+            <Heart className="w-4 h-4 fill-destructive text-destructive" /> in
             India
           </p>
         </CardFooter>

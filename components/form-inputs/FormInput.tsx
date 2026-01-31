@@ -59,16 +59,20 @@ export function FormInput<T extends FieldValues>({
                   disabled={disabled}
                   id={id}
                   type={showPassword ? "text" : type}
-                  className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 ${
+                  className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
                     fieldState.invalid
-                      ? "border-red-500 focus-visible:border-red-500"
+                      ? "border-destructive focus-visible:border-destructive"
                       : ""
                   } ${className}`}
                   placeholder={placeholder}
-                  {...field}
+                  value={field.value ?? ""}
                   onChange={(e) =>
                     type === "number"
-                      ? field.onChange(Number(e.target.value))
+                      ? field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                        )
                       : field.onChange(e.target.value)
                   }
                   aria-describedby={
@@ -76,6 +80,7 @@ export function FormInput<T extends FieldValues>({
                   }
                   readOnly={readOnly}
                 />
+
                 {isPassword && (
                   <button
                     type="button"
@@ -93,7 +98,7 @@ export function FormInput<T extends FieldValues>({
             </FormControl>
 
             {!hideError && (
-              <FormMessage className="absolute bottom-1 font-semibold text-tiny! text-red-500 ms-1" />
+              <FormMessage className="absolute bottom-1 font-semibold text-tiny! ms-1" />
             )}
           </FormItem>
         );

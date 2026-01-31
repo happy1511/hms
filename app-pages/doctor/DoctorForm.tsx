@@ -2,7 +2,7 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
-import FormField from "@/components/form/FormField";
+import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { Days, DoctorType, Status } from "@/generated/prisma/enums";
 import {
@@ -17,6 +17,7 @@ import {
   DoctorValidatorType,
 } from "@/validators/api/masters/doctor";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
@@ -171,6 +172,7 @@ const UpdateCreateForm = ({
             type="text"
             name="emergencyContact"
             control={form.control}
+            required
           />
           <FormField<DoctorValidatorType>
             label="Password"
@@ -234,7 +236,15 @@ const DoctorForm = () => {
     usePermissionsList(!doctorId);
 
   if (fetchingPermission || fetchingUser) {
-    return <></>;
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoaderIcon
+          role="status"
+          aria-label="Loading"
+          className="size-4 animate-spin"
+        />
+      </div>
+    );
   }
 
   if (!permissions && !doctorId) {

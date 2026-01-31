@@ -18,3 +18,8 @@ export const USERS = "/user";
 // ---------DOCTORS ENDPOINTS--------
 // ----------------------------------
 export const DOCTORS = "/doctor";
+
+// ----------------------------------
+// ---------PATIENT ENDPOINTS--------
+// ----------------------------------
+export const PATIENT = "/patient";

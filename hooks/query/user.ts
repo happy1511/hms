@@ -10,7 +10,7 @@ import {
   PartialUserValidatorType,
   UserValidatorType,
 } from "@/validators/api/masters/user";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -75,12 +75,16 @@ export const useGetUser = (id?: string) => {
 };
 
 export const useCreateUser = () => {
+  const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<ApiResponse<User>, Error, UserValidatorType>({
     mutationKey: ["create-user"],
     mutationFn: (data) => createUser({ body: data }),
     onSuccess: () => {
       toast.success("User Created Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
       router.back();
     },
     onError: (data) => {
@@ -90,6 +94,7 @@ export const useCreateUser = () => {
 };
 
 export const useUpdateUser = () => {
+  const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<ApiResponse<User>, Error, PartialUserValidatorType>({
     mutationKey: ["update-user"],
@@ -97,6 +102,9 @@ export const useUpdateUser = () => {
       updateUser({ body: data, urlHelpers: { id: data.id.toString() } }),
     onSuccess: () => {
       toast.success("User Updated Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
       router.back();
     },
     onError: (data) => {
@@ -105,17 +113,18 @@ export const useUpdateUser = () => {
   });
 };
 
-export const useDeleteUser = (
-  filters: UserFilterValues,
-  page: number,
-  limit: number,
-) => {
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<ApiResponse<null>, Error, PartialUserValidatorType>({
     mutationKey: ["delete-user"],
     mutationFn: (data) =>
       deleteUser({ urlHelpers: { id: data.id.toString() } }),
     onSuccess: () => {
       toast.success("User Deleted Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
     },
     onError: (data) => {
       toast.error(data.message || "Something went wrong");

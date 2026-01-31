@@ -58,7 +58,7 @@ export function FormDateRangePicker<T extends FieldValues>({
                   className={cn(
                     "justify-start px-2.5 font-normal w-full",
                     !value?.from && "text-muted-foreground",
-                    fieldState.invalid && "border-red-500",
+                    fieldState.invalid && "border-destructive",
                     className,
                   )}
                 >

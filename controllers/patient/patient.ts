@@ -1,0 +1,371 @@
+import { ContactType, Prisma } from "@/generated/prisma/client";
+import { apiResponse } from "@/lib/apiResponse";
+import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { validateRequest } from "@/lib/validator";
+import { prisma } from "@/services/prisma";
+import { paginationValidator } from "@/validators/api/common/pagination";
+import {
+  partialPatientValidator,
+  patientValidator,
+} from "@/validators/api/masters/patient";
+
+export const getAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const search = query.search ?? "";
+      const contactNo = query.contactNo ?? "";
+      const uhid = query.uhid ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.PatientWhereInput[] = [];
+
+      if (search) {
+        and.push(
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+          { middleName: { contains: search } },
+        );
+      }
+
+      if (uhid) {
+        and.push({ uhid: { equals: uhid } });
+      }
+
+      if (contactNo) {
+        and.push({
+          contacts: {
+            some: {
+              OR: [
+                {
+                  type: ContactType.MOBILE,
+                  value: { equals: contactNo },
+                },
+                {
+                  type: ContactType.PHONE,
+                  value: { equals: contactNo },
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      const where: Prisma.DoctorWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.patient.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          select: {
+            firstName: true,
+            lastName: true,
+            middleName: true,
+            uhid: true,
+            id: true,
+
+            contacts: {
+              where: {
+                OR: [{ type: ContactType.MOBILE }, { type: ContactType.PHONE }],
+              },
+              select: {
+                type: true,
+                value: true,
+                id: true,
+              },
+            },
+          },
+        }),
+        prisma.patient.count({ where }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Patient Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const getDetailsAPI = async (
+  req: Request,
+  { params }: { params: { patientId: string } },
+) => {
+  return validateRequest({
+    paramsSchema: partialPatientValidator,
+    req,
+    params,
+    onSuccess: async ({ params }) => {
+      const id = params.patientId;
+
+      const patient = await prisma.patient.findUnique({
+        where: { id: id },
+        select: {
+          id: true,
+          uhid: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+          preferredName: true,
+          dob: true,
+          identificationMark: true,
+          gender: true,
+          maritalStatus: true,
+          religion: true,
+          bloodGroup: true,
+          relations: true,
+          contacts: true,
+          addresses: true,
+          identifications: true,
+          emergencyContacts: true,
+        },
+      });
+
+      if (!patient) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Patient not found",
+        });
+      }
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Patient Fetched Successfully",
+        data: patient,
+      });
+    },
+  });
+};
+
+export const createAPI = async (req: Request) => {
+  return validateRequest({
+    bodySchema: patientValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+
+      const {
+        contacts,
+        emergencyContacts,
+        relations,
+        addresses,
+        identifications,
+        notes,
+        ...rest
+      } = data;
+
+      const patient = await prisma.patient.create({
+        data: {
+          ...rest,
+          contacts: {
+            create: contacts,
+          },
+          addresses: {
+            create: addresses,
+          },
+          relations: {
+            create: relations,
+          },
+          identifications: {
+            create: identifications,
+          },
+          emergencyContacts: {
+            create: emergencyContacts,
+          },
+          notes: {
+            create: notes,
+          },
+        },
+        include: {
+          contacts: true,
+          addresses: true,
+          relations: true,
+          identifications: true,
+          emergencyContacts: true,
+          notes: true,
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.CREATED,
+        message: "Doctor Created Successfully",
+        data: patient,
+      });
+    },
+  });
+};
+
+export const updateAPI = async (
+  req: Request,
+  { params }: { params: { patientId: string } },
+) => {
+  return validateRequest({
+    bodySchema: partialPatientValidator,
+    paramsSchema: partialPatientValidator,
+    params,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+      const existingUser = await prisma.patient.findUnique({
+        where: { id: data.patientId },
+      });
+
+      if (!existingUser) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Patient not found",
+        });
+      }
+
+      const {
+        contacts,
+        emergencyContacts,
+        relations,
+        addresses,
+        identifications,
+        notes,
+        patientId,
+        ...rest
+      } = data;
+
+      const updatedPatient = await prisma.patient.update({
+        where: { id: data.patientId },
+        data: {
+          ...rest,
+
+          addresses: addresses
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: addresses
+                      .map((a) => a.id)
+                      .filter(Boolean) as number[],
+                  },
+                },
+                upsert: addresses.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+
+          contacts: contacts
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: contacts
+                      .map((c) => c.id)
+                      .filter(Boolean) as number[],
+                  },
+                },
+                upsert: contacts.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+
+          identifications: identifications
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: identifications
+                      .map((i) => i.id)
+                      .filter(Boolean) as number[],
+                  },
+                },
+                upsert: identifications.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+
+          emergencyContacts: emergencyContacts
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: emergencyContacts
+                      .map((e) => e.id)
+                      .filter(Boolean) as number[],
+                  },
+                },
+                upsert: emergencyContacts.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+
+          relations: relations
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: relations
+                      .map((r) => r.id)
+                      .filter(Boolean) as number[],
+                  },
+                },
+                upsert: relations.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+
+          notes: notes
+            ? {
+                deleteMany: {
+                  id: {
+                    notIn: notes.map((n) => n.id).filter(Boolean) as number[],
+                  },
+                },
+                upsert: notes.map(({ id, ...rest }) => ({
+                  where: { id: id ?? 0 },
+                  create: rest,
+                  update: rest,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          addresses: true,
+          contacts: true,
+          relations: true,
+          identifications: true,
+          emergencyContacts: true,
+          notes: true,
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Patient Updated Successfully",
+        data: updatedPatient,
+      });
+    },
+  });
+};

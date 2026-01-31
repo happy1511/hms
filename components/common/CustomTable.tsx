@@ -33,6 +33,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
+import { LoaderIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDefWithClass<TData, TValue>[];
@@ -49,13 +57,15 @@ interface DataTableProps<TData, TValue> {
   useInfiniteScroll?: boolean;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
+  isLoading?: boolean;
   fetchNextPage?: (
-    options?: FetchNextPageOptions | undefined
+    options?: FetchNextPageOptions | undefined,
   ) => Promise<InfiniteQueryObserverResult<TData[], Error>>;
 
   /** pagination */
   page?: number;
   handleChangePage: (page: number) => void;
+  handleChangeLimit: (limit: number) => void;
   total?: number;
   limit?: number;
 
@@ -84,7 +94,7 @@ function getPaginationRange({
   const leftSiblingIndex = Math.max(currentPage - siblingCount, 2);
   const rightSiblingIndex = Math.min(
     currentPage + siblingCount,
-    totalPages - 1
+    totalPages - 1,
   );
 
   const showLeftEllipsis = leftSiblingIndex > 2;
@@ -120,7 +130,9 @@ export function CustomTable<TData, TValue>({
   fetchNextPage,
   isFetchingNextPage,
   handleChangePage,
+  handleChangeLimit,
   enableSorting = false,
+  isLoading = false,
   striped = false,
   headerBgClass = "bg-primary",
   rowBgClass = "bg-white",
@@ -211,14 +223,14 @@ export function CustomTable<TData, TValue>({
                         TData,
                         TValue
                       >
-                    ).headerClassName
+                    ).headerClassName,
                   )}
                 >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                 </TableHead>
               ))}
@@ -226,7 +238,19 @@ export function CustomTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.length ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={finalColumns.length} className="h-24">
+                <div className="flex justify-center items-center">
+                  <LoaderIcon
+                    role="status"
+                    aria-label="Loading"
+                    className="size-4 animate-spin"
+                  />
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row, i) => (
               <TableRow
                 key={i}
@@ -241,7 +265,7 @@ export function CustomTable<TData, TValue>({
                     ? row.index % 2 === 0
                       ? rowAltBgClass
                       : rowBgClass
-                    : rowBgClass
+                    : rowBgClass,
                 )}
               >
                 {row.getVisibleCells().map((cell, i) => (
@@ -254,7 +278,7 @@ export function CustomTable<TData, TValue>({
                           TData,
                           TValue
                         >
-                      ).cellClassName
+                      ).cellClassName,
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -287,9 +311,31 @@ export function CustomTable<TData, TValue>({
 
       {!useInfiniteScroll && total > 0 && (
         <div className="w-full flex flex-col-reverse md:flex-row gap-3 justify-between items-center mt-3">
-          <p className="text-black/50 text-tiny font-semibold">
-            Result per page 10
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-black/50 whitespace-nowrap text-tiny font-semibold">
+              Result per page
+            </p>
+            <Select
+              onValueChange={(value) => handleChangeLimit(Number(value))}
+              value={limit.toString()}
+            >
+              <SelectTrigger className="rounded-sm h-4! focus:border-accent-blue text-tiny [&_svg]:size-2 capitalize w-fit shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                {["10", "20", "30", "50", "100"].map((option) => (
+                  <SelectItem
+                    key={option}
+                    value={option}
+                    className="text-tiny py-1 capitalize"
+                  >
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Pagination>
               <PaginationContent>
@@ -313,7 +359,7 @@ export function CustomTable<TData, TValue>({
                       <PaginationLink
                         className={clsx(
                           "size-6 text-tiny!",
-                          item === page && "bg-primary text-white"
+                          item === page && "bg-primary text-white",
                         )}
                         isActive={item === page}
                         onClick={() => handleChangePage(item)}

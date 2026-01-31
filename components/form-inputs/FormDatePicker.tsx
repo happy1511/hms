@@ -48,7 +48,7 @@ export function FormDatePicker<T extends FieldValues>({
           className={cn(
             "gap-1 relative text-primary",
             hideError ? "" : "pb-4 gap-1",
-            formItemClassName
+            formItemClassName,
           )}
         >
           {label && (
@@ -65,13 +65,11 @@ export function FormDatePicker<T extends FieldValues>({
                   id={id}
                   variant="outline"
                   disabled={disabled}
-                  className={cn(
-                    "w-full justify-start rounded-sm bg-primary text-left font-normal border border-border focus-visible:ring-0",
-                    !field.value && "text-muted-foreground",
-                    fieldState.invalid &&
-                      "border-red-500 focus-visible:border-red-500",
-                    className
-                  )}
+                  className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 py-1 px-3 flex justify-start ${
+                    fieldState.invalid
+                      ? "border-destructive focus-visible:border-destructive"
+                      : ""
+                  } ${className}`}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {field.value ? (
@@ -99,7 +97,7 @@ export function FormDatePicker<T extends FieldValues>({
           </FormControl>
 
           {!hideError && (
-            <FormMessage className="absolute bottom-1 font-semibold text-tiny text-red-500 ms-1" />
+            <FormMessage className="absolute bottom-1 font-semibold text-tiny text-destructive ms-1" />
           )}
         </FormItem>
       )}

@@ -4,7 +4,10 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import { DataViewModal } from "@/components/common/DataViewModal";
+import PermissionsBadge from "@/components/common/PermissionsBadge";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -17,7 +20,7 @@ import {
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -55,17 +58,74 @@ const neededFilters: FilterConfig<UserFilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
+const Actions = ({
+  data,
+  canDelete,
+  canEdit,
+  canView,
+}: {
+  data: User;
+  canEdit: boolean;
+  canDelete: boolean;
+  canView: boolean;
+}) => {
+  const { mutateAsync: deleteUser, isPending: deletePending } = useDeleteUser();
+
+  return (
+    <>
+      {canView && (
+        <DataViewModal<User>
+          data={data}
+          title="User Details"
+          fields={[
+            { key: "id", label: "UserId" },
+            { key: "loginId", label: "LoginId" },
+            { key: "password", label: "Password" },
+            { key: "name", label: "Name" },
+            { key: "status", label: "Status" },
+            { key: "createdAt", label: "Created At" },
+            { key: "updatedAt", label: "Updated At" },
+            // { key: "permissions", label: "Permissions" },
+          ]}
+        />
+      )}
+      {canEdit && (
+        <Link
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
+          href={`/users/${data.id}`}
+        >
+          <Edit2 className="size-2.5" />
+        </Link>
+      )}
+      {canDelete && (
+        <CustomAlert
+          triggerButton={
+            <Button
+              variant="outline"
+              className="h-auto shadow-none p-1 cursor-pointer"
+            >
+              <Trash2 className="size-2.5 text-destructive" />
+            </Button>
+          }
+          title="Delete User?"
+          description="Are you sure you want to delete user?"
+          cancelText="Cancel"
+          confirmText="Delete"
+          handleConfirm={() => deleteUser({ id: data.id })}
+          pending={deletePending}
+        />
+      )}
+    </>
+  );
+};
+
 const Users = () => {
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<UserFilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data } = useUsersList(filters, page, 10);
-  const { mutateAsync: deleteUser, isPending: deletePending } = useDeleteUser(
-    filters,
-    page,
-    10,
-  );
+  const { data, isLoading } = useUsersList(filters, page, limit);
 
   if (!profile) {
     return <></>;
@@ -126,23 +186,9 @@ const Users = () => {
           <SortableHeader<User> label="Assigned Modules" column={column} />
         );
       },
-      cell: ({ row }) => {
-        return (
-          <div className="flex gap-1 items-center">
-            {row.original.permissions.slice(0, 3).map((p, _) => (
-              <span
-                key={_}
-                className="capitalize border border-success bg-success/10 px-2 rounded-sm text-success"
-              >
-                {p.module.name}
-              </span>
-            ))}
-            <span className="capitalize px-2 rounded-sm text-success">
-              +More
-            </span>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <PermissionsBadge permissions={row.original.permissions} />
+      ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -151,16 +197,7 @@ const Users = () => {
       header: () => {
         return <button className="flex">Status</button>;
       },
-      cell: ({ row }) =>
-        row.original.status === "inactive" ? (
-          <span className="capitalize border border-destructive bg-destructive/10 px-2 rounded-sm text-destructive">
-            InActive
-          </span>
-        ) : (
-          <span className="capitalize border border-success bg-success/10 px-2 rounded-sm text-success">
-            Active
-          </span>
-        ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },
@@ -199,25 +236,14 @@ const Users = () => {
     {
       id: "actions",
       header: () => <p>Action</p>,
-      cell: ({ row }) =>
-        canDelete && (
-          <CustomAlert
-            triggerButton={
-              <Button
-                variant="outline"
-                className="h-auto shadow-none p-1 cursor-pointer"
-              >
-                <Trash2 className="size-2.5 text-destructive" />
-              </Button>
-            }
-            title="Delete User?"
-            description="Are you sure you want to delete user?"
-            cancelText="Cancel"
-            confirmText="Delete"
-            handleConfirm={() => deleteUser({ id: row.original.id })}
-            pending={deletePending}
-          />
-        ),
+      cell: ({ row }) => (
+        <Actions
+          data={row.original}
+          canDelete={Boolean(canDelete)}
+          canEdit={Boolean(canUpdate)}
+          canView={Boolean(canView)}
+        />
+      ),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },
@@ -238,6 +264,9 @@ const Users = () => {
             total={data?.total}
             enableSorting
             handleChangePage={setPage}
+            isLoading={isLoading}
+            handleChangeLimit={setLimit}
+            limit={limit}
           />
         </>
       )}

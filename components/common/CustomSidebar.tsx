@@ -150,7 +150,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -190,7 +190,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3"
                       >
                         <Link href={item.url}>
                           <item.icon />

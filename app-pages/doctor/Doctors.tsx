@@ -1,9 +1,13 @@
 "use client";
+import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import StatusBadge from "@/components/common/StatusBadge";
+import { Button } from "@/components/ui/button";
 import {
   ActionType,
   DoctorType,
@@ -11,7 +15,7 @@ import {
   Status,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useDoctorsList } from "@/hooks/query/doctor";
+import { useDeleteDoctor, useDoctorsList } from "@/hooks/query/doctor";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -20,17 +24,20 @@ import {
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
+import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const Buttons = () => {
+const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   const router = useRouter();
   return (
     <>
-      <CustomButton onClick={() => router.push("/doctors/new")}>
-        New Doctor
-      </CustomButton>
+      {canCreate && (
+        <CustomButton onClick={() => router.push("/doctors/new")}>
+          New Doctor
+        </CustomButton>
+      )}
     </>
   );
 };
@@ -65,12 +72,75 @@ const neededFilters: FilterConfig<DoctorFilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
+const Actions = ({
+  data,
+  canDelete,
+  canEdit,
+  canView,
+}: {
+  data: Doctor;
+  canEdit: boolean;
+  canDelete: boolean;
+  canView: boolean;
+}) => {
+  const { mutateAsync: deleteDoctor, isPending: deletePending } =
+    useDeleteDoctor();
+
+  return (
+    <>
+      {canView && (
+        <DataViewModal<Doctor>
+          data={data}
+          title="Doctor Details"
+          fields={[
+            { key: "userId", label: "UserId" },
+            { key: "loginId", label: "LoginId" },
+            { key: "password", label: "Password" },
+            { key: "name", label: "Name" },
+            { key: "licenseNumber", label: "License Number" },
+            { key: "status", label: "Status" },
+            { key: "createdAt", label: "Created At" },
+            { key: "updatedAt", label: "Updated At" },
+          ]}
+        />
+      )}
+      {canEdit && (
+        <Link
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
+          href={`/doctors/${data.userId}`}
+        >
+          <Edit2 className="size-2.5" />
+        </Link>
+      )}
+      {canDelete && (
+        <CustomAlert
+          triggerButton={
+            <Button
+              variant="outline"
+              className="h-auto shadow-none p-1 cursor-pointer"
+            >
+              <Trash2 className="size-2.5 text-destructive" />
+            </Button>
+          }
+          title="Delete Doctor?"
+          description="Are you sure you want to delete doctor?"
+          cancelText="Cancel"
+          confirmText="Delete"
+          handleConfirm={() => deleteDoctor({ userId: Number(data.userId) })}
+          pending={deletePending}
+        />
+      )}
+    </>
+  );
+};
+
 const Doctors = () => {
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<DoctorFilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data } = useDoctorsList(filters, page, 10);
+  const { data, isLoading } = useDoctorsList(filters, page, limit);
 
   if (!profile) {
     return <></>;
@@ -146,16 +216,7 @@ const Doctors = () => {
       header: () => {
         return <button className="flex">Status</button>;
       },
-      cell: ({ row }) =>
-        row.original.status === "inactive" ? (
-          <span className="capitalize border border-destructive bg-destructive/10 px-2 rounded-sm text-destructive">
-            InActive
-          </span>
-        ) : (
-          <span className="capitalize border border-success bg-success/10 px-2 rounded-sm text-success">
-            Active
-          </span>
-        ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },
@@ -191,50 +252,27 @@ const Doctors = () => {
       headerClassName: "min-w-40 max-w-50",
       cellClassName: "min-w-40 max-w-50",
     },
-    // {
-    //   id: "actions",
-    //   header: () => <p>Action</p>,
-    //   cell: ({ row }) => (
-    //     <div className="flex w-fit cursor-pointer justify-self-end rounded-full gap-2">
-    //       {/* <CustomTooltip tooltipText="View Invites" asChild>
-    //           <Link
-    //             className="bg-muted/10 text-muted rounded-full p-2 md:p-3 cursor-pointer"
-    //             href={`/vignettes/${row.original._id}`}
-    //             prefetch
-    //           >
-    //             <Eye className="size-4" />
-    //           </Link>
-    //         </CustomTooltip> */}
-
-    //       <CustomTooltip tooltipText="Edit" asChild>
-    //         <Link
-    //           className="bg-muted/10 text-muted rounded-full p-2 md:p-3 cursor-pointer"
-    //           href={`/editor/collab-project/${row.original._id}`}
-    //           prefetch
-    //         >
-    //           <Pencil className="size-4" />
-    //         </Link>
-    //       </CustomTooltip>
-
-    //       <CustomTooltip
-    //         tooltipText="Delete"
-    //         triggerClasses="bg-destructive/10 text-destructive rounded-full p-2 md:p-3 cursor-pointer"
-    //         onClick={() => {
-    //           setDeleteModalData(row.original);
-    //         }}
-    //         disabled={isPending}
-    //       >
-    //         <Trash2 className="size-4" />
-    //       </CustomTooltip>
-    //     </div>
-    //   ),
-    //   headerClassName: "min-w-20 max-w-30",
-    //   cellClassName: "min-w-20 max-w-30",
-    // },
+    {
+      id: "actions",
+      header: () => <p>Action</p>,
+      cell: ({ row }) => (
+        <Actions
+          data={row.original}
+          canDelete={Boolean(canDelete)}
+          canEdit={Boolean(canUpdate)}
+          canView={Boolean(canView)}
+        />
+      ),
+      headerClassName: "min-w-20 max-w-30",
+      cellClassName: "min-w-20 max-w-30",
+    },
   ];
 
   return (
-    <CustomLayout title="Doctors" buttons={<Buttons />}>
+    <CustomLayout
+      title="Doctors"
+      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+    >
       {canView && (
         <>
           <CustomFilters<DoctorFilterValues>
@@ -247,7 +285,10 @@ const Doctors = () => {
             page={page}
             total={data?.total}
             enableSorting
+            limit={limit}
             handleChangePage={setPage}
+            isLoading={isLoading}
+            handleChangeLimit={setLimit}
           />
         </>
       )}

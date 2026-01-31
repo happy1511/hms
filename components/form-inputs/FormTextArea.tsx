@@ -53,7 +53,7 @@ export function FormTextarea<T extends FieldValues>({
               maxLength={maxChar}
               className={clsx(
                 "rounded-sm bg-primary focus-visible:border-accent-blue",
-                className
+                className,
               )}
               {...field}
             />
@@ -63,7 +63,7 @@ export function FormTextarea<T extends FieldValues>({
             <div
               className={clsx(
                 "absolute bottom-1 right-1 text-tiny font-medium",
-                hasExceeded ? "text-red-500" : "text-gray-500"
+                hasExceeded ? "text-destructive" : "text-gray-500",
               )}
             >
               {charCount}/{maxChar}

@@ -1,10 +1,10 @@
 import { useForm, FieldValues } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
-import { FormInput } from "../form/FormInput";
-import { FormSelect } from "../form/FormSelect";
-import { FormDatePicker } from "../form/FormDatePicker";
-import { FormDateRangePicker } from "../form/FormDateRange";
+import { FormInput } from "../form-inputs/FormInput";
+import { FormSelect } from "../form-inputs/FormSelect";
+import { FormDatePicker } from "../form-inputs/FormDatePicker";
+import { FormDateRangePicker } from "../form-inputs/FormDateRange";
 import { Label } from "../ui/label";
 import CustomButton from "./CustomButton";
 

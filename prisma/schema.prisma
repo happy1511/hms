@@ -134,6 +134,23 @@ enum ActionType {
   VIEW
 }
 
+enum ContactType {
+  EMAIL
+  PHONE
+  MOBILE
+}
+
+enum BloodGroup {
+  A_PLUS
+  A_NEGATIVE
+  B_PLUS
+  B_NEGATIVE
+  AB_PLUS
+  AB_NEGATIVE
+  O_PLUS
+  O_NEGATIVE
+}
+
 // --------------------
 // Models
 // --------------------
@@ -222,28 +239,93 @@ model DoctorAvailableDay {
   @@unique([doctorId, day])
 }
 
-model Patient {
-  id               Int           @id @default(autoincrement())
-  name             String
-  dob              DateTime
-  gender           Gender
-  maritalStatus    MaritalStatus
-  mobileNumber     String?       @unique
-  email            String        @unique
-  relativeName     String?
-  relativeContact  String?
-  relativeRelation String?
-  religion         String?
-  type             PatientType
-  address          String?
-  city             String?
-  state            String?
-  zipCode          String?
-  country          String?
-  identityType     IdentityType?
-  identityNumber   String?       @unique
+model PatientContact {
+  id    Int         @id @default(autoincrement())
+  type  ContactType
+  value String
 
-  appointment Appointment[]
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model emergencyContact {
+  id       Int     @id @default(autoincrement())
+  name     String
+  contact  String
+  relation String
+  email    String?
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PatientNotes {
+  id   Int    @id @default(autoincrement())
+  type String
+  note String
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PatientRelations {
+  id      Int     @id @default(autoincrement())
+  type    String
+  name    String
+  contact String?
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PatientAddress {
+  id               Int     @id @default(autoincrement())
+  type             String
+  country          String
+  addressLineOne   String
+  addressLineTwo   String?
+  addressLineThree String?
+  city             String
+  state            String
+  postalCode       String
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PatientIdentification {
+  id     Int    @id @default(autoincrement())
+  type   String
+  number String
+  active Status
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Patient {
+  id                 Int           @id @default(autoincrement())
+  uhid               String        @unique @default(uuid())
+  firstName          String
+  middleName         String?
+  lastName           String
+  preferredName      String
+  dob                DateTime
+  identificationMark String?
+  gender             Gender
+  maritalStatus      MaritalStatus
+  religion           String
+  bloodGroup         BloodGroup
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  appointment       Appointment[]
+  contacts          PatientContact[]
+  relations         PatientRelations[]
+  addresses         PatientAddress[]
+  identifications   PatientIdentification[]
+  emergencyContacts emergencyContact[]
+  notes             PatientNotes[]
 }
 
 // -------------------- Facility Management --------------------

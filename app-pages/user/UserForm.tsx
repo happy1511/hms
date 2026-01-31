@@ -2,7 +2,7 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
-import FormField from "@/components/form/FormField";
+import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { Status } from "@/generated/prisma/enums";
 import { usePermissionsList } from "@/hooks/query/permission";
@@ -13,6 +13,7 @@ import {
   UserValidatorType,
 } from "@/validators/api/masters/user";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
@@ -130,7 +131,15 @@ const UserForm = () => {
     usePermissionsList(!userId);
 
   if (fetchingPermission || fetchingUser) {
-    return <></>;
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoaderIcon
+          role="status"
+          aria-label="Loading"
+          className="size-4 animate-spin"
+        />
+      </div>
+    );
   }
 
   if (!permissions && !userId) {

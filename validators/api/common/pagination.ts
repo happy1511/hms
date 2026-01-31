@@ -7,6 +7,8 @@ const paginationValidator = z.object({
   search: z.string().optional(),
   status: z.enum(Status).optional(),
   doctorType: z.enum(DoctorType).optional(),
+  uhid: z.string().optional(),
+  contactNo: z.string().optional(),
 
   "createdAt[from]": z.coerce.date().optional(),
   "createdAt[to]": z.coerce.date().optional(),

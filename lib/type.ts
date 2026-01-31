@@ -15,7 +15,16 @@ import {
   Path,
   RegisterOptions,
 } from "react-hook-form";
-import { Actions } from "./enums";
+import {
+  Appointment,
+  emergencyContact,
+  Patient,
+  PatientAddress,
+  PatientContact,
+  PatientIdentification,
+  PatientNotes,
+  PatientRelations,
+} from "@/generated/prisma/client";
 
 // ----------------------------------
 export type ApiResponse<T> = {
@@ -189,7 +198,7 @@ export interface Permissions {
   };
   actions: {
     id: number;
-    name: Actions;
+    name: ActionType;
   }[];
 }
 
@@ -223,6 +232,12 @@ export interface UserFilterValues {
   createdAt?: string;
 }
 
+export interface PatientFilterValues {
+  name?: string;
+  uhid?: string;
+  contactNo?: string;
+}
+
 export interface Doctor extends Pick<
   User,
   | "permissions"
@@ -254,4 +269,14 @@ export interface DoctorFilterValues {
   status?: string;
   doctorType?: DoctorType;
   createdAt?: string;
+}
+
+export interface PatientType extends Patient {
+  appointment: Appointment[];
+  contacts: PatientContact[];
+  relations: PatientRelations[];
+  addresses: PatientAddress[];
+  identifications: PatientIdentification[];
+  emergencyContacts: emergencyContact[];
+  notes: PatientNotes[];
 }
