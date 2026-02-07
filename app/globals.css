@@ -53,7 +53,7 @@
   --radius: 0rem;
 
   /* Backgrounds */
-  --background: oklch(100% 0.00011 271.152);
+  --background: #edeff2;
   --card: oklch(0.99 0.01 255);
   --popover: oklch(0.99 0.01 255);
 
@@ -63,7 +63,7 @@
   --popover-foreground: oklch(0.35 0.04 255);
 
   /* Primary – medical calm blue */
-  --primary: oklch(0.55 0.08 250);
+  --primary:  #09336b;
   --primary-foreground: oklch(0.985 0 0);
 
   /* Secondary – lavender gray */
@@ -75,7 +75,7 @@
   --muted-foreground: oklch(0.55 0.03 255);
 
   /* Accent – soft blush pink */
-  --accent: oklch(0.92 0.04 10);
+  --accent: #F7F5EB;
   --accent-foreground: oklch(0.45 0.05 255);
 
   /* Feedback */
@@ -95,11 +95,11 @@
   --chart-5: oklch(0.7 0.05 200);
 
   /* Sidebar */
-  --sidebar: oklch(0.97 0.01 255);
+  --sidebar: #e1e4e8;
   --sidebar-foreground: oklch(0.35 0.04 255);
   --sidebar-primary: oklch(0.55 0.08 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.55 0.08 250);
+  --sidebar-accent: #09336b;
   --sidebar-accent-foreground: oklch(0.9 0.01 260);
   --sidebar-border: oklch(0.9 0.01 260);
   --sidebar-ring: oklch(0.65 0.05 250);

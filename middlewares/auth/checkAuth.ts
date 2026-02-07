@@ -1,3 +1,4 @@
+import { Status } from "@/generated/prisma/enums";
 import { signAccessToken, signRefreshToken, verifyToken } from "@/services/jwt";
 import { prisma } from "@/services/prisma";
 import { cookies } from "next/headers";
@@ -24,6 +25,10 @@ export const checkAuth = async (req: NextRequest) => {
     });
 
     if (!user) {
+      return null;
+    }
+
+    if (user.status === Status["inactive"]) {
       return null;
     }
 

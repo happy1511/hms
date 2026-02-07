@@ -4,6 +4,7 @@ import {
   FormCheckboxProps,
   FormDatePickerProps,
   FormDateRangePickerProps,
+  FormInfiniteSelectProps,
   FormInputProps,
   FormRadioGroupProps,
   FormSelectProps,
@@ -15,6 +16,7 @@ import { FormCheckbox } from "./FormCheckBox";
 import { FormRadioGroup } from "./FormRadioGroup";
 import { FormDatePicker } from "./FormDatePicker";
 import { FormDateRangePicker } from "./FormDateRange";
+import { FormInfiniteSelect } from "./FormInfiniteSelect";
 
 export type Props<T extends FieldValues> =
   | ({ type: "text" | "number" | "email" | "time" } & FormInputProps<T>)
@@ -24,7 +26,8 @@ export type Props<T extends FieldValues> =
   | ({ type: "checkbox" } & FormCheckboxProps<T>)
   | ({ type: "radio" } & FormRadioGroupProps<T>)
   | ({ type: "date" } & FormDatePickerProps<T>)
-  | ({ type: "dateRange" } & FormDateRangePickerProps<T>);
+  | ({ type: "dateRange" } & FormDateRangePickerProps<T>)
+  | ({ type: "infiniteSelect" } & FormInfiniteSelectProps<T>);
 
 const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
   switch (type) {
@@ -40,6 +43,9 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
 
     case "select":
       return <FormSelect {...(props as FormSelectProps<T>)} />;
+
+    case "infiniteSelect":
+      return <FormInfiniteSelect {...(props as FormInfiniteSelectProps<T>)} />;
 
     case "checkbox":
       return <FormCheckbox {...(props as FormCheckboxProps<T>)} />;

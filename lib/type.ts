@@ -17,13 +17,16 @@ import {
 } from "react-hook-form";
 import {
   Appointment,
+  Bed,
   emergencyContact,
+  Floor,
   Patient,
   PatientAddress,
   PatientContact,
   PatientIdentification,
   PatientNotes,
   PatientRelations,
+  Ward,
 } from "@/generated/prisma/client";
 
 // ----------------------------------
@@ -43,9 +46,9 @@ export type PaginatedResponse<T> = {
 // ----------------------------------
 // ---------FORM FIELD TYPE----------
 // ----------------------------------
-interface SelectOption {
+export interface SelectOption {
   label: string;
-  value: string;
+  value: string | number;
 }
 
 export interface FormSelectProps<T extends FieldValues> {
@@ -61,6 +64,33 @@ export interface FormSelectProps<T extends FieldValues> {
     "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
   >;
   hideError?: boolean;
+}
+
+export interface InfiniteSelectBaseProps {
+  options: SelectOption[];
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onSearch?: (value: string) => void;
+}
+
+export interface FormInfiniteSelectProps<
+  T extends FieldValues,
+> extends InfiniteSelectBaseProps {
+  name: Path<T>;
+  control: Control<T>;
+  rules?: Omit<
+    RegisterOptions<T, Path<T>>,
+    "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
+  >;
+  label?: string;
+  required?: boolean;
+  hideError?: boolean;
+  className?: string;
+  formItemClassName?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  multiple?: boolean;
 }
 
 export interface FormCheckboxProps<T extends FieldValues> {
@@ -159,6 +189,20 @@ export interface FormRadioGroupProps<T extends FieldValues> {
 }
 
 // ----------------------------------
+// ---------FILTER VALUES TYPE----------
+// ----------------------------------
+export interface FilterValues {
+  name?: string;
+  status?: string;
+  createdAt?: string;
+  uhid?: string;
+  contactNo?: string;
+  doctorType?: DoctorType;
+  wardId?: string;
+  floorId?: string;
+}
+
+// ----------------------------------
 // ---------TABLE COLUMN TYPE----------
 // ----------------------------------
 export type ColumnDefWithClass<TData, TValue = unknown> = ColumnDef<
@@ -226,18 +270,6 @@ export interface User {
   createdAt: Date;
 }
 
-export interface UserFilterValues {
-  name?: string;
-  status?: string;
-  createdAt?: string;
-}
-
-export interface PatientFilterValues {
-  name?: string;
-  uhid?: string;
-  contactNo?: string;
-}
-
 export interface Doctor extends Pick<
   User,
   | "permissions"
@@ -264,13 +296,6 @@ export interface Doctor extends Pick<
   consultationEndingTime: string;
 }
 
-export interface DoctorFilterValues {
-  name?: string;
-  status?: string;
-  doctorType?: DoctorType;
-  createdAt?: string;
-}
-
 export interface PatientType extends Patient {
   appointment: Appointment[];
   contacts: PatientContact[];
@@ -279,4 +304,16 @@ export interface PatientType extends Patient {
   identifications: PatientIdentification[];
   emergencyContacts: emergencyContact[];
   notes: PatientNotes[];
+}
+
+export interface FloorType extends Floor {
+  departments?: Ward[];
+}
+
+export interface WardType extends Ward {
+  floor?: FloorType;
+}
+
+export interface BedType extends Bed {
+  ward?: WardType;
 }

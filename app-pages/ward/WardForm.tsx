@@ -1,0 +1,138 @@
+"use client";
+
+import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
+import FormField from "@/components/form-inputs/FormField";
+import { Form } from "@/components/ui/form";
+import { Ward } from "@/generated/prisma/client";
+import { Status } from "@/generated/prisma/enums";
+import { useInfiniteFloorsList } from "@/hooks/query/floor";
+import { useCreateWard, useGetWard, useUpdateWard } from "@/hooks/query/ward";
+
+import {
+  wardValidator,
+  WardValidatorType,
+} from "@/validators/api/masters/ward";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderIcon } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+
+const getInitialValues = (data?: Ward): WardValidatorType => ({
+  name: data?.name ?? "",
+  description: data?.description ?? null,
+  status: data?.status ?? Status["active"],
+  floorId: data?.floorId ?? undefined,
+});
+
+const UpdateCreateForm = ({ data }: { data?: Ward }) => {
+  const [floorSearchValue, setFloorSearchValue] = useState("");
+  const { mutateAsync: create, isPending: creating } = useCreateWard();
+  const { mutateAsync: update, isPending: updating } = useUpdateWard();
+  const {
+    data: floors,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteFloorsList({ name: floorSearchValue }, 10);
+
+  const flatFloors = useMemo(
+    () =>
+      floors?.pages.flatMap((p) =>
+        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
+      ),
+    [floors],
+  );
+
+  const form = useForm<WardValidatorType>({
+    defaultValues: getInitialValues(data),
+    resolver: zodResolver(wardValidator),
+  });
+
+  const onSubmit = (values: WardValidatorType) => {
+    if (data) {
+      update({ wardId: Number(data.id), ...values });
+    } else {
+      create(values);
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid grid-cols-2 gap-x-2">
+          <FormField<WardValidatorType>
+            label="Name"
+            type="text"
+            name="name"
+            control={form.control}
+            required
+          />
+          <FormField<WardValidatorType>
+            label="Status"
+            type="select"
+            name="status"
+            options={Object.values(Status).map((s) => ({ value: s, label: s }))}
+            control={form.control}
+            required
+          />
+          <FormField<WardValidatorType>
+            label="Floor"
+            type="infiniteSelect"
+            name="floorId"
+            control={form.control}
+            options={flatFloors || []}
+            fetchNextPage={fetchNextPage}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onSearch={setFloorSearchValue}
+            required
+          />
+
+          <FormField<WardValidatorType>
+            label="Description"
+            type="textarea"
+            name="description"
+            control={form.control}
+            required
+          />
+        </div>
+        <CustomButton disabled={creating || updating} type="submit">
+          Submit
+        </CustomButton>
+      </form>
+    </Form>
+  );
+};
+
+const WardForm = () => {
+  const { wardId }: { wardId?: string } = useParams();
+
+  const { data, isLoading: fetchingWard } = useGetWard(wardId);
+
+  if (fetchingWard) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoaderIcon
+          role="status"
+          aria-label="Loading"
+          className="size-4 animate-spin"
+        />
+      </div>
+    );
+  }
+
+  if (wardId && !data) {
+    return <></>;
+  }
+
+  return (
+    <CustomLayout title={wardId ? "Edit Ward" : "Create Ward"}>
+      {wardId ? <UpdateCreateForm data={data} /> : <UpdateCreateForm />}
+    </CustomLayout>
+  );
+};
+
+export default WardForm;

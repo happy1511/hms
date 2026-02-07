@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ColumnDefWithClass } from "@/lib/type";
+import { ApiResponse, ColumnDefWithClass } from "@/lib/type";
 import {
   FetchNextPageOptions,
   InfiniteQueryObserverResult,
@@ -33,7 +33,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
-import { LoaderIcon } from "lucide-react";
+import { LoaderIcon, ShieldAlert } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { AxiosError } from "axios";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDefWithClass<TData, TValue>[];
@@ -58,6 +59,8 @@ interface DataTableProps<TData, TValue> {
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   isLoading?: boolean;
+  isError?: boolean;
+  error?: AxiosError<ApiResponse<null>> | null;
   fetchNextPage?: (
     options?: FetchNextPageOptions | undefined,
   ) => Promise<InfiniteQueryObserverResult<TData[], Error>>;
@@ -131,6 +134,8 @@ export function CustomTable<TData, TValue>({
   isFetchingNextPage,
   handleChangePage,
   handleChangeLimit,
+  isError,
+  error,
   enableSorting = false,
   isLoading = false,
   striped = false,
@@ -211,7 +216,7 @@ export function CustomTable<TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
               key={headerGroup.id}
-              className=" border-t border-b border-primary/20 text-primary bg-white hover:bg-white"
+              className=" border-t border-b border-black/30 text-primary bg-white hover:bg-white"
             >
               {headerGroup.headers.map((header, i) => (
                 <TableHead
@@ -247,6 +252,19 @@ export function CustomTable<TData, TValue>({
                     aria-label="Loading"
                     className="size-4 animate-spin"
                   />
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : isError && error ? (
+            <TableRow>
+              <TableCell colSpan={finalColumns.length} className="h-30">
+                <div className="flex flex-col justify-center items-center">
+                  <ShieldAlert className="size-10 bg-destructive text-white rounded-full p-2" />
+                  <p className="text-sm font-semibold text-destructive capitalize">
+                    {error.response?.data?.message ||
+                      error.message ||
+                      "Something went wrong"}
+                  </p>
                 </div>
               </TableCell>
             </TableRow>

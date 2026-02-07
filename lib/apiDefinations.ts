@@ -23,3 +23,18 @@ export const DOCTORS = "/doctor";
 // ---------PATIENT ENDPOINTS--------
 // ----------------------------------
 export const PATIENT = "/patient";
+
+// ----------------------------------
+// ---------FLOORS ENDPOINTS--------
+// ----------------------------------
+export const FLOORS = "/floor";
+
+// ----------------------------------
+// ---------WARDS ENDPOINTS--------
+// ----------------------------------
+export const WARDS = "/ward";
+
+// ----------------------------------
+// ---------BED ENDPOINTS--------
+// ----------------------------------
+export const BEDS = "/bed";

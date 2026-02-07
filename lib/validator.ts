@@ -48,7 +48,7 @@ export async function validateRequest<B, Q, P>({
     const { searchParams } = new URL(req.url);
     const rawQuery = Object.fromEntries(searchParams.entries());
     const parsedQuery = querySchema.safeParse(rawQuery);
-    console.log(rawQuery);
+
     if (!parsedQuery.success) {
       return apiResponse({
         status: RESPONSE_STATUS.BAD_REQUEST,

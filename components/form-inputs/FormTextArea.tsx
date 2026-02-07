@@ -34,13 +34,13 @@ export function FormTextarea<T extends FieldValues>({
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem className="gap-1 relative pb-6 text-primary">
           {label && (
-            <FormLabel className="text-tiny font-semibold font-quicksand">
+            <FormLabel className="text-tiny gap-0 font-semibold font-quicksand">
               {label}
               {required && (
-                <span className="text-[#FFA600] !text-xl ms-1">*</span>
+                <span className="text-[#FFA600] text-tiny! ms-1">*</span>
               )}
             </FormLabel>
           )}
@@ -51,10 +51,11 @@ export function FormTextarea<T extends FieldValues>({
               placeholder={placeholder}
               rows={rows}
               maxLength={maxChar}
-              className={clsx(
-                "rounded-sm bg-primary focus-visible:border-accent-blue",
-                className,
-              )}
+              className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
+                fieldState.invalid
+                  ? "border-destructive focus-visible:border-destructive"
+                  : ""
+              } ${className}`}
               {...field}
             />
           </FormControl>

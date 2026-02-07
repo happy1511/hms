@@ -33,8 +33,8 @@ const CustomFilters = <T extends FieldValues>({
     switch (type) {
       case "text":
         return (
-          <div className="grid grid-cols-5 border border-secondary rounded-[4px] overflow-hidden">
-            <Label className="text-tiny col-span-2 border-r border-pink-200 px-2 bg-pink-50">
+          <div className="grid grid-cols-5 border border-black/15 rounded-lg overflow-hidden">
+            <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
             <div className="col-span-3">
@@ -54,8 +54,8 @@ const CustomFilters = <T extends FieldValues>({
 
       case "select":
         return (
-          <div className="grid grid-cols-5 border border-secondary rounded-[4px] overflow-hidden">
-            <Label className="text-tiny col-span-2 border-r border-pink-200 px-2 bg-pink-50">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+            <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
             <div className="col-span-3">
@@ -76,8 +76,8 @@ const CustomFilters = <T extends FieldValues>({
 
       case "date":
         return (
-          <div className="grid grid-cols-5 border border-secondary rounded-[4px] overflow-hidden">
-            <Label className="text-tiny col-span-2 border-r border-pink-200 px-2 bg-pink-50">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+            <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
             <div className="col-span-3">
@@ -104,8 +104,8 @@ const CustomFilters = <T extends FieldValues>({
 
       case "dateRange":
         return (
-          <div className="grid grid-cols-5 border border-secondary rounded-[4px] overflow-hidden">
-            <Label className="text-tiny col-span-2 border-r border-pink-200 px-2 bg-pink-50">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+            <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
             <div className="col-span-3">

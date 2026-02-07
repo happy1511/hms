@@ -1,8 +1,10 @@
 import { LOGIN, PROFILE } from "@/lib/apiDefinations";
 import { ApiResponse, User } from "@/lib/type";
+import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import { AuthValidatorType } from "@/validators/api/auth/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -11,21 +13,28 @@ const profile = createRequest<ApiResponse<User>>(PROFILE, "POST");
 
 export const useLogin = () => {
   const router = useRouter();
-  return useMutation<ApiResponse<null>, Error, AuthValidatorType>({
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    AuthValidatorType
+  >({
     mutationKey: ["login"],
     mutationFn: (data) => login({ body: data }),
     onSuccess: () => {
       router.push("/");
       toast.success("Logged In Successfully");
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
 export const useProfile = (enabled: boolean = true) => {
-  return useQuery<ApiResponse<User>, Error, ApiResponse<User>, [string]>({
+  return useQuery<
+    ApiResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    ApiResponse<User>,
+    [string]
+  >({
     queryKey: ["profile"],
     queryFn: () => profile({}),
     enabled: enabled,

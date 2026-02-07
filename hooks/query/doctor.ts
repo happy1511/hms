@@ -2,15 +2,17 @@ import { DOCTORS } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   Doctor,
-  DoctorFilterValues,
+  FilterValues,
   PaginatedResponse,
 } from "@/lib/type";
+import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
   DoctorValidatorType,
   PartialDoctorValidatorType,
 } from "@/validators/api/masters/doctor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -36,15 +38,15 @@ const getDoctors = createRequest<
 >(DOCTORS, "GET");
 
 export const useDoctorsList = (
-  filters: DoctorFilterValues,
+  filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
     PaginatedResponse<Doctor>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     PaginatedResponse<Doctor>,
-    [string, DoctorFilterValues, number, number]
+    [string, FilterValues, number, number]
   >({
     queryKey: ["doctors", filters, page, limit],
     queryFn: () =>
@@ -64,7 +66,7 @@ export const useDoctorsList = (
 export const useGetDoctor = (id?: string) => {
   return useQuery<
     ApiResponse<Doctor>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     Doctor,
     [string, string | undefined]
   >({
@@ -83,7 +85,11 @@ export const useGetDoctor = (id?: string) => {
 export const useCreateDoctor = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  return useMutation<ApiResponse<Doctor>, Error, DoctorValidatorType>({
+  return useMutation<
+    ApiResponse<Doctor>,
+    AxiosError<ApiResponse<null>>,
+    DoctorValidatorType
+  >({
     mutationKey: ["create-doctor"],
     mutationFn: (data) => createDoctor({ body: data }),
     onSuccess: () => {
@@ -93,9 +99,7 @@ export const useCreateDoctor = () => {
       });
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
@@ -103,7 +107,11 @@ export const useUpdateDoctor = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  return useMutation<ApiResponse<Doctor>, Error, PartialDoctorValidatorType>({
+  return useMutation<
+    ApiResponse<Doctor>,
+    AxiosError<ApiResponse<null>>,
+    PartialDoctorValidatorType
+  >({
     mutationKey: ["update-doctor"],
     mutationFn: (data) =>
       updateDoctor({ body: data, urlHelpers: { id: data.userId.toString() } }),
@@ -114,16 +122,18 @@ export const useUpdateDoctor = () => {
       });
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
 export const useDeleteDoctor = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<null>, Error, PartialDoctorValidatorType>({
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialDoctorValidatorType
+  >({
     mutationKey: ["delete-doctor"],
     mutationFn: (data) =>
       deleteDoctor({ urlHelpers: { id: data.userId.toString() } }),
@@ -133,8 +143,6 @@ export const useDeleteDoctor = () => {
         queryKey: ["doctors"],
       });
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };

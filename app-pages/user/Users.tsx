@@ -5,7 +5,7 @@ import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
-import PermissionsBadge from "@/components/common/PermissionsBadge";
+import PermissionsBadge from "@/components/user/PermissionsBadge";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,8 @@ import { useDeleteUser, useUsersList } from "@/hooks/query/user";
 import {
   ColumnDefWithClass,
   FilterConfig,
+  FilterValues,
   User,
-  UserFilterValues,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
@@ -38,7 +38,7 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   );
 };
 
-const neededFilters: FilterConfig<UserFilterValues>[] = [
+const neededFilters: FilterConfig<FilterValues>[] = [
   {
     label: "Name",
     valueKey: "name",
@@ -122,10 +122,14 @@ const Actions = ({
 const Users = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<UserFilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading } = useUsersList(filters, page, limit);
+  const { data, isLoading, isError, error } = useUsersList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <></>;
@@ -253,7 +257,7 @@ const Users = () => {
     <CustomLayout title="Users" buttons={<Buttons canCreate={canCreate} />}>
       {canView && (
         <>
-          <CustomFilters<UserFilterValues>
+          <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
           />
@@ -267,6 +271,8 @@ const Users = () => {
             isLoading={isLoading}
             handleChangeLimit={setLimit}
             limit={limit}
+            isError={isError}
+            error={error}
           />
         </>
       )}

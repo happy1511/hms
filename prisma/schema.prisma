@@ -124,6 +124,9 @@ enum ResultType {
 enum ModuleType {
   USER
   DOCTOR_MASTER
+  FLOOR_MASTER
+  WARD_MASTER
+  BED_MASTER
 }
 
 enum ActionType {
@@ -330,30 +333,36 @@ model Patient {
 
 // -------------------- Facility Management --------------------
 model Floor {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
   description String?
   departments Ward[]
-  status      Status  @default(active)
+  status      Status   @default(active)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Ward {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   floorId     Int
-  floor       Floor   @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  name        String  @unique
+  floor       Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  name        String   @unique
   description String?
-  status      Status  @default(active)
+  status      Status   @default(active)
   beds        Bed[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Bed {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   wardId    Int
-  ward      Ward    @relation(fields: [wardId], references: [id], onDelete: Cascade)
-  bedNumber String  @unique
-  status    Status  @default(active)
-  occupied  Boolean @default(false)
+  ward      Ward     @relation(fields: [wardId], references: [id], onDelete: Cascade)
+  bedNumber String
+  status    Status   @default(active)
+  occupied  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -------------------- Appointment Management --------------------

@@ -1,16 +1,13 @@
 import { USERS } from "@/lib/apiDefinations";
-import {
-  ApiResponse,
-  PaginatedResponse,
-  User,
-  UserFilterValues,
-} from "@/lib/type";
+import { ApiResponse, PaginatedResponse, User, FilterValues } from "@/lib/type";
+import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
   PartialUserValidatorType,
   UserValidatorType,
 } from "@/validators/api/masters/user";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -34,15 +31,15 @@ const getUsers = createRequest<
 >(USERS, "GET");
 
 export const useUsersList = (
-  filters: UserFilterValues,
+  filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
     PaginatedResponse<User>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     PaginatedResponse<User>,
-    [string, UserFilterValues, number, number]
+    [string, FilterValues, number, number]
   >({
     queryKey: ["users", filters, page, limit],
     queryFn: () =>
@@ -59,25 +56,32 @@ export const useUsersList = (
 };
 
 export const useGetUser = (id?: string) => {
-  return useQuery<ApiResponse<User>, Error, User, [string, string | undefined]>(
-    {
-      queryKey: ["get-users", id],
-      queryFn: () =>
-        getUser({
-          urlHelpers: {
-            id: id as string,
-          },
-        }),
-      select: (data) => data.data,
-      enabled: !!id,
-    },
-  );
+  return useQuery<
+    ApiResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    User,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-users", id],
+    queryFn: () =>
+      getUser({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
 };
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  return useMutation<ApiResponse<User>, Error, UserValidatorType>({
+  return useMutation<
+    ApiResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    UserValidatorType
+  >({
     mutationKey: ["create-user"],
     mutationFn: (data) => createUser({ body: data }),
     onSuccess: () => {
@@ -87,16 +91,18 @@ export const useCreateUser = () => {
       });
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
-  return useMutation<ApiResponse<User>, Error, PartialUserValidatorType>({
+  return useMutation<
+    ApiResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    PartialUserValidatorType
+  >({
     mutationKey: ["update-user"],
     mutationFn: (data) =>
       updateUser({ body: data, urlHelpers: { id: data.id.toString() } }),
@@ -107,16 +113,18 @@ export const useUpdateUser = () => {
       });
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<null>, Error, PartialUserValidatorType>({
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialUserValidatorType
+  >({
     mutationKey: ["delete-user"],
     mutationFn: (data) =>
       deleteUser({ urlHelpers: { id: data.id.toString() } }),
@@ -126,8 +134,6 @@ export const useDeleteUser = () => {
         queryKey: ["users"],
       });
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };

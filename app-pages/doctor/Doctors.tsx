@@ -19,8 +19,8 @@ import { useDeleteDoctor, useDoctorsList } from "@/hooks/query/doctor";
 import {
   ColumnDefWithClass,
   Doctor,
-  DoctorFilterValues,
   FilterConfig,
+  FilterValues,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
@@ -42,7 +42,7 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   );
 };
 
-const neededFilters: FilterConfig<DoctorFilterValues>[] = [
+const neededFilters: FilterConfig<FilterValues>[] = [
   {
     label: "Name",
     valueKey: "name",
@@ -137,10 +137,14 @@ const Actions = ({
 const Doctors = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<DoctorFilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading } = useDoctorsList(filters, page, limit);
+  const { data, isLoading, isError, error } = useDoctorsList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <></>;
@@ -275,7 +279,7 @@ const Doctors = () => {
     >
       {canView && (
         <>
-          <CustomFilters<DoctorFilterValues>
+          <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
           />
@@ -289,6 +293,8 @@ const Doctors = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            isError={isError}
+            error={error}
           />
         </>
       )}

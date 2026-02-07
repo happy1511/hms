@@ -46,7 +46,7 @@ export function FormInput<T extends FieldValues>({
             )}
           >
             {label && (
-              <FormLabel className="gap-0 text-tiny font-semibold font-quicksand text-tiny">
+              <FormLabel className="gap-0 font-semibold font-quicksand text-tiny">
                 {label}
                 {required && (
                   <span className="text-[#FFA600] text-tiny!">*</span>

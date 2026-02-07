@@ -9,6 +9,7 @@ import {
 } from "@/validators/api/auth/auth";
 import { cookies } from "next/headers";
 import { apiResponse } from "@/lib/apiResponse";
+import { Status } from "@/generated/prisma/enums";
 
 export const auth = async (req: Request) => {
   return validateRequest<AuthValidatorType, undefined, undefined>({
@@ -24,6 +25,13 @@ export const auth = async (req: Request) => {
         return apiResponse({
           status: RESPONSE_STATUS.UNAUTHORIZED,
           message: "Unauthorized",
+        });
+      }
+
+      if (user.status === Status["inactive"]) {
+        return apiResponse({
+          status: RESPONSE_STATUS.FORBIDDEN,
+          message: "Your Account has been marked as inactive",
         });
       }
 

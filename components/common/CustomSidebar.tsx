@@ -18,6 +18,8 @@ import {
   User,
   Bolt,
   LucideProps,
+  Layers,
+  DoorClosed,
 } from "lucide-react";
 import {
   Sidebar,
@@ -85,6 +87,24 @@ const masters: SidebarItem[] = [
     icon: User,
     module: ModuleType.USER,
   },
+  {
+    title: "FLOORS",
+    url: "/floors",
+    icon: Layers,
+    module: ModuleType.FLOOR_MASTER,
+  },
+  {
+    title: "WARDS",
+    url: "/wards",
+    icon: DoorClosed,
+    module: ModuleType.WARD_MASTER,
+  },
+  {
+    title: "BEDS",
+    url: "/beds",
+    icon: BedDouble,
+    module: ModuleType.BED_MASTER,
+  },
 ];
 
 export function CustomSidebar() {
@@ -106,7 +126,7 @@ export function CustomSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-primary/10 text-tiny">
+    <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-sidebar text-tiny">
       <SidebarHeader className="p-0">
         {/* Dashboard Item */}
         <Link href="/">
@@ -142,7 +162,7 @@ export function CustomSidebar() {
                 />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
-            <CollapsibleContent className="bg-white">
+            <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {opdItems.map((item) => (
@@ -150,7 +170,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3 font-medium"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -182,7 +202,7 @@ export function CustomSidebar() {
                 />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
-            <CollapsibleContent className="bg-white">
+            <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {ipdItems.map((item) => (
@@ -190,7 +210,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3 font-medium"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -222,7 +242,7 @@ export function CustomSidebar() {
                 />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
-            <CollapsibleContent className="bg-white">
+            <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {financeItems.map((item) => (
@@ -230,7 +250,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3 font-medium"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -262,7 +282,7 @@ export function CustomSidebar() {
                 />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
-            <CollapsibleContent className="bg-white">
+            <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {visibleMasters.map((item) => (
@@ -270,7 +290,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3"
+                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3 font-medium"
                       >
                         <Link href={item.url}>
                           <item.icon />

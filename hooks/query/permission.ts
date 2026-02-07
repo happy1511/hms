@@ -3,16 +3,17 @@ import { ApiResponse, User } from "@/lib/type";
 import { createRequest } from "@/services/apiRequest";
 import { UserValidatorType } from "@/validators/api/masters/user";
 import { useQuery } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 
 const getPermissions = createRequest<ApiResponse<User["permissions"]>>(
   PERMISSION,
-  "GET"
+  "GET",
 );
 
 export const usePermissionsList = (enabled?: boolean) => {
   return useQuery<
     ApiResponse<User["permissions"]>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     UserValidatorType["permissions"],
     [string]
   >({

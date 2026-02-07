@@ -1,7 +1,9 @@
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { User } from "./type";
+import { ApiResponse, User } from "./type";
+import { AxiosError } from "axios";
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,4 +42,10 @@ export const hasActionPermission = (
     ) ?? {};
 
   return permissionMap[module]?.includes(action);
+};
+
+export const showError = (error: AxiosError<ApiResponse<null>>) => {
+  toast.error(
+    error.response?.data.message || error.message || "Something went wrong",
+  );
 };

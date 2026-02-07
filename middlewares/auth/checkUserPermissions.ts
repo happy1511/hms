@@ -1,4 +1,4 @@
-import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { decodeToken } from "@/services/jwt";
@@ -22,12 +22,31 @@ export const checkPermission = async (
   }
   const decodedToken = decodeToken<{ userId: string }>(accessToken);
 
-  if (!decodedToken) {
+  if (!decodedToken || !decodedToken.userId) {
     return apiResponse({
       status: RESPONSE_STATUS.UNAUTHORIZED,
       message: "Not Allowed to permit the action",
     });
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: Number(decodedToken.userId) },
+  });
+
+  if (!user) {
+    return apiResponse({
+      status: RESPONSE_STATUS.NOT_FOUND,
+      message: "Not Allowed to permit the action",
+    });
+  }
+
+  if (user.status === Status["inactive"]) {
+    return apiResponse({
+      status: RESPONSE_STATUS.FORBIDDEN,
+      message: "Your Account has been marked as inactive",
+    });
+  }
+
   const userPermission = await prisma.userPermission.findFirst({
     where: {
       userId: Number(decodedToken.userId),

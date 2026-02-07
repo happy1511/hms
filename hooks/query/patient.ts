@@ -2,16 +2,17 @@ import { PATIENT } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   PaginatedResponse,
-  PatientFilterValues,
+  FilterValues,
   PatientType,
-  UserFilterValues,
 } from "@/lib/type";
+import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
   PartialPatientValidatorType,
   PatientValidatorType,
 } from "@/validators/api/masters/patient";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -38,15 +39,15 @@ const getPatients = createRequest<
 >(PATIENT, "GET");
 
 export const usePatientsList = (
-  filters: PatientFilterValues,
+  filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
     PaginatedResponse<PatientType>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     PaginatedResponse<PatientType>,
-    [string, PatientFilterValues, number, number]
+    [string, FilterValues, number, number]
   >({
     queryKey: ["patients", filters, page, limit],
     queryFn: () =>
@@ -65,7 +66,7 @@ export const usePatientsList = (
 export const useGetPatient = (id?: string) => {
   return useQuery<
     ApiResponse<PatientType>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     PatientType,
     [string, string | undefined]
   >({
@@ -83,16 +84,18 @@ export const useGetPatient = (id?: string) => {
 
 export const useCreatePatient = () => {
   const router = useRouter();
-  return useMutation<ApiResponse<PatientType>, Error, PatientValidatorType>({
+  return useMutation<
+    ApiResponse<PatientType>,
+    AxiosError<ApiResponse<null>>,
+    PatientValidatorType
+  >({
     mutationKey: ["create-patient"],
     mutationFn: (data) => createPatient({ body: data }),
     onSuccess: () => {
       toast.success("Patient Created Successfully");
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
@@ -100,7 +103,7 @@ export const useUpdatePatient = () => {
   const router = useRouter();
   return useMutation<
     ApiResponse<PatientType>,
-    Error,
+    AxiosError<ApiResponse<null>>,
     PartialPatientValidatorType
   >({
     mutationKey: ["update-patient"],
@@ -113,26 +116,22 @@ export const useUpdatePatient = () => {
       toast.success("Patient Updated Successfully");
       router.back();
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };
 
-export const useDeletePatient = (
-  filters: UserFilterValues,
-  page: number,
-  limit: number,
-) => {
-  return useMutation<ApiResponse<null>, Error, PartialPatientValidatorType>({
+export const useDeletePatient = () => {
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialPatientValidatorType
+  >({
     mutationKey: ["delete-patient"],
     mutationFn: (data) =>
       deletePatient({ urlHelpers: { id: data.patientId.toString() } }),
     onSuccess: () => {
       toast.success("Patient Deleted Successfully");
     },
-    onError: (data) => {
-      toast.error(data.message || "Something went wrong");
-    },
+    onError: showError,
   });
 };

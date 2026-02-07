@@ -43,7 +43,7 @@ export function FormSelect<T extends FieldValues>({
           )}
         >
           {label && (
-            <FormLabel className="text-tiny font-semibold font-quicksand">
+            <FormLabel className="text-tiny gap-0 font-semibold font-quicksand">
               {label}
               {required && (
                 <span className="text-[#FFA600] text-tiny ms-1">*</span>
@@ -66,7 +66,7 @@ export function FormSelect<T extends FieldValues>({
                 {options.map((option) => (
                   <SelectItem
                     key={option.value}
-                    value={option.value}
+                    value={option.value.toString()}
                     className="text-tiny py-1 capitalize"
                   >
                     {option.label}

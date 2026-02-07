@@ -8,7 +8,7 @@ import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { Patient } from "@/generated/prisma/client";
 import { usePatientsList } from "@/hooks/query/patient";
-import { ColumnDefWithClass, PatientFilterValues } from "@/lib/type";
+import { ColumnDefWithClass, FilterValues } from "@/lib/type";
 import {
   findPatientValidator,
   FindPatientValidatorType,
@@ -53,11 +53,15 @@ const columns: ColumnDefWithClass<Patient>[] = [
 ];
 
 const PatientSearch = () => {
-  const [filters, setFilters] = useState<PatientFilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({});
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = usePatientsList(filters, page, limit);
+  const { data, isLoading, isError, error } = usePatientsList(
+    filters,
+    page,
+    limit,
+  );
   const router = useRouter();
 
   const form = useForm<FindPatientValidatorType>({
@@ -113,6 +117,8 @@ const PatientSearch = () => {
             isLoading={isLoading}
             limit={limit}
             handleChangeLimit={setLimit}
+            isError={isError}
+            error={error}
           />
         </div>
       </div>
