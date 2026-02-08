@@ -11,7 +11,13 @@ import {
   DoctorValidatorType,
   PartialDoctorValidatorType,
 } from "@/validators/api/masters/doctor";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -144,5 +150,37 @@ export const useDeleteDoctor = () => {
       });
     },
     onError: showError,
+  });
+};
+
+export const useInfiniteDoctorList = (filters: FilterValues, limit: number) => {
+  return useInfiniteQuery<
+    PaginatedResponse<Doctor>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<Doctor>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["doctors", filters, limit],
+
+    queryFn: ({ pageParam = 1 }) =>
+      getDoctors({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.doctorType && { doctorType: filters.doctorType }),
+        },
+      }),
+
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };

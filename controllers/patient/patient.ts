@@ -5,6 +5,7 @@ import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
+  identificationsValidator,
   partialPatientValidator,
   patientValidator,
 } from "@/validators/api/masters/patient";
@@ -100,6 +101,133 @@ export const getAPI = async (req: Request) => {
         message: "Patient Fetched Successfully",
         data: items,
         total,
+      });
+    },
+  });
+};
+
+export const getDocumentsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const search = query.search ?? "";
+      const contactNo = query.contactNo ?? "";
+      const uhid = query.uhid ?? "";
+      const documentType = query.documentType ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.PatientIdentificationWhereInput[] = [];
+
+      if (search) {
+        and.push({
+          patient: {
+            firstName: { contains: search },
+            lastName: { contains: search },
+            middleName: { contains: search },
+          },
+        });
+      }
+
+      if (uhid) {
+        and.push({ patient: { uhid: { equals: uhid } } });
+      }
+
+      if (contactNo) {
+        and.push({
+          patient: {
+            contacts: {
+              some: {
+                OR: [
+                  {
+                    type: ContactType.MOBILE,
+                    value: { equals: contactNo },
+                  },
+                  {
+                    type: ContactType.PHONE,
+                    value: { equals: contactNo },
+                  },
+                ],
+              },
+            },
+          },
+        });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      if (documentType) {
+        and.push({
+          type: { equals: documentType },
+        });
+      }
+
+      const where: Prisma.DoctorWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.patientIdentification.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          select: {
+            id: true,
+            type: true,
+            number: true,
+            patient: {
+              select: {
+                firstName: true,
+                lastName: true,
+                middleName: true,
+                uhid: true,
+                id: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.patientIdentification.count({ where }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Documents Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const createDocumentAPI = async (req: Request) => {
+  return validateRequest({
+    bodySchema: identificationsValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+
+      const patient = await prisma.patientIdentification.create({
+        data: {
+          ...data,
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.CREATED,
+        message: "Document Created Successfully",
+        data: patient,
       });
     },
   });

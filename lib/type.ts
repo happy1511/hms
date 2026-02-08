@@ -26,6 +26,7 @@ import {
   PatientIdentification,
   PatientNotes,
   PatientRelations,
+  Prisma,
   Ward,
 } from "@/generated/prisma/client";
 
@@ -158,6 +159,24 @@ export interface FormDatePickerProps<T extends FieldValues> {
   >;
   hideError?: boolean;
 }
+
+export interface FormDateTimePickerProps<T extends FieldValues> {
+  name: FieldPath<T>;
+  control: Control<T>;
+  label?: string;
+  className?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
+  formItemClassName?: string;
+  rules?: Omit<
+    RegisterOptions<T, Path<T>>,
+    "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
+  >;
+  hideError?: boolean;
+}
 export interface FormDateRangePickerProps<T extends FieldValues> {
   name: Path<T>;
   control: Control<T>;
@@ -200,6 +219,7 @@ export interface FilterValues {
   doctorType?: DoctorType;
   wardId?: string;
   floorId?: string;
+  documentType?: string;
 }
 
 // ----------------------------------
@@ -317,3 +337,20 @@ export interface WardType extends Ward {
 export interface BedType extends Bed {
   ward?: WardType;
 }
+
+export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
+  include: {
+    patient: true;
+    doctor: {
+      include: {
+        user: true;
+      };
+    };
+  };
+}>;
+
+export type PatientDocumentType = Prisma.PatientIdentificationGetPayload<{
+  include: {
+    patient: true;
+  };
+}>;

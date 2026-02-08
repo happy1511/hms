@@ -84,11 +84,11 @@ const NotesInfoForm = ({
       cellClassName: "min-w-50",
     },
     {
-      accessorKey: "name",
+      accessorKey: "note",
       header: ({ column }) => {
         return (
           <SortableHeader<PatientNotesValidatorType>
-            label="Name"
+            label="Note"
             column={column}
           />
         );
@@ -97,20 +97,7 @@ const NotesInfoForm = ({
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
-    {
-      accessorKey: "contact",
-      header: ({ column }) => {
-        return (
-          <SortableHeader<PatientNotesValidatorType>
-            label="Contact"
-            column={column}
-          />
-        );
-      },
 
-      headerClassName: "min-w-50",
-      cellClassName: "min-w-50",
-    },
     {
       id: "actions",
       header: () => <p>Action</p>,
@@ -154,7 +141,7 @@ const NotesInfoForm = ({
       <div className="grid grid-cols-2 space-x-2">
         <FormField
           control={notesForm.control}
-          label="Relation"
+          label="Type"
           name="type"
           type="text"
         />
@@ -178,6 +165,7 @@ const NotesInfoForm = ({
         total={values.length}
         enableSorting
         handleChangePage={() => {}}
+        handleChangeLimit={() => {}}
       />
     </div>
   );

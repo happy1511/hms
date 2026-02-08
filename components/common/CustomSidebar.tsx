@@ -42,6 +42,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
 import { ModuleType } from "@/generated/prisma/enums";
+import PatientSearchModal from "../patient/PatientSearchModal";
 
 interface SidebarItem {
   title: string;
@@ -56,9 +57,8 @@ const opdItems = [
   { title: "PATIENTS (OPD/IPD)", url: "/opd/patients", icon: Users },
   { title: "WALK-IN QUEUE", url: "/opd/walk-in", icon: UserPlus },
   { title: "APPOINTMENTS", url: "/opd/appointments", icon: Calendar },
-  { title: "PATIENT PROFILE", url: "/opd/profile", icon: UserCircle },
   { title: "SCANNED REPORTS", url: "/opd/reports", icon: FileText },
-  { title: "PATIENT DOCUMENTS", url: "/opd/documents", icon: FolderOpen },
+  // { title: "PATIENT DOCUMENTS", url: "/patient/documents", icon: FolderOpen },
 ];
 
 const ipdItems = [
@@ -126,13 +126,13 @@ export function CustomSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-sidebar text-tiny">
+    <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-sidebar text-tiny!">
       <SidebarHeader className="p-0">
         {/* Dashboard Item */}
         <Link href="/">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-1.5 h-auto hover:text-white font-semibold transition-colors",
+              "flex items-center gap-3 px-4 py-1.5 h-auto hover:text-white font-semibold data-[active=true]:text-white hover:text-white transition-colors",
               isActive("/")
                 ? "bg-primary text-primary-foreground"
                 : "text-sidebar-foreground hover:bg-sidebar-accent",
@@ -149,7 +149,7 @@ export function CustomSidebar() {
         <Collapsible open={opdOpen} onOpenChange={setOpdOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold text-tiny ">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny! ">
                 <div className="flex items-center gap-3">
                   <Users className="size-3" />
                   <span>OPD</span>
@@ -170,7 +170,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3 font-medium"
+                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -179,6 +179,29 @@ export function CustomSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  <PatientSearchModal
+                    trigger={
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          asChild
+                          className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black"
+                        >
+                          <div>
+                            <UserCircle />
+                            <span>PATIENT PROFILE</span>
+                          </div>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    }
+                    actions={(row) => (
+                      <Link
+                        className="text-secondary hover:underline text-tiny"
+                        href={`/patient/${row.id}`}
+                      >
+                        Select
+                      </Link>
+                    )}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -189,7 +212,7 @@ export function CustomSidebar() {
         <Collapsible open={ipdOpen} onOpenChange={setIpdOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold text-tiny">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <BedDouble className="size-3" />
                   <span>IPD</span>
@@ -210,7 +233,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny [&>svg]:size-3 font-medium"
+                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -229,7 +252,7 @@ export function CustomSidebar() {
         <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold text-tiny">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <DollarSign className="size-3" />
                   <span>FINANCE</span>
@@ -250,7 +273,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3 font-medium"
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
                       >
                         <Link href={item.url}>
                           <item.icon />
@@ -269,7 +292,7 @@ export function CustomSidebar() {
         <Collapsible open={masterOpen} onOpenChange={setMasterOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold text-tiny">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <Bolt className="size-3" />
                   <span>MASTERS</span>
@@ -290,7 +313,7 @@ export function CustomSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny   [&>svg]:size-3 font-medium"
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
                       >
                         <Link href={item.url}>
                           <item.icon />

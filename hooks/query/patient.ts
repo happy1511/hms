@@ -1,9 +1,10 @@
-import { PATIENT } from "@/lib/apiDefinations";
+import { PATIENT, PATIENT_DOCUMENTS } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   PaginatedResponse,
   FilterValues,
   PatientType,
+  PatientDocumentType,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
@@ -32,6 +33,10 @@ const getPatient = createRequest<
   undefined,
   { id: string }
 >((p) => `${PATIENT}/${p.id}`, "GET");
+const getPatientDocuments = createRequest<
+  PaginatedResponse<PatientDocumentType>,
+  { limit: number; name?: string; createdAt?: string; status?: string }
+>(PATIENT_DOCUMENTS, "GET");
 
 const getPatients = createRequest<
   PaginatedResponse<PatientType>,
@@ -52,6 +57,31 @@ export const usePatientsList = (
     queryKey: ["patients", filters, page, limit],
     queryFn: () =>
       getPatients({
+        pageParam: page,
+        params: {
+          limit,
+          ...(filters.uhid && { uhid: filters.uhid }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.contactNo && { contactNo: filters.contactNo }),
+        },
+      }),
+  });
+};
+
+export const usePatientDocumentsList = (
+  filters: FilterValues,
+  page: number,
+  limit: number,
+) => {
+  return useQuery<
+    PaginatedResponse<PatientDocumentType>,
+    AxiosError<ApiResponse<null>>,
+    PaginatedResponse<PatientDocumentType>,
+    [string, FilterValues, number, number]
+  >({
+    queryKey: ["patient-documents", filters, page, limit],
+    queryFn: () =>
+      getPatientDocuments({
         pageParam: page,
         params: {
           limit,

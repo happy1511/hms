@@ -1,6 +1,6 @@
-import { Status } from "@/generated/prisma/enums";
+import { AppointmentStatus, Status } from "@/generated/prisma/enums";
 interface Props {
-  status: "success" | "failed" | Status;
+  status: "success" | "failed" | Status | AppointmentStatus;
 }
 
 const errorStatuses = [Status["inactive"], "failed"];

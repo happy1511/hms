@@ -2,6 +2,7 @@ import {
   BloodGroup,
   ContactType,
   Gender,
+  IdentityType,
   MaritalStatus,
   Status,
 } from "@/generated/prisma/enums";
@@ -30,7 +31,14 @@ const relations = z.object({
 });
 
 const identifications = z.object({
-  type: z.string().min(1, "Identification type is required"),
+  type: z.enum(IdentityType),
+  number: z.string().min(1, "Identification number is required"),
+  active: z.enum(Status),
+});
+
+const identificationsValidator = z.object({
+  patientId: z.coerce.number(),
+  type: z.enum(IdentityType),
   number: z.string().min(1, "Identification number is required"),
   active: z.enum(Status),
 });
@@ -52,7 +60,7 @@ const personalValidator = z.object({
   lastName: z.string().min(1, "Last Name is required"),
   middleName: z.string().nullable(),
   preferredName: z.string().min(1, "Preferred Name is required"),
-  dob: z.date().refine((date) => date <= new Date(), {
+  dob: z.coerce.date().refine((date) => date <= new Date(), {
     message: "Date must be in the past",
   }),
   identificationMark: z.string().nullable(),
@@ -118,7 +126,7 @@ const findPatientValidator = z
     }
   });
 
-type PatientValidatorType = z.infer<typeof patientValidator>;
+type PatientValidatorType = z.input<typeof patientValidator>;
 type PartialPatientValidatorType = z.infer<typeof partialPatientValidator>;
 type FindPatientValidatorType = z.infer<typeof findPatientValidator>;
 type PatientAddressValidatorType = z.infer<typeof patientAddress>;
@@ -128,6 +136,9 @@ type PatientEmergencyContactValidatorType = z.infer<typeof emergencyContact>;
 type PatientRelationsValidatorType = z.infer<typeof relations>;
 type PatientNotesValidatorType = z.infer<typeof notes>;
 type PatientPersonalValidatorType = z.infer<typeof personalValidator>;
+type PatientIdentificationsValidatorType = z.input<
+  typeof identificationsValidator
+>;
 
 export {
   patientValidator,
@@ -140,6 +151,7 @@ export {
   relations,
   notes,
   personalValidator,
+  identificationsValidator,
 };
 export type {
   FindPatientValidatorType,
@@ -152,4 +164,5 @@ export type {
   PatientRelationsValidatorType,
   PatientNotesValidatorType,
   PatientPersonalValidatorType,
+  PatientIdentificationsValidatorType,
 };

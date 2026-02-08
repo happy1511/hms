@@ -13,10 +13,9 @@ import {
 } from "react-hook-form";
 import { SortableHeader } from "../common/SortableHeader";
 import FormField from "../form-inputs/FormField";
-import { Status } from "@/generated/prisma/enums";
+import { IdentityType, Status } from "@/generated/prisma/enums";
 import CustomButton from "../common/CustomButton";
 import { CustomTable } from "../common/CustomTable";
-import { IdentificationType } from "@/lib/enums";
 import { useState } from "react";
 import { CustomAlert } from "../common/CustomAlert";
 import { Button } from "../ui/button";
@@ -44,6 +43,7 @@ const IdentificationInfoForm = ({
   });
 
   const handleSubmit = (values: PatientIdentificationValidatorType) => {
+    console.log("object", editingIndex);
     if (editingIndex === null) {
       append(values);
     } else {
@@ -136,6 +136,11 @@ const IdentificationInfoForm = ({
     },
   ];
 
+  console.log(
+    identificationForm.formState.errors,
+    identificationForm.getValues(),
+  );
+
   return (
     <div className="col-span-2 grid grid-cols-1 gap-2">
       <div className="grid grid-cols-2 space-x-2">
@@ -144,7 +149,7 @@ const IdentificationInfoForm = ({
           label="Type"
           name="type"
           type="select"
-          options={Object.values(IdentificationType).flatMap((a) => ({
+          options={Object.values(IdentityType).flatMap((a) => ({
             label: a,
             value: a,
           }))}
@@ -177,6 +182,7 @@ const IdentificationInfoForm = ({
         total={values.length}
         enableSorting
         handleChangePage={() => {}}
+        handleChangeLimit={() => {}}
       />
       <div className="flex justify-start">
         <CustomButton type="button" onClick={goNext}>

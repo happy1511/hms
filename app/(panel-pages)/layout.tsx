@@ -17,7 +17,7 @@ export default async function RootLayout({
       <div className="relative h-[calc(100dvh-48px)]">
         <SidebarProvider className="h-[calc(100dvh-48px)] flex min-h-auto">
           <CustomSidebar />
-          <div className="h-[calc(100dvh-48px)] overflow-auto grow p-3">
+          <div className="h-[calc(100dvh-48px)] overflow-auto grow p-3 bg-linear-to-b from-background to-white">
             {children}
           </div>
         </SidebarProvider>
