@@ -11,6 +11,7 @@ import {
   useGetFloor,
   useUpdateFloor,
 } from "@/hooks/query/floor";
+import { FloorType } from "@/lib/type";
 import {
   floorValidator,
   FloorValidatorType,
@@ -20,11 +21,10 @@ import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-const getInitialValues = (data?: Floor): FloorValidatorType => ({
+const getInitialValues = (data?: FloorType): FloorValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? null,
   status: data?.status ?? Status["active"],
-  departments: ["s"],
 });
 
 const UpdateCreateForm = ({ data }: { data?: Floor }) => {

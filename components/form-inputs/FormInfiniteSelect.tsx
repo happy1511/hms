@@ -101,6 +101,7 @@ export function FormInfiniteSelect<T extends FieldValues>({
               <FormControl className="h-6 flex items-center">
                 <>
                   <Button
+                    type="button"
                     onClick={() => setOpen(true)}
                     className={clsx(
                       "rounded-sm h-6! bg-white border hover:bg-white focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",

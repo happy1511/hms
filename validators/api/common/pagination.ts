@@ -18,6 +18,7 @@ const paginationValidator = z.object({
   wardId: z.coerce.number().min(1).optional(),
   floorId: z.coerce.number().min(1).optional(),
   doctorId: z.coerce.number().min(1).optional(),
+  billingSectionId: z.coerce.number().min(1).optional(),
   documentType: z.enum(IdentityType).optional(),
 
   "createdAt[from]": z.coerce.date().optional(),

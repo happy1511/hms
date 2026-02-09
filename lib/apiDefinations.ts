@@ -44,3 +44,13 @@ export const BEDS = "/bed";
 // ---------APPOINTMENT ENDPOINTS--------
 // ----------------------------------
 export const APPOINTMENTS = "/appointment";
+
+// ----------------------------------
+// ---------BILLING SECTION ENDPOINTS--------
+// ----------------------------------
+export const BILLING_SECTIONS = "/billing-section";
+
+// ----------------------------------
+// ---------SERVICES ENDPOINTS--------
+// ----------------------------------
+export const SERVICES = "/service";

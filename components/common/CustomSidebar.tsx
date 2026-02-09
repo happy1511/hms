@@ -107,11 +107,27 @@ const masters: SidebarItem[] = [
   },
 ];
 
+const billingMasters: SidebarItem[] = [
+  {
+    title: "BILLING SECTIONS",
+    url: "/billing-sections",
+    icon: Bolt,
+    module: ModuleType.BILLING_SECTION_MASTER,
+  },
+  {
+    title: "SERVICES",
+    url: "/services",
+    icon: Bolt,
+    module: ModuleType.SERVICE_MASTER,
+  },
+];
+
 export function CustomSidebar() {
   const [opdOpen, setOpdOpen] = useState(true);
   const [ipdOpen, setIpdOpen] = useState(true);
   const [financeOpen, setFinanceOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
+  const [billingMasterOpen, setBillingMasterOpen] = useState(false);
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
@@ -122,6 +138,9 @@ export function CustomSidebar() {
   }
 
   const visibleMasters = masters.filter(
+    (item) => hasModulePermission(data.data, item.module)?.length,
+  );
+  const visibleBillingMasters = billingMasters.filter(
     (item) => hasModulePermission(data.data, item.module)?.length,
   );
 
@@ -269,6 +288,49 @@ export function CustomSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {financeItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        {/* Master Section */}
+        <Collapsible
+          open={billingMasterOpen}
+          onOpenChange={setBillingMasterOpen}
+        >
+          <SidebarGroup className="p-0">
+            <CollapsibleTrigger className="w-full bg-transparent">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                <div className="flex items-center gap-3">
+                  <Bolt className="size-3" />
+                  <span>BILLING</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform duration-200",
+                    billingMasterOpen ? "rotate-180" : "",
+                  )}
+                />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-background">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {visibleBillingMasters.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

@@ -19,6 +19,7 @@ import { FormDatePicker } from "./FormDatePicker";
 import { FormDateRangePicker } from "./FormDateRange";
 import { FormInfiniteSelect } from "./FormInfiniteSelect";
 import { FormDateTime } from "./FormDateTime";
+import { FormMultiSelect } from "./FormMultiSelect";
 
 export type Props<T extends FieldValues> =
   | ({ type: "text" | "number" | "email" | "time" } & FormInputProps<T>)
@@ -30,7 +31,8 @@ export type Props<T extends FieldValues> =
   | ({ type: "date" } & FormDatePickerProps<T>)
   | ({ type: "dateTime" } & FormDateTimePickerProps<T>)
   | ({ type: "dateRange" } & FormDateRangePickerProps<T>)
-  | ({ type: "infiniteSelect" } & FormInfiniteSelectProps<T>);
+  | ({ type: "infiniteSelect" } & FormInfiniteSelectProps<T>)
+  | ({ type: "multiSelect" } & FormSelectProps<T>);
 
 const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
   switch (type) {
@@ -46,6 +48,9 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
 
     case "select":
       return <FormSelect {...(props as FormSelectProps<T>)} />;
+
+    case "multiSelect":
+      return <FormMultiSelect {...(props as FormSelectProps<T>)} />;
 
     case "infiniteSelect":
       return <FormInfiniteSelect {...(props as FormInfiniteSelectProps<T>)} />;

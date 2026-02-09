@@ -67,6 +67,21 @@ export interface FormSelectProps<T extends FieldValues> {
   hideError?: boolean;
 }
 
+export interface FormMultiSelectProps<T extends FieldValues> {
+  name: FieldPath<T>;
+  control: Control<T>;
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+  options: SelectOption[];
+  rules?: Omit<
+    RegisterOptions<T, Path<T>>,
+    "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
+  >;
+  hideError?: boolean;
+}
+
 export interface InfiniteSelectBaseProps {
   options: SelectOption[];
   fetchNextPage: () => void;
@@ -352,5 +367,35 @@ export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
 export type PatientDocumentType = Prisma.PatientIdentificationGetPayload<{
   include: {
     patient: true;
+  };
+}>;
+
+export type BillingSectionType = Prisma.BillingSectionGetPayload<{
+  include: {
+    services: {
+      include: {
+        service: true;
+      };
+    };
+  };
+}>;
+
+export type ServiceDataType = Prisma.ServiceGetPayload<{
+  include: {
+    labTests: {
+      include: {
+        labTest: true;
+      };
+    };
+    radiologyTests: {
+      include: {
+        radiologyTest: true;
+      };
+    };
+    billingSections: {
+      include: {
+        billingSection: true;
+      };
+    };
   };
 }>;

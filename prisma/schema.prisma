@@ -162,6 +162,8 @@ enum ModuleType {
   BED_MASTER
   APPOINTMENT
   PATIENT_MASTER
+  BILLING_SECTION_MASTER
+  SERVICE_MASTER
 }
 
 enum ActionType {
@@ -426,26 +428,6 @@ model Appointment {
   updatedAt       DateTime          @updatedAt
 }
 
-// -------------------- Service Management --------------------
-model BillingSection {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String?
-  status      Status  @default(active)
-}
-
-model Service {
-  id                Int                 @id @default(autoincrement())
-  name              String              @unique
-  description       String?
-  type              ServiceType
-  price             Float
-  discountAvailable Boolean             @default(false)
-  maxDiscount       Float?
-  applicableOn      ServiceApplicableOn
-  status            Status              @default(active)
-}
-
 // -------------------- Pathology Lab Test Management --------------------
 model LabTest {
   id          Int     @id @default(autoincrement())
@@ -455,6 +437,10 @@ model LabTest {
   status      Status  @default(active)
 
   parameters LabTestParameter[]
+  services   LabTestService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model LabTestParameter {
@@ -469,6 +455,9 @@ model LabTestParameter {
 
   referenceRanges ReferenceRange[]
   isOutsourced    Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ReferenceRange {
@@ -485,7 +474,9 @@ model ReferenceRange {
   criticalLow  Float?
   criticalHigh Float?
   notes        String?
-  createdAt    DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -------------------- Radiology Test Management --------------------
@@ -497,6 +488,10 @@ model RadiologyTest {
   status      Status  @default(active)
 
   templates RadiologyTemplate[]
+  services  RadiologyTestService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RadiologyTemplate {
@@ -505,4 +500,79 @@ model RadiologyTemplate {
   radiologyTest   RadiologyTest @relation(fields: [radiologyTestId], references: [id], onDelete: Cascade)
   content         String
   status          Status        @default(active)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -------------------- Service Management --------------------
+model BillingSection {
+  id          Int                     @id @default(autoincrement())
+  name        String                  @unique
+  description String?
+  status      Status                  @default(active)
+  services    BillingSectionService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Service {
+  id                Int                     @id @default(autoincrement())
+  name              String                  @unique
+  description       String?
+  type              ServiceType
+  price             Float
+  discountAvailable Boolean                 @default(false)
+  maxDiscount       Float?
+  applicableOn      ServiceApplicableOn
+  status            Status                  @default(active)
+  billingSections   BillingSectionService[]
+  labTests          LabTestService[]
+  radiologyTests    RadiologyTestService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BillingSectionService {
+  id               Int @id @default(autoincrement())
+  billingSectionId Int
+  serviceId        Int
+
+  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([billingSectionId, serviceId])
+}
+
+model LabTestService {
+  id        Int @id @default(autoincrement())
+  labTestId Int
+  serviceId Int
+
+  labTest LabTest @relation(fields: [labTestId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([labTestId, serviceId])
+}
+
+model RadiologyTestService {
+  id              Int @id @default(autoincrement())
+  radiologyTestId Int
+  serviceId       Int
+
+  radiologyTest RadiologyTest @relation(fields: [radiologyTestId], references: [id], onDelete: Cascade)
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([radiologyTestId, serviceId])
 }
