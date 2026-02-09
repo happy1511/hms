@@ -114,13 +114,16 @@ enum AppointmentType {
   VACCINATIONS
 }
 
+enum ReferenceRangeSex {
+  MALE
+  FEMALE
+  Both
+}
+
 enum ServiceType {
   LAB_TEST
-  IMAGING
-  PHARMACY
-  CONSULTATION
-  SURGERY
-  THERAPY
+  RADIOLOGY_TEST
+  OTHER
 }
 
 enum ServiceApplicableOn {
@@ -131,18 +134,22 @@ enum ServiceApplicableOn {
 }
 
 enum SampleType {
-  BLOOD
-  URINE
-  SALIVA
+  CSF
+  ASCITIC_FLUID
+  OTHER
+  PERICARDIAL_FLUID
+  PERITONEAL_FLUID
+  PLASMA
+  PLEURAL_FLUID
+  PUS
+  SEMEN
+  SERUM
+  SPUTUM
   STOOL
-  TISSUE
-}
-
-enum ContainerType {
-  VIAL
-  TUBE
-  BOTTLE
-  BAG
+  SYNOVIAL_FLUID
+  URINE
+  WHOLE_BLOOD
+  WHOLE_BLOOD_SERUM
 }
 
 enum ResultType {
@@ -164,6 +171,8 @@ enum ModuleType {
   PATIENT_MASTER
   BILLING_SECTION_MASTER
   SERVICE_MASTER
+  PATHOLOGY_TEST_MASTER
+  RADIOLOGY_TEST_MASTER
 }
 
 enum ActionType {
@@ -197,6 +206,50 @@ enum AppointmentStatus {
   CANCELLED
   NO_SHOW
   RESCHEDULED
+}
+
+enum PathologyTestSection {
+  BIOCHEMISTRY
+  CLINICAL_PATHOLOGY
+  COAGULATION
+  CYTOGENETICS
+  CYTOPATHOLOGY
+  HAEMATOLOGY
+  HISTOPATHOLOGY
+  HORMONES_IMMUNOLOGY
+  IMMUNOASSAY
+  IMMUNOFLUORESCENCE
+  MICROBIOLOGY
+  MOLECULAR_BIOLOGY
+  NEPHELOMETRY
+  SEROLOGY
+  TRANSFUSION_MEDICINE
+}
+
+enum ContainerType {
+  CLOT_ACTIVATOR
+  EDTA
+  EDTA_CLOT_ACTIVATOR
+  EDTA_CITRATE_ACTIVATOR
+  SODIUM_CITRATE_3_2
+  OTHER
+}
+
+enum RadiologySection {
+  COAGULATION
+  CT_SCAN
+  CYTOGENETICS
+  CYTOPATHOLOGY
+  HISTOPATHOLOGY
+  IMMUNOASSAY
+  IMMUNOFLUORESCENCE
+  MICROBIOLOGY
+  MOLECULAR_BIOLOGY
+  MRI
+  NEPHELOMETRY
+  SONOGRAPHY_ULTRASOUND
+  TRANSFUSION_MEDICINE
+  X_RAY
 }
 
 // --------------------
@@ -429,51 +482,76 @@ model Appointment {
 }
 
 // -------------------- Pathology Lab Test Management --------------------
-model LabTest {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String?
+model PathologyTest {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  alias       String
   price       Float
-  status      Status  @default(active)
+  status      Status               @default(active)
+  section     PathologyTestSection
+  container   ContainerType
+  sampleType  SampleType
+  footerNotes String?
 
-  parameters LabTestParameter[]
-  services   LabTestService[]
+  parameters PathologyTestParameter[]
+  services   PathologyTestService[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  testHeaders PathologyTestHeader[]
 }
 
-model LabTestParameter {
-  id             Int     @id @default(autoincrement())
-  labTestCode    Int     @unique
-  labTest        LabTest @relation(fields: [id], references: [id], onDelete: Cascade)
-  name           String
-  unit           String
-  status         Status  @default(active)
-  interpretation String?
-  methodology    String?
+model PathologyTestHeader {
+  id           Int      @id @default(autoincrement())
+  name         String
+  note         String?
+  displayOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  referenceRanges ReferenceRange[]
-  isOutsourced    Boolean          @default(false)
+  testId         Int
+  test           PathologyTest            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testParameters PathologyTestParameter[]
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model PathologyTestParameter {
+  id                Int                  @id @default(autoincrement())
+  headerId          Int?
+  header            PathologyTestHeader? @relation(fields: [headerId], references: [id], onDelete: Cascade)
+  name              String
+  displayOrder      Int
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  test              PathologyTest?       @relation(fields: [testId], references: [id])
+  testId            Int?
+  isDescriptiveOnly Boolean              @default(false)
+  referenceRanges   ReferenceRange[]
+  parameterOptions  ParameterOptions[]
+}
+
+model ParameterOptions {
+  id              Int                    @id @default(autoincrement())
+  testParameterId Int
+  testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
+  value           String
 }
 
 model ReferenceRange {
   id String @id @default(cuid())
 
-  labTestParameterId Int
-  labTestParameter   LabTestParameter @relation(fields: [labTestParameterId], references: [id], onDelete: Cascade)
+  testParameterId Int
+  testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
 
-  gender       Gender
-  ageFrom      Int?
-  ageTo        Int?
-  rangeMin     Float?
-  rangeMax     Float?
-  criticalLow  Float?
-  criticalHigh Float?
-  notes        String?
+  applicableGender ReferenceRangeSex
+  lowerDay         String?
+  upperDay         String?
+  lowerMonth       String?
+  upperMonth       String?
+  lowerYear        String?
+  upperYear        String?
+  lowerRange       String?
+  upperRange       String?
+  unit             String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -481,37 +559,42 @@ model ReferenceRange {
 
 // -------------------- Radiology Test Management --------------------
 model RadiologyTest {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String?
-  price       Float
-  status      Status  @default(active)
+  id      Int              @id @default(autoincrement())
+  name    String           @unique
+  alias   String
+  price   Float
+  status  Status           @default(active)
+  section RadiologySection
 
   templates RadiologyTemplate[]
-  services  RadiologyTestService[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  radiologyTestServices RadiologyTestService[]
 }
 
 model RadiologyTemplate {
-  id              Int           @id @default(autoincrement())
-  radiologyTestId Int
-  radiologyTest   RadiologyTest @relation(fields: [radiologyTestId], references: [id], onDelete: Cascade)
-  content         String
-  status          Status        @default(active)
+  id      Int              @id @default(autoincrement())
+  type    RadiologySection
+  name    String
+  content String
+  status  Status           @default(active)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  radiologyTest   RadiologyTest? @relation(fields: [radiologyTestId], references: [id])
+  radiologyTestId Int?
 }
 
 // -------------------- Service Management --------------------
 model BillingSection {
-  id          Int                     @id @default(autoincrement())
-  name        String                  @unique
-  description String?
-  status      Status                  @default(active)
-  services    BillingSectionService[]
+  id              Int                     @id @default(autoincrement())
+  name            String                  @unique
+  description     String?
+  status          Status                  @default(active)
+  services        BillingSectionService[]
+  isPathologyTest Boolean                 @default(false)
+  isRadiologyTest Boolean                 @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -525,10 +608,10 @@ model Service {
   price             Float
   discountAvailable Boolean                 @default(false)
   maxDiscount       Float?
-  applicableOn      ServiceApplicableOn
+  applicableOn      ServiceApplicableOn     @default(BOTH)
   status            Status                  @default(active)
   billingSections   BillingSectionService[]
-  labTests          LabTestService[]
+  pathologyTests    PathologyTestService[]
   radiologyTests    RadiologyTestService[]
 
   createdAt DateTime @default(now())
@@ -549,30 +632,30 @@ model BillingSectionService {
   @@unique([billingSectionId, serviceId])
 }
 
-model LabTestService {
+model PathologyTestService {
   id        Int @id @default(autoincrement())
-  labTestId Int
+  testId    Int
   serviceId Int
 
-  labTest LabTest @relation(fields: [labTestId], references: [id], onDelete: Cascade)
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  test    PathologyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  service Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([labTestId, serviceId])
+  @@unique([testId, serviceId])
 }
 
 model RadiologyTestService {
-  id              Int @id @default(autoincrement())
-  radiologyTestId Int
-  serviceId       Int
+  id        Int @id @default(autoincrement())
+  testId    Int
+  serviceId Int
 
-  radiologyTest RadiologyTest @relation(fields: [radiologyTestId], references: [id], onDelete: Cascade)
-  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  test    RadiologyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  service Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([radiologyTestId, serviceId])
+  @@unique([testId, serviceId])
 }

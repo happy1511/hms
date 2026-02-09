@@ -148,7 +148,7 @@ export const createAPI = async (req: Request) => {
         } = data;
 
         if (connectedLabTests) {
-          const existingLabTests = await tx.labTest.findMany({
+          const existingLabTests = await tx.pathologyTest.findMany({
             where: { id: { in: connectedLabTests } },
             select: { id: true },
           });
@@ -185,17 +185,15 @@ export const createAPI = async (req: Request) => {
             type,
             discountAvailable,
             applicableOn: applicableOn || ServiceApplicableOn["BOTH"],
-            labTests: {
-              create: connectedLabTests?.map((labTestId: number) => ({
-                labTest: { connect: { id: labTestId } },
+            pathologyTests: {
+              create: connectedLabTests?.map((testId: number) => ({
+                testId: { connect: { id: testId } },
               })),
             },
             radiologyTests: {
-              create: connectedRadiologyTests?.map(
-                (radiologyTestId: number) => ({
-                  radiologyTest: { connect: { id: radiologyTestId } },
-                }),
-              ),
+              create: connectedRadiologyTests?.map((testId: number) => ({
+                testId: { connect: { id: testId } },
+              })),
             },
           },
         });
@@ -248,7 +246,7 @@ export const updateAPI = async (
         } = data;
 
         if (connectedLabTests) {
-          const existingLabTests = await tx.labTest.findMany({
+          const existingLabTests = await tx.pathologyTest.findMany({
             where: { id: { in: connectedLabTests } },
             select: { id: true },
           });
@@ -294,11 +292,9 @@ export const updateAPI = async (
             },
             radiologyTests: {
               deleteMany: {},
-              create: connectedRadiologyTests?.map(
-                (radiologyTestId: number) => ({
-                  radiologyTest: { connect: { id: radiologyTestId } },
-                }),
-              ),
+              create: connectedRadiologyTests?.map((testId: number) => ({
+                testId: { connect: { id: testId } },
+              })),
             },
           },
         });
