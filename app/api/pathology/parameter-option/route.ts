@@ -1,7 +1,6 @@
 import {
-  addParameterAPI,
-  deleteParameterApi,
-  updateParameterAPI,
+  addOptionAPI,
+  deleteOptionAPI,
 } from "@/controllers/pathology/pathology";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { withErrorHandling } from "@/lib/errorHandler";
@@ -13,18 +12,7 @@ export async function POST(request: Request) {
       request,
       ModuleType["PATHOLOGY_TEST_MASTER"],
       ActionType["CREATE"],
-      () => addParameterAPI(request),
-    ),
-  );
-}
-
-export async function PUT(request: Request) {
-  return withErrorHandling(() =>
-    checkPermission(
-      request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["UPDATE"],
-      () => updateParameterAPI(request),
+      () => addOptionAPI(request),
     ),
   );
 }
@@ -35,7 +23,7 @@ export async function DELETE(request: Request) {
       request,
       ModuleType["PATHOLOGY_TEST_MASTER"],
       ActionType["DELETE"],
-      () => deleteParameterApi(request),
+      () => deleteOptionAPI(request),
     ),
   );
 }

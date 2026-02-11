@@ -14,21 +14,21 @@ const parameterOptionValidator = z.object({
 const referenceRangeValidator = z.object({
   applicableGender: z.enum(ReferenceRangeSex),
 
-  lowerDay: z.string().optional(),
-  upperDay: z.string().optional(),
-  lowerMonth: z.string().optional(),
-  upperMonth: z.string().optional(),
-  lowerYear: z.string().optional(),
-  upperYear: z.string().optional(),
+  lowerDay: z.string().optional().nullable(),
+  upperDay: z.string().optional().nullable(),
+  lowerMonth: z.string().optional().nullable(),
+  upperMonth: z.string().optional().nullable(),
+  lowerYear: z.string().optional().nullable(),
+  upperYear: z.string().optional().nullable(),
 
-  lowerRange: z.string().optional(),
-  upperRange: z.string().optional(),
-  unit: z.string().optional(),
+  lowerRange: z.string().optional().nullable(),
+  upperRange: z.string().optional().nullable(),
+  unit: z.string().optional().nullable(),
 });
 
 const pathologyTestParameterValidator = z.object({
   name: z.string().min(1, "Parameter name is required"),
-  displayOrder: z.number().min(0),
+  displayOrder: z.coerce.number().min(0),
   isDescriptiveOnly: z.boolean().default(false),
 
   referenceRanges: z.array(referenceRangeValidator).optional(),
@@ -38,7 +38,7 @@ const pathologyTestParameterValidator = z.object({
 const pathologyTestHeaderValidator = z.object({
   name: z.string().min(1, "Header name is required"),
   note: z.string().optional(),
-  displayOrder: z.number().min(0),
+  displayOrder: z.coerce.number().min(0),
 
   parameters: z.array(pathologyTestParameterValidator).optional(),
 });
@@ -49,7 +49,7 @@ const pathologyTestValidator = z.object({
   section: z.enum(PathologyTestSection),
   container: z.enum(ContainerType),
   sampleType: z.enum(SampleType),
-  footerNotes: z.string().optional(),
+  footerNotes: z.string().optional().nullable(),
 
   status: z.enum(Status).optional(),
   price: z.number().min(0, "Price must be a positive number"),
@@ -59,24 +59,65 @@ const pathologyTestValidator = z.object({
 });
 
 const partialPathologyTestValidator = pathologyTestValidator.partial().extend({
-  testId: z.number().min(1, "Service Id is required"),
+  testId: z.coerce.number().min(1, "Service Id is required"),
 });
 
 const addParameterToTestValidator = pathologyTestParameterValidator.extend({
-  testId: z.number().min(1, "Service Id is required"),
-  headerId: z.number().min(1, "Header Id is required").optional(),
+  testId: z.coerce.number().min(1, "Service Id is required"),
+  headerId: z.coerce.number().min(1, "Header Id is required").optional(),
 });
 
 const updateParameterToTestValidator = pathologyTestParameterValidator.extend({
-  testId: z.number().min(1, "Service Id is required"),
-  headerId: z.number().min(1, "Header Id is required").optional(),
-  parameterId: z.number().min(1, "Parameter Id is required"),
+  testId: z.coerce.number().min(1, "Service Id is required"),
+  headerId: z.coerce.number().min(1, "Header Id is required").optional(),
+  parameterId: z.coerce.number().min(1, "Parameter Id is required"),
 });
 
 const partialParameterTestValidator = pathologyTestParameterValidator
   .partial()
   .extend({
-    parameterId: z.number().min(1, "Parameter Id is required"),
+    parameterId: z.coerce.number().min(1, "Parameter Id is required"),
+  });
+
+const addParameterHeaderToTestValidator = pathologyTestHeaderValidator.extend({
+  testId: z.coerce.number().min(1, "Test Id is required"),
+});
+
+const updateParameterHeaderToTestValidator =
+  pathologyTestHeaderValidator.extend({
+    testId: z.coerce.number().min(1, "Test Id is required"),
+    headerId: z.coerce.number().min(1, "Header Id is required"),
+  });
+
+const partialParameterHeaderValidator = pathologyTestHeaderValidator
+  .partial()
+  .extend({
+    headerId: z.coerce.number().min(1, "Parameter Id is required"),
+  });
+
+const addOptionToParameterValidator = parameterOptionValidator.extend({
+  parameterId: z.coerce.number().min(1, "Parameter Id is required"),
+});
+
+const partialOptionValidator = parameterOptionValidator.partial().extend({
+  optionId: z.coerce.number().min(1, "Option Id is required"),
+});
+
+const addReferenceRangeToParameterValidator = referenceRangeValidator.extend({
+  parameterId: z.coerce.number().min(1, "Parameter Id is required"),
+});
+
+const updateReferenceRangeToParameterValidator = referenceRangeValidator.extend(
+  {
+    parameterId: z.coerce.number().min(1, "Parameter Id is required"),
+    referenceRangeId: z.coerce.number().min(1, "Range Id is required"),
+  },
+);
+
+const partialReferenceRangeValidator = referenceRangeValidator
+  .partial()
+  .extend({
+    referenceRangeId: z.coerce.number().min(1, "Parameter Id is required"),
   });
 
 type PathologyTestValidatorType = z.input<typeof pathologyTestValidator>;
@@ -92,6 +133,30 @@ type UpdateParameterToTestValidatorType = z.input<
 type PartialParameterToTestValidatorType = z.input<
   typeof partialParameterTestValidator
 >;
+type AddParameterHeaderToTestValidatorType = z.input<
+  typeof addParameterHeaderToTestValidator
+>;
+type UpdateParameterHeaderToTestValidatorType = z.input<
+  typeof updateParameterHeaderToTestValidator
+>;
+type PartialParameterHeaderToTestValidatorType = z.input<
+  typeof partialParameterHeaderValidator
+>;
+type AddReferenceRangeToParameterValidatorType = z.input<
+  typeof addReferenceRangeToParameterValidator
+>;
+type UpdateReferenceRangeToParameterValidatorType = z.input<
+  typeof updateReferenceRangeToParameterValidator
+>;
+type PartialReferenceRangeToParameterValidatorType = z.input<
+  typeof partialReferenceRangeValidator
+>;
+type AddOptionToParameterValidatorType = z.input<
+  typeof addOptionToParameterValidator
+>;
+type PartialOptionToParameterValidatorType = z.input<
+  typeof partialOptionValidator
+>;
 
 export {
   pathologyTestValidator,
@@ -99,6 +164,14 @@ export {
   addParameterToTestValidator,
   updateParameterToTestValidator,
   partialParameterTestValidator,
+  addParameterHeaderToTestValidator,
+  updateParameterHeaderToTestValidator,
+  partialParameterHeaderValidator,
+  addReferenceRangeToParameterValidator,
+  updateReferenceRangeToParameterValidator,
+  partialReferenceRangeValidator,
+  addOptionToParameterValidator,
+  partialOptionValidator,
 };
 export type {
   PathologyTestValidatorType,
@@ -106,4 +179,12 @@ export type {
   AddParameterToTestValidatorType,
   UpdateParameterToTestValidatorType,
   PartialParameterToTestValidatorType,
+  AddParameterHeaderToTestValidatorType,
+  UpdateParameterHeaderToTestValidatorType,
+  PartialParameterHeaderToTestValidatorType,
+  AddReferenceRangeToParameterValidatorType,
+  UpdateReferenceRangeToParameterValidatorType,
+  PartialReferenceRangeToParameterValidatorType,
+  AddOptionToParameterValidatorType,
+  PartialOptionToParameterValidatorType,
 };

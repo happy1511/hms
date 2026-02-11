@@ -14,11 +14,14 @@ import {
   InfiniteQueryObserverResult,
 } from "@tanstack/react-query";
 import {
+  GroupingState,
   OnChangeFn,
   RowSelectionState,
   SortingState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
+  getGroupedRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -33,7 +36,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
-import { LoaderIcon, ShieldAlert } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  LoaderIcon,
+  ShieldAlert,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -54,6 +62,10 @@ interface DataTableProps<TData, TValue> {
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   getRowId?: (row: TData) => string;
 
+  /** grouping */
+  enableGrouping?: boolean;
+  grouping?: string[];
+
   /** infinite scroll */
   useInfiniteScroll?: boolean;
   hasNextPage?: boolean;
@@ -67,10 +79,11 @@ interface DataTableProps<TData, TValue> {
 
   /** pagination */
   page?: number;
-  handleChangePage: (page: number) => void;
-  handleChangeLimit: (limit: number) => void;
+  handleChangePage?: (page: number) => void;
+  handleChangeLimit?: (limit: number) => void;
   total?: number;
   limit?: number;
+  hidePagination?: boolean;
 
   /** styling */
   striped?: boolean;
@@ -136,6 +149,8 @@ export function CustomTable<TData, TValue>({
   handleChangeLimit,
   isError,
   error,
+  enableGrouping = false,
+  grouping = [],
   enableSorting = false,
   isLoading = false,
   striped = false,
@@ -146,9 +161,13 @@ export function CustomTable<TData, TValue>({
   page = 1,
   total = 0,
   limit = 10,
+  hidePagination = false,
 }: DataTableProps<TData, TValue>) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [groupingState, setGroupingState] = useState<GroupingState>(
+    grouping ?? [],
+  );
 
   // inject checkbox column if row selection is enabled
   const finalColumns: ColumnDefWithClass<TData, TValue>[] = enableRowSelection
@@ -183,9 +202,13 @@ export function CustomTable<TData, TValue>({
     columns: finalColumns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
+    ...(enableGrouping && {
+      onGroupingChange: setGroupingState,
+    }),
     getSortedRowModel: getSortedRowModel(),
     state: {
       sorting,
+      ...(enableGrouping && { grouping: groupingState }),
       ...(enableRowSelection && { rowSelection }),
     },
     ...(enableRowSelection && {
@@ -193,6 +216,12 @@ export function CustomTable<TData, TValue>({
       onRowSelectionChange,
       getRowId,
     }),
+
+    ...(enableGrouping && {
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+    }),
+    enableGrouping,
     enableSorting,
   });
 
@@ -269,41 +298,82 @@ export function CustomTable<TData, TValue>({
               </TableCell>
             </TableRow>
           ) : table.getRowModel().rows.length ? (
-            table.getRowModel().rows.map((row, i) => (
-              <TableRow
-                key={i}
-                data-state={
-                  enableRowSelection && row.getIsSelected()
-                    ? "selected"
-                    : undefined
-                }
-                className={clsx(
-                  "mb-2 h-7 border-t border-b border-primary/20 bg-pink-50!",
-                  striped
-                    ? row.index % 2 === 0
-                      ? rowAltBgClass
-                      : rowBgClass
-                    : rowBgClass,
-                )}
-              >
-                {row.getVisibleCells().map((cell, i) => (
-                  <TableCell
-                    key={i}
-                    className={clsx(
-                      "relative first:rounded-l-lg last:rounded-r-lg",
-                      (
-                        cell.column.columnDef as ColumnDefWithClass<
-                          TData,
-                          TValue
-                        >
-                      ).cellClassName,
-                    )}
+            table.getRowModel().rows.map((row, i) => {
+              // ✅ GROUP HEADER ROW
+              if (enableGrouping && row.getIsGrouped()) {
+                return (
+                  <TableRow
+                    key={row.id}
+                    className="bg-primary/10 font-semibold"
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+                    <TableCell colSpan={finalColumns.length}>
+                      <button
+                        onClick={row.getToggleExpandedHandler()}
+                        className="flex items-center gap-2"
+                      >
+                        {row.getIsExpanded() ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
+
+                        <span className="capitalize">
+                          {row.groupingColumnId}: {row.groupingValue as string}
+                        </span>
+
+                        <span className="text-black/50">
+                          ({row.subRows.length})
+                        </span>
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              // ✅ NORMAL ROW
+              return (
+                <TableRow
+                  key={row.id}
+                  data-state={
+                    enableRowSelection && row.getIsSelected()
+                      ? "selected"
+                      : undefined
+                  }
+                  className={clsx(
+                    "mb-2 h-7 border-t border-b border-primary/20",
+                    striped
+                      ? row.index % 2 === 0
+                        ? rowAltBgClass
+                        : rowBgClass
+                      : rowBgClass,
+                  )}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    // ⭐ Aggregated Cell Support
+                    if (cell.getIsAggregated()) {
+                      return (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.aggregatedCell ??
+                              cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      );
+                    }
+
+                    return (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
               <TableCell
@@ -317,7 +387,7 @@ export function CustomTable<TData, TValue>({
         </TableBody>
       </Table>
 
-      {useInfiniteScroll && fetchNextPage && (
+      {!hidePagination && useInfiniteScroll && fetchNextPage && (
         <div ref={loadMoreRef} className="p-4 text-center">
           {isFetchingNextPage
             ? "Loading more..."
@@ -327,82 +397,86 @@ export function CustomTable<TData, TValue>({
         </div>
       )}
 
-      {!useInfiniteScroll && total > 0 && (
-        <div className="w-full flex flex-col-reverse md:flex-row gap-3 justify-between items-center mt-3">
-          <div className="flex items-center gap-3">
-            <p className="text-black/50 whitespace-nowrap text-tiny font-semibold">
-              Result per page
-            </p>
-            <Select
-              onValueChange={(value) => handleChangeLimit(Number(value))}
-              value={limit.toString()}
-            >
-              <SelectTrigger className="rounded-sm h-4! focus:border-accent-blue text-tiny [&_svg]:size-2 capitalize w-fit shadow-none">
-                <SelectValue />
-              </SelectTrigger>
+      {!hidePagination &&
+        handleChangePage &&
+        handleChangeLimit &&
+        !useInfiniteScroll &&
+        total > 0 && (
+          <div className="w-full flex flex-col-reverse md:flex-row gap-3 justify-between items-center mt-3">
+            <div className="flex items-center gap-3">
+              <p className="text-black/50 whitespace-nowrap text-tiny font-semibold">
+                Result per page
+              </p>
+              <Select
+                onValueChange={(value) => handleChangeLimit(Number(value))}
+                value={limit.toString()}
+              >
+                <SelectTrigger className="rounded-sm h-4! focus:border-accent-blue text-tiny [&_svg]:size-2 capitalize w-fit shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
 
-              <SelectContent>
-                {["10", "20", "30", "50", "100"].map((option) => (
-                  <SelectItem
-                    key={option}
-                    value={option}
-                    className="text-tiny py-1 capitalize"
-                  >
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectContent>
+                  {["10", "20", "30", "50", "100"].map((option) => (
+                    <SelectItem
+                      key={option}
+                      value={option}
+                      className="text-tiny py-1 capitalize"
+                    >
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Pagination>
+                <PaginationContent>
+                  {page > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious
+                        className="h-6  text-tiny!"
+                        onClick={() => handleChangePage(Math.max(1, page - 1))}
+                      />
+                    </PaginationItem>
+                  )}
+
+                  {getPaginationRange({
+                    currentPage: page,
+                    totalPages: Math.ceil(total / limit),
+                  }).map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === "..." ? (
+                        <PaginationEllipsis className="size-6 text-tiny! inline-flex" />
+                      ) : (
+                        <PaginationLink
+                          className={clsx(
+                            "size-6 text-tiny!",
+                            item === page && "bg-primary text-white",
+                          )}
+                          isActive={item === page}
+                          onClick={() => handleChangePage(item)}
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+
+                  {page < Math.ceil(total / limit) && (
+                    <PaginationItem>
+                      <PaginationNext
+                        className="h-6  text-tiny!"
+                        onClick={() =>
+                          handleChangePage(Math.min(total, page + 1))
+                        }
+                      />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
+            </div>
           </div>
-          <div>
-            <Pagination>
-              <PaginationContent>
-                {page > 1 && (
-                  <PaginationItem>
-                    <PaginationPrevious
-                      className="h-6  text-tiny!"
-                      onClick={() => handleChangePage(Math.max(1, page - 1))}
-                    />
-                  </PaginationItem>
-                )}
-
-                {getPaginationRange({
-                  currentPage: page,
-                  totalPages: Math.ceil(total / limit),
-                }).map((item, index) => (
-                  <PaginationItem key={index}>
-                    {item === "..." ? (
-                      <PaginationEllipsis className="size-6 text-tiny! inline-flex" />
-                    ) : (
-                      <PaginationLink
-                        className={clsx(
-                          "size-6 text-tiny!",
-                          item === page && "bg-primary text-white",
-                        )}
-                        isActive={item === page}
-                        onClick={() => handleChangePage(item)}
-                      >
-                        {item}
-                      </PaginationLink>
-                    )}
-                  </PaginationItem>
-                ))}
-
-                {page < Math.ceil(total / limit) && (
-                  <PaginationItem>
-                    <PaginationNext
-                      className="h-6  text-tiny!"
-                      onClick={() =>
-                        handleChangePage(Math.min(total, page + 1))
-                      }
-                    />
-                  </PaginationItem>
-                )}
-              </PaginationContent>
-            </Pagination>
-          </div>
-        </div>
-      )}
+        )}
     </>
   );
 }

@@ -537,7 +537,7 @@ model ParameterOptions {
 }
 
 model ReferenceRange {
-  id String @id @default(cuid())
+  id Int @id @default(autoincrement())
 
   testParameterId Int
   testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)

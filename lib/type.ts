@@ -382,14 +382,14 @@ export type BillingSectionType = Prisma.BillingSectionGetPayload<{
 
 export type ServiceDataType = Prisma.ServiceGetPayload<{
   include: {
-    labTests: {
+    pathologyTests: {
       include: {
-        labTest: true;
+        test: true;
       };
     };
     radiologyTests: {
       include: {
-        radiologyTest: true;
+        test: true;
       };
     };
     billingSections: {
@@ -397,5 +397,98 @@ export type ServiceDataType = Prisma.ServiceGetPayload<{
         billingSection: true;
       };
     };
+  };
+}>;
+
+export type PathologyTestDataType = Prisma.PathologyTestGetPayload<{
+  include: {
+    testHeaders: {
+      select: {
+        id: true;
+        name: true;
+        note: true;
+        displayOrder: true;
+      };
+    };
+    parameters: {
+      select: {
+        id: true;
+        name: true;
+        isDescriptiveOnly: true;
+        headerId: true;
+        displayOrder: true;
+        header: {
+          select: {
+            id: true;
+            name: true;
+            note: true;
+          };
+        };
+        parameterOptions: {
+          select: {
+            id: true;
+            testParameterId: true;
+            value: true;
+          };
+        };
+        referenceRanges: {
+          select: {
+            id: true;
+            lowerDay: true;
+            lowerMonth: true;
+            lowerYear: true;
+            lowerRange: true;
+            upperDay: true;
+            upperMonth: true;
+            upperYear: true;
+            upperRange: true;
+            unit: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type PathologyTestParameterType =
+  Prisma.PathologyTestParameterGetPayload<{
+    include: {
+      id: true;
+      name: true;
+      isDescriptiveOnly: true;
+      headerId: true;
+      displayOrder: true;
+      header: {
+        select: {
+          id: true;
+          name: true;
+          note: true;
+        };
+      };
+      parameterOptions: {
+        select: { id: true; testParameterId: true; value: true };
+      };
+      referenceRanges: {
+        select: {
+          id: true;
+          lowerDay: true;
+          lowerMonth: true;
+          lowerYear: true;
+          lowerRange: true;
+          upperDay: true;
+          upperMonth: true;
+          upperYear: true;
+          upperRange: true;
+          unit: true;
+        };
+      };
+    };
+  }>;
+
+export type PathologyParameterOptionType = Prisma.ParameterOptionsGetPayload<{
+  include: {
+    id: true;
+    value: true;
+    testParameter: true;
   };
 }>;

@@ -54,3 +54,12 @@ export const BILLING_SECTIONS = "/billing-section";
 // ---------SERVICES ENDPOINTS--------
 // ----------------------------------
 export const SERVICES = "/service";
+
+// ----------------------------------
+// ---------PATHOLOGY ENDPOINTS--------
+// ----------------------------------
+export const PATHOLOGY = "/pathology";
+export const PATHOLOGY_TEST_PARAMETER = "/pathology/parameter";
+export const PATHOLOGY_TEST_REFERENCE_RANGE = "/pathology/reference-range";
+export const PATHOLOGY_TEST_OPTION = "/pathology/parameter-option";
+export const PATHOLOGY_TEST_PARAMETER_HEADER = "/pathology/parameter-header";

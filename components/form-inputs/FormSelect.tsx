@@ -52,7 +52,13 @@ export function FormSelect<T extends FieldValues>({
           )}
 
           <FormControl className="h-6 flex items-center">
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select
+              value={field.value ? String(field.value) : ""}
+              onValueChange={(value) => {
+                console.log(value);
+                field.onChange(value);
+              }}
+            >
               <SelectTrigger
                 className={clsx(
                   "rounded-sm h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
