@@ -3,6 +3,7 @@ import {
   DoctorType,
   IdentityType,
   PathologyTestSection,
+  RadiologySection,
   Status,
 } from "@/generated/prisma/enums";
 import { z } from "zod";
@@ -22,6 +23,8 @@ const paginationValidator = z.object({
   billingSectionId: z.coerce.number().min(1).optional(),
   documentType: z.enum(IdentityType).optional(),
   pathologyTestType: z.enum(PathologyTestSection).optional(),
+  radiologyTestType: z.enum(RadiologySection).optional(),
+  pathologyTestId: z.coerce.number().optional(),
 
   "createdAt[from]": z.coerce.date().optional(),
   "createdAt[to]": z.coerce.date().optional(),

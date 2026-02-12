@@ -36,10 +36,11 @@ const createPathologyTest = createRequest<ApiResponse<PathologyTestDataType>>(
   PATHOLOGY,
   "POST",
 );
-const updatePathologyTest = createRequest<ApiResponse<PathologyTestDataType>>(
-  PATHOLOGY,
-  "PUT",
-);
+const updatePathologyTest = createRequest<
+  ApiResponse<PathologyTestDataType>,
+  undefined,
+  { id: number }
+>((p) => `${PATHOLOGY}/${p.id}`, "PUT");
 const deletePathologyTest = createRequest<
   ApiResponse<null>,
   undefined,
@@ -171,7 +172,11 @@ export const useUpdatePathologyTest = () => {
     PartialPathologyTestValidatorType
   >({
     mutationKey: ["update-pathology-test"],
-    mutationFn: (data) => updatePathologyTest({ body: data }),
+    mutationFn: (data) =>
+      updatePathologyTest({
+        body: data,
+        urlHelpers: { id: Number(data.testId) },
+      }),
     onSuccess: () => {
       toast.success("Test updated Successfully");
       queryClient.invalidateQueries({

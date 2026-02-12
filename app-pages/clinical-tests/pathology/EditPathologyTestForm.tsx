@@ -80,6 +80,7 @@ const TestInfoForm = ({ data }: { data: PathologyTestDataType }) => {
       price,
       sampleType,
       section,
+      testId: data.id,
     },
     resolver: zodResolver(partialPathologyTestValidator),
   });
@@ -87,6 +88,8 @@ const TestInfoForm = ({ data }: { data: PathologyTestDataType }) => {
   const handleSubmit = (values: PartialPathologyTestValidatorType) => {
     mutateAsync(values);
   };
+
+  console.log(form.formState.errors, form.getValues());
 
   return (
     <Form {...form}>
@@ -153,7 +156,7 @@ const TestInfoForm = ({ data }: { data: PathologyTestDataType }) => {
         <div className="col-span-2">
           <FormField
             label="Footer Notes"
-            type="textarea"
+            type="richText"
             control={form.control}
             name="footerNotes"
           />

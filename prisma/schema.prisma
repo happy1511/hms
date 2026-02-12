@@ -575,7 +575,7 @@ model RadiologyTest {
 
 model RadiologyTemplate {
   id      Int              @id @default(autoincrement())
-  type    RadiologySection
+  section RadiologySection
   name    String
   content String
   status  Status           @default(active)

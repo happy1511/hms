@@ -125,6 +125,12 @@ const billingMasters: SidebarItem[] = [
 
 const labMasters: SidebarItem[] = [
   {
+    title: "RADIOLOGY TEMPLATES",
+    url: "/clinical-tests/radiology-template/new",
+    icon: TestTubes,
+    module: ModuleType.RADIOLOGY_TEST_MASTER,
+  },
+  {
     title: "CLINICAL TESTS",
     url: "/clinical-tests",
     icon: TestTubes,

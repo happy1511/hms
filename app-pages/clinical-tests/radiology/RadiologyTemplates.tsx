@@ -1,21 +1,23 @@
+"use client";
+
 import { CustomAlert } from "@/components/common/CustomAlert";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
-import { RadiologyTest } from "@/generated/prisma/client";
+import { RadiologyTemplate } from "@/generated/prisma/client";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
-  useDeleteRadiologyTest,
-  useRadiologyTestsList,
+  useDeleteRadiologyTemplate,
+  useRadiologyTemplatesList,
 } from "@/hooks/query/radiology";
 import { ColumnDefWithClass, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { EditIcon, Trash2 } from "lucide-react";
 import { useState } from "react";
-import RadiologyTestForm from "./RadiologyTestForm";
+import { useRouter } from "next/navigation";
 
 const Actions = ({
   data,
@@ -23,20 +25,21 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: RadiologyTest;
+  data: RadiologyTemplate;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
 }) => {
-  const { mutateAsync: deleteTest, isPending: deletePending } =
-    useDeleteRadiologyTest();
+  const { mutateAsync: deleteTemplate, isPending: deletePending } =
+    useDeleteRadiologyTemplate();
+  const router = useRouter();
 
   return (
     <>
       {canView && (
-        <DataViewModal<RadiologyTest>
+        <DataViewModal<RadiologyTemplate>
           data={data}
-          title="Bed Details"
+          title="Template Details"
           fields={[
             { key: "id", label: "BedId" },
             { key: "status", label: "Status" },
@@ -46,17 +49,15 @@ const Actions = ({
         />
       )}
       {canEdit && (
-        <RadiologyTestForm
-          data={data}
-          trigger={
-            <Button
-              variant="outline"
-              className="h-auto shadow-none p-1 cursor-pointer"
-            >
-              <EditIcon className="size-2.5 text-destructive" />
-            </Button>
+        <Button
+          variant="outline"
+          className="h-auto shadow-none p-1 cursor-pointer"
+          onClick={() =>
+            router.push("/clinical-tests/radiology-template/" + data.id)
           }
-        />
+        >
+          <EditIcon className="size-2.5 text-destructive" />
+        </Button>
       )}
       {canDelete && (
         <CustomAlert
@@ -72,7 +73,7 @@ const Actions = ({
           description="Are you sure you want to delete test?"
           cancelText="Cancel"
           confirmText="Delete"
-          handleConfirm={() => deleteTest({ testId: Number(data.id) })}
+          handleConfirm={() => deleteTemplate({ templateId: Number(data.id) })}
           pending={deletePending}
         />
       )}
@@ -80,13 +81,13 @@ const Actions = ({
   );
 };
 
-const RadiologyTests = () => {
+const RadiologyTemplates = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useRadiologyTestsList(
+  const { data, isLoading, isError, error } = useRadiologyTemplatesList(
     filters,
     page,
     limit,
@@ -98,26 +99,26 @@ const RadiologyTests = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.VIEW,
   );
 
   const canUpdate = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.UPDATE,
   );
   const canDelete = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<RadiologyTest>[] = [
+  const columns: ColumnDefWithClass<RadiologyTemplate>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<RadiologyTest> label="ID" column={column} />;
+        return <SortableHeader<RadiologyTemplate> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -126,7 +127,9 @@ const RadiologyTests = () => {
     {
       accessorKey: "name",
       header: ({ column }) => {
-        return <SortableHeader<RadiologyTest> label="Name" column={column} />;
+        return (
+          <SortableHeader<RadiologyTemplate> label="Name" column={column} />
+        );
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
@@ -135,19 +138,10 @@ const RadiologyTests = () => {
       accessorKey: "section",
       header: ({ column }) => {
         return (
-          <SortableHeader<RadiologyTest> label="Section" column={column} />
+          <SortableHeader<RadiologyTemplate> label="Section" column={column} />
         );
       },
       cell: ({ row }) => row.original.section || "-",
-      headerClassName: "min-w-50",
-      cellClassName: "min-w-50",
-    },
-    {
-      accessorKey: "alias",
-      header: ({ column }) => {
-        return <SortableHeader<RadiologyTest> label="Alias" column={column} />;
-      },
-      cell: ({ row }) => row.original.alias || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -156,7 +150,10 @@ const RadiologyTests = () => {
       accessorKey: "createdAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<RadiologyTest> label="Created at" column={column} />
+          <SortableHeader<RadiologyTemplate>
+            label="Created at"
+            column={column}
+          />
         );
       },
       cell: ({ row }) => {
@@ -174,7 +171,10 @@ const RadiologyTests = () => {
       accessorKey: "updatedAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<RadiologyTest> label="Updated at" column={column} />
+          <SortableHeader<RadiologyTemplate>
+            label="Updated at"
+            column={column}
+          />
         );
       },
       cell: ({ row }) => {
@@ -222,4 +222,4 @@ const RadiologyTests = () => {
   );
 };
 
-export default RadiologyTests;
+export default RadiologyTemplates;

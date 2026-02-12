@@ -8,6 +8,7 @@ import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { hasActionPermission } from "@/lib/utils";
 import CreatePathologyTestModal from "./pathology/CreatePathologyTestModal";
 import CustomButton from "@/components/common/CustomButton";
+import RadiologyTestForm from "./radiology/RadiologyTestForm";
 
 const Buttons = () => {
   const { data: profile } = useProfile(false);
@@ -22,13 +23,18 @@ const Buttons = () => {
   );
 
   return (
-    <>
+    <div className="flex gap-2">
       {canCreate && (
         <CreatePathologyTestModal
           trigger={<CustomButton>Add Pathology Test</CustomButton>}
         />
       )}
-    </>
+      {canCreate && (
+        <RadiologyTestForm
+          trigger={<CustomButton>Add Radiology Test</CustomButton>}
+        />
+      )}
+    </div>
   );
 };
 

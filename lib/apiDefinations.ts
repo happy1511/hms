@@ -63,3 +63,9 @@ export const PATHOLOGY_TEST_PARAMETER = "/pathology/parameter";
 export const PATHOLOGY_TEST_REFERENCE_RANGE = "/pathology/reference-range";
 export const PATHOLOGY_TEST_OPTION = "/pathology/parameter-option";
 export const PATHOLOGY_TEST_PARAMETER_HEADER = "/pathology/parameter-header";
+
+// ----------------------------------
+// ---------RADIOLOGY ENDPOINTS--------
+// ----------------------------------
+export const RADIOLOGY = "/radiology";
+export const RADIOLOGY_TEMPLATE = "/radiology/template";

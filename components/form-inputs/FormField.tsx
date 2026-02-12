@@ -20,6 +20,7 @@ import { FormDateRangePicker } from "./FormDateRange";
 import { FormInfiniteSelect } from "./FormInfiniteSelect";
 import { FormDateTime } from "./FormDateTime";
 import { FormMultiSelect } from "./FormMultiSelect";
+import { FormRichTextEditor } from "./FormRichTextEditor";
 
 export type Props<T extends FieldValues> =
   | ({ type: "text" | "number" | "email" | "time" } & FormInputProps<T>)
@@ -32,7 +33,8 @@ export type Props<T extends FieldValues> =
   | ({ type: "dateTime" } & FormDateTimePickerProps<T>)
   | ({ type: "dateRange" } & FormDateRangePickerProps<T>)
   | ({ type: "infiniteSelect" } & FormInfiniteSelectProps<T>)
-  | ({ type: "multiSelect" } & FormSelectProps<T>);
+  | ({ type: "multiSelect" } & FormSelectProps<T>)
+  | ({ type: "richText" } & FormInputProps<T>);
 
 const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
   switch (type) {
@@ -45,6 +47,9 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
 
     case "textarea":
       return <FormTextarea {...(props as FormTextareaProps<T>)} />;
+
+    case "richText":
+      return <FormRichTextEditor {...(props as FormInputProps<T>)} />;
 
     case "select":
       return <FormSelect {...(props as FormSelectProps<T>)} />;
