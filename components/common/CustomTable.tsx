@@ -310,6 +310,7 @@ export function CustomTable<TData, TValue>({
                       <button
                         onClick={row.getToggleExpandedHandler()}
                         className="flex items-center gap-2"
+                        type="button"
                       >
                         {row.getIsExpanded() ? (
                           <ChevronDown size={16} />
@@ -330,7 +331,6 @@ export function CustomTable<TData, TValue>({
                 );
               }
 
-              // ✅ NORMAL ROW
               return (
                 <TableRow
                   key={row.id}

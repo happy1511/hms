@@ -63,6 +63,20 @@ export const getAPI = async (req: Request) => {
             status: true,
             createdAt: true,
             updatedAt: true,
+            type: true,
+            price: true,
+            discountAvailable: true,
+            maxDiscount: true,
+            pathologyTests: {
+              select: {
+                test: { select: { name: true } },
+              },
+            },
+            radiologyTests: {
+              select: {
+                test: { select: { name: true } },
+              },
+            },
           },
         }),
         prisma.service.count({ where }),
@@ -96,6 +110,37 @@ export const getDetailsAPI = async (
           name: true,
           description: true,
           status: true,
+          price: true,
+          discountAvailable: true,
+          maxDiscount: true,
+          pathologyTests: {
+            select: {
+              id: true,
+              serviceId: true,
+              testId: true,
+              test: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                },
+              },
+            },
+          },
+          radiologyTests: {
+            select: {
+              id: true,
+              serviceId: true,
+              testId: true,
+              test: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -187,12 +232,12 @@ export const createAPI = async (req: Request) => {
             applicableOn: applicableOn || ServiceApplicableOn["BOTH"],
             pathologyTests: {
               create: connectedLabTests?.map((testId: number) => ({
-                testId: { connect: { id: testId } },
+                testId,
               })),
             },
             radiologyTests: {
               create: connectedRadiologyTests?.map((testId: number) => ({
-                testId: { connect: { id: testId } },
+                testId,
               })),
             },
           },
@@ -284,16 +329,16 @@ export const updateAPI = async (
             applicableOn,
             type,
             discountAvailable,
-            labTests: {
+            pathologyTests: {
               deleteMany: {},
-              create: connectedLabTests?.map((labTestId: number) => ({
-                labTest: { connect: { id: labTestId } },
+              create: connectedLabTests?.map((testId: number) => ({
+                testId,
               })),
             },
             radiologyTests: {
               deleteMany: {},
               create: connectedRadiologyTests?.map((testId: number) => ({
-                testId: { connect: { id: testId } },
+                testId,
               })),
             },
           },

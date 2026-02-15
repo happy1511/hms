@@ -7,8 +7,24 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["SERVICE_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["SERVICE_MASTER"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["BILLING_SECTION_MASTER"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["BILLING_SECTION_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => getAPI(request),
     ),
   );
@@ -18,8 +34,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["SERVICE_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["SERVICE_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => createAPI(request),
     ),
   );

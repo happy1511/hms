@@ -16,6 +16,7 @@ const Buttons = () => {
   if (!profile) {
     return <></>;
   }
+
   const canCreate = hasActionPermission(
     profile?.data,
     ModuleType.PATHOLOGY_TEST_MASTER,
@@ -38,20 +39,41 @@ const Buttons = () => {
   );
 };
 
-const tabs = [
-  {
-    value: "pathology-tests",
-    name: "Pathology Tests",
-    content: <PathologyTests />,
-  },
-  {
-    value: "radiology-tests",
-    name: "Radiology Tests",
-    content: <RadiologyTests />,
-  },
-];
-
 const ClinicalTests = () => {
+  const { data: profile } = useProfile(false);
+  const tabs = [];
+
+  if (!profile) {
+    return <></>;
+  }
+
+  const canViewPathologoy = hasActionPermission(
+    profile?.data,
+    ModuleType.PATHOLOGY_TEST_MASTER,
+    ActionType.VIEW,
+  );
+
+  const canViewRadiology = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_TEST_MASTER,
+    ActionType.VIEW,
+  );
+
+  if (canViewPathologoy) {
+    tabs.push({
+      value: "pathology-tests",
+      name: "Pathology Tests",
+      content: <PathologyTests />,
+    });
+  }
+  if (canViewRadiology) {
+    tabs.push({
+      value: "radiology-tests",
+      name: "Radiology Tests",
+      content: <RadiologyTests />,
+    });
+  }
+
   return (
     <CustomTabs
       tabs={tabs}

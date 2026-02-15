@@ -65,6 +65,7 @@ export interface FormSelectProps<T extends FieldValues> {
     "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
   >;
   hideError?: boolean;
+  readonly?: boolean;
 }
 
 export interface FormMultiSelectProps<T extends FieldValues> {
@@ -107,6 +108,7 @@ export interface FormInfiniteSelectProps<
   placeholder?: string;
   disabled?: boolean;
   multiple?: boolean;
+  onSelectCallback?: (value: T) => void;
 }
 
 export interface FormCheckboxProps<T extends FieldValues> {
@@ -235,6 +237,7 @@ export interface FilterValues {
   wardId?: string;
   floorId?: string;
   documentType?: string;
+  billingSectionId?: string;
 }
 
 // ----------------------------------

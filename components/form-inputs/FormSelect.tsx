@@ -29,6 +29,7 @@ export function FormSelect<T extends FieldValues>({
   options,
   rules,
   hideError = false,
+  readonly = false,
 }: FormSelectProps<T>) {
   return (
     <FormField
@@ -58,6 +59,7 @@ export function FormSelect<T extends FieldValues>({
                 console.log(value);
                 field.onChange(value);
               }}
+              disabled={readonly}
             >
               <SelectTrigger
                 className={clsx(

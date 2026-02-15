@@ -46,19 +46,19 @@ export function FormDatePicker<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <FormItem
           className={cn(
-            "gap-1 relative text-primary",
+            "relative text-primary",
             hideError ? "" : "pb-4 gap-1",
             formItemClassName,
           )}
         >
           {label && (
-            <FormLabel className="gap-0 text-tiny font-semibold font-quicksand">
+            <FormLabel className="gap-0 font-semibold font-quicksand text-tiny">
               {label}
-              {required && <span className="text-[#FFA600] text-xl!">*</span>}
+              {required && <span className="text-[#FFA600] text-tiny!">*</span>}
             </FormLabel>
           )}
 
-          <FormControl>
+          <FormControl className="h-6 flex items-center">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -95,7 +95,6 @@ export function FormDatePicker<T extends FieldValues>({
               </PopoverContent>
             </Popover>
           </FormControl>
-
           {!hideError && (
             <FormMessage className="absolute bottom-1 font-semibold text-tiny text-destructive ms-1" />
           )}

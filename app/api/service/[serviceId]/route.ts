@@ -15,8 +15,12 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["SERVICE_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["SERVICE_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () =>
         getDetailsAPI(request, { params: { serviceId: Number(serviceId) } }),
     ),
@@ -31,8 +35,12 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["SERVICE_MASTER"],
-      ActionType["UPDATE"],
+      [
+        {
+          module: ModuleType["SERVICE_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
       () => updateAPI(request, { params: { serviceId: Number(serviceId) } }),
     ),
   );
@@ -46,8 +54,12 @@ export async function DELETE(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["SERVICE_MASTER"],
-      ActionType["DELETE"],
+      [
+        {
+          module: ModuleType["SERVICE_MASTER"],
+          action: ActionType["DELETE"],
+        },
+      ],
       () => deleteAPI(request, { params: { serviceId: Number(serviceId) } }),
     ),
   );

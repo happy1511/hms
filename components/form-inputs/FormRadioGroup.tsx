@@ -31,7 +31,7 @@ export function FormRadioGroup<T extends FieldValues>({
             <FormLabel className="text-tiny font-semibold font-quicksand">
               {label}
               {required && (
-                <span className="text-[#FFA600] !text-xl ms-1">*</span>
+                <span className="text-[#FFA600] text-tiny ms-1">*</span>
               )}
             </FormLabel>
           )}
@@ -44,19 +44,22 @@ export function FormRadioGroup<T extends FieldValues>({
                 orientation === "horizontal"
                   ? "flex gap-6"
                   : "flex flex-col gap-2",
-                className
+                className,
               )}
             >
               {options.map((option) => (
                 <FormItem
-                  key={option.value}
+                  key={option.value.toString()}
                   className="flex items-center gap-2"
                 >
                   <FormControl>
-                    <RadioGroupItem value={option.value} />
+                    <RadioGroupItem
+                      value={option.value.toString()}
+                      className="text-tiny size-2"
+                    />
                   </FormControl>
 
-                  <FormLabel className="text-sm font-medium text-text-black cursor-pointer">
+                  <FormLabel className="text-tiny! font-medium text-text-black cursor-pointer">
                     {option.label}
                   </FormLabel>
                 </FormItem>

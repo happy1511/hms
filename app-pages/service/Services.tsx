@@ -8,6 +8,11 @@ import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useDeleteService, useServicesList } from "@/hooks/query/service";
@@ -90,7 +95,7 @@ const Actions = ({
       {canEdit && (
         <Link
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/billing-sections/${data.id}`}
+          href={`/services/${data.id}`}
         >
           <Edit2 className="size-2.5" />
         </Link>
@@ -114,6 +119,41 @@ const Actions = ({
         />
       )}
     </>
+  );
+};
+
+const Tests = ({
+  data,
+}: {
+  data: ServiceDataType["pathologyTests"] | ServiceDataType["radiologyTests"];
+}) => {
+  return (
+    <HoverCard openDelay={150}>
+      <HoverCardTrigger asChild>
+        <span className="cursor-pointer capitalize border border-success bg-success px-2 rounded-sm text-white text-tiny">
+          {data?.length}
+        </span>
+      </HoverCardTrigger>
+
+      <HoverCardContent className="w-64">
+        <div className="space-y-2">
+          {data?.length ? (
+            <div className="flex flex-wrap gap-1">
+              {data.map((action) => (
+                <span
+                  key={action.id}
+                  className="capitalize border border-primary bg-primary/10 px-2 py-0.5 rounded-sm text-primary text-xs"
+                >
+                  {action.test.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No Tests Assigned</p>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
@@ -194,17 +234,53 @@ const Services = () => {
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
+
     {
-      accessorKey: "services",
+      accessorKey: "type",
+      header: ({ column }) => {
+        return <SortableHeader<ServiceDataType> label="Type" column={column} />;
+      },
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+
+    {
+      accessorKey: "price",
       header: ({ column }) => {
         return (
-          <SortableHeader<ServiceDataType> label="Services" column={column} />
+          <SortableHeader<ServiceDataType> label="Price" column={column} />
         );
       },
-      cell: ({ row }) =>
-        row.original.billingSections
-          ?.map((s) => s.billingSection?.name)
-          .join(", ") || "-",
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+
+    {
+      accessorKey: "Pathology Tests",
+      header: ({ column }) => {
+        return (
+          <SortableHeader<ServiceDataType>
+            label="Pathology Tests"
+            column={column}
+          />
+        );
+      },
+      cell: ({ row }) => <Tests data={row.original.pathologyTests} />,
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+
+    {
+      accessorKey: "Radiology Tests",
+      header: ({ column }) => {
+        return (
+          <SortableHeader<ServiceDataType>
+            label="Radiology Tests"
+            column={column}
+          />
+        );
+      },
+      cell: ({ row }) => <Tests data={row.original.radiologyTests} />,
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

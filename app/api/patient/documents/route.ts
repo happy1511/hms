@@ -10,8 +10,12 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["PATIENT_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () => getDocumentsAPI(request),
     ),
   );
@@ -21,8 +25,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["PATIENT_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => createDocumentAPI(request),
     ),
   );

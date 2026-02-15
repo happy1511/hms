@@ -7,8 +7,11 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["FLOOR_MASTER"],
-      ActionType["VIEW"],
+      [
+        { module: ModuleType["FLOOR_MASTER"], action: ActionType["VIEW"] },
+        { module: ModuleType["WARD_MASTER"], action: ActionType["CREATE"] },
+        { module: ModuleType["WARD_MASTER"], action: ActionType["UPDATE"] },
+      ],
       () => getAPI(request),
     ),
   );
@@ -18,8 +21,7 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["FLOOR_MASTER"],
-      ActionType["CREATE"],
+      [{ module: ModuleType["FLOOR_MASTER"], action: ActionType["CREATE"] }],
       () => createAPI(request),
     ),
   );

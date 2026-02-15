@@ -9,7 +9,13 @@ import {
   RadiologyTemplateValidatorType,
   RadiologyTestValidatorType,
 } from "@/validators/api/masters/radiologyTest";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 
@@ -76,6 +82,40 @@ export const useRadiologyTestsList = (
           ...(filters.status && { status: filters.status }),
         },
       }),
+  });
+};
+
+export const useInfiniteRadiologyTestsList = (
+  filters: FilterValues,
+  limit: number,
+  enabled: boolean = true,
+) => {
+  return useInfiniteQuery<
+    PaginatedResponse<RadiologyTest>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<RadiologyTest>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["radiology-tests-infinite", filters, limit],
+    queryFn: ({ pageParam }) =>
+      getRadiologyTests({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+        },
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+    enabled,
   });
 };
 

@@ -3,7 +3,11 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import {
+  Prisma,
+  ServiceApplicableOn,
+  ServiceType,
+} from "@/generated/prisma/client";
 import {
   addOptionToParameterValidator,
   addParameterHeaderToTestValidator,
@@ -303,6 +307,21 @@ export const createAPI = async (req: Request) => {
               include: {
                 referenceRanges: true,
                 parameterOptions: true,
+              },
+            },
+          },
+        });
+
+        await tx.service.create({
+          data: {
+            name: body.name,
+            type: ServiceType["LAB_TEST"],
+            price: body.price,
+            applicableOn: ServiceApplicableOn["BOTH"],
+            status: body.status,
+            pathologyTests: {
+              create: {
+                testId: createdTest.id,
               },
             },
           },

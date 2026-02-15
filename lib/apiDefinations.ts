@@ -69,3 +69,8 @@ export const PATHOLOGY_TEST_PARAMETER_HEADER = "/pathology/parameter-header";
 // ----------------------------------
 export const RADIOLOGY = "/radiology";
 export const RADIOLOGY_TEMPLATE = "/radiology/template";
+
+// ----------------------------------
+// ---------OPD ENDPOINTS--------
+// ----------------------------------
+export const OPD = "/opd";

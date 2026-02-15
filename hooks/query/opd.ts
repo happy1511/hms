@@ -1,16 +1,15 @@
-import { SERVICES } from "@/lib/apiDefinations";
+import { Opd } from "@/generated/prisma/client";
+import { BILLING_SECTIONS, OPD } from "@/lib/apiDefinations";
 import {
   ApiResponse,
+  BillingSectionType,
   FilterValues,
   PaginatedResponse,
-  ServiceDataType,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
-import {
-  PartialServiceValidatorType,
-  ServiceValidatorType,
-} from "@/validators/api/masters/service";
+import { PartialBillingSectionValidatorType } from "@/validators/api/masters/billingSection";
+import { opdValidatorType } from "@/validators/api/opd/opd";
 import {
   InfiniteData,
   useInfiniteQuery,
@@ -22,45 +21,42 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createServiceSection = createRequest<ApiResponse<ServiceDataType>>(
-  SERVICES,
-  "POST",
-);
-const updateServiceSection = createRequest<
-  ApiResponse<ServiceDataType>,
+const createOpd = createRequest<ApiResponse<Opd>>(OPD, "POST");
+const updateBillingSection = createRequest<
+  ApiResponse<BillingSectionType>,
   undefined,
   { id: string }
->((p) => `${SERVICES}/${p.id}`, "PUT");
-const deleteServiceSection = createRequest<
+>((p) => `${BILLING_SECTIONS}/${p.id}`, "PUT");
+const deleteBillingSection = createRequest<
   ApiResponse<null>,
   undefined,
   { id: string }
->((p) => `${SERVICES}/${p.id}`, "DELETE");
-const getServiceSection = createRequest<
-  ApiResponse<ServiceDataType>,
+>((p) => `${BILLING_SECTIONS}/${p.id}`, "DELETE");
+const getBillingSection = createRequest<
+  ApiResponse<BillingSectionType>,
   undefined,
   { id: string }
->((p) => `${SERVICES}/${p.id}`, "GET");
+>((p) => `${BILLING_SECTIONS}/${p.id}`, "GET");
 
-const getServices = createRequest<
-  PaginatedResponse<ServiceDataType>,
+const getBillingSections = createRequest<
+  PaginatedResponse<BillingSectionType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
->(SERVICES, "GET");
+>(BILLING_SECTIONS, "GET");
 
-export const useServicesList = (
+export const useBillingSectionsList = (
   filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<ServiceDataType>,
+    PaginatedResponse<BillingSectionType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<ServiceDataType>,
+    PaginatedResponse<BillingSectionType>,
     [string, FilterValues, number, number]
   >({
-    queryKey: ["services", filters, page, limit],
+    queryKey: ["billing-sections", filters, page, limit],
     queryFn: () =>
-      getServices({
+      getBillingSections({
         pageParam: page,
         params: {
           limit,
@@ -73,20 +69,20 @@ export const useServicesList = (
   });
 };
 
-export const useInfiniteServicesList = (
+export const useInfiniteBillingSectionsList = (
   filters: FilterValues,
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<ServiceDataType>,
+    PaginatedResponse<BillingSectionType>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<ServiceDataType>>,
+    InfiniteData<PaginatedResponse<BillingSectionType>>,
     [string, FilterValues, number]
   >({
-    queryKey: ["services", filters, limit],
+    queryKey: ["wards", filters, limit],
 
     queryFn: ({ pageParam = 1 }) =>
-      getServices({
+      getBillingSections({
         pageParam: pageParam as number,
         params: {
           limit,
@@ -94,9 +90,6 @@ export const useInfiniteServicesList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
-          ...(filters.billingSectionId && {
-            billingSectionId: filters.billingSectionId,
-          }),
         },
       }),
 
@@ -111,16 +104,16 @@ export const useInfiniteServicesList = (
   });
 };
 
-export const useGetService = (id?: string) => {
+export const useGetBillingSection = (id?: string) => {
   return useQuery<
-    ApiResponse<ServiceDataType>,
+    ApiResponse<BillingSectionType>,
     AxiosError<ApiResponse<null>>,
-    ServiceDataType,
+    BillingSectionType,
     [string, string | undefined]
   >({
-    queryKey: ["get-service", id],
+    queryKey: ["get-billing-section", id],
     queryFn: () =>
-      getServiceSection({
+      getBillingSection({
         urlHelpers: {
           id: id as string,
         },
@@ -130,20 +123,20 @@ export const useGetService = (id?: string) => {
   });
 };
 
-export const useCreateService = () => {
+export const useCreateOpd = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<ServiceDataType>,
+    ApiResponse<Opd>,
     AxiosError<ApiResponse<null>>,
-    ServiceValidatorType
+    opdValidatorType
   >({
-    mutationKey: ["create-service"],
-    mutationFn: (data) => createServiceSection({ body: data }),
+    mutationKey: ["create-opd"],
+    mutationFn: (data) => createOpd({ body: data }),
     onSuccess: () => {
-      toast.success("Service Created Successfully");
+      toast.success("OPD Created Successfully");
       queryClient.invalidateQueries({
-        queryKey: ["services"],
+        queryKey: ["billing-sections"],
       });
       router.back();
     },
@@ -151,25 +144,25 @@ export const useCreateService = () => {
   });
 };
 
-export const useUpdateService = () => {
+export const useUpdateBillingSection = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<ServiceDataType>,
+    ApiResponse<BillingSectionType>,
     AxiosError<ApiResponse<null>>,
-    PartialServiceValidatorType
+    PartialBillingSectionValidatorType
   >({
-    mutationKey: ["update-service"],
+    mutationKey: ["update-billing-section"],
     mutationFn: (data) =>
-      updateServiceSection({
+      updateBillingSection({
         body: data,
-        urlHelpers: { id: data.serviceId.toString() },
+        urlHelpers: { id: data.sectionId.toString() },
       }),
     onSuccess: () => {
-      toast.success("Service Updated Successfully");
+      toast.success("Billing Section Updated Successfully");
       queryClient.invalidateQueries({
-        queryKey: ["services"],
+        queryKey: ["billing-sections"],
       });
       router.back();
     },
@@ -177,21 +170,21 @@ export const useUpdateService = () => {
   });
 };
 
-export const useDeleteService = () => {
+export const useDeleteBillingSection = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
     ApiResponse<null>,
     AxiosError<ApiResponse<null>>,
-    PartialServiceValidatorType
+    PartialBillingSectionValidatorType
   >({
-    mutationKey: ["delete-service"],
+    mutationKey: ["delete-billing-section"],
     mutationFn: (data) =>
-      deleteServiceSection({ urlHelpers: { id: data.serviceId.toString() } }),
+      deleteBillingSection({ urlHelpers: { id: data.sectionId.toString() } }),
     onSuccess: () => {
-      toast.success("Service Deleted Successfully");
+      toast.success("Billing Section Deleted Successfully");
       queryClient.invalidateQueries({
-        queryKey: ["services"],
+        queryKey: ["billing-sections"],
       });
     },
     onError: showError,

@@ -7,8 +7,7 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["APPOINTMENT"],
-      ActionType["VIEW"],
+      [{ module: ModuleType["APPOINTMENT"], action: ActionType["VIEW"] }],
       () => getAPI(request),
     ),
   );
@@ -18,8 +17,7 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["APPOINTMENT"],
-      ActionType["CREATE"],
+      [{ module: ModuleType["APPOINTMENT"], action: ActionType["CREATE"] }],
       () => createAPI(request),
     ),
   );

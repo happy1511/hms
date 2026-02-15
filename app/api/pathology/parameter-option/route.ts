@@ -10,8 +10,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => addOptionAPI(request),
     ),
   );
@@ -21,8 +25,12 @@ export async function DELETE(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["DELETE"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["DELETE"],
+        },
+      ],
       () => deleteOptionAPI(request),
     ),
   );

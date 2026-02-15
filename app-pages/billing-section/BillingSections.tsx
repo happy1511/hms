@@ -8,6 +8,11 @@ import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
@@ -122,6 +127,39 @@ const Actions = ({
   );
 };
 
+const Services = ({ data }: { data: BillingSectionType["services"] }) => {
+  return (
+    <HoverCard openDelay={150}>
+      <HoverCardTrigger asChild>
+        <span className="cursor-pointer capitalize border border-success bg-success px-2 rounded-sm text-white text-tiny">
+          {data?.length}
+        </span>
+      </HoverCardTrigger>
+
+      <HoverCardContent className="w-64">
+        <div className="space-y-2">
+          {data?.length ? (
+            <div className="flex flex-wrap gap-1">
+              {data.map((action) => (
+                <span
+                  key={action.id}
+                  className="capitalize border border-primary bg-primary/10 px-2 py-0.5 rounded-sm text-primary text-xs"
+                >
+                  {action.service.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No Services Assigned
+            </p>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
+
 const BillingSections = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -213,8 +251,7 @@ const BillingSections = () => {
           />
         );
       },
-      cell: ({ row }) =>
-        row.original.services?.map((s) => s.service?.name).join(", ") || "-",
+      cell: ({ row }) => <Services data={row.original.services} />,
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

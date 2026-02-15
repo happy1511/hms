@@ -123,6 +123,7 @@ enum ReferenceRangeSex {
 enum ServiceType {
   LAB_TEST
   RADIOLOGY_TEST
+  CLINICAL_TEST
   OTHER
 }
 
@@ -173,6 +174,7 @@ enum ModuleType {
   SERVICE_MASTER
   PATHOLOGY_TEST_MASTER
   RADIOLOGY_TEST_MASTER
+  OPD_BILL
 }
 
 enum ActionType {
@@ -252,6 +254,54 @@ enum RadiologySection {
   X_RAY
 }
 
+enum OpdArrival {
+  ROUTINE
+  APPOINTMENT
+  FOLLOW_UP
+  EMERGENCY
+  AYUSHMAN_NEW_IP
+  AYUSHMAN_IP_FIRST
+  AYUSHMAN_IP_SECOND
+  AYUSHMAN_IP_THIRD
+  OTHER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  VALUE
+}
+
+enum PaymentCategory {
+  CASHLESS_INSURANCE
+  CORPORATE_AFFILIATION
+  AYUSHMAN_BHARAT
+  CGHS
+  RGHS
+  CHIRANJIVI_YOJNA
+  GOVERNMENT_BENEFITS
+  NOT_DETERMINED
+  SELF_PAY
+  DO_NOT_CONSIDER
+}
+
+enum PaymentMode {
+  PAYMENT_MODE_DEFAULT
+  CASH
+  CARD_PAYMENT
+  CHEQUE
+  DIGITAL_WALLET
+  INSURANCE
+  INTERNAL_ADJUSTMENTS
+  LOYALTY_CARD
+  NEFT
+  RTGS
+  TDS_AYUSHMAN_BHARAT
+  TDS_CHIRANJIVI_YOJNA
+  TDS_OTHERS
+  TDS
+  OTHER
+}
+
 // --------------------
 // Models
 // --------------------
@@ -329,6 +379,8 @@ model Doctor {
 
   availableDays DoctorAvailableDay[]
   appointment   Appointment[]
+  consultingOpd Opd[]                @relation("ConsultantDoctorOpds")
+  referringOpd  Opd[]                @relation("ReferringDoctorOpds")
 }
 
 model DoctorAvailableDay {
@@ -430,6 +482,7 @@ model Patient {
   identifications   PatientIdentification[]
   emergencyContacts emergencyContact[]
   notes             PatientNotes[]
+  opds              Opd[]
 }
 
 // -------------------- Facility Management --------------------
@@ -596,8 +649,9 @@ model BillingSection {
   isPathologyTest Boolean                 @default(false)
   isRadiologyTest Boolean                 @default(false)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  opdBillingItems OpdBillingItem[]
 }
 
 model Service {
@@ -614,8 +668,9 @@ model Service {
   pathologyTests    PathologyTestService[]
   radiologyTests    RadiologyTestService[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  opdBillingItems OpdBillingItem[]
 }
 
 model BillingSectionService {
@@ -658,4 +713,64 @@ model RadiologyTestService {
   updatedAt DateTime @updatedAt
 
   @@unique([testId, serviceId])
+}
+
+// -------------------- Transactions Management --------------------
+model Transaction {
+  id      Int         @id @default(autoincrement())
+  opdId   Int?
+  amount  Float
+  mode    PaymentMode
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  opd Opd? @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+// -------------------- Opd Management --------------------
+
+model Opd {
+  id                 Int             @id @default(autoincrement())
+  patientId          Int
+  arrivalState       OpdArrival
+  remarks            String?
+  rate               Float
+  discountType       DiscountType
+  discountValue      Float
+  total              Float
+  isPaid             Boolean         @default(false)
+  isFree             Boolean         @default(false)
+  consultantDoctorId Int
+  referringDoctorId  Int?
+  billingType        PaymentCategory
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  consultantDoctor Doctor           @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
+  referringDoctor  Doctor?          @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
+  patient          Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  opdBillingItems  OpdBillingItem[]
+  transactions     Transaction[]
+}
+
+model OpdBillingItem {
+  id               Int          @id @default(autoincrement())
+  opdId            Int
+  billingSectionId Int
+  serviceId        Int
+  quantity         Int
+  rate             Float
+  discountType     DiscountType
+  discountValue    Float
+  total            Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  opd            Opd            @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 }

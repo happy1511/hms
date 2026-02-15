@@ -9,8 +9,10 @@ export async function GET(
 ) {
   const { bedId } = await params;
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["BED_MASTER"], ActionType["VIEW"], () =>
-      getDetailsAPI(request, { params: { bedId: Number(bedId) } }),
+    checkPermission(
+      request,
+      [{ module: ModuleType["BED_MASTER"], action: ActionType["VIEW"] }],
+      () => getDetailsAPI(request, { params: { bedId: Number(bedId) } }),
     ),
   );
 }
@@ -23,8 +25,7 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["BED_MASTER"],
-      ActionType["UPDATE"],
+      [{ module: ModuleType["BED_MASTER"], action: ActionType["UPDATE"] }],
       () => updateAPI(request, { params: { bedId: Number(bedId) } }),
     ),
   );
@@ -38,8 +39,7 @@ export async function DELETE(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["BED_MASTER"],
-      ActionType["DELETE"],
+      [{ module: ModuleType["BED_MASTER"], action: ActionType["DELETE"] }],
       () => deleteAPI(request, { params: { bedId: Number(bedId) } }),
     ),
   );

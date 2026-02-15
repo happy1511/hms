@@ -5,10 +5,14 @@ import { decodeToken } from "@/services/jwt";
 import { prisma } from "@/services/prisma";
 import { cookies } from "next/headers";
 
+type PermissionCheck = {
+  module: ModuleType;
+  action: ActionType;
+};
+
 export const checkPermission = async (
   req: Request,
-  module: ModuleType,
-  action: ActionType,
+  permissions: PermissionCheck[],
   callback: (req: Request) => Promise<Response>,
 ) => {
   const reqCookies = await cookies();
@@ -20,6 +24,7 @@ export const checkPermission = async (
       message: "Not Allowed to permit the action",
     });
   }
+
   const decodedToken = decodeToken<{ userId: string }>(accessToken);
 
   if (!decodedToken || !decodedToken.userId) {
@@ -29,8 +34,10 @@ export const checkPermission = async (
     });
   }
 
+  const userId = Number(decodedToken.userId);
+
   const user = await prisma.user.findUnique({
-    where: { id: Number(decodedToken.userId) },
+    where: { id: userId },
   });
 
   if (!user) {
@@ -47,26 +54,27 @@ export const checkPermission = async (
     });
   }
 
+  // 🔥 Build OR conditions dynamically
+  const orConditions = permissions.map((p) => ({
+    permission: {
+      action: { name: p.action },
+      module: { name: p.module },
+    },
+  }));
+
   const userPermission = await prisma.userPermission.findFirst({
     where: {
-      userId: Number(decodedToken.userId),
-      permission: {
-        action: {
-          name: action,
-        },
-        module: {
-          name: module,
-        },
-      },
+      userId,
+      OR: orConditions, // 👈 OR across module+action pairs
     },
   });
 
   if (userPermission) {
     return callback(req);
-  } else {
-    return apiResponse({
-      status: RESPONSE_STATUS.UNAUTHORIZED,
-      message: "Not Allowed to permit the action",
-    });
   }
+
+  return apiResponse({
+    status: RESPONSE_STATUS.UNAUTHORIZED,
+    message: "Not Allowed to permit the action",
+  });
 };

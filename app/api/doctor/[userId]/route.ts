@@ -15,8 +15,7 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["VIEW"],
+      [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["VIEW"] }],
       () => getDetailsAPI(request, { params: p }),
     ),
   );
@@ -30,8 +29,7 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["UPDATE"],
+      [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["UPDATE"] }],
       () => updateAPI(request, { params: p }),
     ),
   );
@@ -45,8 +43,7 @@ export async function DELETE(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["DELETE"],
+      [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["DELETE"] }],
       () => deleteAPI(request, { params: p }),
     ),
   );

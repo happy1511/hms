@@ -15,8 +15,12 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () => getDetailsAPI(request, { params: { testId: Number(testId) } }),
     ),
   );
@@ -30,8 +34,12 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["UPDATE"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
       () => updateAPI(request, { params: { testId: Number(testId) } }),
     ),
   );
@@ -45,8 +53,12 @@ export async function DELETE(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["PATHOLOGY_TEST_MASTER"],
-      ActionType["DELETE"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["DELETE"],
+        },
+      ],
       () => deleteAPI(request, { params: { testId: Number(testId) } }),
     ),
   );

@@ -56,6 +56,17 @@ export const getAPI = async (req: Request) => {
             name: true,
             description: true,
             status: true,
+            services: {
+              select: {
+                serviceId: true,
+                service: {
+                  select: {
+                    name: true,
+                    id: true,
+                  },
+                },
+              },
+            },
             createdAt: true,
             updatedAt: true,
           },

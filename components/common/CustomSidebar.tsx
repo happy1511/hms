@@ -51,14 +51,34 @@ interface SidebarItem {
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
-  module: ModuleType;
+  module: ModuleType[];
 }
 
-const opdItems = [
-  { title: "PATIENTS (OPD/IPD)", url: "/opd/patients", icon: Users },
-  { title: "WALK-IN QUEUE", url: "/opd/walk-in", icon: UserPlus },
-  { title: "APPOINTMENTS", url: "/opd/appointments", icon: Calendar },
-  { title: "SCANNED REPORTS", url: "/opd/reports", icon: FileText },
+const opdItems: SidebarItem[] = [
+  {
+    title: "PATIENTS (OPD/IPD)",
+    url: "/opd/patients",
+    icon: Users,
+    module: [ModuleType.OPD_BILL],
+  },
+  {
+    title: "WALK-IN QUEUE",
+    url: "/opd/walk-in",
+    icon: UserPlus,
+    module: [ModuleType.OPD_BILL],
+  },
+  {
+    title: "APPOINTMENTS",
+    url: "/opd/appointments",
+    icon: Calendar,
+    module: [ModuleType.APPOINTMENT],
+  },
+  {
+    title: "SCANNED REPORTS",
+    url: "/opd/reports",
+    icon: FileText,
+    module: [ModuleType.APPOINTMENT],
+  },
   // { title: "PATIENT DOCUMENTS", url: "/patient/documents", icon: FolderOpen },
 ];
 
@@ -80,31 +100,31 @@ const masters: SidebarItem[] = [
     title: "DOCTORS",
     url: "/doctors",
     icon: Stethoscope,
-    module: ModuleType.DOCTOR_MASTER,
+    module: [ModuleType.DOCTOR_MASTER],
   },
   {
     title: "USERS",
     url: "/users",
     icon: User,
-    module: ModuleType.USER,
+    module: [ModuleType.USER],
   },
   {
     title: "FLOORS",
     url: "/floors",
     icon: Layers,
-    module: ModuleType.FLOOR_MASTER,
+    module: [ModuleType.FLOOR_MASTER],
   },
   {
     title: "WARDS",
     url: "/wards",
     icon: DoorClosed,
-    module: ModuleType.WARD_MASTER,
+    module: [ModuleType.WARD_MASTER],
   },
   {
     title: "BEDS",
     url: "/beds",
     icon: BedDouble,
-    module: ModuleType.BED_MASTER,
+    module: [ModuleType.BED_MASTER],
   },
 ];
 
@@ -113,13 +133,13 @@ const billingMasters: SidebarItem[] = [
     title: "BILLING SECTIONS",
     url: "/billing-sections",
     icon: Bolt,
-    module: ModuleType.BILLING_SECTION_MASTER,
+    module: [ModuleType.BILLING_SECTION_MASTER],
   },
   {
     title: "SERVICES",
     url: "/services",
     icon: Bolt,
-    module: ModuleType.SERVICE_MASTER,
+    module: [ModuleType.SERVICE_MASTER],
   },
 ];
 
@@ -128,13 +148,16 @@ const labMasters: SidebarItem[] = [
     title: "RADIOLOGY TEMPLATES",
     url: "/clinical-tests/radiology-template/new",
     icon: TestTubes,
-    module: ModuleType.RADIOLOGY_TEST_MASTER,
+    module: [ModuleType.RADIOLOGY_TEST_MASTER],
   },
   {
     title: "CLINICAL TESTS",
     url: "/clinical-tests",
     icon: TestTubes,
-    module: ModuleType.PATHOLOGY_TEST_MASTER,
+    module: [
+      ModuleType.PATHOLOGY_TEST_MASTER,
+      ModuleType.RADIOLOGY_TEST_MASTER,
+    ],
   },
 ];
 
@@ -144,6 +167,7 @@ export function CustomSidebar() {
   const [financeOpen, setFinanceOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [billingMasterOpen, setBillingMasterOpen] = useState(false);
+  const [labMasterOpen, setLabMasterOpen] = useState(false);
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
@@ -153,11 +177,17 @@ export function CustomSidebar() {
     return <></>;
   }
 
-  const visibleMasters = masters.filter(
-    (item) => hasModulePermission(data.data, item.module)?.length,
+  const visibleMasters = masters.filter((item) =>
+    hasModulePermission(data.data, item.module),
   );
-  const visibleBillingMasters = billingMasters.filter(
-    (item) => hasModulePermission(data.data, item.module)?.length,
+  const visibleBillingMasters = billingMasters.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visibleLabMasters = labMasters.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visibleOpd = opdItems.filter((item) =>
+    hasModulePermission(data.data, item.module),
   );
 
   return (
@@ -167,7 +197,7 @@ export function CustomSidebar() {
         <Link href="/">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-1.5 h-auto hover:text-white font-semibold data-[active=true]:text-white hover:text-white transition-colors",
+              "flex items-center gap-3 px-4 py-1.5 h-auto font-semibold data-[active=true]:text-white hover:text-white transition-colors",
               isActive("/")
                 ? "bg-primary text-primary-foreground"
                 : "text-sidebar-foreground hover:bg-sidebar-accent",
@@ -184,7 +214,7 @@ export function CustomSidebar() {
         <Collapsible open={opdOpen} onOpenChange={setOpdOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny! ">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny! ">
                 <div className="flex items-center gap-3">
                   <Users className="size-3" />
                   <span>OPD</span>
@@ -200,7 +230,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {opdItems.map((item) => (
+                  {visibleOpd.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
@@ -247,7 +277,7 @@ export function CustomSidebar() {
         <Collapsible open={ipdOpen} onOpenChange={setIpdOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <BedDouble className="size-3" />
                   <span>IPD</span>
@@ -287,7 +317,7 @@ export function CustomSidebar() {
         <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <DollarSign className="size-3" />
                   <span>FINANCE</span>
@@ -323,13 +353,10 @@ export function CustomSidebar() {
           </SidebarGroup>
         </Collapsible>
 
-        <Collapsible
-          open={billingMasterOpen}
-          onOpenChange={setBillingMasterOpen}
-        >
+        <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <Bolt className="size-3" />
                   <span>LAB MASTER</span>
@@ -337,7 +364,7 @@ export function CustomSidebar() {
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    billingMasterOpen ? "rotate-180" : "",
+                    labMasterOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -345,7 +372,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {labMasters.map((item) => (
+                  {visibleLabMasters.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
@@ -372,7 +399,7 @@ export function CustomSidebar() {
         >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <Bolt className="size-3" />
                   <span>BILLING</span>
@@ -412,7 +439,7 @@ export function CustomSidebar() {
         <Collapsible open={masterOpen} onOpenChange={setMasterOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto hover:text-white text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <Bolt className="size-3" />
                   <span>MASTERS</span>

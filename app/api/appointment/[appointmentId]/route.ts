@@ -11,8 +11,7 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["APPOINTMENT"],
-      ActionType["UPDATE"],
+      [{ module: ModuleType["APPOINTMENT"], action: ActionType["UPDATE"] }],
       () =>
         updateAPI(request, {
           params: { appointmentId: Number(appointmentId) },

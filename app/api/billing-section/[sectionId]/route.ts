@@ -15,8 +15,12 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["BILLING_SECTION_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["BILLING_SECTION_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () =>
         getDetailsAPI(request, { params: { sectionId: Number(sectionId) } }),
     ),
@@ -31,8 +35,12 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["BILLING_SECTION_MASTER"],
-      ActionType["UPDATE"],
+      [
+        {
+          module: ModuleType["BILLING_SECTION_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
       () => updateAPI(request, { params: { sectionId: Number(sectionId) } }),
     ),
   );
@@ -46,8 +54,12 @@ export async function DELETE(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["BILLING_SECTION_MASTER"],
-      ActionType["DELETE"],
+      [
+        {
+          module: ModuleType["BILLING_SECTION_MASTER"],
+          action: ActionType["DELETE"],
+        },
+      ],
       () => deleteAPI(request, { params: { sectionId: Number(sectionId) } }),
     ),
   );

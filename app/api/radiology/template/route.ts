@@ -11,8 +11,12 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["RADIOLOGY_TEST_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () => getTemplatesAPI(request),
     ),
   );
@@ -22,8 +26,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["RADIOLOGY_TEST_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => createTemplateAPI(request),
     ),
   );
@@ -33,8 +41,12 @@ export async function DELETE(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["RADIOLOGY_TEST_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          action: ActionType["DELETE"],
+        },
+      ],
       () => deleteTemplateAPI(request),
     ),
   );

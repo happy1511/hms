@@ -7,8 +7,20 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["WARD_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["WARD_MASTER"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["BED_MASTER"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["BED_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
       () => getAPI(request),
     ),
   );
@@ -18,8 +30,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["WARD_MASTER"],
-      ActionType["CREATE"],
+      [
+        {
+          module: ModuleType["WARD_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => createAPI(request),
     ),
   );

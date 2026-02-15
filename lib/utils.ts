@@ -14,7 +14,12 @@ export function generateUUID(): string {
   return crypto.randomUUID();
 }
 
-export const hasModulePermission = (data: User, module: ModuleType) => {
+export const hasModulePermission = (
+  data: User,
+  module: ModuleType | ModuleType[],
+): boolean => {
+  const modules = Array.isArray(module) ? module : [module];
+
   const permissionMap: Partial<Record<ModuleType, ActionType[]>> =
     data.permissions.reduce(
       (acc, item) => {
@@ -24,7 +29,11 @@ export const hasModulePermission = (data: User, module: ModuleType) => {
       {} as Partial<Record<ModuleType, ActionType[]>>,
     ) ?? {};
 
-  return permissionMap[module];
+  // ✅ check if ANY module has at least one action
+  return modules.some((m) => {
+    const actions = permissionMap[m];
+    return actions && actions.length > 0;
+  });
 };
 
 export const hasActionPermission = (

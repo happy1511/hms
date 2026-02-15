@@ -5,16 +5,30 @@ import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
 
 export async function GET(request: Request) {
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["USER"], ActionType["VIEW"], () =>
-      getAPI(request),
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["USER"],
+          action: ActionType["VIEW"],
+        },
+      ],
+      () => getAPI(request),
     ),
   );
 }
 
 export async function POST(request: Request) {
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["USER"], ActionType["CREATE"], () =>
-      createAPI(request),
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["USER"],
+          action: ActionType["CREATE"],
+        },
+      ],
+      () => createAPI(request),
     ),
   );
 }

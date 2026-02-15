@@ -11,8 +11,12 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["RADIOLOGY_TEST_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
       () =>
         getTemplateDetailsAPI(request, {
           params: { templateId: Number(templateId) },

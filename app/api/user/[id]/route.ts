@@ -9,8 +9,15 @@ export async function GET(
 ) {
   const p = await params;
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["USER"], ActionType["VIEW"], () =>
-      getDetailsAPI(request, { params: p }),
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["USER"],
+          action: ActionType["VIEW"],
+        },
+      ],
+      () => getDetailsAPI(request, { params: p }),
     ),
   );
 }
@@ -21,8 +28,15 @@ export async function PUT(
 ) {
   const p = await params;
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["USER"], ActionType["UPDATE"], () =>
-      updateAPI(request, { params: p }),
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["USER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
+      () => updateAPI(request, { params: p }),
     ),
   );
 }
@@ -33,8 +47,15 @@ export async function DELETE(
 ) {
   const p = await params;
   return withErrorHandling(() =>
-    checkPermission(request, ModuleType["USER"], ActionType["DELETE"], () =>
-      deleteAPI(request, { params: p }),
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["USER"],
+          action: ActionType["DELETE"],
+        },
+      ],
+      () => deleteAPI(request, { params: p }),
     ),
   );
 }

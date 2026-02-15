@@ -23,7 +23,7 @@ import {
   CommandList,
 } from "../ui/command";
 import { ScrollArea } from "../ui/scroll-area";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import InfiniteScroll from "../common/CustomInfiniteScroll";
 
 export function FormInfiniteSelect<T extends FieldValues>({
@@ -35,12 +35,11 @@ export function FormInfiniteSelect<T extends FieldValues>({
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
-  className = "",
   placeholder,
-  required = false,
-  disabled = false,
-  formItemClassName = "",
   rules,
+  className = "",
+  required = false,
+  formItemClassName = "",
   hideError = false,
   multiple = false,
 }: FormInfiniteSelectProps<T>) {
@@ -104,7 +103,7 @@ export function FormInfiniteSelect<T extends FieldValues>({
                     type="button"
                     onClick={() => setOpen(true)}
                     className={clsx(
-                      "rounded-sm h-6! bg-white border hover:bg-white focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
+                      "rounded-sm h-6! justify-start bg-white border hover:bg-white focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
                       fieldState.invalid
                         ? "border-destructive focus-visible:border-destructive"
                         : "",
@@ -113,6 +112,34 @@ export function FormInfiniteSelect<T extends FieldValues>({
                   >
                     {buttonLabel}
                   </Button>
+                  {/* MULTIPLE SELECTED VALUES BELOW */}
+                  {multiple &&
+                    Array.isArray(field.value) &&
+                    field.value.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {field.value.map((val: string | number) => {
+                          const item = options.find((o) => o.value === val);
+                          if (!item) return null;
+
+                          return (
+                            <span
+                              key={val}
+                              className="flex items-center gap-1 px-2 text-tiny bg-primary text-white rounded"
+                            >
+                              {item.label}
+                              <button
+                                type="button"
+                                className="ml-1 hover:text-destructive"
+                                onClick={() => toggleSelect(val)}
+                              >
+                                <X className="size-2" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
                   <CommandDialog open={open} onOpenChange={setOpen}>
                     <Command>
                       <CommandInput
@@ -133,7 +160,7 @@ export function FormInfiniteSelect<T extends FieldValues>({
 
                                 return (
                                   <CommandItem
-                                    key={item.value}
+                                    key={item.value.toString()}
                                     value={item.label || ""}
                                     onSelect={() => toggleSelect(item.value)}
                                   >

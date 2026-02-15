@@ -11,8 +11,16 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["VIEW"],
+      [
+        {
+          module: ModuleType["PATIENT_MASTER"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["CREATE"],
+        },
+      ],
       () => getDetailsAPI(request, { params: p }),
     ),
   );
@@ -26,8 +34,12 @@ export async function PUT(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      ModuleType["DOCTOR_MASTER"],
-      ActionType["UPDATE"],
+      [
+        {
+          module: ModuleType["PATIENT_MASTER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
       () => updateAPI(request, { params: p }),
     ),
   );

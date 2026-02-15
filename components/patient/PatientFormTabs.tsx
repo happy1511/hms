@@ -60,7 +60,7 @@ const PatientFormTabs = ({ data }: { data?: PatientType }) => {
 
   const onSubmit = (values: PatientValidatorType) => {
     if (data) {
-      update({ patientId: data.id, ...values });
+      update({ patientId: data.id, ...values, dob: values.dob as Date });
     } else {
       create(values as PatientValidatorType);
     }
