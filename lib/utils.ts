@@ -4,6 +4,13 @@ import { twMerge } from "tailwind-merge";
 import { ApiResponse, User } from "./type";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import {
+  differenceInYears,
+  differenceInMonths,
+  differenceInDays,
+  addYears,
+  addMonths,
+} from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -58,3 +65,39 @@ export const showError = (error: AxiosError<ApiResponse<null>>) => {
     error.response?.data.message || error.message || "Something went wrong",
   );
 };
+
+export function getAgeFromDOB(dob: Date | string) {
+  const birthDate = new Date(dob);
+  const today = new Date();
+
+  // total years
+  const years = differenceInYears(today, birthDate);
+
+  // remaining months after removing years
+  const dateAfterYears = addYears(birthDate, years);
+  const months = differenceInMonths(today, dateAfterYears);
+
+  // remaining days after removing months
+  const dateAfterMonths = addMonths(dateAfterYears, months);
+  const days = differenceInDays(today, dateAfterMonths);
+
+  return { years, months, days };
+}
+
+export function formatAge(dob: Date | string) {
+  const { years, months, days } = getAgeFromDOB(dob);
+
+  if (!days) {
+    if (!months) {
+      return `${years}y`;
+    } else {
+      return `${years}y  ${months}m`;
+    }
+  } else {
+    if (!months) {
+      return `${years}y ${days}d`;
+    } else {
+      return `${years}y  ${months}m ${days}d`;
+    }
+  }
+}

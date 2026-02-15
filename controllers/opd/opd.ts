@@ -1,10 +1,15 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { opdValidator } from "@/validators/api/opd/opd";
+import {
+  addOpdBillItemValidator,
+  addOpdTransactionValidator,
+  opdValidator,
+  partialOpdValidator,
+} from "@/validators/api/opd/opd";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -57,6 +62,7 @@ export const getAPI = async (req: Request) => {
             discountValue: true,
             rate: true,
             transactions: true,
+            isInQueue: true,
             consultantDoctor: {
               select: {
                 user: {
@@ -77,6 +83,7 @@ export const getAPI = async (req: Request) => {
             },
             patient: {
               select: {
+                id: true,
                 uhid: true,
                 lastName: true,
                 firstName: true,
@@ -86,6 +93,7 @@ export const getAPI = async (req: Request) => {
                 relations: true,
                 addresses: true,
                 contacts: true,
+                gender: true,
               },
             },
             createdAt: true,
@@ -105,11 +113,12 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: opdValidator,
     req,
-    onSuccess: async ({ body }) => {
+    user,
+    onSuccess: async ({ body, user }) => {
       return prisma.$transaction(async (tx) => {
         const existingPatient = await tx.patient.findFirst({
           where: { id: body.patientId },
@@ -156,6 +165,7 @@ export const createAPI = async (req: Request) => {
                 amount: transaction.amount,
                 mode: transaction.mode,
                 remarks: transaction.remarks,
+                receivedById: user.id,
               })),
             },
           },
@@ -165,6 +175,237 @@ export const createAPI = async (req: Request) => {
           status: RESPONSE_STATUS.CREATED,
           message: "OPD Created Successfully",
           data: createdOpd,
+        });
+      });
+    },
+  });
+};
+
+export const addItemAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: addOpdBillItemValidator,
+    req,
+    user,
+    onSuccess: async ({ body }) => {
+      return prisma.$transaction(async (tx) => {
+        const existingOPD = await tx.opd.findFirst({
+          where: { id: body.billId },
+        });
+
+        if (!existingOPD) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Opd Not Found",
+          });
+        }
+
+        const updatedOpd = await tx.opd.update({
+          where: { id: body.billId },
+          data: {
+            opdBillingItems: {
+              create: [
+                {
+                  billingSectionId: body.billingSectionId,
+                  serviceId: body.serviceId,
+                  quantity: body.quantity,
+                  rate: body.rate,
+                  discountType: body.discountType,
+                  discountValue: body.discountValue,
+                  total: body.total,
+                  createdAt: body.createdAt,
+                },
+              ],
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.CREATED,
+          message: "OPD Created Successfully",
+          data: updatedOpd,
+        });
+      });
+    },
+  });
+};
+
+export const addTransactionAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: addOpdTransactionValidator,
+    req,
+    user,
+    onSuccess: async ({ body }) => {
+      return prisma.$transaction(async (tx) => {
+        const existingOPD = await tx.opd.findFirst({
+          where: { id: body.billId },
+        });
+
+        if (!existingOPD) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Opd Not Found",
+          });
+        }
+
+        const updatedOpd = await tx.opd.update({
+          where: { id: body.billId },
+          data: {
+            transactions: {
+              create: [
+                {
+                  amount: body.amount,
+                  mode: body.mode,
+                  receivedById: user.id,
+                  remarks: body.remarks,
+                },
+              ],
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.CREATED,
+          message: "Transactions Created Successfully",
+          data: updatedOpd,
+        });
+      });
+    },
+  });
+};
+
+export const getQueueAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+      const consultantDoctorId = query.consultantDoctorId
+        ? Number(query.consultantDoctorId)
+        : null;
+      const referringDoctorId = query.referringDoctorId
+        ? Number(query.referringDoctorId)
+        : null;
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.OpdWhereInput[] = [];
+
+      if (consultantDoctorId) {
+        and.push({ consultantDoctorId });
+      }
+      if (referringDoctorId) {
+        and.push({ referringDoctorId });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      and.push({ isInQueue: true });
+
+      const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.opd.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          select: {
+            id: true,
+            arrivalState: true,
+            total: true,
+            discountType: true,
+            discountValue: true,
+            rate: true,
+            transactions: true,
+            isInQueue: true,
+            consultantDoctor: {
+              select: {
+                user: {
+                  omit: {
+                    password: true,
+                  },
+                },
+              },
+            },
+            referringDoctor: {
+              select: {
+                user: {
+                  omit: {
+                    password: true,
+                  },
+                },
+              },
+            },
+            patient: {
+              select: {
+                uhid: true,
+                lastName: true,
+                firstName: true,
+                middleName: true,
+                dob: true,
+                maritalStatus: true,
+                relations: true,
+                addresses: true,
+                contacts: true,
+                gender: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.opd.count({ where }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Opds Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const deleteQueueAPI = async (req: Request) => {
+  return validateRequest({
+    bodySchema: partialOpdValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: data.opdId },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const updatedOpd = await tx.opd.update({
+          where: { id: body.opdId },
+          data: {
+            isInQueue: false,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Opd Removed from queue Successfully",
+          data: updatedOpd,
         });
       });
     },

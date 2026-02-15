@@ -17,7 +17,7 @@ const billingItemValidator = z.object({
   rate: z.coerce.number(),
   discountType: z.enum(DiscountType).default(DiscountType.VALUE),
   discountValue: z.coerce.number().default(0),
-  total: z.coerce.number().optional(),
+  total: z.coerce.number(),
   maxDiscount: z.coerce.number().optional().default(0),
   createdAt: z.coerce.date(),
 });
@@ -29,25 +29,26 @@ const transactionsValidator = z.object({
   remarks: z.string().max(500).optional(),
 });
 
-const opdValidator = z
-  .object({
-    patientId: z.coerce.number().min(1, "Patient is required"),
-    patient: patientValidator,
-    arrivalState: z.enum(OpdArrival),
-    remarks: z.string().max(500).optional(),
-    rate: z.coerce.number(),
-    discountType: z.enum(DiscountType).default(DiscountType.VALUE),
-    discountValue: z.coerce.number().default(0),
-    total: z.coerce.number().optional(),
-    isFree: z.coerce.boolean().default(false),
-    isPaid: z.coerce.boolean().default(false),
-    createdAt: z.coerce.date().default(new Date()),
-    consultantDoctorId: z.coerce.number(),
-    referredDoctorId: z.coerce.number().optional(),
-    billingType: z.enum(PaymentCategory),
-    billingItem: z.array(billingItemValidator),
-    transactions: z.array(transactionsValidator),
-  })
+const opdBaseValidator = z.object({
+  patientId: z.coerce.number().min(1, "Patient is required"),
+  patient: patientValidator,
+  arrivalState: z.enum(OpdArrival),
+  remarks: z.string().max(500).optional(),
+  rate: z.coerce.number(),
+  discountType: z.enum(DiscountType).default(DiscountType.VALUE),
+  discountValue: z.coerce.number().default(0),
+  total: z.coerce.number().optional(),
+  isFree: z.coerce.boolean().default(false),
+  isPaid: z.coerce.boolean().default(false),
+  createdAt: z.coerce.date().default(new Date()),
+  consultantDoctorId: z.coerce.number(),
+  referredDoctorId: z.coerce.number().optional(),
+  billingType: z.enum(PaymentCategory),
+  billingItem: z.array(billingItemValidator),
+  transactions: z.array(transactionsValidator),
+});
+
+const opdValidator = opdBaseValidator
   .transform((data) => {
     const billingItem = data.billingItem.map((item) => {
       const gross = item.quantity * item.rate;
@@ -128,13 +129,40 @@ const opdValidator = z
     }
   });
 
+const partialOpdValidator = opdBaseValidator.partial().extend({
+  opdId: z.coerce.number(),
+});
+
+const addOpdBillItemValidator = billingItemValidator.extend({
+  billId: z.coerce.number(),
+});
+
+const addOpdTransactionValidator = transactionsValidator.extend({
+  billId: z.coerce.number(),
+});
+
 type opdValidatorType = z.input<typeof opdValidator>;
+type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
+type addOpdBillItemValidatorType = z.input<typeof addOpdBillItemValidator>;
 type billingItemValidatorType = z.input<typeof billingItemValidator>;
 type transactionValidatorType = z.input<typeof transactionsValidator>;
+type addOpdTransactionValidatorType = z.input<
+  typeof addOpdTransactionValidator
+>;
 
-export { opdValidator, billingItemValidator, transactionsValidator };
+export {
+  opdValidator,
+  billingItemValidator,
+  transactionsValidator,
+  partialOpdValidator,
+  addOpdBillItemValidator,
+  addOpdTransactionValidator,
+};
 export type {
   opdValidatorType,
   billingItemValidatorType,
   transactionValidatorType,
+  partialOpdValidatorType,
+  addOpdBillItemValidatorType,
+  addOpdTransactionValidatorType,
 };

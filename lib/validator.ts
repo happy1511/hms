@@ -2,27 +2,30 @@ import { ZodSchema } from "zod";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 
-type SuccessData<B, Q, P> = (B extends undefined ? never : { body: B }) &
+type SuccessData<B, Q, P, U> = (B extends undefined ? never : { body: B }) &
   (Q extends undefined ? never : { query: Q }) &
-  (P extends undefined ? never : { params: P });
+  (P extends undefined ? never : { params: P }) &
+  (P extends undefined ? never : { user: U });
 
-type ValidateOptions<B, Q, P> = {
+type ValidateOptions<B, Q, P, U = undefined> = {
   bodySchema?: ZodSchema<B>;
   querySchema?: ZodSchema<Q>;
   paramsSchema?: ZodSchema<P>;
   req: Request;
   params?: unknown;
-  onSuccess: (data: SuccessData<B, Q, P>) => Promise<Response>;
+  user?: U;
+  onSuccess: (data: SuccessData<B, Q, P, U>, req: Request) => Promise<Response>;
 };
 
-export async function validateRequest<B, Q, P>({
+export async function validateRequest<B, Q, P, U>({
   bodySchema,
   querySchema,
   paramsSchema,
   req,
   params,
+  user,
   onSuccess,
-}: ValidateOptions<B, Q, P>): Promise<Response> {
+}: ValidateOptions<B, Q, P, U>): Promise<Response> {
   let body: B | undefined;
   let query: Q | undefined;
   let parsedParams: P | undefined;
@@ -73,9 +76,13 @@ export async function validateRequest<B, Q, P>({
     parsedParams = result.data;
   }
 
-  return onSuccess({
-    ...(body !== undefined ? { body } : {}),
-    ...(query !== undefined ? { query } : {}),
-    ...(parsedParams ? { params: parsedParams } : {}),
-  } as SuccessData<B, Q, P>);
+  return onSuccess(
+    {
+      ...(body !== undefined ? { body } : {}),
+      ...(query !== undefined ? { query } : {}),
+      ...(parsedParams ? { params: parsedParams } : {}),
+      ...(user !== undefined ? { user } : {}),
+    } as SuccessData<B, Q, P, U>,
+    req,
+  );
 }

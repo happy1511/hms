@@ -175,6 +175,7 @@ enum ModuleType {
   PATHOLOGY_TEST_MASTER
   RADIOLOGY_TEST_MASTER
   OPD_BILL
+  OPD_QUEUE
 }
 
 enum ActionType {
@@ -358,7 +359,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  permissions UserPermission[]
+  permissions  UserPermission[]
+  transactions Transaction[]
 }
 
 model Doctor {
@@ -723,10 +725,12 @@ model Transaction {
   mode    PaymentMode
   remarks String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  receivedById Int
 
-  opd Opd? @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  receivedBy User @relation(fields: [receivedById], references: [id])
+  opd        Opd? @relation(fields: [opdId], references: [id], onDelete: Cascade)
 }
 
 // -------------------- Opd Management --------------------
@@ -745,6 +749,7 @@ model Opd {
   consultantDoctorId Int
   referringDoctorId  Int?
   billingType        PaymentCategory
+  isInQueue          Boolean         @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

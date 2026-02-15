@@ -47,8 +47,10 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const { mutateAsync: create, isPending: creating } = useCreateService();
   const { mutateAsync: update, isPending: updating } = useUpdateService();
 
+  const defaultValues = getInitialValues(data);
+
   const form = useForm<ServiceValidatorType>({
-    defaultValues: getInitialValues(data),
+    defaultValues,
     resolver: zodResolver(serviceValidator),
   });
 
@@ -61,7 +63,10 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     hasNextPage: hasPathologyNextPage,
     fetchNextPage: fetchPathologyNextPage,
   } = useInfinitePathologyTestsList(
-    { name: pathologySearchValue },
+    {
+      name: pathologySearchValue,
+      defaultSelectedIds: defaultValues.connectedLabTests,
+    },
     10,
     type === "LAB_TEST" || type === "CLINICAL_TEST",
   );
@@ -71,7 +76,10 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     hasNextPage: hasRadiologyNextPage,
     fetchNextPage: fetchRadiologyNextPage,
   } = useInfiniteRadiologyTestsList(
-    { name: radiologySearchValue },
+    {
+      name: radiologySearchValue,
+      defaultSelectedIds: defaultValues.connectedRadiologyTests,
+    },
     10,
     type === "RADIOLOGY_TEST" || type === "CLINICAL_TEST",
   );
@@ -168,31 +176,36 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             )}
           </div>
 
-          <FormField<ServiceValidatorType>
-            type="infiniteSelect"
-            name="connectedLabTests"
-            label="Pathology Tests"
-            control={form.control}
-            options={flatPathologyTests || []}
-            fetchNextPage={fetchPathologyNextPage}
-            hasNextPage={hasPathologyNextPage}
-            isFetchingNextPage={isFetchingPathologyNextPage}
-            onSearch={setPathologySearchValue}
-            multiple
-          />
-
-          <FormField<ServiceValidatorType>
-            type="infiniteSelect"
-            name="connectedRadiologyTests"
-            label="Radiology Tests"
-            control={form.control}
-            options={flatRadiologyTests || []}
-            fetchNextPage={fetchRadiologyNextPage}
-            hasNextPage={hasRadiologyNextPage}
-            isFetchingNextPage={isFetchingRadiologyNextPage}
-            onSearch={setRadiologySearchValue}
-            multiple
-          />
+          {(type === ServiceType["LAB_TEST"] ||
+            type === ServiceType["CLINICAL_TEST"]) && (
+            <FormField<ServiceValidatorType>
+              type="infiniteSelect"
+              name="connectedLabTests"
+              label="Pathology Tests"
+              control={form.control}
+              options={flatPathologyTests || []}
+              fetchNextPage={fetchPathologyNextPage}
+              hasNextPage={hasPathologyNextPage}
+              isFetchingNextPage={isFetchingPathologyNextPage}
+              onSearch={setPathologySearchValue}
+              multiple
+            />
+          )}
+          {(type === ServiceType["RADIOLOGY_TEST"] ||
+            type === ServiceType["CLINICAL_TEST"]) && (
+            <FormField<ServiceValidatorType>
+              type="infiniteSelect"
+              name="connectedRadiologyTests"
+              label="Radiology Tests"
+              control={form.control}
+              options={flatRadiologyTests || []}
+              fetchNextPage={fetchRadiologyNextPage}
+              hasNextPage={hasRadiologyNextPage}
+              isFetchingNextPage={isFetchingRadiologyNextPage}
+              onSearch={setRadiologySearchValue}
+              multiple
+            />
+          )}
 
           <div className="col-span-2">
             <FormField<ServiceValidatorType>

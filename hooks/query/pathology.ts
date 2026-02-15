@@ -152,6 +152,9 @@ export const useInfinitePathologyTestsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
+          ...(filters.defaultSelectedIds && {
+            defaultSelectedIds: filters.defaultSelectedIds,
+          }),
         },
       }),
 

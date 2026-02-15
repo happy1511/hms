@@ -1,4 +1,10 @@
-import { BILLING_SECTIONS, OPD } from "@/lib/apiDefinations";
+import {
+  BILLING_SECTIONS,
+  OPD,
+  OPD_BILLING_ITEM,
+  OPD_QUEUE,
+  OPD_TRANSACTION,
+} from "@/lib/apiDefinations";
 import {
   ApiResponse,
   BillingSectionType,
@@ -9,7 +15,12 @@ import {
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import { PartialBillingSectionValidatorType } from "@/validators/api/masters/billingSection";
-import { opdValidatorType } from "@/validators/api/opd/opd";
+import {
+  addOpdBillItemValidatorType,
+  addOpdTransactionValidatorType,
+  opdValidatorType,
+  partialOpdValidatorType,
+} from "@/validators/api/opd/opd";
 import {
   InfiniteData,
   useInfiniteQuery,
@@ -22,6 +33,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const createOpd = createRequest<ApiResponse<OPDType>>(OPD, "POST");
+const createBillingItem = createRequest<ApiResponse<OPDType>>(
+  OPD_BILLING_ITEM,
+  "POST",
+);
+const createTransaction = createRequest<ApiResponse<OPDType>>(
+  OPD_TRANSACTION,
+  "POST",
+);
 const updateBillingSection = createRequest<
   ApiResponse<BillingSectionType>,
   undefined,
@@ -32,6 +51,7 @@ const deleteBillingSection = createRequest<
   undefined,
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "DELETE");
+const deleteOpdQueue = createRequest<ApiResponse<null>>(OPD_QUEUE, "DELETE");
 const getBillingSection = createRequest<
   ApiResponse<BillingSectionType>,
   undefined,
@@ -42,6 +62,10 @@ const getOPDs = createRequest<
   PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(OPD, "GET");
+const getOPDQueue = createRequest<
+  PaginatedResponse<OPDType>,
+  { limit: number; name?: string; createdAt?: string; status?: string }
+>(OPD_QUEUE, "GET");
 
 export const useOpdList = (
   filters: FilterValues,
@@ -57,6 +81,38 @@ export const useOpdList = (
     queryKey: ["opds", filters, page, limit],
     queryFn: () =>
       getOPDs({
+        pageParam: page,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(filters.consultantDoctorId && {
+            consultantDoctorId: filters.consultantDoctorId,
+          }),
+          ...(filters.referringDoctorId && {
+            referringDoctorId: filters.referringDoctorId,
+          }),
+        },
+      }),
+  });
+};
+
+export const useOpdQueueList = (
+  filters: FilterValues,
+  page: number,
+  limit: number,
+) => {
+  return useQuery<
+    PaginatedResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    PaginatedResponse<OPDType>,
+    [string, FilterValues, number, number]
+  >({
+    queryKey: ["opd-queue", filters, page, limit],
+    queryFn: () =>
+      getOPDQueue({
         pageParam: page,
         params: {
           limit,
@@ -150,6 +206,44 @@ export const useCreateOpd = () => {
   });
 };
 
+export const useCreateOpdTransaction = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    addOpdTransactionValidatorType
+  >({
+    mutationKey: ["create-opd-transaction"],
+    mutationFn: (data) => createTransaction({ body: data }),
+    onSuccess: () => {
+      toast.success("Transaction Created Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useCreateOpdBillingItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    addOpdBillItemValidatorType
+  >({
+    mutationKey: ["create-opd-billing-item"],
+    mutationFn: (data) => createBillingItem({ body: data }),
+    onSuccess: () => {
+      toast.success("Billing Item Created Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
 export const useUpdateBillingSection = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -191,6 +285,26 @@ export const useDeleteBillingSection = () => {
       toast.success("Billing Section Deleted Successfully");
       queryClient.invalidateQueries({
         queryKey: ["billing-sections"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useDeleteOpdQueue = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    partialOpdValidatorType
+  >({
+    mutationKey: ["delete-opd-queue"],
+    mutationFn: (data) => deleteOpdQueue({ body: data }),
+    onSuccess: () => {
+      toast.success("Opd Removed Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opd-queue"],
       });
     },
     onError: showError,

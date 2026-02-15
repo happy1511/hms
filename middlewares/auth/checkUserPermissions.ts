@@ -1,3 +1,4 @@
+import { User } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
@@ -13,7 +14,7 @@ type PermissionCheck = {
 export const checkPermission = async (
   req: Request,
   permissions: PermissionCheck[],
-  callback: (req: Request) => Promise<Response>,
+  callback: (req: Request, user: User) => Promise<Response>,
 ) => {
   const reqCookies = await cookies();
   const accessToken = reqCookies.get("accessToken")?.value;
@@ -70,7 +71,7 @@ export const checkPermission = async (
   });
 
   if (userPermission) {
-    return callback(req);
+    return callback(req, user);
   }
 
   return apiResponse({

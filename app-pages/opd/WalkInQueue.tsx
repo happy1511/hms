@@ -1,13 +1,15 @@
 "use client";
+import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { PatientViewModal } from "@/components/patient/PatientView";
+import { Button } from "@/components/ui/button";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useOpdList } from "@/hooks/query/opd";
+import { useDeleteOpdQueue, useOpdQueueList } from "@/hooks/query/opd";
 import {
   ColumnDefWithClass,
   FilterConfig,
@@ -17,65 +19,42 @@ import {
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format, formatDuration, intervalToDuration, isAfter } from "date-fns";
+import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-// const Actions = ({
-//   data,
-//   canDelete,
-//   canEdit,
-//   canView,
-// }: {
-//   data: BedType;
-//   canEdit: boolean;
-//   canDelete: boolean;
-//   canView: boolean;
-// }) => {
-//   const { mutateAsync: deleteBed, isPending: deletePending } = useDeleteBed();
+const Actions = ({
+  data,
+  canDelete,
+}: {
+  data: OPDType;
+  canDelete: boolean;
+}) => {
+  const { mutateAsync: deleteQueue, isPending: deletePending } =
+    useDeleteOpdQueue();
 
-//   return (
-//     <>
-//       {canView && (
-//         <DataViewModal<OPDType>
-//           data={data}
-//           title="Bed Details"
-//           fields={[
-//             { key: "id", label: "BedId" },
-//             { key: "bedNumber", label: "bedNumber" },
-//             { key: "status", label: "Status" },
-//             { key: "createdAt", label: "Created At" },
-//             { key: "updatedAt", label: "Updated At" },
-//           ]}
-//         />
-//       )}
-//       {canEdit && (
-//         <Link
-//           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-//           href={`/beds/${data.id}`}
-//         >
-//           <Edit2 className="size-2.5" />
-//         </Link>
-//       )}
-//       {canDelete && (
-//         <CustomAlert
-//           triggerButton={
-//             <Button
-//               variant="outline"
-//               className="h-auto shadow-none p-1 cursor-pointer"
-//             >
-//               <Trash2 className="size-2.5 text-destructive" />
-//             </Button>
-//           }
-//           title="Delete Ward?"
-//           description="Are you sure you want to delete ward?"
-//           cancelText="Cancel"
-//           confirmText="Delete"
-//           handleConfirm={() => deleteBed({ bedId: Number(data.id) })}
-//           pending={deletePending}
-//         />
-//       )}
-//     </>
-//   );
-// };
+  return (
+    <>
+      {canDelete && (
+        <CustomAlert
+          triggerButton={
+            <Button
+              variant="outline"
+              className="h-auto shadow-none p-1 cursor-pointer"
+            >
+              <Trash2 className="size-2.5 text-destructive" />
+            </Button>
+          }
+          title="Delete Queue?"
+          description="Are you sure you want to delete queue?"
+          cancelText="Cancel"
+          confirmText="Delete"
+          handleConfirm={() => deleteQueue({ opdId: Number(data.id) })}
+          pending={deletePending}
+        />
+      )}
+    </>
+  );
+};
 
 const WalkInQueue = () => {
   const [page, setPage] = useState(1);
@@ -96,7 +75,11 @@ const WalkInQueue = () => {
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useOpdList(filters, page, limit);
+  const { data, isLoading, isError, error } = useOpdQueueList(
+    filters,
+    page,
+    limit,
+  );
 
   const flatConsultingDoctors = useMemo(
     () =>
@@ -112,8 +95,14 @@ const WalkInQueue = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.OPD_BILL,
+    ModuleType.OPD_QUEUE,
     ActionType.VIEW,
+  );
+
+  const canDelete = hasActionPermission(
+    profile?.data,
+    ModuleType.OPD_QUEUE,
+    ActionType.DELETE,
   );
 
   const columns: ColumnDefWithClass<OPDType>[] = [
@@ -188,6 +177,15 @@ const WalkInQueue = () => {
             ago
           </div>
         </div>
+      ),
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+    {
+      accessorKey: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Actions data={row.original} canDelete={Boolean(canDelete)} />
       ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",

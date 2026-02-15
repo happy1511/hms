@@ -25,6 +25,9 @@ const paginationValidator = z.object({
   pathologyTestType: z.enum(PathologyTestSection).optional(),
   radiologyTestType: z.enum(RadiologySection).optional(),
   pathologyTestId: z.coerce.number().optional(),
+  defaultSelectedIds: z.array(z.coerce.number()).optional(),
+  transactionType: z.enum(["opd", "ipd"]).optional(),
+  opdId: z.coerce.number().min(1).optional(),
   consultantDoctorId: z.coerce
     .number()
     .optional()

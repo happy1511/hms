@@ -4,6 +4,7 @@ import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
+  PathologyTest,
   Prisma,
   ServiceApplicableOn,
   ServiceType,
@@ -36,6 +37,7 @@ export const getAPI = async (req: Request) => {
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
       const sectionType = query.pathologyTestType ?? "";
+      const defaultSelectedIds = query.defaultSelectedIds;
 
       const skip = (page - 1) * limit;
       const and: Prisma.PathologyTestWhereInput[] = [];
@@ -63,9 +65,39 @@ export const getAPI = async (req: Request) => {
         });
       }
 
-      const where: Prisma.PathologyTestWhereInput = and.length
+      const baseWhere: Prisma.PathologyTestWhereInput = and.length
         ? { AND: and }
         : {};
+
+      let selectedItems: PathologyTest[] = [];
+      if (defaultSelectedIds && defaultSelectedIds.length > 0) {
+        selectedItems = await prisma.pathologyTest.findMany({
+          where: {
+            id: { in: defaultSelectedIds },
+          },
+          select: {
+            id: true,
+            name: true,
+            alias: true,
+            container: true,
+            sampleType: true,
+            footerNotes: true,
+            price: true,
+            section: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+      }
+
+      const where: Prisma.PathologyTestWhereInput = {
+        ...baseWhere,
+        ...(defaultSelectedIds &&
+          defaultSelectedIds.length > 0 && {
+            id: { notIn: defaultSelectedIds },
+          }),
+      };
 
       const [items, total] = await prisma.$transaction([
         prisma.pathologyTest.findMany({
@@ -90,10 +122,12 @@ export const getAPI = async (req: Request) => {
         prisma.pathologyTest.count({ where }),
       ]);
 
+      const finalItems = [...selectedItems, ...items];
+
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Pathology Tests Fetched Successfully",
-        data: items,
+        data: finalItems,
         total,
       });
     },

@@ -105,6 +105,9 @@ export const useInfiniteRadiologyTestsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
+          ...(filters.defaultSelectedIds && {
+            defaultSelectedIds: filters.defaultSelectedIds,
+          }),
         },
       }),
     getNextPageParam: (lastPage, allPages) => {

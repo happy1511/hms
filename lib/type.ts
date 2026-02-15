@@ -240,6 +240,7 @@ export interface FilterValues {
   billingSectionId?: string;
   referringDoctorId?: string;
   consultantDoctorId?: string;
+  defaultSelectedIds?: string[] | number[];
 }
 
 // ----------------------------------
@@ -516,6 +517,7 @@ export type OPDType = Prisma.OpdGetPayload<{
     discountValue: true;
     rate: true;
     transactions: true;
+    isInQueue: true;
     consultantDoctor: {
       select: {
         user: {
@@ -536,6 +538,7 @@ export type OPDType = Prisma.OpdGetPayload<{
     };
     patient: {
       select: {
+        id: true;
         uhid: true;
         lastName: true;
         firstName: true;
@@ -545,6 +548,7 @@ export type OPDType = Prisma.OpdGetPayload<{
         relations: true;
         addresses: true;
         contacts: true;
+        gender: true;
       };
     };
     createdAt: true;
