@@ -7,6 +7,8 @@ import {
 import { z } from "zod";
 import { patientValidator } from "../masters/patient";
 
+// -------------------- Opd Bill --------------------
+
 const billingItemValidator = z.object({
   index: z.coerce.number().optional(),
   billingSectionId: z.coerce.number().min(1),
@@ -141,6 +143,53 @@ const addOpdTransactionValidator = transactionsValidator.extend({
   billId: z.coerce.number(),
 });
 
+// -------------------- Opd File --------------------
+const vitalsValidator = z.object({
+  height: z.coerce.number().optional(),
+  weight: z.coerce.number().optional(),
+  bpMm: z.coerce.number().optional(),
+  bpHg: z.coerce.number().optional(),
+  pulse: z.coerce.number().optional(),
+  rbs: z.coerce.number().optional(),
+  rr: z.coerce.number().optional(),
+  spo2: z.coerce.number().optional(),
+  temp: z.coerce.number().optional(),
+  opdId: z.coerce.number(),
+});
+
+const consultationValidator = z.object({
+  notes: z.string().optional(),
+  generalExaminations: z.string().optional(),
+  systemicExaminations: z.string().optional(),
+  diagnosis: z.string().optional(),
+  chronicIllness: z.string().optional(),
+  advisedPathologyTests: z.array(z.coerce.number()).optional(),
+  advisedRadiologyTests: z.array(z.coerce.number()).optional(),
+});
+
+const prescribedDrugs = z.object({
+  name: z.string().min(1),
+  days: z.string().min(1),
+  frequency: z.string().min(1),
+  remarks: z.string().min(1),
+});
+
+const prescriptionValidator = z.object({
+  followUpAfterDays: z.coerce.number().optional(),
+  followUpDate: z.coerce.date().optional(),
+  followUpAdvice: z.string().optional(),
+  otherAdvice: z.string().optional(),
+  drugs: z.array(prescribedDrugs),
+  opdId: z.coerce.number(),
+});
+
+const consultationFileValidator = consultationValidator.extend({
+  prescription: prescriptionValidator,
+  vitals: vitalsValidator,
+  opdId: z.coerce.number(),
+});
+
+// -------------------- Opd Bill --------------------
 type opdValidatorType = z.input<typeof opdValidator>;
 type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
 type addOpdBillItemValidatorType = z.input<typeof addOpdBillItemValidator>;
@@ -149,6 +198,9 @@ type transactionValidatorType = z.input<typeof transactionsValidator>;
 type addOpdTransactionValidatorType = z.input<
   typeof addOpdTransactionValidator
 >;
+// -------------------- Opd File --------------------
+type vitalValidatorType = z.input<typeof vitalsValidator>;
+type consultantFileType = z.input<typeof consultationFileValidator>;
 
 export {
   opdValidator,
@@ -157,6 +209,8 @@ export {
   partialOpdValidator,
   addOpdBillItemValidator,
   addOpdTransactionValidator,
+  vitalsValidator,
+  consultationFileValidator,
 };
 export type {
   opdValidatorType,
@@ -165,4 +219,6 @@ export type {
   partialOpdValidatorType,
   addOpdBillItemValidatorType,
   addOpdTransactionValidatorType,
+  vitalValidatorType,
+  consultantFileType,
 };

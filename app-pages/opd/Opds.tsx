@@ -7,6 +7,7 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
+import AddVitalsModal from "@/components/opd/AddVitalsModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -41,6 +42,7 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 
 const Actions = ({ data }: { data: OPDType }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
+  const [addVitalsModal, setAddVitalsModal] = useState(false);
   const router = useRouter();
 
   return (
@@ -63,6 +65,10 @@ const Actions = ({ data }: { data: OPDType }) => {
                 label: "Create New OPD",
                 onClick: () => router.push(`/opd/bill/${data.patient.id}`),
               },
+              {
+                label: "Vitals",
+                onClick: () => setAddVitalsModal(true),
+              },
             ],
             label: "OPD",
           },
@@ -75,6 +81,13 @@ const Actions = ({ data }: { data: OPDType }) => {
         open={addInvoiceItemModal}
         onOpenChange={setAddInvoiceItemModal}
         trigger={<></>}
+      />
+      <AddVitalsModal
+        opdId={data.id}
+        open={addVitalsModal}
+        onOpenChange={setAddVitalsModal}
+        trigger={<></>}
+        vital={data.vital}
       />
     </>
   );
@@ -304,6 +317,7 @@ const OPDs = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
+            getRowId={(row) => String(row.id)}
           />
         </>
       )}

@@ -551,9 +551,10 @@ model PathologyTest {
   parameters PathologyTestParameter[]
   services   PathologyTestService[]
 
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  testHeaders PathologyTestHeader[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  testHeaders           PathologyTestHeader[]
+  advisedPathologyTests AdvisedPathologyTests[]
 }
 
 model PathologyTestHeader {
@@ -623,9 +624,10 @@ model RadiologyTest {
 
   templates RadiologyTemplate[]
 
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
   radiologyTestServices RadiologyTestService[]
+  advisedRadiologyTests AdvisedRadiologyTests[]
 }
 
 model RadiologyTemplate {
@@ -733,6 +735,88 @@ model Transaction {
   opd        Opd? @relation(fields: [opdId], references: [id], onDelete: Cascade)
 }
 
+// -------------------- OPD File Management --------------------
+
+model PrescribedDrugs {
+  id             Int     @id @default(autoincrement())
+  name           String
+  frequency      Int
+  days           Int
+  remarks        String?
+  prescriptionId Int
+  opdId          Int
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  opd          Opd          @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model Prescription {
+  id                Int       @id @default(autoincrement())
+  opdId             Int       @unique
+  followUpAfterDays Int?
+  followUpDate      DateTime?
+  followUpAdvice    String?
+  otherAdvice       String?
+
+  drugs PrescribedDrugs[]
+  opd   Opd               @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model Vital {
+  id     Int  @id @default(autoincrement())
+  opdId  Int  @unique
+  height Int?
+  weight Int?
+  bpMm   Int?
+  bpHg   Int?
+  pulse  Int?
+  rbs    Int?
+  rr     Int?
+  spo2   Int?
+  temp   Int?
+
+  opdConsultation OpdConsultation?
+  opd             Opd              @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model AdvisedPathologyTests {
+  id             Int @id @default(autoincrement())
+  testId         Int
+  consultationId Int
+  opdId          Int
+
+  test         PathologyTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  consultation OpdConsultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model AdvisedRadiologyTests {
+  id             Int @id @default(autoincrement())
+  testId         Int
+  consultationId Int
+  opdId          Int
+
+  test         RadiologyTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  consultation OpdConsultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model OpdConsultation {
+  id                   Int     @id @default(autoincrement())
+  opdId                Int     @unique
+  vitalsId             Int     @unique
+  notes                String?
+  generalExaminations  String?
+  systemicExaminations String?
+  diagnosis            String?
+  chronicIllness       String?
+
+  opd                   Opd                     @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  vitals                Vital                   @relation(fields: [vitalsId], references: [id], onDelete: Cascade)
+  advisedPathologyTests AdvisedPathologyTests[]
+  advisedRadiologyTests AdvisedRadiologyTests[]
+}
+
 // -------------------- Opd Management --------------------
 
 model Opd {
@@ -754,11 +838,17 @@ model Opd {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  consultantDoctor Doctor           @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
-  referringDoctor  Doctor?          @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
-  patient          Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  opdBillingItems  OpdBillingItem[]
-  transactions     Transaction[]
+  consultantDoctor      Doctor                  @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
+  referringDoctor       Doctor?                 @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
+  patient               Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  opdBillingItems       OpdBillingItem[]
+  transactions          Transaction[]
+  consultation          OpdConsultation?
+  vital                 Vital?
+  advisedPathologyTests AdvisedPathologyTests[]
+  advisedRadiologyTests AdvisedRadiologyTests[]
+  prescription          Prescription?
+  prescribedDrugs       PrescribedDrugs[]
 }
 
 model OpdBillingItem {

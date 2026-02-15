@@ -551,6 +551,7 @@ export type OPDType = Prisma.OpdGetPayload<{
         gender: true;
       };
     };
+    vital: true;
     createdAt: true;
     updatedAt: true;
   };

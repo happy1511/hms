@@ -4,6 +4,7 @@ import {
   OPD_BILLING_ITEM,
   OPD_QUEUE,
   OPD_TRANSACTION,
+  OPD_VITALS,
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
@@ -20,6 +21,7 @@ import {
   addOpdTransactionValidatorType,
   opdValidatorType,
   partialOpdValidatorType,
+  vitalValidatorType,
 } from "@/validators/api/opd/opd";
 import {
   InfiniteData,
@@ -41,6 +43,7 @@ const createTransaction = createRequest<ApiResponse<OPDType>>(
   OPD_TRANSACTION,
   "POST",
 );
+const updateVitals = createRequest<ApiResponse<OPDType>>(OPD_VITALS, "PUT");
 const updateBillingSection = createRequest<
   ApiResponse<BillingSectionType>,
   undefined,
@@ -244,27 +247,24 @@ export const useCreateOpdBillingItem = () => {
   });
 };
 
-export const useUpdateBillingSection = () => {
+export const useUpdateOpdVitals = () => {
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   return useMutation<
-    ApiResponse<BillingSectionType>,
+    ApiResponse<OPDType>,
     AxiosError<ApiResponse<null>>,
-    PartialBillingSectionValidatorType
+    vitalValidatorType
   >({
-    mutationKey: ["update-billing-section"],
+    mutationKey: ["update-opd-vitals"],
     mutationFn: (data) =>
-      updateBillingSection({
+      updateVitals({
         body: data,
-        urlHelpers: { id: data.sectionId.toString() },
       }),
     onSuccess: () => {
-      toast.success("Billing Section Updated Successfully");
+      toast.success("Vitals Updated Successfully");
       queryClient.invalidateQueries({
-        queryKey: ["billing-sections"],
+        queryKey: ["opds"],
       });
-      router.back();
     },
     onError: showError,
   });

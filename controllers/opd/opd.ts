@@ -9,6 +9,7 @@ import {
   addOpdTransactionValidator,
   opdValidator,
   partialOpdValidator,
+  vitalsValidator,
 } from "@/validators/api/opd/opd";
 
 export const getAPI = async (req: Request) => {
@@ -96,6 +97,7 @@ export const getAPI = async (req: Request) => {
                 gender: true,
               },
             },
+            vital: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -406,6 +408,46 @@ export const deleteQueueAPI = async (req: Request) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Opd Removed from queue Successfully",
           data: updatedOpd,
+        });
+      });
+    },
+  });
+};
+
+export const updateVitalsAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: vitalsValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { opdId, ...rest } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const updatedVitals = await tx.vital.upsert({
+          where: { opdId },
+          update: {
+            ...rest,
+          },
+          create: {
+            opdId,
+            ...rest,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Vitals Updated Successfully",
+          data: updatedVitals,
         });
       });
     },
