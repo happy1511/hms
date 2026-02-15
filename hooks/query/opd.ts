@@ -1,9 +1,9 @@
-import { Opd } from "@/generated/prisma/client";
 import { BILLING_SECTIONS, OPD } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   BillingSectionType,
   FilterValues,
+  OPDType,
   PaginatedResponse,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -21,7 +21,7 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createOpd = createRequest<ApiResponse<Opd>>(OPD, "POST");
+const createOpd = createRequest<ApiResponse<OPDType>>(OPD, "POST");
 const updateBillingSection = createRequest<
   ApiResponse<BillingSectionType>,
   undefined,
@@ -38,25 +38,25 @@ const getBillingSection = createRequest<
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "GET");
 
-const getBillingSections = createRequest<
-  PaginatedResponse<BillingSectionType>,
+const getOPDs = createRequest<
+  PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
->(BILLING_SECTIONS, "GET");
+>(OPD, "GET");
 
-export const useBillingSectionsList = (
+export const useOpdList = (
   filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<OPDType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<OPDType>,
     [string, FilterValues, number, number]
   >({
-    queryKey: ["billing-sections", filters, page, limit],
+    queryKey: ["opds", filters, page, limit],
     queryFn: () =>
-      getBillingSections({
+      getOPDs({
         pageParam: page,
         params: {
           limit,
@@ -64,6 +64,12 @@ export const useBillingSectionsList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(filters.consultantDoctorId && {
+            consultantDoctorId: filters.consultantDoctorId,
+          }),
+          ...(filters.referringDoctorId && {
+            referringDoctorId: filters.referringDoctorId,
+          }),
         },
       }),
   });
@@ -74,15 +80,15 @@ export const useInfiniteBillingSectionsList = (
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<OPDType>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<BillingSectionType>>,
+    InfiniteData<PaginatedResponse<OPDType>>,
     [string, FilterValues, number]
   >({
     queryKey: ["wards", filters, limit],
 
     queryFn: ({ pageParam = 1 }) =>
-      getBillingSections({
+      getOPDs({
         pageParam: pageParam as number,
         params: {
           limit,
@@ -127,7 +133,7 @@ export const useCreateOpd = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<Opd>,
+    ApiResponse<OPDType>,
     AxiosError<ApiResponse<null>>,
     opdValidatorType
   >({

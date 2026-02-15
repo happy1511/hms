@@ -25,6 +25,14 @@ const paginationValidator = z.object({
   pathologyTestType: z.enum(PathologyTestSection).optional(),
   radiologyTestType: z.enum(RadiologySection).optional(),
   pathologyTestId: z.coerce.number().optional(),
+  consultantDoctorId: z.coerce
+    .number()
+    .optional()
+    .transform((id) => Number(id)),
+  referringDoctorId: z.coerce
+    .number()
+    .optional()
+    .transform((id) => Number(id)),
 
   "createdAt[from]": z.coerce.date().optional(),
   "createdAt[to]": z.coerce.date().optional(),

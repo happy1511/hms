@@ -238,6 +238,8 @@ export interface FilterValues {
   floorId?: string;
   documentType?: string;
   billingSectionId?: string;
+  referringDoctorId?: string;
+  consultantDoctorId?: string;
 }
 
 // ----------------------------------
@@ -259,7 +261,12 @@ export interface FilterOption {
   value: string;
 }
 
-export type FilterType = "select" | "text" | "date" | "dateRange";
+export type FilterType =
+  | "select"
+  | "text"
+  | "date"
+  | "dateRange"
+  | "infiniteSelect";
 
 export interface FilterConfig<T extends FieldValues> {
   label: string;
@@ -268,6 +275,10 @@ export interface FilterConfig<T extends FieldValues> {
   options?: FilterOption[];
   required?: boolean;
   placeholder?: string;
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onSearch?: (value: string) => void;
 }
 
 // ----------------------------------
@@ -493,5 +504,50 @@ export type PathologyParameterOptionType = Prisma.ParameterOptionsGetPayload<{
     id: true;
     value: true;
     testParameter: true;
+  };
+}>;
+
+export type OPDType = Prisma.OpdGetPayload<{
+  select: {
+    id: true;
+    arrivalState: true;
+    total: true;
+    discountType: true;
+    discountValue: true;
+    rate: true;
+    transactions: true;
+    consultantDoctor: {
+      select: {
+        user: {
+          omit: {
+            password: true;
+          };
+        };
+      };
+    };
+    referringDoctor: {
+      select: {
+        user: {
+          omit: {
+            password: true;
+          };
+        };
+      };
+    };
+    patient: {
+      select: {
+        uhid: true;
+        lastName: true;
+        firstName: true;
+        middleName: true;
+        dob: true;
+        maritalStatus: true;
+        relations: true;
+        addresses: true;
+        contacts: true;
+      };
+    };
+    createdAt: true;
+    updatedAt: true;
   };
 }>;

@@ -7,6 +7,7 @@ import { FormDatePicker } from "../form-inputs/FormDatePicker";
 import { FormDateRangePicker } from "../form-inputs/FormDateRange";
 import { Label } from "../ui/label";
 import CustomButton from "./CustomButton";
+import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 
 interface CustomFiltersProps<T extends FieldValues> {
   filters: FilterConfig<T>[];
@@ -28,7 +29,18 @@ const CustomFilters = <T extends FieldValues>({
   };
 
   const renderFilter = (filter: FilterConfig<T>) => {
-    const { label, valueKey, type, options, required, placeholder } = filter;
+    const {
+      label,
+      valueKey,
+      type,
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+      onSearch,
+      options,
+      required,
+      placeholder,
+    } = filter;
 
     switch (type) {
       case "text":
@@ -72,6 +84,37 @@ const CustomFilters = <T extends FieldValues>({
               />
             </div>
           </div>
+        );
+
+      case "infiniteSelect":
+        return fetchNextPage &&
+          hasNextPage !== undefined &&
+          onSearch &&
+          isFetchingNextPage !== undefined ? (
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+            <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
+              {label}
+            </Label>
+            <div className="col-span-3">
+              <FormInfiniteSelect<T>
+                name={valueKey}
+                rules={{
+                  required: required ? `${label} is required` : false,
+                }}
+                control={form.control}
+                placeholder={placeholder || ""}
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
+                hideError
+                options={options || []}
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onSearch={onSearch}
+              />
+            </div>
+          </div>
+        ) : (
+          <></>
         );
 
       case "date":
