@@ -76,5 +76,6 @@ export const RADIOLOGY_TEMPLATE = "/radiology/template";
 export const OPD = "/opd";
 export const OPD_QUEUE = "/opd/queue";
 export const OPD_BILLING_ITEM = "/opd/invoice-item";
+export const OPD_CONSULTATION = "/opd/consultation";
 export const OPD_VITALS = "/opd/vitals";
 export const OPD_TRANSACTION = "/opd/transaction";

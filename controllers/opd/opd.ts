@@ -7,6 +7,7 @@ import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   addOpdBillItemValidator,
   addOpdTransactionValidator,
+  consultationFileValidator,
   opdValidator,
   partialOpdValidator,
   vitalsValidator,
@@ -448,6 +449,226 @@ export const updateVitalsAPI = async (req: Request, user: User) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Vitals Updated Successfully",
           data: updatedVitals,
+        });
+      });
+    },
+  });
+};
+
+export const getConsultationAPI = async (
+  req: Request,
+  { params }: { params: { opdId: number } },
+  user: User,
+) => {
+  return validateRequest({
+    paramsSchema: partialOpdValidator,
+    params,
+    req,
+    onSuccess: async ({ params }) => {
+      const { opdId } = params;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const consultation = await tx.opd.findUnique({
+          where: { id: opdId },
+          select: {
+            id: true,
+            patient: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            consultation: true,
+            vital: true,
+            advisedPathologyTests: {
+              select: {
+                testId: true,
+              },
+            },
+            advisedRadiologyTests: {
+              select: {
+                testId: true,
+                test: {
+                  select: { name: true, id: true },
+                },
+              },
+            },
+            prescription: {
+              select: {
+                followUpAdvice: true,
+                followUpAfterDays: true,
+                followUpDate: true,
+                otherAdvice: true,
+                opdId: true,
+                drugs: {
+                  select: {
+                    name: true,
+                    days: true,
+                    frequency: true,
+                    remarks: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Consultations Fetched Successfully",
+          data: {
+            ...consultation?.consultation,
+            advisedPathologyTests: consultation?.advisedPathologyTests?.map(
+              (t) => t.testId,
+            ),
+            advisedRadiologyTests: consultation?.advisedRadiologyTests?.map(
+              (t) => t.testId,
+            ),
+            vitals: consultation?.vital,
+            prescription: consultation?.prescription,
+          },
+        });
+      });
+    },
+  });
+};
+
+export const updateConsultationAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: consultationFileValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const {
+        opdId,
+        vitals,
+        prescription,
+        advisedPathologyTests,
+        advisedRadiologyTests,
+        ...consultationFields
+      } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+          include: {
+            consultation: true,
+          },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+        const { opdId: _v1, ...cleanVitals } = vitals;
+
+        const updatedConsultations = await tx.opd.update({
+          where: { id: opdId },
+          data: {
+            consultation: {
+              upsert: {
+                update: {
+                  ...consultationFields,
+                },
+                create: {
+                  ...consultationFields,
+                  vitals: {
+                    create: {
+                      ...cleanVitals,
+                      opdId,
+                    },
+                  },
+                },
+              },
+            },
+
+            vital: {
+              upsert: {
+                update: cleanVitals,
+                create: {
+                  ...cleanVitals,
+                },
+              },
+            },
+
+            advisedPathologyTests: {
+              deleteMany: {},
+              create:
+                advisedPathologyTests?.map((testId) => ({
+                  test: { connect: { id: testId } },
+                  consultation: {
+                    connect: { id: existingOpd.consultation!.id },
+                  },
+                })) ?? [],
+            },
+
+            advisedRadiologyTests: {
+              deleteMany: {},
+              create:
+                advisedRadiologyTests?.map((testId) => ({
+                  test: { connect: { id: testId } },
+                  consultation: {
+                    connect: { id: existingOpd.consultation!.id },
+                  },
+                })) ?? [],
+            },
+
+            prescription: {
+              upsert: {
+                update: {
+                  followUpAfterDays: prescription.followUpAfterDays,
+                  followUpAdvice: prescription.followUpAdvice,
+                  followUpDate: prescription.followUpDate,
+                  otherAdvice: prescription.otherAdvice,
+
+                  drugs: {
+                    deleteMany: {},
+                    create: prescription.drugs.map((drug) => ({
+                      name: drug.name,
+                      days: drug.days,
+                      frequency: drug.frequency,
+                      remarks: drug.remarks,
+                      opdId,
+                    })),
+                  },
+                },
+
+                create: {
+                  followUpAfterDays: prescription.followUpAfterDays,
+                  followUpAdvice: prescription.followUpAdvice,
+                  followUpDate: prescription.followUpDate,
+                  otherAdvice: prescription.otherAdvice,
+                  drugs: {
+                    create: prescription.drugs.map((drug) => ({
+                      name: drug.name,
+                      days: drug.days,
+                      frequency: drug.frequency,
+                      remarks: drug.remarks,
+                      opdId,
+                    })),
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Consultations Updated Successfully",
+          data: updatedConsultations,
         });
       });
     },

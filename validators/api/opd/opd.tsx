@@ -158,28 +158,29 @@ const vitalsValidator = z.object({
 });
 
 const consultationValidator = z.object({
-  notes: z.string().optional(),
-  generalExaminations: z.string().optional(),
-  systemicExaminations: z.string().optional(),
-  diagnosis: z.string().optional(),
-  chronicIllness: z.string().optional(),
-  advisedPathologyTests: z.array(z.coerce.number()).optional(),
-  advisedRadiologyTests: z.array(z.coerce.number()).optional(),
+  notes: z.string().optional().nullable(),
+  generalExaminations: z.string().optional().nullable(),
+  systemicExaminations: z.string().optional().nullable(),
+  diagnosis: z.string().optional().nullable(),
+  chronicIllness: z.string().optional().nullable(),
+  advisedPathologyTests: z.array(z.coerce.number()).optional().nullable(),
+  advisedRadiologyTests: z.array(z.coerce.number()).optional().nullable(),
 });
 
-const prescribedDrugs = z.object({
+const prescribedDrugValidator = z.object({
+  index: z.coerce.number().optional().nullable(),
   name: z.string().min(1),
-  days: z.string().min(1),
-  frequency: z.string().min(1),
-  remarks: z.string().min(1),
+  days: z.coerce.number().min(1),
+  frequency: z.coerce.number().min(1),
+  remarks: z.string().optional().nullable(),
 });
 
 const prescriptionValidator = z.object({
-  followUpAfterDays: z.coerce.number().optional(),
-  followUpDate: z.coerce.date().optional(),
-  followUpAdvice: z.string().optional(),
-  otherAdvice: z.string().optional(),
-  drugs: z.array(prescribedDrugs),
+  followUpAfterDays: z.coerce.number().optional().nullable(),
+  followUpDate: z.coerce.date().optional().nullable(),
+  followUpAdvice: z.string().optional().nullable(),
+  otherAdvice: z.string().optional().nullable(),
+  drugs: z.array(prescribedDrugValidator),
   opdId: z.coerce.number(),
 });
 
@@ -201,6 +202,7 @@ type addOpdTransactionValidatorType = z.input<
 // -------------------- Opd File --------------------
 type vitalValidatorType = z.input<typeof vitalsValidator>;
 type consultantFileType = z.input<typeof consultationFileValidator>;
+type prescribedDrugType = z.input<typeof prescribedDrugValidator>;
 
 export {
   opdValidator,
@@ -211,6 +213,7 @@ export {
   addOpdTransactionValidator,
   vitalsValidator,
   consultationFileValidator,
+  prescribedDrugValidator,
 };
 export type {
   opdValidatorType,
@@ -221,4 +224,5 @@ export type {
   addOpdTransactionValidatorType,
   vitalValidatorType,
   consultantFileType,
+  prescribedDrugType,
 };

@@ -69,6 +69,10 @@ const Actions = ({ data }: { data: OPDType }) => {
                 label: "Vitals",
                 onClick: () => setAddVitalsModal(true),
               },
+              {
+                label: "View Consultation File",
+                onClick: () => router.push(`/opd/consultation/${data.id}`),
+              },
             ],
             label: "OPD",
           },

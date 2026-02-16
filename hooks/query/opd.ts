@@ -2,6 +2,7 @@ import {
   BILLING_SECTIONS,
   OPD,
   OPD_BILLING_ITEM,
+  OPD_CONSULTATION,
   OPD_QUEUE,
   OPD_TRANSACTION,
   OPD_VITALS,
@@ -19,6 +20,7 @@ import { PartialBillingSectionValidatorType } from "@/validators/api/masters/bil
 import {
   addOpdBillItemValidatorType,
   addOpdTransactionValidatorType,
+  consultantFileType,
   opdValidatorType,
   partialOpdValidatorType,
   vitalValidatorType,
@@ -44,6 +46,10 @@ const createTransaction = createRequest<ApiResponse<OPDType>>(
   "POST",
 );
 const updateVitals = createRequest<ApiResponse<OPDType>>(OPD_VITALS, "PUT");
+const updateConsultation = createRequest<ApiResponse<OPDType>>(
+  OPD_CONSULTATION,
+  "PUT",
+);
 const updateBillingSection = createRequest<
   ApiResponse<BillingSectionType>,
   undefined,
@@ -55,11 +61,11 @@ const deleteBillingSection = createRequest<
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "DELETE");
 const deleteOpdQueue = createRequest<ApiResponse<null>>(OPD_QUEUE, "DELETE");
-const getBillingSection = createRequest<
-  ApiResponse<BillingSectionType>,
+const getConsultation = createRequest<
+  ApiResponse<consultantFileType>,
   undefined,
   { id: string }
->((p) => `${BILLING_SECTIONS}/${p.id}`, "GET");
+>((p) => `${OPD_CONSULTATION}/${p.id}`, "GET");
 
 const getOPDs = createRequest<
   PaginatedResponse<OPDType>,
@@ -169,16 +175,16 @@ export const useInfiniteBillingSectionsList = (
   });
 };
 
-export const useGetBillingSection = (id?: string) => {
+export const useGetConsultationFile = (id?: string) => {
   return useQuery<
-    ApiResponse<BillingSectionType>,
+    ApiResponse<consultantFileType>,
     AxiosError<ApiResponse<null>>,
-    BillingSectionType,
+    consultantFileType,
     [string, string | undefined]
   >({
-    queryKey: ["get-billing-section", id],
+    queryKey: ["get-opd-consultation", id],
     queryFn: () =>
-      getBillingSection({
+      getConsultation({
         urlHelpers: {
           id: id as string,
         },
@@ -262,6 +268,29 @@ export const useUpdateOpdVitals = () => {
       }),
     onSuccess: () => {
       toast.success("Vitals Updated Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateOpdConsultation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    consultantFileType
+  >({
+    mutationKey: ["update-opd-consultation"],
+    mutationFn: (data) =>
+      updateConsultation({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Consultations Updated Successfully");
       queryClient.invalidateQueries({
         queryKey: ["opds"],
       });
