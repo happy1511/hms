@@ -4,7 +4,6 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import {
   authValidator,
-  AuthValidatorType,
   refreshTokenValidator,
 } from "@/validators/api/auth/auth";
 import { cookies } from "next/headers";
@@ -12,7 +11,7 @@ import { apiResponse } from "@/lib/apiResponse";
 import { Status } from "@/generated/prisma/enums";
 
 export const auth = async (req: Request) => {
-  return validateRequest<AuthValidatorType, undefined, undefined>({
+  return validateRequest({
     bodySchema: authValidator,
     req,
     onSuccess: async ({ body }) => {
