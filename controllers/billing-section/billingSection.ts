@@ -230,9 +230,7 @@ export const updateAPI = async (
               ? {
                   deleteMany: {},
                   create: serviceIds?.map((serviceId) => ({
-                    service: {
-                      connect: { id: serviceId },
-                    },
+                    service: { connect: { id: serviceId } },
                   })),
                 }
               : undefined,

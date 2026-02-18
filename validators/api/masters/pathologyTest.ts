@@ -7,6 +7,7 @@ import {
 } from "@/generated/prisma/enums";
 import { z } from "zod";
 
+// ----------- Pathology Test ------------
 const parameterOptionValidator = z.object({
   value: z.string().min(1, "Option value is required"),
 });
@@ -120,6 +121,37 @@ const partialReferenceRangeValidator = referenceRangeValidator
     referenceRangeId: z.coerce.number().min(1, "Parameter Id is required"),
   });
 
+// ----------- Pathology Test Order ------------
+const pathologyTestResults = z.object({
+  orderId: z.coerce.number(),
+  parameterId: z.coerce.number(),
+  numericValue: z.coerce.number().optional(),
+  textValue: z.string().optional(),
+  optionId: z.coerce.number().optional(),
+});
+
+const pathologyTestOrder = z.object({
+  isCancelled: z.boolean().optional().default(false),
+  isOutSourced: z.boolean().optional().default(false),
+  results: z.array(pathologyTestResults).optional(),
+  orderId: z.coerce.number().min(1),
+});
+
+export const pathologyResultEntry = z.object({
+  parameters: z.array(
+    z.object({
+      parameterId: z.number(),
+      value: z.string().optional(),
+      optionId: z.coerce.number().optional(),
+    }),
+  ),
+});
+
+const partialPathologyTestOrder = pathologyTestOrder.partial().extend({
+  orderId: z.coerce.number().min(1),
+});
+
+// ----------- Pathology Test ------------
 type PathologyTestValidatorType = z.input<typeof pathologyTestValidator>;
 type PartialPathologyTestValidatorType = z.input<
   typeof partialPathologyTestValidator
@@ -158,6 +190,13 @@ type PartialOptionToParameterValidatorType = z.input<
   typeof partialOptionValidator
 >;
 
+// ----------- Pathology Test Order ------------
+type PartialPathologyOrderValidatorType = z.input<
+  typeof partialPathologyTestOrder
+>;
+type PathologyOrderValidatorType = z.input<typeof pathologyTestOrder>;
+type PathologyResultEntryValidatorType = z.input<typeof pathologyResultEntry>;
+
 export {
   pathologyTestValidator,
   partialPathologyTestValidator,
@@ -172,6 +211,8 @@ export {
   partialReferenceRangeValidator,
   addOptionToParameterValidator,
   partialOptionValidator,
+  partialPathologyTestOrder,
+  pathologyTestOrder,
 };
 export type {
   PathologyTestValidatorType,
@@ -187,4 +228,7 @@ export type {
   PartialReferenceRangeToParameterValidatorType,
   AddOptionToParameterValidatorType,
   PartialOptionToParameterValidatorType,
+  PartialPathologyOrderValidatorType,
+  PathologyOrderValidatorType,
+  PathologyResultEntryValidatorType,
 };

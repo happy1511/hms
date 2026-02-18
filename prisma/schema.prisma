@@ -176,6 +176,8 @@ enum ModuleType {
   RADIOLOGY_TEST_MASTER
   OPD_BILL
   OPD_QUEUE
+  PATHOLOGY_ORDER
+  LOCATION_MASTER
 }
 
 enum ActionType {
@@ -303,9 +305,28 @@ enum PaymentMode {
   OTHER
 }
 
+enum PathologyOrderStatus {
+  SAMPLE_PENDING
+  RESULT_PENDING
+  COMPLETED
+}
+
 // --------------------
 // Models
 // --------------------
+
+// -------------------- Location Management --------------------
+
+model Location {
+  id       Int    @id @default(autoincrement())
+  city     String
+  state    String
+  country  String
+  postcode String
+
+  @@index([city])
+  @@index([postcode])
+}
 
 // -------------------- Permission Management --------------------
 model Action {
@@ -359,8 +380,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  permissions  UserPermission[]
-  transactions Transaction[]
+  permissions         UserPermission[]
+  transactions        Transaction[]
+  verifiedOrders      PathologyTestOrder[] @relation("VerifiedByUser")
+  resultEnteredOrders PathologyTestOrder[] @relation("ResultEnteredByUser")
+  sampleTakenOrders   PathologyTestOrder[] @relation("SampleTakenByUser")
+  cancelledOrders     PathologyTestOrder[] @relation("CancelledByUser")
 }
 
 model Doctor {
@@ -477,14 +502,15 @@ model Patient {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  appointment       Appointment[]
-  contacts          PatientContact[]
-  relations         PatientRelations[]
-  addresses         PatientAddress[]
-  identifications   PatientIdentification[]
-  emergencyContacts emergencyContact[]
-  notes             PatientNotes[]
-  opds              Opd[]
+  appointment         Appointment[]
+  contacts            PatientContact[]
+  relations           PatientRelations[]
+  addresses           PatientAddress[]
+  identifications     PatientIdentification[]
+  emergencyContacts   emergencyContact[]
+  notes               PatientNotes[]
+  opds                Opd[]
+  pathologyTestOrders PathologyTestOrder[]
 }
 
 // -------------------- Facility Management --------------------
@@ -555,6 +581,7 @@ model PathologyTest {
   updatedAt             DateTime                @updatedAt
   testHeaders           PathologyTestHeader[]
   advisedPathologyTests AdvisedPathologyTests[]
+  pathologyTestOrders   PathologyTestOrder[]
 }
 
 model PathologyTestHeader {
@@ -571,18 +598,19 @@ model PathologyTestHeader {
 }
 
 model PathologyTestParameter {
-  id                Int                  @id @default(autoincrement())
-  headerId          Int?
-  header            PathologyTestHeader? @relation(fields: [headerId], references: [id], onDelete: Cascade)
-  name              String
-  displayOrder      Int
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  test              PathologyTest?       @relation(fields: [testId], references: [id])
-  testId            Int?
-  isDescriptiveOnly Boolean              @default(false)
-  referenceRanges   ReferenceRange[]
-  parameterOptions  ParameterOptions[]
+  id                   Int                   @id @default(autoincrement())
+  headerId             Int?
+  header               PathologyTestHeader?  @relation(fields: [headerId], references: [id], onDelete: Cascade)
+  name                 String
+  displayOrder         Int
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  test                 PathologyTest?        @relation(fields: [testId], references: [id])
+  testId               Int?
+  isDescriptiveOnly    Boolean               @default(false)
+  referenceRanges      ReferenceRange[]
+  parameterOptions     ParameterOptions[]
+  pathologyTestResults PathologyTestResult[]
 }
 
 model ParameterOptions {
@@ -611,6 +639,53 @@ model ReferenceRange {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// -------------------- Pathology Lab Order Management --------------------
+model PathologyTestOrder {
+  id        Int @id @default(autoincrement())
+  opdId     Int
+  patientId Int
+  testId    Int
+
+  sampleTakenAt     DateTime?
+  resultEnteredAt   DateTime?
+  verifiedAt        DateTime?
+  sampleTakenById   Int?
+  resultEnteredById Int?
+  verifiedById      Int?
+  cancelledById     Int?
+  isOutSourced      Boolean   @default(false)
+  isCancelled       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  verifiedBy      User?                 @relation("VerifiedByUser", fields: [verifiedById], references: [id])
+  resultEnteredBy User?                 @relation("ResultEnteredByUser", fields: [resultEnteredById], references: [id])
+  sampleTakenBy   User?                 @relation("SampleTakenByUser", fields: [sampleTakenById], references: [id])
+  cancelledByUser User?                 @relation("CancelledByUser", fields: [cancelledById], references: [id])
+  patient         Patient               @relation(fields: [patientId], references: [id])
+  test            PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  status          PathologyOrderStatus  @default(SAMPLE_PENDING)
+  results         PathologyTestResult[]
+  opd             Opd                   @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model PathologyTestResult {
+  id           Int     @id @default(autoincrement())
+  orderId      Int
+  parameterId  Int
+  numericValue Float?
+  textValue    String?
+  optionId     Int?
+
+  remark String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order     PathologyTestOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  parameter PathologyTestParameter @relation(fields: [parameterId], references: [id])
 }
 
 // -------------------- Radiology Test Management --------------------
@@ -849,6 +924,7 @@ model Opd {
   advisedRadiologyTests AdvisedRadiologyTests[]
   prescription          Prescription?
   prescribedDrugs       PrescribedDrugs[]
+  pathologyTestOrders   PathologyTestOrder[]
 }
 
 model OpdBillingItem {

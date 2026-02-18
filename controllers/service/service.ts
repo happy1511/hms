@@ -35,7 +35,9 @@ export const getAPI = async (req: Request) => {
 
       if (billingSectionId) {
         and.push({
-          billingSections: { some: { id: Number(billingSectionId) } },
+          billingSections: {
+            some: { billingSectionId: Number(billingSectionId) },
+          },
         });
       }
 

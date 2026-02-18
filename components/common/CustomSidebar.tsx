@@ -161,6 +161,27 @@ const labMasters: SidebarItem[] = [
   },
 ];
 
+const labOrders: SidebarItem[] = [
+  {
+    title: "CLAIMED",
+    url: "/pathology/claimed",
+    icon: TestTubes,
+    module: [ModuleType.PATHOLOGY_ORDER],
+  },
+  {
+    title: "CANCELLED",
+    url: "/pathology/cancelled",
+    icon: TestTubes,
+    module: [ModuleType.PATHOLOGY_ORDER],
+  },
+  {
+    title: "OUTSOURCED",
+    url: "/pathology/outsourced",
+    icon: TestTubes,
+    module: [ModuleType.PATHOLOGY_ORDER],
+  },
+];
+
 export function CustomSidebar() {
   const [opdOpen, setOpdOpen] = useState(true);
   const [ipdOpen, setIpdOpen] = useState(true);
@@ -187,6 +208,9 @@ export function CustomSidebar() {
     hasModulePermission(data.data, item.module),
   );
   const visibleOpd = opdItems.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visibleLab = labOrders.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
 
@@ -373,6 +397,45 @@ export function CustomSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {visibleLabMasters.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
+          <SidebarGroup className="p-0">
+            <CollapsibleTrigger className="w-full bg-transparent">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                <div className="flex items-center gap-3">
+                  <Bolt className="size-3" />
+                  <span>LAB ORDER</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform duration-200",
+                    labMasterOpen ? "rotate-180" : "",
+                  )}
+                />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-background">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {visibleLab.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

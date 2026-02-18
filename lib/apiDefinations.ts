@@ -10,6 +10,11 @@ export const PROFILE = "/auth/profile";
 export const PERMISSION = "/permission";
 
 // ----------------------------------
+// ---------LOCATION ENDPOINTS--------
+// ----------------------------------
+export const LOCATIONS = "/locations";
+
+// ----------------------------------
 // ---------USERS ENDPOINTS----------
 // ----------------------------------
 export const USERS = "/user";
@@ -63,6 +68,11 @@ export const PATHOLOGY_TEST_PARAMETER = "/pathology/parameter";
 export const PATHOLOGY_TEST_REFERENCE_RANGE = "/pathology/reference-range";
 export const PATHOLOGY_TEST_OPTION = "/pathology/parameter-option";
 export const PATHOLOGY_TEST_PARAMETER_HEADER = "/pathology/parameter-header";
+export const PATHOLOGY_ORDERS = "/pathology/orders";
+export const CANCEL_PATHOLOGY_ORDERS = "/pathology/orders/cancel";
+export const OUTSOURCE_PATHOLOGY_ORDERS = "/pathology/orders/outsource";
+export const SAMPLE_PATHOLOGY_ORDERS = "/pathology/orders/mark-sample";
+export const PATHOLOGY_ORDER_PARAMETERS = "/pathology/orders/get-parameters";
 
 // ----------------------------------
 // ---------RADIOLOGY ENDPOINTS--------

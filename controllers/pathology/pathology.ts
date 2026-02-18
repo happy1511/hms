@@ -4,10 +4,13 @@ import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
+  PathologyOrderStatus,
   PathologyTest,
   Prisma,
+  ReferenceRangeSex,
   ServiceApplicableOn,
   ServiceType,
+  User,
 } from "@/generated/prisma/client";
 import {
   addOptionToParameterValidator,
@@ -17,6 +20,7 @@ import {
   partialOptionValidator,
   partialParameterHeaderValidator,
   partialParameterTestValidator,
+  partialPathologyTestOrder,
   partialPathologyTestValidator,
   partialReferenceRangeValidator,
   pathologyTestValidator,
@@ -129,6 +133,370 @@ export const getAPI = async (req: Request) => {
         message: "Pathology Tests Fetched Successfully",
         data: finalItems,
         total,
+      });
+    },
+  });
+};
+
+export const getOrdersAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const status = query.testStatus ?? "";
+      const name = query.search ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+      // const defaultSelectedIds = query.defaultSelectedIds;
+      const cancelled = query.cancelled;
+      const outsourced = query.outsourced;
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.PatientWhereInput[] = [];
+
+      if (status) {
+        and.push({
+          pathologyTestOrders: { some: { status: { in: status } } },
+        });
+      }
+
+      if (name) {
+        and.push({ firstName: { contains: name } });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          pathologyTestOrders: {
+            some: {
+              createdAt: {
+                ...(createdAtFrom && { gte: createdAtFrom }),
+                ...(createdAtTo && { lte: createdAtTo }),
+              },
+            },
+          },
+        });
+      }
+
+      and.push({
+        pathologyTestOrders: {
+          some: {
+            isCancelled: cancelled === true ? true : false,
+            isOutSourced: outsourced === true ? true : false,
+          },
+        },
+      });
+
+      const where: Prisma.PatientWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.patient.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          include: {
+            pathologyTestOrders: {
+              where: {
+                isOutSourced: outsourced === true ? true : false,
+                isCancelled: cancelled === true ? true : false,
+              },
+              select: {
+                id: true,
+                opdId: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                sampleTakenAt: true,
+                resultEnteredAt: true,
+                verifiedAt: true,
+                isOutSourced: true,
+                isCancelled: true,
+                test: {
+                  select: {
+                    id: true,
+                    name: true,
+                    section: true,
+                    container: true,
+                    sampleType: true,
+                  },
+                },
+
+                opd: {
+                  select: {
+                    consultantDoctor: {
+                      select: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+
+                resultEnteredBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+
+                verifiedBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+
+                sampleTakenBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+
+        prisma.patient.count({
+          where,
+        }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Pathology Orders Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const getOrderDetailsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: partialPathologyTestOrder,
+    req,
+    onSuccess: async ({ query }) => {
+      const { orderId } = query;
+
+      const order = await prisma.pathologyTestOrder.findFirst({
+        where: { id: orderId },
+        include: {
+          patient: true,
+        },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Pathology Order Not Found",
+        });
+      }
+
+      const gender =
+        order.patient.gender === "Female"
+          ? ReferenceRangeSex["FEMALE"]
+          : ReferenceRangeSex["MALE"];
+
+      const data = await prisma.pathologyTestOrder.findFirst({
+        where: { id: orderId },
+        include: {
+          patient: true,
+          test: {
+            include: {
+              testHeaders: {
+                include: {
+                  testParameters: {
+                    include: {
+                      parameterOptions: true,
+                      referenceRanges: {
+                        where: {
+                          OR: [
+                            {
+                              applicableGender: { equals: gender },
+                            },
+                            {
+                              applicableGender: {
+                                equals: ReferenceRangeSex["Both"],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Pathology Order Parameters Fetched Successfully",
+        data: { ...data, order },
+      });
+    },
+  });
+};
+
+export const updateOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialPathologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.pathologyTestOrder.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const { results, ...rest } = body;
+
+      const updated = await prisma.pathologyTestOrder.update({
+        where: { id },
+        data: {
+          ...rest,
+          ...(rest.isCancelled && { cancelledById: user.id }),
+          ...(results?.length && { resultEnteredById: user.id }),
+          results: {
+            deleteMany: {},
+            create: results?.map((r) => ({
+              ...r,
+            })),
+          },
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Updated Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const cancelOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialPathologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.pathologyTestOrder.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const { isCancelled } = body;
+
+      const updated = await prisma.pathologyTestOrder.update({
+        where: { id },
+        data: {
+          isCancelled,
+          ...(isCancelled
+            ? { cancelledById: user.id }
+            : { cancelledById: null }),
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Cancelled Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const markOutsourceOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialPathologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.pathologyTestOrder.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const { isOutSourced } = body;
+
+      const updated = await prisma.pathologyTestOrder.update({
+        where: { id },
+        data: {
+          isOutSourced,
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Updated Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const markAsSampleTakenOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialPathologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.pathologyTestOrder.findUnique({
+        where: { id, status: PathologyOrderStatus["SAMPLE_PENDING"] },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const updated = await prisma.pathologyTestOrder.update({
+        where: { id },
+        data: {
+          status: PathologyOrderStatus["RESULT_PENDING"],
+          sampleTakenById: user.id,
+          sampleTakenAt: new Date(),
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Updated Successfully",
+        data: updated,
       });
     },
   });

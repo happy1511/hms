@@ -4,6 +4,7 @@ import {
   PrismaClient,
 } from "@/generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import data from "./india-locations.json";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DATABASE_HOST,
@@ -120,6 +121,29 @@ const assignAdminPermissions = async (adminId: number) => {
 };
 
 /* ---------------------------------- */
+/* Locations                  */
+/* ---------------------------------- */
+
+const locations = async () => {
+  console.log("🌱 Seeding locations...");
+
+  const chunkSize = 1000;
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+
+    await prisma.location.createMany({
+      data: chunk,
+      skipDuplicates: true,
+    });
+
+    console.log(`Inserted ${i + chunk.length}/${data.length}`);
+  }
+
+  console.log("✅ Seeding complete");
+};
+
+/* ---------------------------------- */
 /* Create Radiology and Pathology Test billing Sections     */
 /* ---------------------------------- */
 const createRadiologyAndPathologySections = async () => {
@@ -159,7 +183,7 @@ async function main() {
 
   const admin = await createAdminUser();
   await assignAdminPermissions(admin.id);
-
+  await locations();
   console.log("---- Seeding Completed Successfully -----");
 }
 

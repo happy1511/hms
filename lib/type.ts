@@ -5,6 +5,7 @@ import {
   ActionType,
   DoctorType,
   ModuleType,
+  PathologyOrderStatus,
   Status,
 } from "@/generated/prisma/enums";
 import { ColumnDef } from "@tanstack/react-table";
@@ -239,8 +240,11 @@ export interface FilterValues {
   documentType?: string;
   billingSectionId?: string;
   referringDoctorId?: string;
+  cancelled?: boolean;
+  outsourced?: boolean;
   consultantDoctorId?: string;
   defaultSelectedIds?: string[] | number[];
+  testStatus?: PathologyOrderStatus[];
 }
 
 // ----------------------------------
@@ -554,5 +558,151 @@ export type OPDType = Prisma.OpdGetPayload<{
     vital: true;
     createdAt: true;
     updatedAt: true;
+  };
+}>;
+
+export type PathologyOrderByPatientsType = Prisma.PatientGetPayload<{
+  include: {
+    pathologyTestOrders: {
+      select: {
+        id: true;
+        opdId: true;
+        status: true;
+        createdAt: true;
+        updatedAt: true;
+        sampleTakenAt: true;
+        resultEnteredAt: true;
+        verifiedAt: true;
+        isCancelled: true;
+        isOutSourced: true;
+
+        test: {
+          select: {
+            id: true;
+            name: true;
+            section: true;
+            container: true;
+            sampleType: true;
+          };
+        };
+
+        opd: {
+          select: {
+            consultantDoctor: {
+              select: {
+                user: {
+                  select: {
+                    id: true;
+                    name: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+
+        resultEnteredBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+
+        verifiedBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+
+        sampleTakenBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type PathologyOrderType = Prisma.PathologyTestOrderGetPayload<{
+  select: {
+    id: true;
+    opdId: true;
+    status: true;
+    createdAt: true;
+    updatedAt: true;
+    sampleTakenAt: true;
+    resultEnteredAt: true;
+    verifiedAt: true;
+    isCancelled: true;
+    isOutSourced: true;
+
+    test: {
+      select: {
+        id: true;
+        name: true;
+        section: true;
+        container: true;
+        sampleType: true;
+      };
+    };
+
+    opd: {
+      select: {
+        consultantDoctor: {
+          select: {
+            user: {
+              select: {
+                id: true;
+                name: true;
+              };
+            };
+          };
+        };
+      };
+    };
+
+    resultEnteredBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+
+    verifiedBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+
+    sampleTakenBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+  };
+}>;
+
+export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
+  include: {
+    patient: true;
+    test: {
+      include: {
+        testHeaders: {
+          include: {
+            testParameters: {
+              include: {
+                parameterOptions: true;
+                referenceRanges: true;
+              };
+            };
+          };
+        };
+      };
+    };
   };
 }>;

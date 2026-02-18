@@ -2,6 +2,7 @@ import {
   AppointmentStatus,
   DoctorType,
   IdentityType,
+  PathologyOrderStatus,
   PathologyTestSection,
   RadiologySection,
   Status,
@@ -13,6 +14,15 @@ const paginationValidator = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().optional(),
   status: z.enum(Status).optional(),
+  testStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
+  cancelled: z
+    .string()
+    .transform((t) => (t === "true" ? true : false))
+    .optional(),
+  outsourced: z
+    .string()
+    .transform((t) => (t === "true" ? true : false))
+    .optional(),
   appointmentStatus: z.enum(AppointmentStatus).optional(),
   doctorType: z.enum(DoctorType).optional(),
   uhid: z.string().optional(),

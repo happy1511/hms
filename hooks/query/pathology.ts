@@ -1,15 +1,22 @@
 import {
+  CANCEL_PATHOLOGY_ORDERS,
+  OUTSOURCE_PATHOLOGY_ORDERS,
   PATHOLOGY,
+  PATHOLOGY_ORDER_PARAMETERS,
+  PATHOLOGY_ORDERS,
   PATHOLOGY_TEST_OPTION,
   PATHOLOGY_TEST_PARAMETER,
   PATHOLOGY_TEST_PARAMETER_HEADER,
   PATHOLOGY_TEST_REFERENCE_RANGE,
+  SAMPLE_PATHOLOGY_ORDERS,
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   FilterValues,
   PaginatedResponse,
+  PathologyOrderByPatientsType,
   PathologyTestDataType,
+  PathologyTestResultType,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
@@ -23,6 +30,7 @@ import {
   PartialParameterToTestValidatorType,
   PartialPathologyTestValidatorType,
   PartialReferenceRangeToParameterValidatorType,
+  PathologyOrderValidatorType,
   PathologyTestValidatorType,
   UpdateParameterHeaderToTestValidatorType,
   UpdateParameterToTestValidatorType,
@@ -47,6 +55,20 @@ const updatePathologyTest = createRequest<
   undefined,
   { id: number }
 >((p) => `${PATHOLOGY}/${p.id}`, "PUT");
+const updatePathologyOrder = createRequest<
+  ApiResponse<PathologyOrderValidatorType>,
+  undefined,
+  { id: number }
+>(PATHOLOGY_ORDERS, "PUT");
+const cancelPathologyOrder = createRequest<
+  ApiResponse<PathologyOrderValidatorType>
+>(CANCEL_PATHOLOGY_ORDERS, "PUT");
+const outsourcePathologyOrder = createRequest<
+  ApiResponse<PathologyOrderValidatorType>
+>(OUTSOURCE_PATHOLOGY_ORDERS, "PUT");
+const markSamplePathologyOrder = createRequest<
+  ApiResponse<PathologyOrderValidatorType>
+>(SAMPLE_PATHOLOGY_ORDERS, "PUT");
 const deletePathologyTest = createRequest<
   ApiResponse<null>,
   undefined,
@@ -106,6 +128,14 @@ const getPathologyTests = createRequest<
   PaginatedResponse<PathologyTestDataType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(PATHOLOGY, "GET");
+const getPathologyOrderParameters = createRequest<
+  ApiResponse<PathologyTestResultType>,
+  { orderId: string }
+>(PATHOLOGY_ORDER_PARAMETERS, "GET");
+const getPathologyOrders = createRequest<
+  PaginatedResponse<PathologyOrderByPatientsType>,
+  { limit: number; name?: string; createdAt?: string; status?: string }
+>(PATHOLOGY_ORDERS, "GET");
 
 export const usePathologyTestsList = (
   filters: FilterValues,
@@ -127,6 +157,39 @@ export const usePathologyTestsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
+        },
+      }),
+  });
+};
+
+export const usePathologyOrdersList = (
+  filters: FilterValues,
+  page: number,
+  limit: number,
+) => {
+  return useQuery<
+    PaginatedResponse<PathologyOrderByPatientsType>,
+    AxiosError<ApiResponse<null>>,
+    PaginatedResponse<PathologyOrderByPatientsType>,
+    [string, FilterValues, number, number]
+  >({
+    queryKey: ["pathology-orders", filters, page, limit],
+    queryFn: () =>
+      getPathologyOrders({
+        pageParam: page,
+        params: {
+          limit,
+
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.testStatus && { testStatus: filters.testStatus }),
+          ...(filters.outsourced !== undefined && {
+            outsourced: filters.outsourced,
+          }),
+          ...(filters.cancelled !== undefined && {
+            cancelled: filters.cancelled,
+          }),
         },
       }),
   });
@@ -189,6 +252,25 @@ export const useGetPathologyTest = (id?: string) => {
   });
 };
 
+export const useGetPathologyOrderParameters = (id?: string) => {
+  return useQuery<
+    ApiResponse<PathologyTestResultType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyTestResultType,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-pathology-order-parameters", id],
+    queryFn: () =>
+      getPathologyOrderParameters({
+        params: {
+          orderId: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
+};
+
 export const useCreatePathologyTest = () => {
   const queryClient = useQueryClient();
   return useMutation<
@@ -225,6 +307,94 @@ export const useUpdatePathologyTest = () => {
       toast.success("Test updated Successfully");
       queryClient.invalidateQueries({
         queryKey: ["pathology-tests"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdatePathologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyOrderValidatorType
+  >({
+    mutationKey: ["update-pathology-order"],
+    mutationFn: (data) =>
+      updatePathologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order updated Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["pathology-orders"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useMarkSamplePathologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyOrderValidatorType
+  >({
+    mutationKey: ["mark-sample-pathology-order"],
+    mutationFn: (data) =>
+      markSamplePathologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order Marked Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["pathology-orders"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useCancelPathologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyOrderValidatorType
+  >({
+    mutationKey: ["cancel-pathology-order"],
+    mutationFn: (data) =>
+      cancelPathologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order Cancelled Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["pathology-orders"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useOutsourcePathologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyOrderValidatorType
+  >({
+    mutationKey: ["outsource-pathology-order"],
+    mutationFn: (data) =>
+      outsourcePathologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order outsource Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["pathology-orders"],
       });
     },
     onError: showError,

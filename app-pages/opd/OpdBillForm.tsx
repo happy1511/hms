@@ -660,7 +660,6 @@ const OpdBillForm = () => {
     fetchNextPage: fetchNextPageReferring,
   } = useInfiniteDoctorList(
     {
-      doctorType: "referring",
       name: referringValue,
     },
     10,

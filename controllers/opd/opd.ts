@@ -174,6 +174,22 @@ export const createAPI = async (req: Request, user: User) => {
           },
         });
 
+        const pathologyServices = await tx.pathologyTestService.findMany({
+          where: {
+            serviceId: { in: body.billingItem?.map((s) => s.serviceId) },
+          },
+        });
+
+        if (pathologyServices?.length) {
+          await tx.pathologyTestOrder.createMany({
+            data: pathologyServices.map((service) => ({
+              opdId: createdOpd.id,
+              patientId: createdOpd.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
+
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "OPD Created Successfully",
