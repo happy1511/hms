@@ -1,4 +1,11 @@
-import { Prisma, User } from "@/generated/prisma/client";
+import {
+  AddressType,
+  ContactType,
+  IdentityType,
+  Patient,
+  Prisma,
+  User,
+} from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -123,20 +130,162 @@ export const createAPI = async (req: Request, user: User) => {
     user,
     onSuccess: async ({ body, user }) => {
       return prisma.$transaction(async (tx) => {
-        const existingPatient = await tx.patient.findFirst({
-          where: { id: body.patientId },
-        });
+        const { patient, patientId } = body;
 
-        if (!existingPatient) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Patient Not Found",
+        let existingPatient: Patient | undefined | null;
+        if (patientId) {
+          existingPatient = await tx.patient.findFirst({
+            where: { id: body.patientId },
+          });
+
+          if (!existingPatient || !existingPatient?.id) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Patient Not Found",
+            });
+          } else {
+            const relation = patient?.relations?.splice(0, 1);
+
+            if (relation.length) {
+              await tx.patientRelations.upsert({
+                where: {
+                  patientId_name_type: {
+                    patientId: existingPatient.id,
+                    type: relation[0].type,
+                    name: relation[0].name,
+                  },
+                },
+                create: {
+                  ...relation[0],
+                  patientId: existingPatient.id,
+                },
+                update: {
+                  ...relation[0],
+                },
+              });
+            }
+
+            const homeAddress = patient?.addresses?.find(
+              (a) => a.type === AddressType.HOME,
+            );
+
+            if (homeAddress) {
+              await tx.patientAddress.upsert({
+                where: {
+                  type_patientId: {
+                    patientId: existingPatient.id,
+                    type: AddressType.HOME,
+                  },
+                },
+                create: {
+                  ...homeAddress,
+                  patientId: existingPatient.id,
+                },
+                update: {
+                  ...homeAddress,
+                },
+              });
+            }
+
+            const contactsToUpsert = patient?.contacts?.filter((c) =>
+              [
+                ContactType.PHONE,
+                ContactType.MOBILE,
+                ContactType.EMAIL,
+              ].includes(c.type),
+            );
+
+            if (contactsToUpsert?.length) {
+              await Promise.all(
+                contactsToUpsert.map((contact) =>
+                  tx.patientContact.upsert({
+                    where: {
+                      type_patientId: {
+                        patientId: existingPatient?.id as number,
+                        type: contact.type,
+                      },
+                    },
+                    create: {
+                      ...contact,
+                      patientId: existingPatient?.id as number,
+                    },
+                    update: {
+                      ...contact,
+                    },
+                  }),
+                ),
+              );
+            }
+
+            const documentToUpsert = patient?.identifications?.filter((c) =>
+              [
+                IdentityType.ADHAR_CARD,
+                IdentityType.VOTER_CARD,
+                IdentityType.DRIVING_LICENSE,
+                IdentityType.PAN_CARD,
+              ].includes(c.type),
+            );
+
+            if (documentToUpsert?.length) {
+              await Promise.all(
+                documentToUpsert.map((identity) =>
+                  tx.patientIdentification.upsert({
+                    where: {
+                      type_patientId: {
+                        patientId: existingPatient?.id as number,
+                        type: identity.type,
+                      },
+                    },
+                    create: {
+                      ...identity,
+                      patientId: existingPatient?.id as number,
+                    },
+                    update: {
+                      ...identity,
+                    },
+                  }),
+                ),
+              );
+            }
+          }
+        } else {
+          const {
+            contacts,
+            addresses,
+            relations,
+            identifications,
+            emergencyContacts,
+            notes,
+            ...rest
+          } = patient;
+          existingPatient = await tx.patient.create({
+            data: {
+              ...rest,
+              contacts: {
+                create: contacts,
+              },
+              addresses: {
+                create: addresses,
+              },
+              relations: {
+                create: relations,
+              },
+              identifications: {
+                create: identifications,
+              },
+              emergencyContacts: {
+                create: emergencyContacts,
+              },
+              notes: {
+                create: notes,
+              },
+            },
           });
         }
 
         const createdOpd = await tx.opd.create({
           data: {
-            patientId: body.patientId,
+            patientId: existingPatient.id,
             arrivalState: body.arrivalState,
             remarks: body.remarks,
             rate: body.rate,

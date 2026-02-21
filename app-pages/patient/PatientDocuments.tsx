@@ -65,7 +65,7 @@ const PatientDocuments = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -248,6 +248,7 @@ const PatientDocuments = () => {
               handleChangePage={setPage}
               isLoading={isLoading}
               handleChangeLimit={setLimit}
+              getRowId={(data) => String(data.id)}
               limit={limit}
               isError={isError}
               error={error}

@@ -176,7 +176,7 @@ const PathologyOrders = ({
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -316,6 +316,7 @@ const PathologyOrders = ({
               striped
               rowAltBgClass="bg-gray-200"
               rowBgClass="bg-gray-200"
+              getRowId={(data) => String(data.id)}
               // enableGrouping
               // grouping={["sec  tion"]}
             />
@@ -326,6 +327,7 @@ const PathologyOrders = ({
             columns={columns}
             data={patientOrders}
             enableSorting
+            getRowId={(data) => String(data.id)}
             // enableGrouping
             // grouping={["sec  tion"]}
             striped

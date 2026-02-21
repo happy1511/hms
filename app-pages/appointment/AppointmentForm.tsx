@@ -10,32 +10,21 @@ import {
   AppointmentValidatorType,
 } from "@/validators/api/appointment/appointment";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ErrorMessage } from "@hookform/error-message";
 import PatientSearchModal from "@/components/patient/PatientSearchModal";
 import { useCreateAppointment } from "@/hooks/query/appointment";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { Doctor, PaginatedResponse } from "@/lib/type";
 
 const AppointmentForm = () => {
   const [doctorSearchValue, setDoctorSearchValue] = useState("");
   const { mutateAsync: createAppointment, isPending: creating } =
     useCreateAppointment();
-  const {
-    data: doctors,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteDoctorList(
+  const doctorQuery = useInfiniteDoctorList(
     { doctorType: "consulting", name: doctorSearchValue },
     10,
-  );
-
-  const flatDoctors = useMemo(
-    () =>
-      doctors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.user.name, value: f.userId })),
-      ),
-    [doctors],
   );
 
   const form = useForm<AppointmentValidatorType>({
@@ -154,15 +143,20 @@ const AppointmentForm = () => {
                   Consultant Doctor
                 </Label>
                 <div className="col-span-3">
-                  <FormField<AppointmentValidatorType>
-                    type="infiniteSelect"
+                  <FormInfiniteSelect<
+                    Doctor,
+                    PaginatedResponse<Doctor>,
+                    string,
+                    AppointmentValidatorType
+                  >
                     name="doctorId"
                     control={form.control}
-                    options={flatDoctors || []}
-                    fetchNextPage={fetchNextPage}
-                    hasNextPage={hasNextPage}
-                    isFetchingNextPage={isFetchingNextPage}
-                    onSearch={setDoctorSearchValue}
+                    query={doctorQuery}
+                    getItems={(data) => data?.data}
+                    labelKey={(data) => data.name}
+                    valueKey={(data) => data.userId}
+                    search={doctorSearchValue}
+                    onSearchChange={setDoctorSearchValue}
                     required
                     hideError
                   />

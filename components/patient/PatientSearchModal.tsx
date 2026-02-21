@@ -153,6 +153,7 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
                 handleChangeLimit={setLimit}
                 isError={isError}
                 error={error}
+                getRowId={(data) => String(data.id)}
               />
             </div>
           </div>

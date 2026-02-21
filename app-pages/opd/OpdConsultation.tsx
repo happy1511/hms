@@ -5,15 +5,21 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { RadiologyTest } from "@/generated/prisma/client";
 import {
   useGetConsultationFile,
   useUpdateOpdConsultation,
 } from "@/hooks/query/opd";
 import { useInfinitePathologyTestsList } from "@/hooks/query/pathology";
 import { useInfiniteRadiologyTestsList } from "@/hooks/query/radiology";
-import { ColumnDefWithClass } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  PaginatedResponse,
+  PathologyTestDataType,
+} from "@/lib/type";
 import {
   consultantFileType,
   consultationFileValidator,
@@ -23,7 +29,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   useFieldArray,
   UseFieldArrayRemove,
@@ -237,45 +243,19 @@ const Advice = ({
   const [pathologySearchValue, setPathologySearchValue] = useState("");
   const [radiologySearchValue, setRadiologySearchValue] = useState("");
 
-  const {
-    data: pathologyTests,
-    isFetchingNextPage: isFetchingPathologyNextPage,
-    hasNextPage: hasPathologyNextPage,
-    fetchNextPage: fetchPathologyNextPage,
-  } = useInfinitePathologyTestsList(
+  const pathologyTests = useInfinitePathologyTestsList(
     {
       name: pathologySearchValue,
       defaultSelectedIds: (data?.advisedPathologyTests as string[]) || [],
     },
     10,
   );
-  const {
-    data: radiologyTests,
-    isFetchingNextPage: isFetchingRadiologyNextPage,
-    hasNextPage: hasRadiologyNextPage,
-    fetchNextPage: fetchRadiologyNextPage,
-  } = useInfiniteRadiologyTestsList(
+  const radiologyTests = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
       defaultSelectedIds: (data?.advisedRadiologyTests as string[]) || [],
     },
     10,
-  );
-
-  const flatPathologyTests = useMemo(
-    () =>
-      pathologyTests?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [pathologyTests],
-  );
-
-  const flatRadiologyTests = useMemo(
-    () =>
-      radiologyTests?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [radiologyTests],
   );
 
   return (
@@ -294,28 +274,38 @@ const Advice = ({
           type="text"
         />
 
-        <FormField
-          type="infiniteSelect"
+        <FormInfiniteSelect<
+          PathologyTestDataType,
+          PaginatedResponse<PathologyTestDataType>,
+          string,
+          consultantFileType
+        >
           name="advisedPathologyTests"
           label="Pathology"
           control={form.control}
-          options={flatPathologyTests || []}
-          fetchNextPage={fetchPathologyNextPage}
-          hasNextPage={hasPathologyNextPage}
-          isFetchingNextPage={isFetchingPathologyNextPage}
-          onSearch={setPathologySearchValue}
+          query={pathologyTests}
+          getItems={(d) => d?.data}
+          labelKey={(i) => i.name}
+          valueKey={(i) => String(i?.id)}
+          search={pathologySearchValue}
+          onSearchChange={setPathologySearchValue}
           multiple
         />
-        <FormField
-          type="infiniteSelect"
+        <FormInfiniteSelect<
+          RadiologyTest,
+          PaginatedResponse<RadiologyTest>,
+          string,
+          consultantFileType
+        >
           name="advisedRadiologyTests"
           label="Radiology"
           control={form.control}
-          options={flatRadiologyTests || []}
-          fetchNextPage={fetchRadiologyNextPage}
-          hasNextPage={hasRadiologyNextPage}
-          isFetchingNextPage={isFetchingRadiologyNextPage}
-          onSearch={setRadiologySearchValue}
+          query={radiologyTests}
+          getItems={(d) => d?.data}
+          labelKey={(i) => i.name}
+          valueKey={(i) => String(i?.id)}
+          search={radiologySearchValue}
+          onSearchChange={setRadiologySearchValue}
           multiple
         />
       </div>
@@ -459,7 +449,7 @@ const OpdConsultation = () => {
   }
 
   if (opdId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

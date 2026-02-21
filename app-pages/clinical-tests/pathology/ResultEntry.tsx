@@ -5,13 +5,17 @@ import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInput } from "@/components/form-inputs/FormInput";
 import { Form } from "@/components/ui/form";
-import { useGetPathologyOrderParameters } from "@/hooks/query/pathology";
+import {
+  useGetPathologyOrderParameters,
+  useUpdatePathologyTestOrder,
+} from "@/hooks/query/pathology";
 import { PathologyTestResultType } from "@/lib/type";
 import {
-  pathologyResultEntry,
   PathologyResultEntryValidatorType,
+  pathologyResultsEntry,
 } from "@/validators/api/masters/pathologyTest";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -23,93 +27,109 @@ const buildDefaultValues = (data: PathologyTestResultType) => {
     header.testParameters.forEach((param) => {
       params.push({
         parameterId: param.id,
-        value: "",
         optionId: undefined,
       });
     });
   });
 
-  return { parameters: params };
+  return { parameters: params, orderId: data.id };
 };
 
 const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
+  const { mutateAsync, isPending } = useUpdatePathologyTestOrder();
+
   const form = useForm({
-    resolver: zodResolver(pathologyResultEntry),
+    resolver: zodResolver(pathologyResultsEntry),
     defaultValues: buildDefaultValues(data),
   });
 
   const { control, handleSubmit } = form;
 
   const onSubmit = (values: PathologyResultEntryValidatorType) => {
-    console.log(values);
+    mutateAsync({ ...values, orderId: data.id });
   };
 
-  let globalIndex = 0; // important to map index
-
+  let globalIndex = 0;
+  console.log(form.formState.errors);
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 my-2">
         {data.test.testHeaders?.map((header) => (
           <div key={header.id} className="rounded-xl overflow-hidden">
             {/* Header Title */}
-            <div className="bg-muted px-4 py-2 text-tiny font-semibold">
+            <div className="border border-primary/20 bg-primary py-1 text-center text-white text-tiny font-semibold">
               {header.name}
             </div>
 
             {/* Table */}
-            <table className="w-full text-tiny">
-              <thead className="bg-gray-50 text-left">
+            <table className="w-full text-tiny border">
+              <thead className="bg-muted text-left sticky top-0 z-10">
                 <tr>
-                  <th className="p-2">Parameter</th>
-                  <th className="p-2 w-50">Result</th>
-                  <th className="p-2 w-30">Unit</th>
-                  <th className="p-2 w-50">Reference Range</th>
+                  <th className="px-3 py-1  w-[35%]">Parameter</th>
+                  <th className="px-3 py-1  w-[25%]">Result</th>
+                  <th className="px-3 py-1  w-[15%]">Unit</th>
+                  <th className="px-3 py-1  w-[25%]">Reference Range</th>
                 </tr>
               </thead>
 
               <tbody>
-                {header.testParameters.map((param) => {
+                {header.testParameters.map((param, rowIndex) => {
                   const index = globalIndex++;
-
                   const ref = param.referenceRanges?.[0];
 
                   return (
-                    <tr key={param.id} className="border-t">
-                      {/* Parameter Name */}
-                      <td className="p-2 font-medium">{param.name}</td>
+                    <tr
+                      key={param.id}
+                      className={`border-t ${
+                        rowIndex % 2 === 0 ? "bg-white" : "bg-muted/30"
+                      }`}
+                    >
+                      {/* Parameter */}
+                      <td className="px-3 xfo py-1 nt-medium">{param.name}</td>
 
-                      {/* Result Input */}
-                      <td className="p-2">
+                      {/* Result */}
+                      <td className="px-2 py-1">
                         {param.isDescriptiveOnly ? (
-                          <FormField
-                            control={control}
-                            type="select"
-                            options={param.parameterOptions.map((o) => ({
-                              value: o.id,
-                              label: o.value,
-                            }))}
-                            name={`parameters.${index}.optionId`}
-                          />
-                        ) : (
                           <FormInput
                             control={control}
                             type="text"
-                            name={`parameters.${index}.value`}
+                            name={`parameters.${index}.textValue`}
+                            hideError
                           />
+                        ) : param.parameterOptions?.length ? (
+                          <>
+                            <FormField
+                              control={control}
+                              type="select"
+                              options={param.parameterOptions.map((o) => ({
+                                value: o.id,
+                                label: o.value,
+                              }))}
+                              name={`parameters.${index}.optionId`}
+                              hideError
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <FormInput
+                              control={control}
+                              type="number"
+                              name={`parameters.${index}.numericValue`}
+                              hideError
+                            />
+                          </>
                         )}
                       </td>
 
                       {/* Unit */}
-                      <td className="p-2 text-muted-foreground">
+                      <td className="px-3 xte py-1 xt-muted-foreground">
                         {ref?.unit || "-"}
                       </td>
 
-                      {/* Reference Range */}
-                      <td className="p-2 text-muted-foreground">
+                      {/* Range */}
+                      <td className="px-3 xte py-1 xt-muted-foreground">
                         {ref
-                          ? `${ref.lowerRange || "-"} - ${
-                              ref.upperRange || "-"
-                            }`
+                          ? `${ref.lowerRange || "-"} - ${ref.upperRange || "-"}`
                           : "-"}
                       </td>
                     </tr>
@@ -120,7 +140,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
           </div>
         ))}
 
-        <CustomButton type="submit" className="w-full">
+        <CustomButton disabled={isPending} type="submit">
           Save Results
         </CustomButton>
       </form>
@@ -145,13 +165,37 @@ const ResultEntry = () => {
   }
 
   if (!orderId || !data) {
-    return <></>;
+    return <div />;
   }
 
   return (
     <CustomLayout
       title={data?.patient.firstName + " " + data?.patient.lastName}
     >
+      <div className="bg-white border rounded-xl p-4 text-tiny space-y-2">
+        <div className="flex justify-between">
+          <div>
+            <p className="font-semibold">
+              {data.patient.firstName} {data.patient.lastName}
+            </p>
+            <p className="text-muted-foreground">UHID: {data.patient.uhid}</p>
+            <p className="text-muted-foreground">
+              {data.patient.gender} • DOB:{" "}
+              {new Date(data.patient.dob).toLocaleDateString()}
+            </p>
+          </div>
+
+          <div className="text-right">
+            <p className="font-semibold">{data.test.name}</p>
+            {data.sampleTakenAt && (
+              <p className="text-muted-foreground">
+                Sample Taken: {format(String(data.sampleTakenAt), "dd/MM/yyyy")}
+              </p>
+            )}
+            <p className="text-muted-foreground">Status: {data.status}</p>
+          </div>
+        </div>
+      </div>
       <ResultEntryForm data={data} />
     </CustomLayout>
   );

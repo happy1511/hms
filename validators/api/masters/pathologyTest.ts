@@ -15,15 +15,15 @@ const parameterOptionValidator = z.object({
 const referenceRangeValidator = z.object({
   applicableGender: z.enum(ReferenceRangeSex),
 
-  lowerDay: z.string().optional().nullable(),
-  upperDay: z.string().optional().nullable(),
-  lowerMonth: z.string().optional().nullable(),
-  upperMonth: z.string().optional().nullable(),
-  lowerYear: z.string().optional().nullable(),
-  upperYear: z.string().optional().nullable(),
+  lowerAgeDay: z.coerce.number().optional().nullable(),
+  upperAgeDay: z.coerce.number().optional().nullable(),
+  lowerAgeMonth: z.coerce.number().optional().nullable(),
+  upperAgeMonth: z.coerce.number().optional().nullable(),
+  lowerAgeYear: z.coerce.number().optional().nullable(),
+  upperAgeYear: z.coerce.number().optional().nullable(),
 
-  lowerRange: z.string().optional().nullable(),
-  upperRange: z.string().optional().nullable(),
+  lowerRange: z.coerce.number().optional().nullable(),
+  upperRange: z.coerce.number().optional().nullable(),
   unit: z.string().optional().nullable(),
 });
 
@@ -123,7 +123,6 @@ const partialReferenceRangeValidator = referenceRangeValidator
 
 // ----------- Pathology Test Order ------------
 const pathologyTestResults = z.object({
-  orderId: z.coerce.number(),
   parameterId: z.coerce.number(),
   numericValue: z.coerce.number().optional(),
   textValue: z.string().optional(),
@@ -137,17 +136,12 @@ const pathologyTestOrder = z.object({
   orderId: z.coerce.number().min(1),
 });
 
-export const pathologyResultEntry = z.object({
-  parameters: z.array(
-    z.object({
-      parameterId: z.number(),
-      value: z.string().optional(),
-      optionId: z.coerce.number().optional(),
-    }),
-  ),
+const partialPathologyTestOrder = pathologyTestOrder.partial().extend({
+  orderId: z.coerce.number().min(1),
 });
 
-const partialPathologyTestOrder = pathologyTestOrder.partial().extend({
+const pathologyResultsEntry = z.object({
+  parameters: z.array(pathologyTestResults).optional(),
   orderId: z.coerce.number().min(1),
 });
 
@@ -195,7 +189,7 @@ type PartialPathologyOrderValidatorType = z.input<
   typeof partialPathologyTestOrder
 >;
 type PathologyOrderValidatorType = z.input<typeof pathologyTestOrder>;
-type PathologyResultEntryValidatorType = z.input<typeof pathologyResultEntry>;
+type PathologyResultEntryValidatorType = z.input<typeof pathologyResultsEntry>;
 
 export {
   pathologyTestValidator,
@@ -213,6 +207,8 @@ export {
   partialOptionValidator,
   partialPathologyTestOrder,
   pathologyTestOrder,
+  pathologyTestResults,
+  pathologyResultsEntry,
 };
 export type {
   PathologyTestValidatorType,

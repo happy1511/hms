@@ -12,15 +12,17 @@ import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useDeleteOpdQueue, useOpdQueueList } from "@/hooks/query/opd";
 import {
   ColumnDefWithClass,
+  Doctor,
   FilterConfig,
   FilterValues,
   OPDType,
+  PaginatedResponse,
   PatientType,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format, formatDuration, intervalToDuration, isAfter } from "date-fns";
 import { Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const Actions = ({
   data,
@@ -62,12 +64,7 @@ const WalkInQueue = () => {
   const [filters, setFilters] = useState<FilterValues>({});
   const [consultantValue, setConsultantValue] = useState("");
 
-  const {
-    data: consultingDoctors,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteDoctorList(
+  const consultantQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
       name: consultantValue,
@@ -81,16 +78,8 @@ const WalkInQueue = () => {
     limit,
   );
 
-  const flatConsultingDoctors = useMemo(
-    () =>
-      consultingDoctors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.user.name, value: f.userId })),
-      ),
-    [consultingDoctors],
-  );
-
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -198,11 +187,12 @@ const WalkInQueue = () => {
       valueKey: "consultantDoctorId",
       type: "infiniteSelect",
       placeholder: "Search by name here.",
-      options: flatConsultingDoctors,
-      isFetchingNextPage,
-      hasNextPage,
-      fetchNextPage,
-      onSearch: setConsultantValue,
+      query: consultantQuery,
+      getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
+      valueKeyExtractor: (i) => String((i as Doctor).userId),
+      labelKey: (i) => (i as Doctor).name,
+      search: consultantValue,
+      onSearchChange: setConsultantValue,
     },
   ];
 
@@ -224,6 +214,7 @@ const WalkInQueue = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             isError={isError}
             error={error}
           />

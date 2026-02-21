@@ -3,11 +3,12 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
 import { Status } from "@/generated/prisma/enums";
 import { useCreateBed, useGetBed, useUpdateBed } from "@/hooks/query/bed";
 import { useInfiniteWardsList } from "@/hooks/query/ward";
-import { BedType } from "@/lib/type";
+import { BedType, PaginatedResponse, WardType } from "@/lib/type";
 import {
   bedValidator,
   BedValidatorType,
@@ -18,26 +19,13 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 const CreateForm = () => {
   const [floorSearchValue, setFloorSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateBed();
-  const {
-    data: wards,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteWardsList({ name: floorSearchValue }, 10);
-
-  const flatWards = useMemo(
-    () =>
-      wards?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [wards],
-  );
+  const wardQuery = useInfiniteWardsList({ name: floorSearchValue }, 10);
 
   const form = useForm<BedValidatorType>({
     defaultValues: {},
@@ -59,16 +47,20 @@ const CreateForm = () => {
             control={form.control}
             required
           />
-          <FormField<BedValidatorType>
-            label="Ward"
-            type="infiniteSelect"
+          <FormInfiniteSelect<
+            WardType,
+            PaginatedResponse<WardType>,
+            string,
+            BedValidatorType
+          >
             name="wardId"
             control={form.control}
-            options={flatWards || []}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSearch={setFloorSearchValue}
+            query={wardQuery}
+            getItems={(data) => data?.data}
+            labelKey={(data) => data?.name}
+            valueKey={(data) => String(data?.id)}
+            search={floorSearchValue}
+            onSearchChange={setFloorSearchValue}
             required
           />
         </div>
@@ -81,22 +73,9 @@ const CreateForm = () => {
 };
 
 const UpdateForm = ({ data }: { data: BedType }) => {
-  const [floorSearchValue, setFloorSearchValue] = useState("");
   const { mutateAsync: update, isPending: updating } = useUpdateBed();
-  const {
-    data: wards,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteWardsList({ name: floorSearchValue }, 10);
-
-  const flatWards = useMemo(
-    () =>
-      wards?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [wards],
-  );
+  const [wardSearch, setWardSearch] = useState("");
+  const wardQuery = useInfiniteWardsList({ name: wardSearch }, 10);
 
   const form = useForm<PartialBedValidatorType>({
     defaultValues: {
@@ -133,16 +112,20 @@ const UpdateForm = ({ data }: { data: BedType }) => {
             control={form.control}
             required
           />
-          <FormField<PartialBedValidatorType>
-            label="Ward"
-            type="infiniteSelect"
+          <FormInfiniteSelect<
+            WardType,
+            PaginatedResponse<WardType>,
+            string,
+            PartialBedValidatorType
+          >
             name="wardId"
             control={form.control}
-            options={flatWards || []}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSearch={setFloorSearchValue}
+            query={wardQuery}
+            getItems={(data) => data?.data}
+            labelKey={(data) => data?.name}
+            valueKey={(data) => String(data?.id)}
+            search={wardSearch}
+            onSearchChange={setWardSearch}
             required
           />
         </div>
@@ -172,7 +155,7 @@ const BedForm = () => {
   }
 
   if (bedId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

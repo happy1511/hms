@@ -59,9 +59,10 @@ enum PatientType {
 }
 
 enum IdentityType {
-  Passport
-  DriverLicense
-  NationalID
+  ADHAR_CARD
+  DRIVING_LICENSE
+  PAN_CARD
+  VOTER_CARD
 }
 
 enum DocumentType {
@@ -311,6 +312,37 @@ enum PathologyOrderStatus {
   COMPLETED
 }
 
+enum NameTitle {
+  DR
+  MR
+  MS
+  MRS
+  BABY
+  MASTER
+}
+
+enum AddressType {
+  BILLING
+  CONTACT
+  BUSINESS
+  HOME
+  POSTAL
+  SHIPPING
+}
+
+enum RelationshipType {
+  NONE
+  WIFE_OF
+  HUSBAND_OF
+  SON_OF
+  DAUGHTER_OF
+  BROTHER_OF
+  SISTER_OF
+  FATHER_OF
+  MOTHER_OF
+  OTHER
+}
+
 // --------------------
 // Models
 // --------------------
@@ -318,11 +350,12 @@ enum PathologyOrderStatus {
 // -------------------- Location Management --------------------
 
 model Location {
-  id       Int    @id @default(autoincrement())
-  city     String
-  state    String
-  country  String
-  postcode String
+  id               Int              @id @default(autoincrement())
+  city             String
+  state            String
+  country          String
+  postcode         String
+  patientAddresses PatientAddress[]
 
   @@index([city])
   @@index([postcode])
@@ -369,11 +402,12 @@ model UserPermission {
 // -------------------- User Management --------------------
 
 model User {
-  id       Int     @id @default(autoincrement())
-  username String  @unique
-  loginId  String  @unique
+  id       Int       @id @default(autoincrement())
+  username String    @unique
+  loginId  String    @unique
+  title    NameTitle @default(MR)
   password String
-  status   Status  @default(active)
+  status   Status    @default(active)
   name     String?
   doctor   Doctor?
 
@@ -426,6 +460,8 @@ model PatientContact {
 
   patientId Int
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([type, patientId])
 }
 
 model emergencyContact {
@@ -449,28 +485,29 @@ model PatientNotes {
 }
 
 model PatientRelations {
-  id      Int     @id @default(autoincrement())
-  type    String
+  id      Int              @id @default(autoincrement())
+  type    RelationshipType
   name    String
   contact String?
 
   patientId Int
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, name, type])
 }
 
 model PatientAddress {
-  id               Int     @id @default(autoincrement())
-  type             String
-  country          String
+  id               Int         @id @default(autoincrement())
+  type             AddressType @default(HOME)
   addressLineOne   String
   addressLineTwo   String?
   addressLineThree String?
-  city             String
-  state            String
-  postalCode       String
+  patientId        Int
+  locationId       Int?
+  location         Location?   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  patient          Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
-  patientId Int
-  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  @@unique([type, patientId])
 }
 
 model PatientIdentification {
@@ -484,23 +521,26 @@ model PatientIdentification {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([type, patientId])
 }
 
 model Patient {
-  id                 Int           @id @default(autoincrement())
-  uhid               String        @unique @default(uuid())
+  id                 Int            @id @default(autoincrement())
+  uhid               String         @unique @default(uuid())
+  title              NameTitle
   firstName          String
   middleName         String?
   lastName           String
-  preferredName      String
+  preferredName      String?
   dob                DateTime
   identificationMark String?
   gender             Gender
-  maritalStatus      MaritalStatus
-  religion           String
-  bloodGroup         BloodGroup
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  maritalStatus      MaritalStatus?
+  religion           String?
+  bloodGroup         BloodGroup?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   appointment         Appointment[]
   contacts            PatientContact[]
@@ -627,14 +667,10 @@ model ReferenceRange {
   testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
 
   applicableGender ReferenceRangeSex
-  lowerDay         String?
-  upperDay         String?
-  lowerMonth       String?
-  upperMonth       String?
-  lowerYear        String?
-  upperYear        String?
-  lowerRange       String?
-  upperRange       String?
+  lowerAgeInDays   Int?
+  upperAgeInDays   Int?
+  lowerRange       Int?
+  upperRange       Int?
   unit             String?
 
   createdAt DateTime @default(now())
@@ -720,13 +756,10 @@ model RadiologyTemplate {
 
 // -------------------- Service Management --------------------
 model BillingSection {
-  id              Int                     @id @default(autoincrement())
-  name            String                  @unique
-  description     String?
-  status          Status                  @default(active)
-  services        BillingSectionService[]
-  isPathologyTest Boolean                 @default(false)
-  isRadiologyTest Boolean                 @default(false)
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  status      Status  @default(active)
 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -734,36 +767,21 @@ model BillingSection {
 }
 
 model Service {
-  id                Int                     @id @default(autoincrement())
-  name              String                  @unique
+  id                Int                    @id @default(autoincrement())
+  name              String                 @unique
   description       String?
   type              ServiceType
   price             Float
-  discountAvailable Boolean                 @default(false)
+  discountAvailable Boolean                @default(false)
   maxDiscount       Float?
-  applicableOn      ServiceApplicableOn     @default(BOTH)
-  status            Status                  @default(active)
-  billingSections   BillingSectionService[]
+  applicableOn      ServiceApplicableOn    @default(BOTH)
+  status            Status                 @default(active)
   pathologyTests    PathologyTestService[]
   radiologyTests    RadiologyTestService[]
 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   opdBillingItems OpdBillingItem[]
-}
-
-model BillingSectionService {
-  id               Int @id @default(autoincrement())
-  billingSectionId Int
-  serviceId        Int
-
-  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
-  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([billingSectionId, serviceId])
 }
 
 model PathologyTestService {

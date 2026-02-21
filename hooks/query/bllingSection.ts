@@ -1,10 +1,6 @@
+import { BillingSection } from "@/generated/prisma/client";
 import { BILLING_SECTIONS } from "@/lib/apiDefinations";
-import {
-  ApiResponse,
-  BillingSectionType,
-  FilterValues,
-  PaginatedResponse,
-} from "@/lib/type";
+import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
@@ -22,12 +18,12 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createBillingSection = createRequest<ApiResponse<BillingSectionType>>(
+const createBillingSection = createRequest<ApiResponse<BillingSection>>(
   BILLING_SECTIONS,
   "POST",
 );
 const updateBillingSection = createRequest<
-  ApiResponse<BillingSectionType>,
+  ApiResponse<BillingSection>,
   undefined,
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "PUT");
@@ -37,13 +33,13 @@ const deleteBillingSection = createRequest<
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "DELETE");
 const getBillingSection = createRequest<
-  ApiResponse<BillingSectionType>,
+  ApiResponse<BillingSection>,
   undefined,
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "GET");
 
 const getBillingSections = createRequest<
-  PaginatedResponse<BillingSectionType>,
+  PaginatedResponse<BillingSection>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(BILLING_SECTIONS, "GET");
 
@@ -53,9 +49,9 @@ export const useBillingSectionsList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<BillingSection>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<BillingSection>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["billing-sections", filters, page, limit],
@@ -78,9 +74,9 @@ export const useInfiniteBillingSectionsList = (
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<BillingSectionType>,
+    PaginatedResponse<BillingSection>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<BillingSectionType>>,
+    InfiniteData<PaginatedResponse<BillingSection>>,
     [string, FilterValues, number]
   >({
     queryKey: ["wards", filters, limit],
@@ -110,9 +106,9 @@ export const useInfiniteBillingSectionsList = (
 
 export const useGetBillingSection = (id?: string) => {
   return useQuery<
-    ApiResponse<BillingSectionType>,
+    ApiResponse<BillingSection>,
     AxiosError<ApiResponse<null>>,
-    BillingSectionType,
+    BillingSection,
     [string, string | undefined]
   >({
     queryKey: ["get-billing-section", id],
@@ -131,7 +127,7 @@ export const useCreateBillingSection = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<BillingSectionType>,
+    ApiResponse<BillingSection>,
     AxiosError<ApiResponse<null>>,
     BillingSectionValidatorType
   >({
@@ -153,7 +149,7 @@ export const useUpdateBillingSection = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<BillingSectionType>,
+    ApiResponse<BillingSection>,
     AxiosError<ApiResponse<null>>,
     PartialBillingSectionValidatorType
   >({

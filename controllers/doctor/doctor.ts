@@ -238,12 +238,20 @@ export const createAPI = async (req: Request) => {
             "doctor with this license number or phone number already exists",
         });
       }
-      const { permissions, name, status, password, availableDays, ...rest } =
-        data;
+      const {
+        permissions,
+        name,
+        status,
+        password,
+        availableDays,
+        title,
+        ...rest
+      } = data;
 
       const user = await prisma.user.create({
         data: {
           password,
+          title,
           name,
           loginId,
           status,

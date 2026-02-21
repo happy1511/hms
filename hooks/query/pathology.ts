@@ -1,4 +1,9 @@
 import {
+  ParameterOptions,
+  PathologyTestHeader,
+  ReferenceRange,
+} from "@/generated/prisma/client";
+import {
   CANCEL_PATHOLOGY_ORDERS,
   OUTSOURCE_PATHOLOGY_ORDERS,
   PATHOLOGY,
@@ -16,6 +21,7 @@ import {
   PaginatedResponse,
   PathologyOrderByPatientsType,
   PathologyTestDataType,
+  PathologyTestParameterType,
   PathologyTestResultType,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -74,23 +80,21 @@ const deletePathologyTest = createRequest<
   undefined,
   { id: string }
 >((p) => `${PATHOLOGY}/${p.id}`, "DELETE");
-const createPathologyTestParameter = createRequest<ApiResponse<null>>(
-  PATHOLOGY_TEST_PARAMETER,
-  "POST",
-);
-const updatePathologyTestParameter = createRequest<ApiResponse<null>>(
-  PATHOLOGY_TEST_PARAMETER,
-  "PUT",
-);
+const createPathologyTestParameter = createRequest<
+  ApiResponse<PathologyTestParameterType>
+>(PATHOLOGY_TEST_PARAMETER, "POST");
+const updatePathologyTestParameter = createRequest<
+  ApiResponse<PathologyTestParameterType>
+>(PATHOLOGY_TEST_PARAMETER, "PUT");
 const deletePathologyTestParameter = createRequest<
   ApiResponse<null>,
   undefined
 >(PATHOLOGY_TEST_PARAMETER, "DELETE");
-const createReferenceRange = createRequest<ApiResponse<null>>(
+const createReferenceRange = createRequest<ApiResponse<ReferenceRange>>(
   PATHOLOGY_TEST_REFERENCE_RANGE,
   "POST",
 );
-const updateReferenceRange = createRequest<ApiResponse<null>>(
+const updateReferenceRange = createRequest<ApiResponse<ReferenceRange>>(
   PATHOLOGY_TEST_REFERENCE_RANGE,
   "PUT",
 );
@@ -98,7 +102,7 @@ const deleteReferenceRange = createRequest<ApiResponse<null>, undefined>(
   PATHOLOGY_TEST_REFERENCE_RANGE,
   "DELETE",
 );
-const createOption = createRequest<ApiResponse<null>>(
+const createOption = createRequest<ApiResponse<ParameterOptions>>(
   PATHOLOGY_TEST_OPTION,
   "POST",
 );
@@ -106,14 +110,12 @@ const deleteOption = createRequest<ApiResponse<null>, undefined>(
   PATHOLOGY_TEST_OPTION,
   "DELETE",
 );
-const createPathologyTestParameterHeader = createRequest<ApiResponse<null>>(
-  PATHOLOGY_TEST_PARAMETER_HEADER,
-  "POST",
-);
-const updatePathologyTestParameterHeader = createRequest<ApiResponse<null>>(
-  PATHOLOGY_TEST_PARAMETER_HEADER,
-  "PUT",
-);
+const createPathologyTestParameterHeader = createRequest<
+  ApiResponse<PathologyTestHeader>
+>(PATHOLOGY_TEST_PARAMETER_HEADER, "POST");
+const updatePathologyTestParameterHeader = createRequest<
+  ApiResponse<PathologyTestHeader>
+>(PATHOLOGY_TEST_PARAMETER_HEADER, "PUT");
 const deletePathologyTestParameterHeader = createRequest<
   ApiResponse<null>,
   undefined
@@ -290,6 +292,229 @@ export const useCreatePathologyTest = () => {
   });
 };
 
+export const useCreateTestParameter = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyTestParameterType>,
+    AxiosError<ApiResponse<null>>,
+    AddParameterToTestValidatorType
+  >({
+    mutationKey: ["create-pathology-test-parameter"],
+    mutationFn: (data) => createPathologyTestParameter({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter Created Successfully");
+
+      const newParameter = data.data;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(variables.testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: [...oldData.data.parameters, newParameter],
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useCreateReferenceRange = (testId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<ReferenceRange>,
+    AxiosError<ApiResponse<null>>,
+    AddReferenceRangeToParameterValidatorType
+  >({
+    mutationKey: ["create-pathology-reference-range"],
+    mutationFn: (data) => createReferenceRange({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter Created Successfully");
+      const newRange = data.data;
+      const parameterId = variables.parameterId;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  referenceRanges: [...param.referenceRanges, newRange],
+                };
+              }),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useCreateOption = (testId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<ParameterOptions>,
+    AxiosError<ApiResponse<null>>,
+    AddOptionToParameterValidatorType
+  >({
+    mutationKey: ["create-pathology-option"],
+    mutationFn: (data) => createOption({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter Option Created Successfully");
+      const newOption = data.data;
+      const parameterId = variables.parameterId;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  parameterOptions: [...param.parameterOptions, newOption],
+                };
+              }),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useCreateTestParameterHeader = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyTestHeader>,
+    AxiosError<ApiResponse<null>>,
+    AddParameterHeaderToTestValidatorType
+  >({
+    mutationKey: ["create-pathology-test-parameter-header"],
+    mutationFn: (data) => createPathologyTestParameterHeader({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter Created Successfully");
+
+      const newHeader = data.data;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(variables.testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+          const newData = {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              testHeaders: [...oldData.data.testHeaders, newHeader],
+            },
+          };
+          return newData;
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateReferenceRange = (testId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<ReferenceRange>,
+    AxiosError<ApiResponse<null>>,
+    UpdateReferenceRangeToParameterValidatorType
+  >({
+    mutationKey: ["update-pathology-reference-range"],
+    mutationFn: (data) => updateReferenceRange({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter updated Successfully");
+
+      const updatedRange = data.data;
+      const parameterId = variables.parameterId;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  referenceRanges: param.referenceRanges.map((range) =>
+                    range.id === updatedRange.id ? updatedRange : range,
+                  ),
+                };
+              }),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateTestParameterHeader = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PathologyTestHeader>,
+    AxiosError<ApiResponse<null>>,
+    UpdateParameterHeaderToTestValidatorType
+  >({
+    mutationKey: ["update-pathology-test-parameter-header"],
+    mutationFn: (data) => updatePathologyTestParameterHeader({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Parameter updated Successfully");
+      const updatedHeader = data.data;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(variables.testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              testHeaders: oldData.data.testHeaders.map((header) =>
+                header.id === updatedHeader.id ? updatedHeader : header,
+              ),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
 export const useUpdatePathologyTest = () => {
   const queryClient = useQueryClient();
   return useMutation<
@@ -401,214 +626,41 @@ export const useOutsourcePathologyTestOrder = () => {
   });
 };
 
-export const useCreateTestParameter = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    AddParameterToTestValidatorType
-  >({
-    mutationKey: ["create-pathology-test-parameter"],
-    mutationFn: (data) => createPathologyTestParameter({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useUpdateTestParameterHeader = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    UpdateParameterHeaderToTestValidatorType
-  >({
-    mutationKey: ["update-pathology-test-parameter-header"],
-    mutationFn: (data) => updatePathologyTestParameterHeader({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter updated Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useDeletePathologyTestParameterHeader = () => {
-  // const queryClient = useQueryClient();
-
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    PartialParameterHeaderToTestValidatorType
-  >({
-    mutationKey: ["delete-pathology-test-parameter-header"],
-    mutationFn: (data) => deletePathologyTestParameterHeader({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Deleted Successfully");
-      // queryClient.invalidateQueries({
-      //   queryKey: ["pathology-tests"],
-      // });
-    },
-    onError: showError,
-  });
-};
-
-export const useCreateReferenceRange = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    AddReferenceRangeToParameterValidatorType
-  >({
-    mutationKey: ["create-pathology-reference-range"],
-    mutationFn: (data) => createReferenceRange({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useUpdateReferenceRange = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    UpdateReferenceRangeToParameterValidatorType
-  >({
-    mutationKey: ["update-pathology-reference-range"],
-    mutationFn: (data) => updateReferenceRange({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter updated Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useDeleteReferenceRange = () => {
-  // const queryClient = useQueryClient();
-
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    PartialReferenceRangeToParameterValidatorType
-  >({
-    mutationKey: ["delete-pathology-reference-range"],
-    mutationFn: () => deleteReferenceRange({}),
-    onSuccess: () => {
-      toast.success("Test Parameter Deleted Successfully");
-      // queryClient.invalidateQueries({
-      //   queryKey: ["pathology-tests"],
-      // });
-    },
-    onError: showError,
-  });
-};
-
-export const useCreateOption = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    AddOptionToParameterValidatorType
-  >({
-    mutationKey: ["create-pathology-option"],
-    mutationFn: (data) => createOption({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useDeleteOption = () => {
-  // const queryClient = useQueryClient();
-
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    PartialOptionToParameterValidatorType
-  >({
-    mutationKey: ["delete-pathology-option"],
-    mutationFn: (data) => deleteOption({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Deleted Successfully");
-      // queryClient.invalidateQueries({
-      //   queryKey: ["pathology-tests"],
-      // });
-    },
-    onError: showError,
-  });
-};
-
-export const useCreateTestParameterHeader = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    AddParameterHeaderToTestValidatorType
-  >({
-    mutationKey: ["create-pathology-test-parameter-header"],
-    mutationFn: (data) => createPathologyTestParameterHeader({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
-
 export const useUpdateTestParameter = () => {
   const queryClient = useQueryClient();
   return useMutation<
-    ApiResponse<null>,
+    ApiResponse<PathologyTestParameterType>,
     AxiosError<ApiResponse<null>>,
     UpdateParameterToTestValidatorType
   >({
     mutationKey: ["update-pathology-test-parameter"],
     mutationFn: (data) => updatePathologyTestParameter({ body: data }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast.success("Test Parameter updated Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["pathology-tests"],
-      });
-    },
-    onError: showError,
-  });
-};
+      const updatedParameter = data.data;
+      const parameterId = variables.parameterId;
 
-export const useDeletePathologyTestParameter = () => {
-  // const queryClient = useQueryClient();
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(variables.testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
 
-  return useMutation<
-    ApiResponse<null>,
-    AxiosError<ApiResponse<null>>,
-    PartialParameterToTestValidatorType
-  >({
-    mutationKey: ["delete-pathology-test-parameter"],
-    mutationFn: (data) => deletePathologyTestParameter({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Parameter Deleted Successfully");
-      // queryClient.invalidateQueries({
-      //   queryKey: ["pathology-tests"],
-      // });
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  ...updatedParameter,
+                };
+              }),
+            },
+          };
+        },
+      );
     },
     onError: showError,
   });
@@ -630,6 +682,162 @@ export const useDeletePathologyTest = () => {
       queryClient.invalidateQueries({
         queryKey: ["pathology-tests"],
       });
+    },
+    onError: showError,
+  });
+};
+
+export const useDeletePathologyTestParameterHeader = (testId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialParameterHeaderToTestValidatorType
+  >({
+    mutationKey: ["delete-pathology-test-parameter-header"],
+    mutationFn: (data) => deletePathologyTestParameterHeader({ body: data }),
+    onSuccess: (data, variables) => {
+      toast.success("Test Header Deleted Successfully");
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              testHeaders: oldData.data.testHeaders.filter(
+                (header) => header.id !== variables.headerId,
+              ),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useDeletePathologyTestParameter = (testId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialParameterToTestValidatorType
+  >({
+    mutationKey: ["delete-pathology-test-parameter"],
+    mutationFn: (data) => deletePathologyTestParameter({ body: data }),
+    onSuccess: (_, variables) => {
+      toast.success("Test Parameter Deleted Successfully");
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.filter(
+                (param) => param.id !== variables.parameterId,
+              ),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useDeleteReferenceRange = (
+  testId: number,
+  parameterId: number,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialReferenceRangeToParameterValidatorType
+  >({
+    mutationKey: ["delete-pathology-reference-range"],
+    mutationFn: (data) => deleteReferenceRange({ body: data }),
+    onSuccess: (_, variables) => {
+      toast.success("Test Parameter Deleted Successfully");
+
+      const { referenceRangeId } = variables;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  referenceRanges: param.referenceRanges.filter(
+                    (range) => range.id !== referenceRangeId,
+                  ),
+                };
+              }),
+            },
+          };
+        },
+      );
+    },
+    onError: showError,
+  });
+};
+
+export const useDeleteOption = (testId: number, parameterId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    PartialOptionToParameterValidatorType
+  >({
+    mutationKey: ["delete-pathology-option"],
+    mutationFn: (data) => deleteOption({ body: data }),
+    onSuccess: (_, variables) => {
+      toast.success("Test Parameter Deleted Successfully");
+
+      const { optionId } = variables;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              parameters: oldData.data.parameters.map((param) => {
+                if (param.id !== parameterId) return param;
+
+                return {
+                  ...param,
+                  parameterOptions: param.parameterOptions.filter(
+                    (opt) => opt.id !== optionId,
+                  ),
+                };
+              }),
+            },
+          };
+        },
+      );
     },
     onError: showError,
   });

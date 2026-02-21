@@ -98,7 +98,7 @@ const FloorForm = () => {
   }
 
   if (floorId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

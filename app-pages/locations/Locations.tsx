@@ -7,30 +7,21 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
+import { Location } from "@/generated/prisma/client";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useDeleteBed } from "@/hooks/query/bed";
-import { useLocationsList } from "@/hooks/query/locations";
-import {
-  BedType,
-  ColumnDefWithClass,
-  FilterConfig,
-  FilterValues,
-} from "@/lib/type";
+import { useDeleteLocation, useLocationsList } from "@/hooks/query/locations";
+import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { Edit2, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import LocationForm from "./LocationForm";
 
 const Buttons = ({ canCreate }: { canCreate: boolean }) => {
-  const router = useRouter();
   return (
     <>
       {canCreate && (
-        <CustomButton onClick={() => router.push("/beds/new")}>
-          New Location
-        </CustomButton>
+        <LocationForm trigger={<CustomButton>New Location</CustomButton>} />
       )}
     </>
   );
@@ -51,35 +42,38 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: BedType;
+  data: Location;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
 }) => {
-  const { mutateAsync: deleteBed, isPending: deletePending } = useDeleteBed();
+  const { mutateAsync: deleteBed, isPending: deletePending } =
+    useDeleteLocation();
 
   return (
     <>
       {canView && (
-        <DataViewModal<BedType>
+        <DataViewModal<Location>
           data={data}
-          title="Bed Details"
+          title="Location Details"
           fields={[
-            { key: "id", label: "BedId" },
-            { key: "bedNumber", label: "bedNumber" },
-            { key: "status", label: "Status" },
-            { key: "createdAt", label: "Created At" },
-            { key: "updatedAt", label: "Updated At" },
+            { key: "id", label: "Id" },
+            { key: "city", label: "City" },
+            { key: "state", label: "State" },
+            { key: "postcode", label: "Post Code" },
+            { key: "country", label: "Country" },
           ]}
         />
       )}
       {canEdit && (
-        <Link
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/beds/${data.id}`}
-        >
-          <Edit2 className="size-2.5" />
-        </Link>
+        <LocationForm
+          data={data}
+          trigger={
+            <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer">
+              <Edit2 className="size-2.5" />
+            </div>
+          }
+        />
       )}
       {canDelete && (
         <CustomAlert
@@ -116,7 +110,7 @@ const Locations = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -140,11 +134,11 @@ const Locations = () => {
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<BedType>[] = [
+  const columns: ColumnDefWithClass<Location>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="ID" column={column} />;
+        return <SortableHeader<Location> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -159,6 +153,12 @@ const Locations = () => {
     {
       accessorKey: "state",
       header: "State",
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+    {
+      accessorKey: "postcode",
+      header: "PostCode",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -207,6 +207,7 @@ const Locations = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
+            getRowId={(data) => String(data.id)}
           />
         </>
       )}

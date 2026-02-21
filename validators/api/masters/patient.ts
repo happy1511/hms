@@ -1,22 +1,22 @@
 import {
+  AddressType,
   BloodGroup,
   ContactType,
   Gender,
   IdentityType,
   MaritalStatus,
+  NameTitle,
+  RelationshipType,
   Status,
 } from "@/generated/prisma/enums";
 import z from "zod";
 
 const patientAddress = z.object({
-  type: z.string().min(1, "Type is required"),
-  country: z.string().min(1, "Country is required"),
+  type: z.enum(AddressType),
   addressLineOne: z.string().min(1, "Address Line One is required"),
   addressLineTwo: z.string().optional().nullable(),
   addressLineThree: z.string().optional().nullable(),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  postalCode: z.string().min(1, "Postal Code is required"),
+  locationId: z.coerce.number(),
 });
 
 const patientContact = z.object({
@@ -25,7 +25,7 @@ const patientContact = z.object({
 });
 
 const relations = z.object({
-  type: z.string().min(1, "Relation type is required"),
+  type: z.enum(RelationshipType),
   name: z.string().min(1, "Name is required"),
   contact: z.string().optional().nullable(),
 });
@@ -57,16 +57,17 @@ const emergencyContact = z.object({
 
 const personalValidator = z.object({
   firstName: z.string().min(1, "First Name is required"),
+  title: z.enum(NameTitle).default(NameTitle["MR"]),
   lastName: z.string().min(1, "Last Name is required"),
   middleName: z.string().nullable(),
-  preferredName: z.string().min(1, "Preferred Name is required"),
+  preferredName: z.string().optional().nullable(),
   dob: z.coerce.date().refine((date) => date <= new Date(), {
     message: "Date must be in the past",
   }),
   identificationMark: z.string().nullable(),
   gender: z.enum(Gender),
   maritalStatus: z.enum(MaritalStatus),
-  religion: z.string().min(1, "Religion is required"),
+  religion: z.string().optional().nullable(),
   bloodGroup: z.enum(BloodGroup),
 });
 
@@ -127,15 +128,15 @@ const findPatientValidator = z
   });
 
 type PatientValidatorType = z.input<typeof patientValidator>;
-type PartialPatientValidatorType = z.infer<typeof partialPatientValidator>;
-type FindPatientValidatorType = z.infer<typeof findPatientValidator>;
-type PatientAddressValidatorType = z.infer<typeof patientAddress>;
-type PatientContactValidatorType = z.infer<typeof patientContact>;
-type PatientIdentificationValidatorType = z.infer<typeof identifications>;
-type PatientEmergencyContactValidatorType = z.infer<typeof emergencyContact>;
-type PatientRelationsValidatorType = z.infer<typeof relations>;
-type PatientNotesValidatorType = z.infer<typeof notes>;
-type PatientPersonalValidatorType = z.infer<typeof personalValidator>;
+type PartialPatientValidatorType = z.input<typeof partialPatientValidator>;
+type FindPatientValidatorType = z.input<typeof findPatientValidator>;
+type PatientAddressValidatorType = z.input<typeof patientAddress>;
+type PatientContactValidatorType = z.input<typeof patientContact>;
+type PatientIdentificationValidatorType = z.input<typeof identifications>;
+type PatientEmergencyContactValidatorType = z.input<typeof emergencyContact>;
+type PatientRelationsValidatorType = z.input<typeof relations>;
+type PatientNotesValidatorType = z.input<typeof notes>;
+type PatientPersonalValidatorType = z.input<typeof personalValidator>;
 type PatientIdentificationsValidatorType = z.input<
   typeof identificationsValidator
 >;

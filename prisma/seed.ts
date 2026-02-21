@@ -1,6 +1,7 @@
 import {
   ActionType,
   ModuleType,
+  NameTitle,
   PrismaClient,
 } from "@/generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
@@ -89,6 +90,7 @@ const createAdminUser = async () => {
     update: {},
     create: {
       username: "admin",
+      title: NameTitle["MR"],
       loginId: "admin",
       password: "admin123",
       name: "Admin User",
@@ -146,42 +148,12 @@ const locations = async () => {
 };
 
 /* ---------------------------------- */
-/* Create Radiology and Pathology Test billing Sections     */
-/* ---------------------------------- */
-const createRadiologyAndPathologySections = async () => {
-  console.log(
-    "---- Creating Radiology and Pathology Test billing Sections -----",
-  );
-
-  await prisma.billingSection.upsert({
-    where: { name: "Radiology" },
-    update: {},
-    create: {
-      name: "Radiology",
-      description: "Billing section for radiology services",
-      isRadiologyTest: true,
-    },
-  });
-
-  await prisma.billingSection.upsert({
-    where: { name: "Pathology Tests" },
-    update: {},
-    create: {
-      name: "Pathology Tests",
-      description: "Billing section for pathology tests",
-      isPathologyTest: true,
-    },
-  });
-};
-
-/* ---------------------------------- */
 /* Main                               */
 /* ---------------------------------- */
 
 async function main() {
   await addActionsAndModules();
   await createPermissions();
-  await createRadiologyAndPathologySections();
 
   const admin = await createAdminUser();
   await assignAdminPermissions(admin.id);

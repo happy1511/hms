@@ -27,10 +27,22 @@ import { ParameterOptions } from "@/generated/prisma/client";
 interface Props {
   trigger: React.ReactNode;
   data: { id: number; parameterOptions: ParameterOptions[] };
+  testId: number;
 }
 
-const Actions = ({ data }: { data: ParameterOptions }) => {
-  const { mutateAsync: deleteOption, isPending } = useDeleteOption();
+const Actions = ({
+  data,
+  testId,
+  parameterId,
+}: {
+  data: ParameterOptions;
+  testId: number;
+  parameterId: number;
+}) => {
+  const { mutateAsync: deleteOption, isPending } = useDeleteOption(
+    testId,
+    parameterId,
+  );
 
   return (
     <>
@@ -53,8 +65,8 @@ const Actions = ({ data }: { data: ParameterOptions }) => {
     </>
   );
 };
-const ParameterOptionsModal = ({ trigger, data }: Props) => {
-  const { mutateAsync, isPending } = useCreateOption();
+const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
+  const { mutateAsync, isPending } = useCreateOption(testId);
 
   const form = useForm<AddOptionToParameterValidatorType>({
     defaultValues: { parameterId: data.id },
@@ -74,7 +86,9 @@ const ParameterOptionsModal = ({ trigger, data }: Props) => {
     {
       id: "action1s",
       header: "Delete",
-      cell: ({ row }) => <Actions data={row.original} />,
+      cell: ({ row }) => (
+        <Actions data={row.original} testId={testId} parameterId={data.id} />
+      ),
     },
   ];
 
@@ -92,7 +106,10 @@ const ParameterOptionsModal = ({ trigger, data }: Props) => {
             account and remove your data from our servers.
           </DialogDescription>
         </DialogHeader>
-        <CustomLayout title="Create Pathology Test">
+        <CustomLayout
+          title="Create Pathology Test"
+          contentClassName="space-y-3"
+        >
           <Form {...form}>
             <form
               className="grid grid-cols-2 space-x-2"
@@ -117,6 +134,7 @@ const ParameterOptionsModal = ({ trigger, data }: Props) => {
           <CustomTable
             columns={columns}
             data={data.parameterOptions}
+            getRowId={(data) => String(data.id)}
             hidePagination
           />
         </CustomLayout>

@@ -22,6 +22,9 @@ import FormField from "../form-inputs/FormField";
 import { DiscountType } from "@/generated/prisma/enums";
 import { useCreateOpdBillingItem } from "@/hooks/query/opd";
 import AddPaymentModal from "./AddPayment";
+import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
+import { PaginatedResponse, ServiceDataType } from "@/lib/type";
+import { BillingSection } from "@/generated/prisma/client";
 
 interface Props {
   billId: number;
@@ -59,37 +62,30 @@ const AddInvoiceItemModal = ({
   const discountValue = billingItemForm.watch("discountValue");
   const discountType = billingItemForm.watch("discountType");
 
-  const {
-    data: billingItems,
-    isFetchingNextPage: isFetchingNextPageBillingItems,
-    hasNextPage: hasNextPageBillingItems,
-    fetchNextPage: fetchNextPageBillingItems,
-  } = useInfiniteBillingSectionsList({ name: billingItemSearch }, 10);
+  const billingItemQuery = useInfiniteBillingSectionsList(
+    { name: billingItemSearch },
+    10,
+  );
 
-  const {
-    data: services,
-    isFetchingNextPage: isFetchingNextPageServices,
-    hasNextPage: hasNextPageServices,
-    fetchNextPage: fetchNextPageServices,
-  } = useInfiniteServicesList(
+  const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, billingSectionId: billingSectionId as string },
     10,
   );
 
   const flatBillingItems = useMemo(
     () =>
-      billingItems?.pages.flatMap((p) =>
+      billingItemQuery?.data?.pages.flatMap((p) =>
         p.data.flatMap((f) => ({ label: f.name, value: f.id })),
       ),
-    [billingItems],
+    [billingItemQuery.data],
   );
 
   const flatServices = useMemo(
     () =>
-      services?.pages.flatMap((p) =>
+      servicesQuery.data?.pages.flatMap((p) =>
         p.data.flatMap((f) => ({ ...f, label: f.name, value: f.id })),
       ),
-    [services],
+    [servicesQuery.data],
   );
 
   const onSubmit = (values: addOpdBillItemValidatorType) => {
@@ -169,30 +165,40 @@ const AddInvoiceItemModal = ({
                   required
                 />
 
-                <FormField
+                <FormInfiniteSelect<
+                  BillingSection,
+                  PaginatedResponse<BillingSection>,
+                  string,
+                  addOpdBillItemValidatorType
+                >
                   control={billingItemForm.control}
                   label="Billing Section"
                   name="billingSectionId"
-                  type="infiniteSelect"
-                  fetchNextPage={fetchNextPageBillingItems}
-                  hasNextPage={hasNextPageBillingItems}
-                  isFetchingNextPage={isFetchingNextPageBillingItems}
-                  options={flatBillingItems || []}
-                  onSearch={setBillingItemSearch}
-                  required
+                  query={billingItemQuery}
+                  getItems={(p) => p?.data}
+                  valueKey={(i) => String(i?.id)}
+                  labelKey={(i) => i?.name}
+                  placeholder="billing section"
+                  search={billingItemSearch}
+                  onSearchChange={setBillingItemSearch}
                 />
                 <div className="col-span-2">
-                  <FormField
+                  <FormInfiniteSelect<
+                    ServiceDataType,
+                    PaginatedResponse<ServiceDataType>,
+                    string,
+                    addOpdBillItemValidatorType
+                  >
                     control={billingItemForm.control}
                     label="Service"
                     name="serviceId"
-                    type="infiniteSelect"
-                    fetchNextPage={fetchNextPageServices}
-                    hasNextPage={hasNextPageServices}
-                    isFetchingNextPage={isFetchingNextPageServices}
-                    options={flatServices || []}
-                    onSearch={setServiceSearch}
-                    required
+                    query={servicesQuery}
+                    getItems={(p) => p?.data}
+                    valueKey={(i) => String(i?.id)}
+                    labelKey={(i) => i?.name}
+                    placeholder="Select Services"
+                    search={serviceSearch}
+                    onSearchChange={setServiceSearch}
                   />
                 </div>
                 <div className="col-span-2 grid grid-cols-5 space-x-2">

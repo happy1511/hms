@@ -101,3 +101,25 @@ export function formatAge(dob: Date | string) {
     }
   }
 }
+
+export const toDays = (
+  days?: number | null,
+  months?: number | null,
+  years?: number | null,
+) => {
+  return (days ?? 0) + (months ?? 0) * 30 + (years ?? 0) * 365;
+};
+
+export const fromDays = (totalDays: number) => {
+  const years = Math.floor(totalDays / 365);
+  const remainingAfterYears = totalDays % 365;
+
+  const months = Math.floor(remainingAfterYears / 30);
+  const days = remainingAfterYears % 30;
+
+  return {
+    years,
+    months,
+    days,
+  };
+};

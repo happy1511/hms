@@ -47,7 +47,7 @@ export function PatientViewModal({
   const router = useRouter();
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canEdit = hasActionPermission(

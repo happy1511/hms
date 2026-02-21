@@ -4,14 +4,13 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
+import { BillingSection } from "@/generated/prisma/client";
 import { Status } from "@/generated/prisma/enums";
 import {
   useCreateBillingSection,
   useGetBillingSection,
   useUpdateBillingSection,
 } from "@/hooks/query/bllingSection";
-import { useInfiniteServicesList } from "@/hooks/query/service";
-import { BillingSectionType } from "@/lib/type";
 import {
   billingSectionValidator,
   BillingSectionValidatorType,
@@ -19,42 +18,21 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 const getInitialValues = (
-  data?: BillingSectionType,
+  data?: BillingSection,
 ): BillingSectionValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
-  serviceIds: data?.services?.map((s) => s.service.id) ?? [],
   status: data?.status ?? Status["active"],
 });
 
-const UpdateCreateForm = ({ data }: { data?: BillingSectionType }) => {
-  const [serviceSearchValue, setServiceSearchValue] = useState("");
+const UpdateCreateForm = ({ data }: { data?: BillingSection }) => {
   const { mutateAsync: create, isPending: creating } =
     useCreateBillingSection();
   const { mutateAsync: update, isPending: updating } =
     useUpdateBillingSection();
-
-  const {
-    data: services,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteServicesList(
-    { doctorType: "consulting", name: serviceSearchValue },
-    10,
-  );
-
-  const flatServices = useMemo(
-    () =>
-      services?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [services],
-  );
 
   const form = useForm<BillingSectionValidatorType>({
     defaultValues: getInitialValues(data),
@@ -92,19 +70,6 @@ const UpdateCreateForm = ({ data }: { data?: BillingSectionType }) => {
             required
           />
 
-          <FormField<BillingSectionValidatorType>
-            type="infiniteSelect"
-            name="serviceIds"
-            label="Services"
-            control={form.control}
-            options={flatServices || []}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSearch={setServiceSearchValue}
-            required
-            multiple
-          />
           <div className="col-span-2">
             <FormField<BillingSectionValidatorType>
               label="Description"
@@ -141,7 +106,7 @@ const BillingSectionForm = () => {
   }
 
   if (sectionId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

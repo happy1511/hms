@@ -8,23 +8,14 @@ import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { BillingSection } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
   useBillingSectionsList,
   useDeleteBillingSection,
 } from "@/hooks/query/bllingSection";
-import {
-  BillingSectionType,
-  ColumnDefWithClass,
-  FilterConfig,
-  FilterValues,
-} from "@/lib/type";
+import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
@@ -71,7 +62,7 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: BillingSectionType;
+  data: BillingSection;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
@@ -82,7 +73,7 @@ const Actions = ({
   return (
     <>
       {canView && (
-        <DataViewModal<BillingSectionType>
+        <DataViewModal<BillingSection>
           data={data}
           title="Bed Details"
           fields={[
@@ -127,39 +118,6 @@ const Actions = ({
   );
 };
 
-const Services = ({ data }: { data: BillingSectionType["services"] }) => {
-  return (
-    <HoverCard openDelay={150}>
-      <HoverCardTrigger asChild>
-        <span className="cursor-pointer capitalize border border-success bg-success px-2 rounded-sm text-white text-tiny">
-          {data?.length}
-        </span>
-      </HoverCardTrigger>
-
-      <HoverCardContent className="w-64">
-        <div className="space-y-2">
-          {data?.length ? (
-            <div className="flex flex-wrap gap-1">
-              {data.map((action) => (
-                <span
-                  key={action.id}
-                  className="capitalize border border-primary bg-primary/10 px-2 py-0.5 rounded-sm text-primary text-xs"
-                >
-                  {action.service.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              No Services Assigned
-            </p>
-          )}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-};
-
 const BillingSections = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -173,7 +131,7 @@ const BillingSections = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -197,13 +155,11 @@ const BillingSections = () => {
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<BillingSectionType>[] = [
+  const columns: ColumnDefWithClass<BillingSection>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return (
-          <SortableHeader<BillingSectionType> label="ID" column={column} />
-        );
+        return <SortableHeader<BillingSection> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -212,9 +168,7 @@ const BillingSections = () => {
     {
       accessorKey: "name",
       header: ({ column }) => {
-        return (
-          <SortableHeader<BillingSectionType> label="Name" column={column} />
-        );
+        return <SortableHeader<BillingSection> label="Name" column={column} />;
       },
       cell: ({ row }) => (
         <Link
@@ -231,31 +185,13 @@ const BillingSections = () => {
       accessorKey: "description",
       header: ({ column }) => {
         return (
-          <SortableHeader<BillingSectionType>
-            label="Description"
-            column={column}
-          />
+          <SortableHeader<BillingSection> label="Description" column={column} />
         );
       },
       cell: ({ row }) => row.original.description || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
-    {
-      accessorKey: "services",
-      header: ({ column }) => {
-        return (
-          <SortableHeader<BillingSectionType>
-            label="Services"
-            column={column}
-          />
-        );
-      },
-      cell: ({ row }) => <Services data={row.original.services} />,
-      headerClassName: "min-w-50",
-      cellClassName: "min-w-50",
-    },
-
     {
       accessorKey: "status",
       header: () => {
@@ -269,10 +205,7 @@ const BillingSections = () => {
       accessorKey: "createdAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<BillingSectionType>
-            label="Created at"
-            column={column}
-          />
+          <SortableHeader<BillingSection> label="Created at" column={column} />
         );
       },
       cell: ({ row }) => {
@@ -290,10 +223,7 @@ const BillingSections = () => {
       accessorKey: "updatedAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<BillingSectionType>
-            label="Updated at"
-            column={column}
-          />
+          <SortableHeader<BillingSection> label="Updated at" column={column} />
         );
       },
       cell: ({ row }) => {
@@ -344,6 +274,7 @@ const BillingSections = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             isError={isError}
             error={error}
           />

@@ -1,8 +1,9 @@
-import { Days, DoctorType } from "@/generated/prisma/enums";
+import { Days, DoctorType, NameTitle } from "@/generated/prisma/enums";
 import { z } from "zod";
 import { userValidator } from "./user";
 
 const doctorBaseValidator = userValidator.extend({
+  title: z.enum(NameTitle).default(NameTitle["DR"]).optional(),
   licenseNumber: z.string().min(1, "License Number is required"),
   specialization: z.string().min(1, "Specialization is required"),
   qualifications: z.string().min(1, "Qualification is required"),

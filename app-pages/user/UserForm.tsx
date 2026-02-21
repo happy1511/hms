@@ -4,7 +4,7 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Status } from "@/generated/prisma/enums";
+import { NameTitle, Status } from "@/generated/prisma/enums";
 import { usePermissionsList } from "@/hooks/query/permission";
 import { useCreateUser, useGetUser, useUpdateUser } from "@/hooks/query/user";
 import { User } from "@/lib/type";
@@ -25,6 +25,7 @@ const getInitialValues = (
     return {
       name: data.name,
       password: data.password,
+      title: data.title,
       status: data.status,
       loginId: data.loginId,
       permissions,
@@ -33,6 +34,7 @@ const getInitialValues = (
     return {
       name: "",
       password: "",
+      title: NameTitle["MR"],
       status: Status["active"],
       permissions,
     };
@@ -143,7 +145,7 @@ const UserForm = () => {
   }
 
   if (!permissions && !userId) {
-    return <></>;
+    return <div />;
   }
 
   return (

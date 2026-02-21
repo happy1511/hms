@@ -6,23 +6,38 @@ import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { BillingSection, Location } from "@/generated/prisma/client";
 import {
+  AddressType,
   BloodGroup,
+  ContactType,
   DiscountType,
   Gender,
+  IdentityType,
   MaritalStatus,
+  NameTitle,
   OpdArrival,
   PaymentCategory,
   PaymentMode,
+  RelationshipType,
+  Status,
 } from "@/generated/prisma/enums";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
+import { useInfiniteLocationsList } from "@/hooks/query/locations";
 import { useCreateOpd } from "@/hooks/query/opd";
 import { useGetPatient } from "@/hooks/query/patient";
 import { useInfiniteServicesList } from "@/hooks/query/service";
-import { ColumnDefWithClass, PatientType } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  Doctor,
+  PaginatedResponse,
+  PatientType,
+  ServiceDataType,
+} from "@/lib/type";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -43,39 +58,109 @@ import {
   UseFormReturn,
 } from "react-hook-form";
 
-const getInitialValues = (data?: PatientType): opdValidatorType => ({
-  patientId: data?.id ?? undefined,
-  patient: {
-    firstName: data?.firstName ?? "",
-    middleName: data?.middleName ?? null,
-    lastName: data?.lastName ?? "",
-    preferredName: data?.preferredName ?? "",
-    dob: data?.dob ? new Date(data.dob) : new Date(),
-    identificationMark: data?.identificationMark ?? null,
-    gender: data?.gender ?? Gender.Male,
-    maritalStatus: data?.maritalStatus ?? MaritalStatus.Married,
-    religion: data?.religion ?? "",
-    bloodGroup: data?.bloodGroup ?? BloodGroup.A_NEGATIVE,
-    addresses: data?.addresses ?? [],
-    contacts: data?.contacts ?? [],
-    relations: data?.relations ?? [],
-    identifications: data?.identifications ?? [],
-    emergencyContacts: data?.emergencyContacts ?? [],
-    notes: data?.notes ?? [],
-  },
-  arrivalState: OpdArrival.ROUTINE,
-  isPaid: false,
-  isFree: false,
-  transactions: [],
-  discountType: "VALUE",
-  discountValue: 0,
-  rate: 0,
-  remarks: "",
-  total: 0,
-  billingItem: [],
-  consultantDoctorId: undefined,
-  billingType: PaymentCategory["SELF_PAY"],
-});
+const getInitialValues = (data?: PatientType): opdValidatorType => {
+  // ---------------- CONTACT MAP (only required types) ----------------
+  const contactMap: Record<ContactType, string> = {
+    [ContactType.PHONE]: "",
+    [ContactType.MOBILE]: "",
+    [ContactType.EMAIL]: "",
+  };
+
+  data?.contacts?.forEach((c) => {
+    if (c.type in contactMap) {
+      contactMap[c.type] = c.value;
+    }
+  });
+
+  // ---------------- IDENTIFICATION MAP (only AADHAR + VOTER) ----------------
+  const idMap = {
+    [IdentityType.ADHAR_CARD]: "",
+    [IdentityType.VOTER_CARD]: "",
+    [IdentityType.DRIVING_LICENSE]: "",
+  };
+
+  data?.identifications?.forEach((id) => {
+    if (
+      id.type === IdentityType.ADHAR_CARD ||
+      id.type === IdentityType.VOTER_CARD ||
+      id.type === IdentityType.DRIVING_LICENSE
+    ) {
+      idMap[id.type] = id.number;
+    }
+  });
+
+  // ---------------- HOME ADDRESS ----------------
+  const homeAddress = data?.addresses?.find((a) => a.type === AddressType.HOME);
+
+  const relations = data?.relations?.splice(0, 1);
+
+  return {
+    patientId: data?.id ?? undefined,
+
+    patient: {
+      firstName: data?.firstName ?? "",
+      middleName: data?.middleName ?? null,
+      lastName: data?.lastName ?? "",
+      preferredName: data?.preferredName ?? "",
+      dob: data?.dob ? new Date(data.dob) : new Date(),
+      identificationMark: data?.identificationMark ?? null,
+      gender: data?.gender ?? Gender.Male,
+      maritalStatus: data?.maritalStatus ?? MaritalStatus.Married,
+      religion: data?.religion ?? "",
+      bloodGroup: data?.bloodGroup ?? BloodGroup.A_NEGATIVE,
+      relations: relations ?? [],
+      // ---------- ADDRESS ----------
+      addresses: [
+        {
+          type: AddressType.HOME,
+          addressLineOne: homeAddress?.addressLineOne ?? "",
+          locationId: homeAddress?.locationId ?? undefined,
+        },
+      ],
+
+      // ---------- CONTACTS ----------
+      contacts: [
+        { type: ContactType.PHONE, value: contactMap[ContactType.PHONE] },
+        { type: ContactType.MOBILE, value: contactMap[ContactType.MOBILE] },
+        { type: ContactType.EMAIL, value: contactMap[ContactType.EMAIL] },
+      ],
+
+      // ---------- IDENTIFICATIONS ----------
+      identifications: [
+        {
+          type: IdentityType.ADHAR_CARD,
+          number: idMap[IdentityType.ADHAR_CARD],
+          active: Status.active,
+        },
+        {
+          type: IdentityType.VOTER_CARD,
+          number: idMap[IdentityType.VOTER_CARD],
+          active: Status.active,
+        },
+        {
+          type: IdentityType.DRIVING_LICENSE,
+          number: idMap[IdentityType.DRIVING_LICENSE],
+          active: Status.active,
+        },
+      ],
+      emergencyContacts: data?.emergencyContacts ?? [],
+      notes: data?.notes ?? [],
+    },
+
+    arrivalState: OpdArrival.ROUTINE,
+    isPaid: false,
+    isFree: false,
+    transactions: [],
+    discountType: "VALUE",
+    discountValue: 0,
+    rate: 0,
+    remarks: "",
+    total: 0,
+    billingItem: [],
+    consultantDoctorId: undefined,
+    billingType: PaymentCategory["SELF_PAY"],
+  };
+};
 
 const Actions = ({
   data,
@@ -133,7 +218,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     resolver: zodResolver(billingItemValidator),
   });
 
-  const billingSectionId = billingItemForm.watch("billingSectionId");
   const serviceId = billingItemForm.watch("serviceId");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
@@ -142,37 +226,27 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const addedBillingItems = form.watch("billingItem");
   const editingIndex = billingItemForm.watch("index");
 
-  const {
-    data: billingItems,
-    isFetchingNextPage: isFetchingNextPageBillingItems,
-    hasNextPage: hasNextPageBillingItems,
-    fetchNextPage: fetchNextPageBillingItems,
-  } = useInfiniteBillingSectionsList({ name: billingItemSearch }, 10);
-
-  const {
-    data: services,
-    isFetchingNextPage: isFetchingNextPageServices,
-    hasNextPage: hasNextPageServices,
-    fetchNextPage: fetchNextPageServices,
-  } = useInfiniteServicesList(
-    { name: serviceSearch, billingSectionId: billingSectionId as string },
+  const billingItemQuery = useInfiniteBillingSectionsList(
+    { name: billingItemSearch },
     10,
   );
 
+  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
+
   const flatBillingItems = useMemo(
     () =>
-      billingItems?.pages.flatMap((p) =>
+      billingItemQuery.data?.pages.flatMap((p) =>
         p.data.flatMap((f) => ({ label: f.name, value: f.id })),
       ),
-    [billingItems],
+    [billingItemQuery.data],
   );
 
   const flatServices = useMemo(
     () =>
-      services?.pages.flatMap((p) =>
+      servicesQuery.data?.pages.flatMap((p) =>
         p.data.flatMap((f) => ({ ...f, label: f.name, value: f.id })),
       ),
-    [services],
+    [servicesQuery.data],
   );
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
@@ -307,9 +381,11 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const handleAddUpdate = () => {
     billingItemForm.handleSubmit(() => {
       const values = billingItemForm.getValues();
-      const service = flatServices?.find((s) => s.id === values.serviceId);
+      const service = flatServices?.find(
+        (s) => s.id === Number(values.serviceId),
+      );
       const billingItem = flatBillingItems?.find(
-        (s) => s.value === values.serviceId,
+        (s) => s.value === Number(values.billingSectionId),
       );
 
       if (typeof values.index === "number") {
@@ -331,7 +407,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
   useEffect(() => {
     if (serviceId) {
-      const service = flatServices?.find((s) => s.id === serviceId);
+      const service = flatServices?.find((s) => s.id === Number(serviceId));
       if (!service) {
         billingItemForm.setValue("rate", 0);
         billingItemForm.setValue("discountValue", 0);
@@ -370,6 +446,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     }
   }, [quantity, serviceId, billingItemForm, rate, discountType, discountValue]);
 
+  console.log(billingItemForm.getValues());
+
   return (
     <CustomLayout
       title="Billing Items"
@@ -384,30 +462,40 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           required
         />
 
-        <FormField
+        <FormInfiniteSelect<
+          BillingSection,
+          PaginatedResponse<BillingSection>,
+          string,
+          billingItemValidatorType
+        >
           control={billingItemForm.control}
           label="Billing Section"
           name="billingSectionId"
-          type="infiniteSelect"
-          fetchNextPage={fetchNextPageBillingItems}
-          hasNextPage={hasNextPageBillingItems}
-          isFetchingNextPage={isFetchingNextPageBillingItems}
-          options={flatBillingItems || []}
-          onSearch={setBillingItemSearch}
-          required
+          query={billingItemQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.name}
+          placeholder="billing section"
+          search={billingItemSearch}
+          onSearchChange={setBillingItemSearch}
         />
         <div className="col-span-2">
-          <FormField
+          <FormInfiniteSelect<
+            ServiceDataType,
+            PaginatedResponse<ServiceDataType>,
+            string,
+            billingItemValidatorType
+          >
             control={billingItemForm.control}
             label="Service"
             name="serviceId"
-            type="infiniteSelect"
-            fetchNextPage={fetchNextPageServices}
-            hasNextPage={hasNextPageServices}
-            isFetchingNextPage={isFetchingNextPageServices}
-            options={flatServices || []}
-            onSearch={setServiceSearch}
-            required
+            query={servicesQuery}
+            getItems={(p) => p?.data}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) => i?.name}
+            placeholder="Select Services"
+            search={serviceSearch}
+            onSearchChange={setServiceSearch}
           />
         </div>
         <div className="col-span-2 grid grid-cols-5 space-x-2">
@@ -634,6 +722,195 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   );
 };
 
+const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
+  const [locationSearch, setLocationSearch] = useState("");
+  const locationQuery = useInfiniteLocationsList({ name: locationSearch }, 10);
+
+  return (
+    <CustomLayout
+      title="Personal Details"
+      contentClassName="grid grid-cols-2 space-x-2 pb-0"
+    >
+      <div>
+        <FormField<opdValidatorType>
+          label="Title"
+          name="patient.title"
+          control={form.control}
+          type="select"
+          options={Object.keys(NameTitle).map((t) => ({ label: t, value: t }))}
+          required
+        />
+        <FormField<opdValidatorType>
+          label="First Name"
+          name="patient.firstName"
+          control={form.control}
+          type="text"
+          required
+        />
+        <FormField<opdValidatorType>
+          label="Last Name"
+          name="patient.lastName"
+          control={form.control}
+          type="text"
+          required
+        />
+        <FormField<opdValidatorType>
+          label="Date of Birth"
+          name="patient.dob"
+          control={form.control}
+          type="date"
+          required
+        />
+        <FormField<opdValidatorType>
+          label="Gender"
+          name="patient.gender"
+          control={form.control}
+          options={Object.keys(Gender).map((g) => ({ value: g, label: g }))}
+          type="select"
+          required
+        />
+        <FormField<opdValidatorType>
+          label="Relation"
+          name="patient.relations.0.type"
+          control={form.control}
+          options={Object.keys(RelationshipType).map((g) => ({
+            value: g,
+            label: g,
+          }))}
+          type="select"
+          required
+        />
+        <FormField<opdValidatorType>
+          label="Relative Name"
+          name="patient.relations.0.name"
+          control={form.control}
+          type="text"
+          required
+        />
+      </div>
+      <div>
+        <FormField<opdValidatorType>
+          label="Address Line 1"
+          name="patient.addresses.0.addressLineOne"
+          control={form.control}
+          type="text"
+        />
+
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          opdValidatorType
+        >
+          control={form.control}
+          label="City"
+          name="patient.addresses.0.locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.city}
+          placeholder="City"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
+        />
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          opdValidatorType
+        >
+          control={form.control}
+          label="State"
+          name="patient.addresses.0.locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.state}
+          placeholder="State"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
+        />
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          opdValidatorType
+        >
+          control={form.control}
+          label="Country"
+          name="patient.addresses.0.locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.country}
+          placeholder="Country"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
+        />
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          opdValidatorType
+        >
+          control={form.control}
+          label="Post Code"
+          name="patient.addresses.0.locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.postcode}
+          placeholder="Country"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
+        />
+        <div className="grid grid-cols-2 space-x-2">
+          <FormField<opdValidatorType>
+            label="Phone"
+            name="patient.contacts.0.value"
+            control={form.control}
+            type="text"
+          />
+
+          <FormField<opdValidatorType>
+            label="Aadhar Number"
+            name="patient.identifications.0.number"
+            control={form.control}
+            type="text"
+          />
+
+          <FormField<opdValidatorType>
+            label="Mobile"
+            name="patient.contacts.1.value"
+            control={form.control}
+            type="text"
+          />
+
+          <FormField<opdValidatorType>
+            label="Voter Card Number"
+            name="patient.identifications.1.number"
+            control={form.control}
+            type="text"
+          />
+          <FormField<opdValidatorType>
+            label="Email"
+            name="patient.contacts.2.value"
+            control={form.control}
+            type="text"
+          />
+
+          <FormField<opdValidatorType>
+            label="Driving License"
+            name="patient.identifications.2.number"
+            control={form.control}
+            type="text"
+          />
+        </div>
+      </div>
+    </CustomLayout>
+  );
+};
+
 const OpdBillForm = () => {
   const [consultantValue, setConsultantValue] = useState("");
   const [referringValue, setReferringValue] = useState("");
@@ -641,44 +918,18 @@ const OpdBillForm = () => {
   const { mutateAsync, isPending } = useCreateOpd();
   const params: { patientId: string } = useParams();
   const { data: patient, isLoading } = useGetPatient(params?.patientId);
-  const {
-    data: consultingDoctors,
-    isFetchingNextPage: isFetchingNextPageConsulting,
-    hasNextPage: hasNextPageConsulting,
-    fetchNextPage: fetchNextPageConsulting,
-  } = useInfiniteDoctorList(
+  const consultingDoctorQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
       name: consultantValue,
     },
     10,
   );
-  const {
-    data: referringDoctors,
-    isFetchingNextPage: isFetchingNextPageReferring,
-    hasNextPage: hasNextPageReferring,
-    fetchNextPage: fetchNextPageReferring,
-  } = useInfiniteDoctorList(
+  const referringDoctorQuery = useInfiniteDoctorList(
     {
       name: referringValue,
     },
     10,
-  );
-
-  const flatConsultingDoctors = useMemo(
-    () =>
-      consultingDoctors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.user.name, value: f.userId })),
-      ),
-    [consultingDoctors],
-  );
-
-  const flatReferringDoctors = useMemo(
-    () =>
-      referringDoctors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.user.name, value: f.userId })),
-      ),
-    [referringDoctors],
   );
 
   const form = useForm<opdValidatorType>({
@@ -709,8 +960,10 @@ const OpdBillForm = () => {
   }
 
   if (params?.patientId && !patient) {
-    return <></>;
+    return <div />;
   }
+
+  console.log(form.formState.errors);
 
   return (
     <Form {...form}>
@@ -731,44 +984,7 @@ const OpdBillForm = () => {
             required
           />
         </CustomLayout>
-        <CustomLayout
-          title="Personal Details"
-          contentClassName="grid grid-cols-2 space-x-2 pb-0"
-        >
-          <FormField<opdValidatorType>
-            label="First Name"
-            name="patient.firstName"
-            control={form.control}
-            type="text"
-            readOnly
-            required
-          />
-          <FormField<opdValidatorType>
-            label="Last Name"
-            name="patient.lastName"
-            control={form.control}
-            type="text"
-            readOnly
-            required
-          />
-          <FormField<opdValidatorType>
-            label="Date of Birth"
-            name="patient.dob"
-            control={form.control}
-            type="text"
-            readOnly
-            required
-          />
-
-          <FormField<opdValidatorType>
-            label="Gender"
-            name="patient.gender"
-            control={form.control}
-            type="text"
-            readOnly
-            required
-          />
-        </CustomLayout>
+        <PatientForm form={form} />
         <CustomLayout
           title="Billing"
           contentClassName="grid grid-cols-2 pb-0 space-x-2"
@@ -791,28 +1007,38 @@ const OpdBillForm = () => {
             }))}
             required
           />
-          <FormField<opdValidatorType>
+          <FormInfiniteSelect<
+            Doctor,
+            PaginatedResponse<Doctor>,
+            string,
+            opdValidatorType
+          >
             label="Consultant"
-            type="infiniteSelect"
             name="consultantDoctorId"
             control={form.control}
-            options={flatConsultingDoctors || []}
-            fetchNextPage={fetchNextPageConsulting}
-            hasNextPage={hasNextPageConsulting}
-            isFetchingNextPage={isFetchingNextPageConsulting}
-            onSearch={setConsultantValue}
+            query={consultingDoctorQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.user.name}
+            valueKey={(item) => String(item?.userId)}
+            search={consultantValue}
+            onSearchChange={setConsultantValue}
             required
           />
-          <FormField<opdValidatorType>
+          <FormInfiniteSelect<
+            Doctor,
+            PaginatedResponse<Doctor>,
+            string,
+            opdValidatorType
+          >
             label="Referred By"
-            type="infiniteSelect"
             name="referredDoctorId"
             control={form.control}
-            options={flatReferringDoctors || []}
-            fetchNextPage={fetchNextPageReferring}
-            hasNextPage={hasNextPageReferring}
-            isFetchingNextPage={isFetchingNextPageReferring}
-            onSearch={setReferringValue}
+            query={referringDoctorQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.user.name}
+            valueKey={(item) => String(item?.userId)}
+            search={referringValue}
+            onSearchChange={setReferringValue}
             required
           />
         </CustomLayout>

@@ -124,7 +124,7 @@ const Beds = () => {
   const { data, isLoading, isError, error } = useBedsList(filters, page, limit);
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -271,6 +271,7 @@ const Beds = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             isError={isError}
             error={error}
           />

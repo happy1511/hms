@@ -124,7 +124,7 @@ const RadiologyTemplateForm = () => {
     useRadiologyTemplate(templateId);
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
   const canView = hasActionPermission(
     profile?.data,
@@ -145,7 +145,7 @@ const RadiologyTemplateForm = () => {
   }
 
   if (templateId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

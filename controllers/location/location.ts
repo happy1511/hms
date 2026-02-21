@@ -49,6 +49,7 @@ export const getAPI = async (req: Request) => {
             city: true,
             state: true,
             postcode: true,
+            country: true,
           },
         }),
         prisma.location.count({ where }),

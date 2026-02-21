@@ -134,7 +134,7 @@ const Appointments = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -276,7 +276,11 @@ const Appointments = () => {
   ];
 
   return (
-    <CustomLayout title="Users" buttons={<Buttons canCreate={canCreate} />}>
+    <CustomLayout
+      title="Appointments"
+      buttons={<Buttons canCreate={canCreate} />}
+      contentClassName="space-y-4"
+    >
       {canCreate && <AppointmentForm />}
       {canView && (
         <>
@@ -293,6 +297,7 @@ const Appointments = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             limit={limit}
             isError={isError}
             error={error}

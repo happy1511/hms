@@ -1,7 +1,12 @@
 import { PatientValidatorType } from "@/validators/api/masters/patient";
 import { UseFormReturn } from "react-hook-form";
 import FormField from "../form-inputs/FormField";
-import { BloodGroup, Gender, MaritalStatus } from "@/generated/prisma/enums";
+import {
+  BloodGroup,
+  Gender,
+  MaritalStatus,
+  NameTitle,
+} from "@/generated/prisma/enums";
 import CustomButton from "../common/CustomButton";
 
 const PersonalInfoForm = ({
@@ -13,6 +18,7 @@ const PersonalInfoForm = ({
 }) => {
   const next = async () => {
     const isValid = await form.trigger([
+      "title",
       "firstName",
       "lastName",
       "middleName",
@@ -31,6 +37,16 @@ const PersonalInfoForm = ({
   };
   return (
     <>
+      <FormField
+        control={form.control}
+        label="Title"
+        name="title"
+        type="select"
+        options={Object.values(NameTitle).map((g) => ({
+          value: g,
+          label: g,
+        }))}
+      />
       <FormField
         control={form.control}
         label="First Name"
@@ -104,7 +120,7 @@ const PersonalInfoForm = ({
           label: m,
         }))}
       />
-      <div className="flex justify-start">
+      <div className="flex justify-start col-span-2">
         <CustomButton type="button" onClick={next}>
           Next
         </CustomButton>

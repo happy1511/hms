@@ -130,7 +130,7 @@ const Wards = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -268,6 +268,7 @@ const Wards = () => {
             handleChangePage={setPage}
             isLoading={isLoading}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             isError={isError}
             error={error}
           />

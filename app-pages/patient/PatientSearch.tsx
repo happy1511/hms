@@ -67,7 +67,7 @@ const PatientSearch = () => {
   };
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -81,6 +81,15 @@ const PatientSearch = () => {
     ModuleType.OPD_BILL,
     ActionType.CREATE,
   );
+
+  const handleRegister = () => {
+    if (canCreateOPD && opdCreate) {
+      router.push("/opd/bill/new");
+      return;
+    } else {
+      router.push("/patient/new");
+    }
+  };
 
   const columns: ColumnDefWithClass<Patient>[] = [
     {
@@ -131,7 +140,7 @@ const PatientSearch = () => {
   }
 
   if (!canView || !canCreateOPD) {
-    return <></>;
+    return <div />;
   }
 
   return (
@@ -161,7 +170,7 @@ const PatientSearch = () => {
               name="contactNo"
             />
             <div className="flex gap-2">
-              <CustomButton onClick={() => router.push("/patient/new")}>
+              <CustomButton onClick={handleRegister}>
                 Register New Patient
               </CustomButton>
               <CustomButton type="submit">Search</CustomButton>
@@ -179,6 +188,7 @@ const PatientSearch = () => {
             isLoading={isLoading}
             limit={limit}
             handleChangeLimit={setLimit}
+            getRowId={(data) => String(data.id)}
             isError={isError}
             error={error}
           />

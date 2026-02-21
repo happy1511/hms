@@ -20,7 +20,6 @@ export const getAPI = async (req: Request) => {
       const status = query.status ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
-      const billingSectionId = query.billingSectionId ?? "";
 
       const skip = (page - 1) * limit;
       const and: Prisma.ServiceWhereInput[] = [];
@@ -31,14 +30,6 @@ export const getAPI = async (req: Request) => {
 
       if (status) {
         and.push({ status: { equals: status } });
-      }
-
-      if (billingSectionId) {
-        and.push({
-          billingSections: {
-            some: { billingSectionId: Number(billingSectionId) },
-          },
-        });
       }
 
       if (createdAtFrom || createdAtTo) {

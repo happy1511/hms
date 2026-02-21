@@ -1,3 +1,4 @@
+import { BillingSection } from "@/generated/prisma/client";
 import {
   BILLING_SECTIONS,
   OPD,
@@ -9,7 +10,6 @@ import {
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
-  BillingSectionType,
   FilterValues,
   OPDType,
   PaginatedResponse,
@@ -51,7 +51,7 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
   "PUT",
 );
 const updateBillingSection = createRequest<
-  ApiResponse<BillingSectionType>,
+  ApiResponse<BillingSection>,
   undefined,
   { id: string }
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "PUT");

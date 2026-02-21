@@ -111,7 +111,11 @@ const TransactionsModal = ({
               Invoice Number: {billId}
             </span>
           </div>
-          <CustomTable columns={columns} data={data} />
+          <CustomTable
+            columns={columns}
+            data={data}
+            getRowId={(data) => String(data.id)}
+          />
         </div>
       </DialogContent>
     </Dialog>

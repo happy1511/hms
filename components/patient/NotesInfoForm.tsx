@@ -19,6 +19,7 @@ import { useState } from "react";
 import { CustomAlert } from "../common/CustomAlert";
 import { Button } from "../ui/button";
 import { Edit2, Trash2 } from "lucide-react";
+import { randomUUID } from "crypto";
 
 const NotesInfoForm = ({
   form,
@@ -166,6 +167,7 @@ const NotesInfoForm = ({
         enableSorting
         handleChangePage={() => {}}
         handleChangeLimit={() => {}}
+        getRowId={() => randomUUID()}
       />
     </div>
   );

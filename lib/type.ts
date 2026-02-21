@@ -1,3 +1,5 @@
+"use client";
+
 // ----------------------------------
 // -----------RESPONSE TYPE----------
 
@@ -5,6 +7,7 @@ import {
   ActionType,
   DoctorType,
   ModuleType,
+  NameTitle,
   PathologyOrderStatus,
   Status,
 } from "@/generated/prisma/enums";
@@ -22,7 +25,6 @@ import {
   emergencyContact,
   Floor,
   Patient,
-  PatientAddress,
   PatientContact,
   PatientIdentification,
   PatientNotes,
@@ -30,6 +32,7 @@ import {
   Prisma,
   Ward,
 } from "@/generated/prisma/client";
+import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 
 // ----------------------------------
 export type ApiResponse<T> = {
@@ -92,24 +95,29 @@ export interface InfiniteSelectBaseProps {
   onSearch?: (value: string) => void;
 }
 
+export type Primitive = string | number;
+
 export interface FormInfiniteSelectProps<
-  T extends FieldValues,
-> extends InfiniteSelectBaseProps {
-  name: Path<T>;
-  control: Control<T>;
-  rules?: Omit<
-    RegisterOptions<T, Path<T>>,
-    "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
-  >;
+  TItem,
+  TPage,
+  TValue extends Primitive,
+  TFieldValues extends FieldValues,
+> {
+  name: FieldPath<TFieldValues>;
+  control: Control<TFieldValues>;
+  className?: string;
   label?: string;
   required?: boolean;
-  hideError?: boolean;
-  className?: string;
-  formItemClassName?: string;
   placeholder?: string;
-  disabled?: boolean;
   multiple?: boolean;
-  onSelectCallback?: (value: T) => void;
+  formItemClassName?: string;
+  query: UseInfiniteQueryResult<InfiniteData<TPage>>;
+  getItems: (page: TPage) => TItem[];
+  valueKey: (item: TItem) => TValue;
+  labelKey: (item: TItem) => string;
+  hideError?: boolean;
+  search: string;
+  onSearchChange: (val: string) => void;
 }
 
 export interface FormCheckboxProps<T extends FieldValues> {
@@ -267,24 +275,74 @@ export interface FilterOption {
 }
 
 export type FilterType =
-  | "select"
   | "text"
+  | "select"
+  | "infiniteSelect"
   | "date"
-  | "dateRange"
-  | "infiniteSelect";
+  | "dateRange";
 
-export interface FilterConfig<T extends FieldValues> {
+export interface BaseFilterConfig<T extends FieldValues> {
   label: string;
   valueKey: Path<T>;
   type: FilterType;
-  options?: FilterOption[];
   required?: boolean;
   placeholder?: string;
-  fetchNextPage?: () => void;
-  hasNextPage?: boolean;
-  isFetchingNextPage?: boolean;
-  onSearch?: (value: string) => void;
 }
+
+// ---------------- TEXT ----------------
+export interface TextFilterConfig<
+  T extends FieldValues,
+> extends BaseFilterConfig<T> {
+  type: "text";
+}
+
+// ---------------- SELECT ----------------
+export interface SelectFilterConfig<
+  T extends FieldValues,
+> extends BaseFilterConfig<T> {
+  type: "select";
+  options: { label: string; value: Primitive }[];
+}
+
+// ---------------- INFINITE SELECT ----------------
+export interface InfiniteSelectFilterConfig<
+  T extends FieldValues,
+  TItem = unknown,
+  TPage = unknown,
+  TValue extends Primitive = Primitive,
+> extends BaseFilterConfig<T> {
+  type: "infiniteSelect";
+
+  // 👇 must match FormInfiniteSelect props
+  query: UseInfiniteQueryResult<InfiniteData<TPage>>;
+  getItems: (page: TPage) => TItem[];
+  valueKeyExtractor: (item: TItem) => TValue;
+  labelKey: (item: TItem) => string;
+  search: string;
+  onSearchChange: (value: string) => void;
+}
+
+// ---------------- DATE ----------------
+export interface DateFilterConfig<
+  T extends FieldValues,
+> extends BaseFilterConfig<T> {
+  type: "date";
+}
+
+// ---------------- DATE RANGE ----------------
+export interface DateRangeFilterConfig<
+  T extends FieldValues,
+> extends BaseFilterConfig<T> {
+  type: "dateRange";
+}
+
+// ---------------- FINAL UNION ----------------
+export type FilterConfig<T extends FieldValues> =
+  | TextFilterConfig<T>
+  | SelectFilterConfig<T>
+  | InfiniteSelectFilterConfig<T>
+  | DateFilterConfig<T>
+  | DateRangeFilterConfig<T>;
 
 // ----------------------------------
 // ---------USER TYPE----------------
@@ -315,6 +373,7 @@ export interface UserPermissions {
 export interface User {
   id: number;
   name: string;
+  title: NameTitle;
   loginId: string;
   password: string;
   userName: string;
@@ -349,6 +408,12 @@ export interface Doctor extends Pick<
   consultationStartingTime: string;
   consultationEndingTime: string;
 }
+
+type PatientAddress = Prisma.PatientAddressGetPayload<{
+  include: {
+    location: true;
+  };
+}>;
 
 export interface PatientType extends Patient {
   appointment: Appointment[];
@@ -386,16 +451,6 @@ export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
 export type PatientDocumentType = Prisma.PatientIdentificationGetPayload<{
   include: {
     patient: true;
-  };
-}>;
-
-export type BillingSectionType = Prisma.BillingSectionGetPayload<{
-  include: {
-    services: {
-      include: {
-        service: true;
-      };
-    };
   };
 }>;
 
@@ -453,14 +508,10 @@ export type PathologyTestDataType = Prisma.PathologyTestGetPayload<{
         referenceRanges: {
           select: {
             id: true;
-            lowerDay: true;
-            lowerMonth: true;
-            lowerYear: true;
             lowerRange: true;
-            upperDay: true;
-            upperMonth: true;
-            upperYear: true;
             upperRange: true;
+            lowerAgeInDays: true;
+            upperAgeInDays: true;
             unit: true;
           };
         };
@@ -490,14 +541,10 @@ export type PathologyTestParameterType =
       referenceRanges: {
         select: {
           id: true;
-          lowerDay: true;
-          lowerMonth: true;
-          lowerYear: true;
           lowerRange: true;
-          upperDay: true;
-          upperMonth: true;
-          upperYear: true;
           upperRange: true;
+          lowerAgeInDays: true;
+          upperAgeInDays: true;
           unit: true;
         };
       };

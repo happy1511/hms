@@ -91,7 +91,7 @@ const PathologyTests = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -246,6 +246,7 @@ const PathologyTests = () => {
       error={error}
       enableGrouping
       grouping={["section"]}
+      getRowId={(data) => String(data.id)}
     />
   );
 };

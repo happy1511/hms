@@ -131,7 +131,7 @@ const Floors = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -271,6 +271,7 @@ const Floors = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
+            getRowId={(data) => String(data.id)}
           />
         </>
       )}

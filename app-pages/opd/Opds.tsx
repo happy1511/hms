@@ -15,15 +15,17 @@ import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useOpdList } from "@/hooks/query/opd";
 import {
   ColumnDefWithClass,
+  Doctor,
   FilterConfig,
   FilterValues,
   OPDType,
+  PaginatedResponse,
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   const router = useRouter();
@@ -84,13 +86,13 @@ const Actions = ({ data }: { data: OPDType }) => {
         billTotal={data.total}
         open={addInvoiceItemModal}
         onOpenChange={setAddInvoiceItemModal}
-        trigger={<></>}
+        trigger={<div />}
       />
       <AddVitalsModal
         opdId={data.id}
         open={addVitalsModal}
         onOpenChange={setAddVitalsModal}
-        trigger={<></>}
+        trigger={<div />}
         vital={data.vital}
       />
     </>
@@ -103,12 +105,7 @@ const OPDs = () => {
   const [filters, setFilters] = useState<FilterValues>({});
   const [consultantValue, setConsultantValue] = useState("");
 
-  const {
-    data: consultingDoctors,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteDoctorList(
+  const consultantQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
       name: consultantValue,
@@ -118,16 +115,8 @@ const OPDs = () => {
   const { data: profile } = useProfile(false);
   const { data, isLoading, isError, error } = useOpdList(filters, page, limit);
 
-  const flatConsultingDoctors = useMemo(
-    () =>
-      consultingDoctors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.user.name, value: f.userId })),
-      ),
-    [consultingDoctors],
-  );
-
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -290,11 +279,12 @@ const OPDs = () => {
       valueKey: "consultantDoctorId",
       type: "infiniteSelect",
       placeholder: "Search by name here.",
-      options: flatConsultingDoctors,
-      isFetchingNextPage,
-      hasNextPage,
-      fetchNextPage,
-      onSearch: setConsultantValue,
+      query: consultantQuery,
+      getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
+      valueKeyExtractor: (i) => String((i as Doctor).userId),
+      labelKey: (i) => (i as Doctor).name,
+      search: consultantValue,
+      onSearchChange: setConsultantValue,
     },
   ];
 

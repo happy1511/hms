@@ -1,4 +1,4 @@
-import { useForm, FieldValues } from "react-hook-form";
+import { useForm, FieldValues, Path } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
 import { FormInput } from "../form-inputs/FormInput";
@@ -29,20 +29,10 @@ const CustomFilters = <T extends FieldValues>({
   };
 
   const renderFilter = (filter: FilterConfig<T>) => {
-    const {
-      label,
-      valueKey,
-      type,
-      fetchNextPage,
-      hasNextPage,
-      isFetchingNextPage,
-      onSearch,
-      options,
-      required,
-      placeholder,
-    } = filter;
+    const { label, valueKey, type, required, placeholder } = filter;
 
     switch (type) {
+      // ---------------- TEXT ----------------
       case "text":
         return (
           <div className="grid grid-cols-5 border border-black/15 rounded-lg overflow-hidden">
@@ -52,18 +42,19 @@ const CustomFilters = <T extends FieldValues>({
             <div className="col-span-3">
               <FormInput<T>
                 name={valueKey}
+                control={form.control}
                 rules={{
                   required: required ? `${label} is required` : false,
                 }}
-                control={form.control}
                 placeholder={placeholder || ""}
                 hideError
-                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
               />
             </div>
           </div>
         );
 
+      // ---------------- SELECT ----------------
       case "select":
         return (
           <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
@@ -73,50 +64,47 @@ const CustomFilters = <T extends FieldValues>({
             <div className="col-span-3">
               <FormSelect<T>
                 name={valueKey}
-                options={options || []}
+                options={filter.options || []}
+                control={form.control}
                 rules={{
                   required: required ? `${label} is required` : false,
                 }}
-                control={form.control}
                 placeholder={placeholder || ""}
-                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
                 hideError
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
               />
             </div>
           </div>
         );
 
+      // ---------------- INFINITE SELECT ----------------
       case "infiniteSelect":
-        return fetchNextPage &&
-          hasNextPage !== undefined &&
-          onSearch &&
-          isFetchingNextPage !== undefined ? (
+        return (
           <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
             <div className="col-span-3">
-              <FormInfiniteSelect<T>
-                name={valueKey}
-                rules={{
-                  required: required ? `${label} is required` : false,
-                }}
+              <FormInfiniteSelect
+                name={valueKey as Path<T>}
                 control={form.control}
+                label={undefined}
+                required={required}
                 placeholder={placeholder || ""}
-                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
+                query={filter.query}
+                getItems={filter.getItems}
+                valueKey={filter.valueKeyExtractor}
+                labelKey={filter.labelKey}
                 hideError
-                options={options || []}
-                fetchNextPage={fetchNextPage}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onSearch={onSearch}
+                className="border-none!"
+                search={filter.search}
+                onSearchChange={filter.onSearchChange}
               />
             </div>
           </div>
-        ) : (
-          <></>
         );
 
+      // ---------------- DATE ----------------
       case "date":
         return (
           <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
@@ -126,25 +114,19 @@ const CustomFilters = <T extends FieldValues>({
             <div className="col-span-3">
               <FormDatePicker
                 name={valueKey}
+                control={form.control}
                 rules={{
                   required: required ? `${label} is required` : false,
-                  validate: (value) => {
-                    if (!required) return true;
-                    if (!value?.from || !value?.to) {
-                      return `${label} is required`;
-                    }
-                    return true;
-                  },
                 }}
-                control={form.control}
                 placeholder={placeholder || ""}
-                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
                 hideError
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
               />
             </div>
           </div>
         );
 
+      // ---------------- DATE RANGE ----------------
       case "dateRange":
         return (
           <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
@@ -155,8 +137,8 @@ const CustomFilters = <T extends FieldValues>({
               <FormDateRangePicker
                 control={form.control}
                 name={valueKey}
-                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1 [&_svg:not([class*='size-'])]:size-3"
                 hideError
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
               />
             </div>
           </div>
@@ -176,12 +158,14 @@ const CustomFilters = <T extends FieldValues>({
       >
         <div className="grid gap-2 grid-cols-3 mb-2">
           {filters.map((filter) => (
-            <div key={filter.valueKey}>{renderFilter(filter)}</div>
+            <div key={String(filter.valueKey)}>{renderFilter(filter)}</div>
           ))}
         </div>
+
         <div className="w-fit">
           <div className="grid grid-cols-2 space-x-2">
             <CustomButton type="submit">Apply Filters</CustomButton>
+
             <CustomButton
               type="reset"
               variant="outline"

@@ -45,6 +45,7 @@ import { useParams } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import ParameterOptionsModal from "./ParameterOptionsModal";
+import { fromDays } from "@/lib/utils";
 
 type TableRowHeader = {
   type: "header";
@@ -88,8 +89,6 @@ const TestInfoForm = ({ data }: { data: PathologyTestDataType }) => {
   const handleSubmit = (values: PartialPathologyTestValidatorType) => {
     mutateAsync(values);
   };
-
-  console.log(form.formState.errors, form.getValues());
 
   return (
     <Form {...form}>
@@ -373,16 +372,18 @@ const ReferenceRangeForm = ({
   editingRange,
   data,
   setEditingRange,
+  testId,
 }: {
   editingRange: ReferenceRange | null;
   data: TableRowParameter;
   setEditingRange: Dispatch<SetStateAction<ReferenceRange | null>>;
+  testId: number;
 }) => {
   const { mutateAsync: create, isPending: creating } =
-    useCreateReferenceRange();
+    useCreateReferenceRange(testId);
 
   const { mutateAsync: update, isPending: updating } =
-    useUpdateReferenceRange();
+    useUpdateReferenceRange(testId);
 
   const form = useForm<AddReferenceRangeToParameterValidatorType>({
     defaultValues: { parameterId: data.id },
@@ -392,8 +393,17 @@ const ReferenceRangeForm = ({
   useEffect(() => {
     if (!editingRange) return;
 
+    const lowerRange = fromDays(editingRange.lowerAgeInDays || 0);
+    const upperRange = fromDays(editingRange.upperAgeInDays || 0);
+
     form.reset({
       ...editingRange,
+      lowerAgeDay: lowerRange.days,
+      lowerAgeMonth: lowerRange.months,
+      lowerAgeYear: lowerRange.years,
+      upperAgeDay: upperRange.days,
+      upperAgeMonth: upperRange.months,
+      upperAgeYear: upperRange.years,
     });
   }, [editingRange]);
 
@@ -418,37 +428,37 @@ const ReferenceRangeForm = ({
         <div className="grid grid-cols-2 space-x-2">
           <FormField
             label="Lower Day"
-            name="lowerDay"
+            name="lowerAgeDay"
             type="text"
             control={form.control}
           />
           <FormField
             label="Upper Day"
-            name="upperDay"
+            name="upperAgeDay"
             type="text"
             control={form.control}
           />
           <FormField
             label="Lower Month"
-            name="lowerMonth"
+            name="lowerAgeMonth"
             type="text"
             control={form.control}
           />
           <FormField
             label="Upper Month"
-            name="upperMonth"
+            name="upperAgeMonth"
             type="text"
             control={form.control}
           />
           <FormField
             label="Lower Year"
-            name="lowerYear"
+            name="lowerAgeYear"
             type="text"
             control={form.control}
           />
           <FormField
             label="Upper Year"
-            name="upperYear"
+            name="upperAgeYear"
             type="text"
             control={form.control}
           />
@@ -495,11 +505,18 @@ const ReferenceRangeForm = ({
 const ReferenceRangeActions = ({
   data,
   setEditingRange,
+  testId,
+  parameterId,
 }: {
   data: ReferenceRange;
+  testId: number;
+  parameterId: number;
   setEditingRange: Dispatch<SetStateAction<ReferenceRange | null>>;
 }) => {
-  const { mutateAsync: deleteRange, isPending } = useDeleteReferenceRange();
+  const { mutateAsync: deleteRange, isPending } = useDeleteReferenceRange(
+    testId,
+    parameterId,
+  );
 
   return (
     <>
@@ -532,7 +549,13 @@ const ReferenceRangeActions = ({
   );
 };
 
-const ReferenceRanges = ({ data }: { data: TableRowParameter }) => {
+const ReferenceRanges = ({
+  data,
+  testId,
+}: {
+  data: TableRowParameter;
+  testId: number;
+}) => {
   const [editingRange, setEditingRange] = useState<ReferenceRange | null>(null);
 
   const columns: ColumnDefWithClass<ReferenceRange>[] = [
@@ -583,6 +606,8 @@ const ReferenceRanges = ({ data }: { data: TableRowParameter }) => {
         <ReferenceRangeActions
           data={row.original}
           setEditingRange={setEditingRange}
+          testId={testId}
+          parameterId={data.id}
         />
       ),
     },
@@ -597,12 +622,14 @@ const ReferenceRanges = ({ data }: { data: TableRowParameter }) => {
       <CustomTable
         columns={columns}
         data={data.referenceRanges || []}
+        getRowId={(data) => String(data.id)}
         hidePagination
       />
       <ReferenceRangeForm
         setEditingRange={setEditingRange}
         editingRange={editingRange}
         data={data}
+        testId={testId}
       />
     </div>
   );
@@ -612,9 +639,11 @@ const ParameterAndHeaderActions = ({
   data,
   setEditingHeader,
   setEditingParameter,
+  testId,
   setMode,
 }: {
   data: TableRow;
+  testId: number;
   setEditingHeader: (value: SetStateAction<TableRowHeader | null>) => void;
   setMode: (value: SetStateAction<"parameter" | "header">) => void;
   setEditingParameter: (
@@ -622,9 +651,9 @@ const ParameterAndHeaderActions = ({
   ) => void;
 }) => {
   const { mutateAsync: deleteParameter, isPending: deletingParameter } =
-    useDeletePathologyTestParameter();
+    useDeletePathologyTestParameter(testId);
   const { mutateAsync: deleteHeader, isPending: deletingHeader } =
-    useDeletePathologyTestParameterHeader();
+    useDeletePathologyTestParameterHeader(testId);
 
   return (
     <>
@@ -748,6 +777,7 @@ const TestParameterAndHeaderForm = ({
         <>
           {row.original.type !== "header" && (
             <ParameterOptionsModal
+              testId={data.id}
               trigger={
                 <Button
                   variant="outline"
@@ -771,6 +801,7 @@ const TestParameterAndHeaderForm = ({
           setEditingHeader={setEditingHeader}
           setEditingParameter={setEditingParameter}
           setMode={setMode}
+          testId={data.id}
         />
       ),
     },
@@ -805,9 +836,16 @@ const TestParameterAndHeaderForm = ({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-3">
           <p className="text-md">Parameters</p>
-          <CustomTable columns={columns} data={tableData} hidePagination />
+          <CustomTable
+            columns={columns}
+            data={tableData}
+            getRowId={(data) => String(data.id)}
+            hidePagination
+          />
         </div>
-        {selectedParameter && <ReferenceRanges data={selectedParameter} />}
+        {selectedParameter && (
+          <ReferenceRanges data={selectedParameter} testId={data.id} />
+        )}
       </div>
     </div>
   );
@@ -831,7 +869,7 @@ const EditPathologyTestForm = () => {
   }
 
   if (testId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

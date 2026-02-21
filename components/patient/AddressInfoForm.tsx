@@ -1,4 +1,4 @@
-import { ColumnDefWithClass } from "@/lib/type";
+import { ColumnDefWithClass, PaginatedResponse } from "@/lib/type";
 import {
   patientAddress,
   PatientAddressValidatorType,
@@ -17,9 +17,13 @@ import { CustomAlert } from "../common/CustomAlert";
 import { Button } from "../ui/button";
 import { Edit2, Trash2 } from "lucide-react";
 import FormField from "../form-inputs/FormField";
-import { AddressType } from "@/lib/enums";
 import CustomButton from "../common/CustomButton";
 import { CustomTable } from "../common/CustomTable";
+import { useInfiniteLocationsList } from "@/hooks/query/locations";
+import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
+import { AddressType } from "@/generated/prisma/enums";
+import { Location } from "@/generated/prisma/client";
+import { randomUUID } from "crypto";
 
 const AddressInfoFormForm = ({
   form,
@@ -29,6 +33,9 @@ const AddressInfoFormForm = ({
   goNext: () => void;
 }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [locationSearch, setLocationSearch] = useState("");
+  const locationQuery = useInfiniteLocationsList({ name: locationSearch }, 10);
+
   const { append, remove, update } = useFieldArray({
     control: form.control,
     name: "addresses",
@@ -40,6 +47,9 @@ const AddressInfoFormForm = ({
 
   const addressForm = useForm<PatientAddressValidatorType>({
     resolver: zodResolver(patientAddress),
+    defaultValues: {
+      type: AddressType["HOME"],
+    },
   });
 
   const handleSubmit = (values: PatientAddressValidatorType) => {
@@ -237,29 +247,73 @@ const AddressInfoFormForm = ({
           name="addressLineThree"
           type="text"
         />
-        <FormField
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          PatientAddressValidatorType
+        >
           control={addressForm.control}
           label="City"
-          name="city"
-          type="text"
+          name="locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.city}
+          placeholder="City"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
         />
-        <FormField
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          PatientAddressValidatorType
+        >
           control={addressForm.control}
           label="State"
-          name="state"
-          type="text"
+          name="locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.state}
+          placeholder="State"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
         />
-        <FormField
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          PatientAddressValidatorType
+        >
           control={addressForm.control}
           label="Country"
-          name="country"
-          type="text"
+          name="locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.country}
+          placeholder="Country"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
         />
-        <FormField
+        <FormInfiniteSelect<
+          Location,
+          PaginatedResponse<Location>,
+          string,
+          PatientAddressValidatorType
+        >
           control={addressForm.control}
-          label="Postal Code"
-          name="postalCode"
-          type="text"
+          label="Post Code"
+          name="locationId"
+          query={locationQuery}
+          getItems={(p) => p?.data}
+          valueKey={(i) => String(i?.id)}
+          labelKey={(i) => i?.postcode}
+          placeholder="Country"
+          search={locationSearch}
+          onSearchChange={setLocationSearch}
         />
         <div className="flex justify-start">
           <CustomButton type="button" onClick={submit}>
@@ -274,6 +328,7 @@ const AddressInfoFormForm = ({
         total={values.length}
         enableSorting
         handleChangePage={() => {}}
+        getRowId={() => randomUUID()}
       />
       <div className="flex justify-start">
         <CustomButton type="button" onClick={goNext}>

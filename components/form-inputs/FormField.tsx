@@ -5,7 +5,6 @@ import {
   FormDatePickerProps,
   FormDateRangePickerProps,
   FormDateTimePickerProps,
-  FormInfiniteSelectProps,
   FormInputProps,
   FormRadioGroupProps,
   FormSelectProps,
@@ -17,7 +16,6 @@ import { FormCheckbox } from "./FormCheckBox";
 import { FormRadioGroup } from "./FormRadioGroup";
 import { FormDatePicker } from "./FormDatePicker";
 import { FormDateRangePicker } from "./FormDateRange";
-import { FormInfiniteSelect } from "./FormInfiniteSelect";
 import { FormDateTime } from "./FormDateTime";
 import { FormMultiSelect } from "./FormMultiSelect";
 import { FormRichTextEditor } from "./FormRichTextEditor";
@@ -32,7 +30,6 @@ export type Props<T extends FieldValues> =
   | ({ type: "date" } & FormDatePickerProps<T>)
   | ({ type: "dateTime" } & FormDateTimePickerProps<T>)
   | ({ type: "dateRange" } & FormDateRangePickerProps<T>)
-  | ({ type: "infiniteSelect" } & FormInfiniteSelectProps<T>)
   | ({ type: "multiSelect" } & FormSelectProps<T>)
   | ({ type: "richText" } & FormInputProps<T>);
 
@@ -57,9 +54,6 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
     case "multiSelect":
       return <FormMultiSelect {...(props as FormSelectProps<T>)} />;
 
-    case "infiniteSelect":
-      return <FormInfiniteSelect {...(props as FormInfiniteSelectProps<T>)} />;
-
     case "checkbox":
       return <FormCheckbox {...(props as FormCheckboxProps<T>)} />;
 
@@ -78,7 +72,7 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
       );
 
     default:
-      return <></>;
+      return <div />;
   }
 };
 

@@ -20,6 +20,7 @@ import { useState } from "react";
 import { CustomAlert } from "../common/CustomAlert";
 import { Button } from "../ui/button";
 import { Edit2, Trash2 } from "lucide-react";
+import { randomUUID } from "crypto";
 
 const IdentificationInfoForm = ({
   form,
@@ -183,6 +184,7 @@ const IdentificationInfoForm = ({
         enableSorting
         handleChangePage={() => {}}
         handleChangeLimit={() => {}}
+        getRowId={() => randomUUID()}
       />
       <div className="flex justify-start">
         <CustomButton type="button" onClick={goNext}>

@@ -56,17 +56,6 @@ export const getAPI = async (req: Request) => {
             name: true,
             description: true,
             status: true,
-            services: {
-              select: {
-                serviceId: true,
-                service: {
-                  select: {
-                    name: true,
-                    id: true,
-                  },
-                },
-              },
-            },
             createdAt: true,
             updatedAt: true,
           },
@@ -102,9 +91,6 @@ export const getDetailsAPI = async (
           name: true,
           description: true,
           status: true,
-          services: {
-            select: { service: { select: { id: true, name: true } } },
-          },
         },
       });
 
@@ -143,32 +129,13 @@ export const createAPI = async (req: Request) => {
           });
         }
 
-        const { name, description, status, serviceIds } = data;
-        if (serviceIds) {
-          const existingServices = await tx.service.findMany({
-            where: { id: { in: serviceIds } },
-            select: { id: true },
-          });
-          if (existingServices.length !== serviceIds.length) {
-            return apiResponse({
-              status: RESPONSE_STATUS.BAD_REQUEST,
-              message: "One or more services do not exist",
-            });
-          }
-        }
+        const { name, description, status } = data;
 
         const createdBillingSection = await tx.billingSection.create({
           data: {
             name,
             description,
             status,
-            services: {
-              create: serviceIds?.map((serviceId) => ({
-                service: {
-                  connect: { id: serviceId },
-                },
-              })),
-            },
           },
         });
 
@@ -206,19 +173,7 @@ export const updateAPI = async (
           });
         }
 
-        const { name, description, status, serviceIds } = data;
-        if (serviceIds) {
-          const existingServices = await tx.service.findMany({
-            where: { id: { in: serviceIds } },
-            select: { id: true },
-          });
-          if (existingServices.length !== serviceIds.length) {
-            return apiResponse({
-              status: RESPONSE_STATUS.BAD_REQUEST,
-              message: "One or more services do not exist",
-            });
-          }
-        }
+        const { name, description, status } = data;
 
         const updatedBillingSection = await tx.billingSection.update({
           where: { id: data.sectionId },
@@ -226,14 +181,6 @@ export const updateAPI = async (
             name,
             description,
             status,
-            services: data.serviceIds
-              ? {
-                  deleteMany: {},
-                  create: serviceIds?.map((serviceId) => ({
-                    service: { connect: { id: serviceId } },
-                  })),
-                }
-              : undefined,
           },
         });
 

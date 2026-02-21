@@ -147,7 +147,7 @@ const Doctors = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -306,6 +306,7 @@ const Doctors = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
+            getRowId={(data) => String(data.id)}
           />
         </>
       )}

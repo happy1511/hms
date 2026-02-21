@@ -14,7 +14,7 @@ const Buttons = () => {
   const { data: profile } = useProfile(false);
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canCreate = hasActionPermission(
@@ -44,7 +44,7 @@ const ClinicalTests = () => {
   const tabs = [];
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canViewPathologoy = hasActionPermission(

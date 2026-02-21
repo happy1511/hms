@@ -94,7 +94,7 @@ const RadiologyTemplates = () => {
   );
 
   if (!profile) {
-    return <></>;
+    return <div />;
   }
 
   const canView = hasActionPermission(
@@ -218,6 +218,7 @@ const RadiologyTemplates = () => {
       error={error}
       enableGrouping
       grouping={["section"]}
+      getRowId={(data) => String(data.id)}
     />
   );
 };

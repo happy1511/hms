@@ -32,7 +32,7 @@ const transactionsValidator = z.object({
 });
 
 const opdBaseValidator = z.object({
-  patientId: z.coerce.number().min(1, "Patient is required"),
+  patientId: z.coerce.number().min(1, "Patient is required").optional(),
   patient: patientValidator,
   arrivalState: z.enum(OpdArrival),
   remarks: z.string().max(500).optional(),

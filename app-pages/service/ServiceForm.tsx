@@ -3,7 +3,9 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
+import { RadiologyTest } from "@/generated/prisma/client";
 import {
   ServiceApplicableOn,
   ServiceType,
@@ -16,7 +18,11 @@ import {
   useGetService,
   useUpdateService,
 } from "@/hooks/query/service";
-import { ServiceDataType } from "@/lib/type";
+import {
+  PaginatedResponse,
+  PathologyTestDataType,
+  ServiceDataType,
+} from "@/lib/type";
 import {
   serviceValidator,
   ServiceValidatorType,
@@ -24,7 +30,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 const getInitialValues = (data?: ServiceDataType): ServiceValidatorType => ({
@@ -57,12 +63,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const discountAvailable = form.watch("discountAvailable");
   const type = form.watch("type");
 
-  const {
-    data: pathologyTests,
-    isFetchingNextPage: isFetchingPathologyNextPage,
-    hasNextPage: hasPathologyNextPage,
-    fetchNextPage: fetchPathologyNextPage,
-  } = useInfinitePathologyTestsList(
+  const pathologyQuery = useInfinitePathologyTestsList(
     {
       name: pathologySearchValue,
       defaultSelectedIds: defaultValues.connectedLabTests,
@@ -70,34 +71,13 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     10,
     type === "LAB_TEST" || type === "CLINICAL_TEST",
   );
-  const {
-    data: radiologyTests,
-    isFetchingNextPage: isFetchingRadiologyNextPage,
-    hasNextPage: hasRadiologyNextPage,
-    fetchNextPage: fetchRadiologyNextPage,
-  } = useInfiniteRadiologyTestsList(
+  const radiologyQuery = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
       defaultSelectedIds: defaultValues.connectedRadiologyTests,
     },
     10,
     type === "RADIOLOGY_TEST" || type === "CLINICAL_TEST",
-  );
-
-  const flatPathologyTests = useMemo(
-    () =>
-      pathologyTests?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [pathologyTests],
-  );
-
-  const flatRadiologyTests = useMemo(
-    () =>
-      radiologyTests?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [radiologyTests],
   );
 
   const onSubmit = (values: ServiceValidatorType) => {
@@ -178,31 +158,43 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
 
           {(type === ServiceType["LAB_TEST"] ||
             type === ServiceType["CLINICAL_TEST"]) && (
-            <FormField<ServiceValidatorType>
-              type="infiniteSelect"
+            <FormInfiniteSelect<
+              PathologyTestDataType,
+              PaginatedResponse<PathologyTestDataType>,
+              string,
+              ServiceValidatorType
+            >
               name="connectedLabTests"
               label="Pathology Tests"
               control={form.control}
-              options={flatPathologyTests || []}
-              fetchNextPage={fetchPathologyNextPage}
-              hasNextPage={hasPathologyNextPage}
-              isFetchingNextPage={isFetchingPathologyNextPage}
-              onSearch={setPathologySearchValue}
+              query={pathologyQuery}
+              getItems={(p) => p?.data}
+              valueKey={(i) => String(i?.id)}
+              labelKey={(i) => i?.name}
+              search={pathologySearchValue}
+              onSearchChange={setPathologySearchValue}
+              required
               multiple
             />
           )}
           {(type === ServiceType["RADIOLOGY_TEST"] ||
             type === ServiceType["CLINICAL_TEST"]) && (
-            <FormField<ServiceValidatorType>
-              type="infiniteSelect"
+            <FormInfiniteSelect<
+              RadiologyTest,
+              PaginatedResponse<RadiologyTest>,
+              string,
+              ServiceValidatorType
+            >
               name="connectedRadiologyTests"
               label="Radiology Tests"
               control={form.control}
-              options={flatRadiologyTests || []}
-              fetchNextPage={fetchRadiologyNextPage}
-              hasNextPage={hasRadiologyNextPage}
-              isFetchingNextPage={isFetchingRadiologyNextPage}
-              onSearch={setRadiologySearchValue}
+              query={radiologyQuery}
+              getItems={(p) => p?.data}
+              valueKey={(i) => String(i?.id)}
+              labelKey={(i) => i?.name}
+              search={radiologySearchValue}
+              onSearchChange={setRadiologySearchValue}
+              required
               multiple
             />
           )}
@@ -251,7 +243,7 @@ const ServiceForm = () => {
   }
 
   if (serviceId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

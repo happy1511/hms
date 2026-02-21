@@ -28,6 +28,8 @@ import {
   updateParameterToTestValidator,
   updateReferenceRangeToParameterValidator,
 } from "@/validators/api/masters/pathologyTest";
+import { differenceInDays } from "date-fns";
+import { toDays } from "@/lib/utils";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -304,6 +306,8 @@ export const getOrderDetailsAPI = async (req: Request) => {
           ? ReferenceRangeSex["FEMALE"]
           : ReferenceRangeSex["MALE"];
 
+      const ageInDays = differenceInDays(new Date(), order.patient.dob);
+
       const data = await prisma.pathologyTestOrder.findFirst({
         where: { id: orderId },
         include: {
@@ -318,14 +322,12 @@ export const getOrderDetailsAPI = async (req: Request) => {
                       referenceRanges: {
                         where: {
                           OR: [
-                            {
-                              applicableGender: { equals: gender },
-                            },
-                            {
-                              applicableGender: {
-                                equals: ReferenceRangeSex["Both"],
-                              },
-                            },
+                            { applicableGender: gender },
+                            { applicableGender: ReferenceRangeSex.Both },
+                          ],
+                          AND: [
+                            { lowerAgeInDays: { lte: ageInDays } },
+                            { upperAgeInDays: { gte: ageInDays } },
                           ],
                         },
                       },
@@ -377,6 +379,7 @@ export const updateOrderAPI = async (req: Request, user: User) => {
             deleteMany: {},
             create: results?.map((r) => ({
               ...r,
+              orderId: id,
             })),
           },
         },
@@ -559,13 +562,8 @@ export const getDetailsAPI = async (
               referenceRanges: {
                 select: {
                   id: true,
-                  lowerDay: true,
-                  lowerMonth: true,
-                  lowerYear: true,
-                  lowerRange: true,
-                  upperDay: true,
-                  upperMonth: true,
-                  upperYear: true,
+                  lowerAgeInDays: true,
+                  upperAgeInDays: true,
                   upperRange: true,
                   unit: true,
                   applicableGender: true,
@@ -636,18 +634,28 @@ export const createAPI = async (req: Request) => {
 
                       referenceRanges: {
                         create:
-                          param.referenceRanges?.map((range) => ({
-                            applicableGender: range.applicableGender,
-                            lowerDay: range.lowerDay,
-                            upperDay: range.upperDay,
-                            lowerMonth: range.lowerMonth,
-                            upperMonth: range.upperMonth,
-                            lowerYear: range.lowerYear,
-                            upperYear: range.upperYear,
-                            lowerRange: range.lowerRange,
-                            upperRange: range.upperRange,
-                            unit: range.unit,
-                          })) || [],
+                          param.referenceRanges?.map((range) => {
+                            const lowerAgeInDays = toDays(
+                              range.lowerAgeDay,
+                              range.lowerAgeMonth,
+                              range.lowerAgeYear,
+                            );
+
+                            const upperAgeInDays = toDays(
+                              range.upperAgeDay,
+                              range.upperAgeMonth,
+                              range.upperAgeYear,
+                            );
+
+                            return {
+                              applicableGender: range.applicableGender,
+                              lowerAgeInDays,
+                              upperAgeInDays,
+                              lowerRange: range.lowerRange,
+                              upperRange: range.upperRange,
+                              unit: range.unit,
+                            };
+                          }) || [],
                       },
 
                       parameterOptions: {
@@ -671,18 +679,29 @@ export const createAPI = async (req: Request) => {
 
                   referenceRanges: {
                     create:
-                      param.referenceRanges?.map((range) => ({
-                        applicableGender: range.applicableGender,
-                        lowerDay: range.lowerDay,
-                        upperDay: range.upperDay,
-                        lowerMonth: range.lowerMonth,
-                        upperMonth: range.upperMonth,
-                        lowerYear: range.lowerYear,
-                        upperYear: range.upperYear,
-                        lowerRange: range.lowerRange,
-                        upperRange: range.upperRange,
-                        unit: range.unit,
-                      })) || [],
+                      param.referenceRanges?.map((range) => {
+                        const lowerAgeInDays = toDays(
+                          range.lowerAgeDay,
+                          range.lowerAgeMonth,
+                          range.lowerAgeYear,
+                        );
+
+                        const upperAgeInDays = toDays(
+                          range.upperAgeDay,
+                          range.upperAgeMonth,
+                          range.upperAgeYear,
+                        );
+                        return {
+                          applicableGender: range.applicableGender,
+                          lowerAgeDay: range.lowerAgeDay,
+                          upperAgeDay: range.upperAgeDay,
+                          lowerAgeInDays,
+                          upperAgeInDays,
+                          lowerRange: range.lowerRange,
+                          upperRange: range.upperRange,
+                          unit: range.unit,
+                        };
+                      }) || [],
                   },
 
                   parameterOptions: {
@@ -778,18 +797,27 @@ export const addParameterAPI = async (req: Request) => {
             headerId: body.headerId,
             referenceRanges: {
               create:
-                body.referenceRanges?.map((range) => ({
-                  applicableGender: range.applicableGender,
-                  lowerDay: range.lowerDay,
-                  upperDay: range.upperDay,
-                  lowerMonth: range.lowerMonth,
-                  upperMonth: range.upperMonth,
-                  lowerYear: range.lowerYear,
-                  upperYear: range.upperYear,
-                  lowerRange: range.lowerRange,
-                  upperRange: range.upperRange,
-                  unit: range.unit,
-                })) || [],
+                body.referenceRanges?.map((range) => {
+                  const lowerAgeInDays = toDays(
+                    range.lowerAgeDay,
+                    range.lowerAgeMonth,
+                    range.lowerAgeYear,
+                  );
+
+                  const upperAgeInDays = toDays(
+                    range.upperAgeDay,
+                    range.upperAgeMonth,
+                    range.upperAgeYear,
+                  );
+                  return {
+                    applicableGender: range.applicableGender,
+                    lowerAgeInDays,
+                    upperAgeInDays,
+                    lowerRange: range.lowerRange,
+                    upperRange: range.upperRange,
+                    unit: range.unit,
+                  };
+                }) || [],
             },
             parameterOptions: {
               create:
@@ -820,7 +848,6 @@ export const updateParameterAPI = async (req: Request) => {
           where: {
             id: body.parameterId,
             testId: body.testId,
-            headerId: body.headerId,
           },
         });
 
@@ -866,18 +893,27 @@ export const updateParameterAPI = async (req: Request) => {
             referenceRanges: {
               deleteMany: {},
               create:
-                body.referenceRanges?.map((range) => ({
-                  applicableGender: range.applicableGender,
-                  lowerDay: range.lowerDay,
-                  upperDay: range.upperDay,
-                  lowerMonth: range.lowerMonth,
-                  upperMonth: range.upperMonth,
-                  lowerYear: range.lowerYear,
-                  upperYear: range.upperYear,
-                  lowerRange: range.lowerRange,
-                  upperRange: range.upperRange,
-                  unit: range.unit,
-                })) || [],
+                body.referenceRanges?.map((range) => {
+                  const lowerAgeInDays = toDays(
+                    range.lowerAgeDay,
+                    range.lowerAgeMonth,
+                    range.lowerAgeYear,
+                  );
+
+                  const upperAgeInDays = toDays(
+                    range.upperAgeDay,
+                    range.upperAgeMonth,
+                    range.upperAgeYear,
+                  );
+                  return {
+                    applicableGender: range.applicableGender,
+                    lowerAgeInDays,
+                    upperAgeInDays,
+                    lowerRange: range.lowerRange,
+                    upperRange: range.upperRange,
+                    unit: range.unit,
+                  };
+                }) || [],
             },
             parameterOptions: {
               deleteMany: {},
@@ -1067,10 +1103,25 @@ export const addReferenceRangeAPI = async (req: Request) => {
           });
         }
 
-        const { parameterId, ...rest } = body;
+        const {
+          parameterId,
+          lowerAgeDay,
+          lowerAgeMonth,
+          lowerAgeYear,
+          upperAgeDay,
+          upperAgeMonth,
+          upperAgeYear,
+          ...rest
+        } = body;
+
+        const lowerAgeInDays = toDays(lowerAgeDay, lowerAgeMonth, lowerAgeYear);
+        const upperAgeInDays = toDays(upperAgeDay, upperAgeMonth, upperAgeYear);
+
         const createdHeader = await tx.referenceRange.create({
           data: {
             ...rest,
+            lowerAgeInDays,
+            upperAgeInDays,
             testParameterId: parameterId,
           },
         });
@@ -1115,11 +1166,26 @@ export const updateReferenceRangeAPI = async (req: Request) => {
           });
         }
 
-        const { parameterId, ...rest } = body;
+        const {
+          parameterId,
+          lowerAgeDay,
+          lowerAgeMonth,
+          lowerAgeYear,
+          upperAgeDay,
+          upperAgeMonth,
+          upperAgeYear,
+          ...rest
+        } = body;
+
+        const lowerAgeInDays = toDays(lowerAgeDay, lowerAgeMonth, lowerAgeYear);
+        const upperAgeInDays = toDays(upperAgeDay, upperAgeMonth, upperAgeYear);
+
         const updatedRange = await tx.referenceRange.update({
           where: { id: existingReferenceRange.id },
           data: {
             ...rest,
+            lowerAgeInDays,
+            upperAgeInDays,
             testParameterId: parameterId,
           },
         });
@@ -1320,12 +1386,12 @@ export const updateAPI = async (
                   data: param.referenceRanges.map((range) => ({
                     testParameterId: createdParam.id,
                     applicableGender: range.applicableGender,
-                    lowerDay: range.lowerDay,
-                    upperDay: range.upperDay,
-                    lowerMonth: range.lowerMonth,
-                    upperMonth: range.upperMonth,
-                    lowerYear: range.lowerYear,
-                    upperYear: range.upperYear,
+                    lowerAgeDay: range.lowerAgeDay,
+                    upperAgeDay: range.upperAgeDay,
+                    lowerAgeMonth: range.lowerAgeMonth,
+                    upperAgeMonth: range.upperAgeMonth,
+                    lowerAgeYear: range.lowerAgeYear,
+                    upperAgeYear: range.upperAgeYear,
                     lowerRange: range.lowerRange,
                     upperRange: range.upperRange,
                     unit: range.unit,
@@ -1362,12 +1428,12 @@ export const updateAPI = async (
                 data: param.referenceRanges.map((range) => ({
                   testParameterId: createdParam.id,
                   applicableGender: range.applicableGender,
-                  lowerDay: range.lowerDay,
-                  upperDay: range.upperDay,
-                  lowerMonth: range.lowerMonth,
-                  upperMonth: range.upperMonth,
-                  lowerYear: range.lowerYear,
-                  upperYear: range.upperYear,
+                  lowerAgeDay: range.lowerAgeDay,
+                  upperAgeDay: range.upperAgeDay,
+                  lowerAgeMonth: range.lowerAgeMonth,
+                  upperAgeMonth: range.upperAgeMonth,
+                  lowerAgeYear: range.lowerAgeYear,
+                  upperAgeYear: range.upperAgeYear,
                   lowerRange: range.lowerRange,
                   upperRange: range.upperRange,
                   unit: range.unit,

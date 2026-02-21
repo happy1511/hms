@@ -140,7 +140,7 @@ export const useUpdatePatient = () => {
     mutationFn: (data) =>
       updatePatient({
         body: data,
-        urlHelpers: { id: data.patientId.toString() },
+        urlHelpers: { id: String(data.patientId) },
       }),
     onSuccess: () => {
       toast.success("Patient Updated Successfully");
@@ -158,7 +158,7 @@ export const useDeletePatient = () => {
   >({
     mutationKey: ["delete-patient"],
     mutationFn: (data) =>
-      deletePatient({ urlHelpers: { id: data.patientId.toString() } }),
+      deletePatient({ urlHelpers: { id: String(data.patientId) } }),
     onSuccess: () => {
       toast.success("Patient Deleted Successfully");
     },

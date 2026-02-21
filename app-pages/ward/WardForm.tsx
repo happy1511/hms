@@ -8,7 +8,7 @@ import { Ward } from "@/generated/prisma/client";
 import { Status } from "@/generated/prisma/enums";
 import { useInfiniteFloorsList } from "@/hooks/query/floor";
 import { useCreateWard, useGetWard, useUpdateWard } from "@/hooks/query/ward";
-
+import { Floor } from "@/generated/prisma/client";
 import {
   wardValidator,
   WardValidatorType,
@@ -16,8 +16,10 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { PaginatedResponse } from "@/lib/type";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 
 const getInitialValues = (data?: Ward): WardValidatorType => ({
   name: data?.name ?? "",
@@ -30,21 +32,7 @@ const UpdateCreateForm = ({ data }: { data?: Ward }) => {
   const [floorSearchValue, setFloorSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateWard();
   const { mutateAsync: update, isPending: updating } = useUpdateWard();
-  const {
-    data: floors,
-    isFetching,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteFloorsList({ name: floorSearchValue }, 10);
-
-  const flatFloors = useMemo(
-    () =>
-      floors?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [floors],
-  );
+  const floorQuery = useInfiniteFloorsList({ name: floorSearchValue }, 10);
 
   const form = useForm<WardValidatorType>({
     defaultValues: getInitialValues(data),
@@ -78,16 +66,21 @@ const UpdateCreateForm = ({ data }: { data?: Ward }) => {
             control={form.control}
             required
           />
-          <FormField<WardValidatorType>
+          <FormInfiniteSelect<
+            Floor,
+            PaginatedResponse<Floor>,
+            string,
+            WardValidatorType
+          >
             label="Floor"
-            type="infiniteSelect"
             name="floorId"
             control={form.control}
-            options={flatFloors || []}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onSearch={setFloorSearchValue}
+            query={floorQuery}
+            getItems={(p) => p?.data}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) => i?.name}
+            search={floorSearchValue}
+            onSearchChange={setFloorSearchValue}
             required
           />
 
@@ -125,7 +118,7 @@ const WardForm = () => {
   }
 
   if (wardId && !data) {
-    return <></>;
+    return <div />;
   }
 
   return (

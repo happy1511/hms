@@ -19,6 +19,7 @@ import { useState } from "react";
 import { Edit2, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CustomAlert } from "../common/CustomAlert";
+import { randomUUID } from "crypto";
 
 const EmergencyContactInfoForm = ({
   form,
@@ -204,6 +205,7 @@ const EmergencyContactInfoForm = ({
         total={values.length}
         enableSorting
         handleChangePage={() => {}}
+        getRowId={() => randomUUID()}
       />
       <div className="flex justify-start">
         <CustomButton type="button" onClick={goNext}>

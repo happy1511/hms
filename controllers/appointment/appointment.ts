@@ -89,43 +89,6 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-// export const getDetailsAPI = async (
-//   req: Request,
-//   { params }: { params: { appointmentId: string } },
-// ) => {
-//   return validateRequest({
-//     paramsSchema: partialWardValidator,
-//     req,
-//     params,
-//     onSuccess: async ({ params }) => {
-//       const id = params.wardId;
-
-//       const ward = await prisma.ward.findUnique({
-//         where: { id },
-//         select: {
-//           id: true,
-//           floor: true,
-//           description: true,
-//           name: true,
-//           status: true,
-//         },
-//       });
-
-//       if (!ward) {
-//         return apiResponse({
-//           status: RESPONSE_STATUS.NOT_FOUND,
-//           message: "Ward not found",
-//         });
-//       }
-
-//       return apiResponse({
-//         status: RESPONSE_STATUS.SUCCESS,
-//         message: "Ward Fetched Successfully",
-//         data: ward,
-//       });
-//     },
-//   });
-// };
 export const createAPI = async (req: Request) => {
   return validateRequest({
     bodySchema: appointmentValidator,

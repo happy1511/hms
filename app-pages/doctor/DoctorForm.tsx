@@ -4,7 +4,7 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Days, DoctorType, Status } from "@/generated/prisma/enums";
+import { Days, DoctorType, NameTitle, Status } from "@/generated/prisma/enums";
 import {
   useCreateDoctor,
   useGetDoctor,
@@ -28,6 +28,7 @@ const getInitialValues = (
   if (data) {
     return {
       ...data,
+      title: data.user.title,
       name: data.user.name,
       password: data.user.password,
       status: data.user.status,
@@ -37,6 +38,7 @@ const getInitialValues = (
     return {
       name: "",
       password: "",
+      title: NameTitle["DR"],
       status: Status["active"],
       licenseNumber: "",
       doctorType: DoctorType["consulting"],
@@ -248,7 +250,7 @@ const DoctorForm = () => {
   }
 
   if (!permissions && !doctorId) {
-    return <></>;
+    return <div />;
   }
 
   return (

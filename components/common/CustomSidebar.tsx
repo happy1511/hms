@@ -126,6 +126,12 @@ const masters: SidebarItem[] = [
     icon: BedDouble,
     module: [ModuleType.BED_MASTER],
   },
+  {
+    title: "LOCATIONS",
+    url: "/locations",
+    icon: BedDouble,
+    module: [ModuleType.LOCATION_MASTER],
+  },
 ];
 
 const billingMasters: SidebarItem[] = [
@@ -195,7 +201,7 @@ export function CustomSidebar() {
   const { data } = useProfile();
 
   if (!data) {
-    return <></>;
+    return <div />;
   }
 
   const visibleMasters = masters.filter((item) =>
