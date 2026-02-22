@@ -178,6 +178,7 @@ enum ModuleType {
   OPD_BILL
   OPD_QUEUE
   PATHOLOGY_ORDER
+  RADIOLOGY_ORDER
   LOCATION_MASTER
 }
 
@@ -312,6 +313,11 @@ enum PathologyOrderStatus {
   COMPLETED
 }
 
+enum RadiologyOrderStatus {
+  RESULT_PENDING
+  COMPLETED
+}
+
 enum NameTitle {
   DR
   MR
@@ -414,12 +420,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  permissions         UserPermission[]
-  transactions        Transaction[]
-  verifiedOrders      PathologyTestOrder[] @relation("VerifiedByUser")
-  resultEnteredOrders PathologyTestOrder[] @relation("ResultEnteredByUser")
-  sampleTakenOrders   PathologyTestOrder[] @relation("SampleTakenByUser")
-  cancelledOrders     PathologyTestOrder[] @relation("CancelledByUser")
+  permissions             UserPermission[]
+  transactions            Transaction[]
+  verifiedPathology       PathologyTestOrder[] @relation("verifiedPathology")
+  resultEnteredPathology  PathologyTestOrder[] @relation("resultEnteredPathology")
+  sampleTakenPathology    PathologyTestOrder[] @relation("sampleTakenPathology")
+  cancelledTakenPathology PathologyTestOrder[] @relation("cancelledTakenPathology")
+  verifiedRadiology       RadiologyTestOrder[] @relation("verifiedRadiology")
+  resultEnteredRadiology  RadiologyTestOrder[] @relation("resultEnteredRadiology")
+  sampleTakenRadiology    RadiologyTestOrder[] @relation("sampleTakenRadiology")
+  cancelledTakenRadiology RadiologyTestOrder[] @relation("cancelledTakenRadiology")
 }
 
 model Doctor {
@@ -551,6 +561,7 @@ model Patient {
   notes               PatientNotes[]
   opds                Opd[]
   pathologyTestOrders PathologyTestOrder[]
+  radiologyTestOrders RadiologyTestOrder[]
 }
 
 // -------------------- Facility Management --------------------
@@ -696,10 +707,10 @@ model PathologyTestOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verifiedBy      User?                 @relation("VerifiedByUser", fields: [verifiedById], references: [id])
-  resultEnteredBy User?                 @relation("ResultEnteredByUser", fields: [resultEnteredById], references: [id])
-  sampleTakenBy   User?                 @relation("SampleTakenByUser", fields: [sampleTakenById], references: [id])
-  cancelledByUser User?                 @relation("CancelledByUser", fields: [cancelledById], references: [id])
+  verifiedBy      User?                 @relation("verifiedPathology", fields: [verifiedById], references: [id])
+  resultEnteredBy User?                 @relation("resultEnteredPathology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy   User?                 @relation("sampleTakenPathology", fields: [sampleTakenById], references: [id])
+  cancelledByUser User?                 @relation("cancelledTakenPathology", fields: [cancelledById], references: [id])
   patient         Patient               @relation(fields: [patientId], references: [id])
   test            PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
   status          PathologyOrderStatus  @default(SAMPLE_PENDING)
@@ -724,21 +735,67 @@ model PathologyTestResult {
   parameter PathologyTestParameter @relation(fields: [parameterId], references: [id])
 }
 
+// -------------------- Radiology Lab Order Management --------------------
+model RadiologyTestOrder {
+  id        Int @id @default(autoincrement())
+  opdId     Int
+  patientId Int
+  testId    Int
+
+  sampleTakenAt     DateTime?
+  resultEnteredAt   DateTime?
+  verifiedAt        DateTime?
+  sampleTakenById   Int?
+  resultEnteredById Int?
+  verifiedById      Int?
+  cancelledById     Int?
+  isOutSourced      Boolean   @default(false)
+  isCancelled       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  verifiedBy      User?                 @relation("verifiedRadiology", fields: [verifiedById], references: [id])
+  resultEnteredBy User?                 @relation("resultEnteredRadiology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy   User?                 @relation("sampleTakenRadiology", fields: [sampleTakenById], references: [id])
+  cancelledByUser User?                 @relation("cancelledTakenRadiology", fields: [cancelledById], references: [id])
+  patient         Patient               @relation(fields: [patientId], references: [id])
+  test            RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  status          RadiologyOrderStatus  @default(RESULT_PENDING)
+  results         RadiologyTestResult[]
+  opd             Opd                   @relation(fields: [opdId], references: [id], onDelete: Cascade)
+}
+
+model RadiologyTestResult {
+  id         Int     @id @default(autoincrement())
+  orderId    Int
+  templateId Int
+  value      String?
+
+  remark String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order    RadiologyTestOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  template RadiologyTemplate  @relation(fields: [templateId], references: [id])
+}
+
 // -------------------- Radiology Test Management --------------------
 model RadiologyTest {
-  id      Int              @id @default(autoincrement())
-  name    String           @unique
-  alias   String
-  price   Float
-  status  Status           @default(active)
-  section RadiologySection
-
-  templates RadiologyTemplate[]
+  id         Int              @id @default(autoincrement())
+  name       String           @unique
+  alias      String
+  price      Float
+  status     Status           @default(active)
+  section    RadiologySection
+  templateId Int?
 
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   radiologyTestServices RadiologyTestService[]
   advisedRadiologyTests AdvisedRadiologyTests[]
+  template              RadiologyTemplate?      @relation(fields: [templateId], references: [id])
+  radiologyTestOrders   RadiologyTestOrder[]
 }
 
 model RadiologyTemplate {
@@ -748,10 +805,10 @@ model RadiologyTemplate {
   content String
   status  Status           @default(active)
 
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  radiologyTest   RadiologyTest? @relation(fields: [radiologyTestId], references: [id])
-  radiologyTestId Int?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  radiologyTests       RadiologyTest[]
+  radiologyTestResults RadiologyTestResult[]
 }
 
 // -------------------- Service Management --------------------
@@ -881,6 +938,8 @@ model AdvisedPathologyTests {
   test         PathologyTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
   consultation OpdConsultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
   opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
+
+  @@unique([opdId, testId])
 }
 
 model AdvisedRadiologyTests {
@@ -892,6 +951,8 @@ model AdvisedRadiologyTests {
   test         RadiologyTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
   consultation OpdConsultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
   opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
+
+  @@unique([opdId, testId])
 }
 
 model OpdConsultation {
@@ -943,6 +1004,7 @@ model Opd {
   prescription          Prescription?
   prescribedDrugs       PrescribedDrugs[]
   pathologyTestOrders   PathologyTestOrder[]
+  radiologyTestOrders   RadiologyTestOrder[]
 }
 
 model OpdBillingItem {

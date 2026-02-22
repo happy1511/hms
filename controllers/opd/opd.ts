@@ -339,6 +339,22 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
+        const radiologyServices = await tx.radiologyTestService.findMany({
+          where: {
+            serviceId: { in: body.billingItem?.map((s) => s.serviceId) },
+          },
+        });
+
+        if (radiologyServices?.length) {
+          await tx.radiologyTestOrder.createMany({
+            data: radiologyServices.map((service) => ({
+              opdId: createdOpd.id,
+              patientId: createdOpd.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
+
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "OPD Created Successfully",
@@ -386,6 +402,38 @@ export const addItemAPI = async (req: Request, user: User) => {
             },
           },
         });
+
+        const pathologyServices = await tx.pathologyTestService.findMany({
+          where: {
+            serviceId: { equals: body.serviceId },
+          },
+        });
+
+        if (pathologyServices?.length) {
+          await tx.pathologyTestOrder.createMany({
+            data: pathologyServices.map((service) => ({
+              opdId: updatedOpd.id,
+              patientId: updatedOpd.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
+
+        const radiologyServices = await tx.radiologyTestService.findMany({
+          where: {
+            serviceId: { equals: body.serviceId },
+          },
+        });
+
+        if (radiologyServices?.length) {
+          await tx.radiologyTestOrder.createMany({
+            data: radiologyServices.map((service) => ({
+              opdId: updatedOpd.id,
+              patientId: updatedOpd.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
 
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
@@ -693,6 +741,7 @@ export const getConsultationAPI = async (
           status: RESPONSE_STATUS.SUCCESS,
           message: "Consultations Fetched Successfully",
           data: {
+            opdId: consultation?.id,
             ...consultation?.consultation,
             advisedPathologyTests: consultation?.advisedPathologyTests?.map(
               (t) => t.testId,
@@ -700,8 +749,11 @@ export const getConsultationAPI = async (
             advisedRadiologyTests: consultation?.advisedRadiologyTests?.map(
               (t) => t.testId,
             ),
-            vitals: consultation?.vital,
-            prescription: consultation?.prescription,
+            vitals: { ...consultation?.vital, opdId: consultation?.id },
+            prescription: {
+              ...consultation?.prescription,
+              opdId: consultation?.id,
+            },
           },
         });
       });
@@ -718,123 +770,171 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
         opdId,
         vitals,
         prescription,
-        advisedPathologyTests,
-        advisedRadiologyTests,
+        advisedPathologyTests = [],
+        advisedRadiologyTests = [],
         ...consultationFields
       } = body;
 
-      return prisma.$transaction(async (tx) => {
-        const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
-          include: {
-            consultation: true,
-          },
+      // -------------------------
+      // STEP 1: Validate OPD
+      // -------------------------
+      const existingOpd = await prisma.opd.findUnique({
+        where: { id: opdId },
+      });
+
+      if (!existingOpd) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Opd not found",
+        });
+      }
+
+      // -------------------------
+      // STEP 2: Vitals + Consultation (TX 1)
+      // -------------------------
+      const { opdId: _v1, ...cleanVitals } = vitals;
+
+      const { updatedVitals, consultantFile } = await prisma.$transaction(
+        async (tx) => {
+          const updatedVitals = await tx.vital.upsert({
+            where: { opdId },
+            update: { ...cleanVitals },
+            create: {
+              ...cleanVitals,
+              opdId,
+            },
+          });
+
+          const consultantFile = await tx.opdConsultation.upsert({
+            where: { opdId },
+            update: {
+              ...consultationFields,
+              vitalsId: updatedVitals.id,
+            },
+            create: {
+              ...consultationFields,
+              opdId,
+              vitalsId: updatedVitals.id,
+            },
+          });
+
+          return { updatedVitals, consultantFile };
+        },
+      );
+
+      // -------------------------
+      // STEP 3: Pathology + Radiology Tests (TX 2)
+      // -------------------------
+      await prisma.$transaction(async (tx) => {
+        // ---------- Pathology ----------
+        const existingPathology = await tx.advisedPathologyTests.findMany({
+          where: { opdId },
+          select: { id: true, testId: true },
         });
 
-        if (!existingOpd) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Opd not found",
+        const pathologyToDelete = existingPathology.filter(
+          (e) => !advisedPathologyTests?.includes(e.testId),
+        );
+
+        const pathologyToAdd = advisedPathologyTests?.filter(
+          (id) => !existingPathology.some((e) => e.testId === id),
+        );
+
+        if (pathologyToDelete.length) {
+          await tx.advisedPathologyTests.deleteMany({
+            where: { id: { in: pathologyToDelete.map((x) => x.id) } },
           });
         }
-        const { opdId: _v1, ...cleanVitals } = vitals;
 
-        const updatedConsultations = await tx.opd.update({
-          where: { id: opdId },
-          data: {
-            consultation: {
-              upsert: {
-                update: {
-                  ...consultationFields,
-                },
-                create: {
-                  ...consultationFields,
-                  vitals: {
-                    create: {
-                      ...cleanVitals,
-                      opdId,
-                    },
-                  },
-                },
-              },
-            },
+        if (pathologyToAdd?.length) {
+          await tx.advisedPathologyTests.createMany({
+            data: pathologyToAdd.map((testId) => ({
+              opdId,
+              consultationId: consultantFile.id,
+              testId,
+            })),
+            skipDuplicates: true,
+          });
+        }
 
-            vital: {
-              upsert: {
-                update: cleanVitals,
-                create: {
-                  ...cleanVitals,
-                },
-              },
-            },
+        // ---------- Radiology ----------
+        const existingRadiology = await tx.advisedRadiologyTests.findMany({
+          where: { opdId },
+          select: { id: true, testId: true },
+        });
 
-            advisedPathologyTests: {
-              deleteMany: {},
-              create:
-                advisedPathologyTests?.map((testId) => ({
-                  test: { connect: { id: testId } },
-                  consultation: {
-                    connect: { id: existingOpd.consultation!.id },
-                  },
-                })) ?? [],
-            },
+        const radiologyToDelete = existingRadiology.filter(
+          (e) => !advisedRadiologyTests?.includes(e.testId),
+        );
 
-            advisedRadiologyTests: {
-              deleteMany: {},
-              create:
-                advisedRadiologyTests?.map((testId) => ({
-                  test: { connect: { id: testId } },
-                  consultation: {
-                    connect: { id: existingOpd.consultation!.id },
-                  },
-                })) ?? [],
-            },
+        const radiologyToAdd = advisedRadiologyTests?.filter(
+          (id) => !existingRadiology.some((e) => e.testId === id),
+        );
 
-            prescription: {
-              upsert: {
-                update: {
-                  followUpAfterDays: prescription.followUpAfterDays,
-                  followUpAdvice: prescription.followUpAdvice,
-                  followUpDate: prescription.followUpDate,
-                  otherAdvice: prescription.otherAdvice,
+        if (radiologyToDelete.length) {
+          await tx.advisedRadiologyTests.deleteMany({
+            where: { id: { in: radiologyToDelete.map((x) => x.id) } },
+          });
+        }
 
-                  drugs: {
-                    deleteMany: {},
-                    create: prescription.drugs.map((drug) => ({
-                      name: drug.name,
-                      days: drug.days,
-                      frequency: drug.frequency,
-                      remarks: drug.remarks,
-                      opdId,
-                    })),
-                  },
-                },
+        if (radiologyToAdd?.length) {
+          await tx.advisedRadiologyTests.createMany({
+            data: radiologyToAdd.map((testId) => ({
+              opdId,
+              consultationId: consultantFile.id,
+              testId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      });
 
-                create: {
-                  followUpAfterDays: prescription.followUpAfterDays,
-                  followUpAdvice: prescription.followUpAdvice,
-                  followUpDate: prescription.followUpDate,
-                  otherAdvice: prescription.otherAdvice,
-                  drugs: {
-                    create: prescription.drugs.map((drug) => ({
-                      name: drug.name,
-                      days: drug.days,
-                      frequency: drug.frequency,
-                      remarks: drug.remarks,
-                      opdId,
-                    })),
-                  },
-                },
-              },
-            },
+      // -------------------------
+      // STEP 4: Prescription + Drugs (TX 3)
+      // -------------------------
+      await prisma.$transaction(async (tx) => {
+        const upsertedPrescription = await tx.prescription.upsert({
+          where: { opdId },
+          update: {
+            followUpAfterDays: prescription.followUpAfterDays,
+            followUpAdvice: prescription.followUpAdvice,
+            followUpDate: prescription.followUpDate,
+            otherAdvice: prescription.otherAdvice,
+          },
+          create: {
+            opdId,
+            followUpAfterDays: prescription.followUpAfterDays,
+            followUpAdvice: prescription.followUpAdvice,
+            followUpDate: prescription.followUpDate,
+            otherAdvice: prescription.otherAdvice,
           },
         });
 
-        return apiResponse({
-          status: RESPONSE_STATUS.SUCCESS,
-          message: "Consultations Updated Successfully",
-          data: updatedConsultations,
+        // Replace drugs efficiently
+        await tx.prescribedDrugs.deleteMany({
+          where: { opdId },
         });
+
+        if (prescription.drugs?.length) {
+          await tx.prescribedDrugs.createMany({
+            data: prescription.drugs.map((drug) => ({
+              name: drug.name,
+              days: drug.days,
+              frequency: drug.frequency,
+              remarks: drug.remarks,
+              opdId,
+              prescriptionId: upsertedPrescription.id,
+            })),
+          });
+        }
+      });
+
+      // -------------------------
+      // FINAL RESPONSE
+      // -------------------------
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Consultations Updated Successfully",
       });
     },
   });

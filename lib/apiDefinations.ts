@@ -73,12 +73,21 @@ export const CANCEL_PATHOLOGY_ORDERS = "/pathology/orders/cancel";
 export const OUTSOURCE_PATHOLOGY_ORDERS = "/pathology/orders/outsource";
 export const SAMPLE_PATHOLOGY_ORDERS = "/pathology/orders/mark-sample";
 export const PATHOLOGY_ORDER_PARAMETERS = "/pathology/orders/get-parameters";
+export const PATHOLOGY_COMPLETED_ORDERS_WITH_RESULTS =
+  "/pathology/orders/completed-results";
 
 // ----------------------------------
 // ---------RADIOLOGY ENDPOINTS--------
 // ----------------------------------
 export const RADIOLOGY = "/radiology";
 export const RADIOLOGY_TEMPLATE = "/radiology/template";
+export const RADIOLOGY_ORDERS = "/radiology/orders";
+export const CANCEL_RADIOLOGY_ORDERS = "/radiology/orders/cancel";
+export const OUTSOURCE_RADIOLOGY_ORDERS = "/radiology/orders/outsource";
+export const SAMPLE_RADIOLOGY_ORDERS = "/radiology/orders/mark-sample";
+export const RADIOLOGY_ORDER_TEMPLATE = "/radiology/orders/get-template";
+export const RADIOLOGY_COMPLETED_ORDERS_WITH_RESULTS =
+  "/radiology/orders/completed-results";
 
 // ----------------------------------
 // ---------OPD ENDPOINTS--------

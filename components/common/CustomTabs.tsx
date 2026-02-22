@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import clsx from "clsx";
 
 interface Props {
   tabs: {
@@ -9,12 +10,16 @@ interface Props {
   }[];
   defaultValue: string;
   buttons?: ReactNode;
+  classNames?: string;
 }
 
-const CustomTabs = ({ tabs, defaultValue, buttons }: Props) => {
+const CustomTabs = ({ tabs, defaultValue, buttons, classNames }: Props) => {
   return (
     <Tabs
-      className="border border-pink-200 shadow-md bg-white p-3"
+      className={clsx(
+        "border border-pink-200 shadow-md bg-white p-3",
+        classNames,
+      )}
       defaultValue={defaultValue}
     >
       <div className="border-b border-primary flex justify-between items-end">

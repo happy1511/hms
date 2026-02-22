@@ -167,7 +167,7 @@ const labMasters: SidebarItem[] = [
   },
 ];
 
-const labOrders: SidebarItem[] = [
+const pathologyOrders: SidebarItem[] = [
   {
     title: "CLAIMED",
     url: "/pathology/claimed",
@@ -188,6 +188,27 @@ const labOrders: SidebarItem[] = [
   },
 ];
 
+const radiologyOrders: SidebarItem[] = [
+  {
+    title: "CLAIMED",
+    url: "/radiology/claimed",
+    icon: TestTubes,
+    module: [ModuleType.RADIOLOGY_ORDER],
+  },
+  {
+    title: "CANCELLED",
+    url: "/radiology/cancelled",
+    icon: TestTubes,
+    module: [ModuleType.RADIOLOGY_ORDER],
+  },
+  {
+    title: "OUTSOURCED",
+    url: "/radiology/outsourced",
+    icon: TestTubes,
+    module: [ModuleType.RADIOLOGY_ORDER],
+  },
+];
+
 export function CustomSidebar() {
   const [opdOpen, setOpdOpen] = useState(true);
   const [ipdOpen, setIpdOpen] = useState(true);
@@ -195,6 +216,8 @@ export function CustomSidebar() {
   const [masterOpen, setMasterOpen] = useState(false);
   const [billingMasterOpen, setBillingMasterOpen] = useState(false);
   const [labMasterOpen, setLabMasterOpen] = useState(false);
+  const [radiologyOrderOpen, setRadiologyOrderOpen] = useState(false);
+  const [pathologyOrderOpen, setPathologyOrderOpen] = useState(false);
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
@@ -216,7 +239,10 @@ export function CustomSidebar() {
   const visibleOpd = opdItems.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
-  const visibleLab = labOrders.filter((item) =>
+  const visiblePathologyOrders = pathologyOrders.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visibleRadiologyOrders = radiologyOrders.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
 
@@ -422,18 +448,21 @@ export function CustomSidebar() {
           </SidebarGroup>
         </Collapsible>
 
-        <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
+        <Collapsible
+          open={pathologyOrderOpen}
+          onOpenChange={setPathologyOrderOpen}
+        >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
                 <div className="flex items-center gap-3">
                   <Bolt className="size-3" />
-                  <span>LAB ORDER</span>
+                  <span>PATHOLOGY ORDER</span>
                 </div>
                 <ChevronDown
                   className={cn(
                     "size-3 transition-transform duration-200",
-                    labMasterOpen ? "rotate-180" : "",
+                    pathologyOrderOpen ? "rotate-180" : "",
                   )}
                 />
               </SidebarGroupLabel>
@@ -441,7 +470,49 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {visibleLab.map((item) => (
+                  {visiblePathologyOrders.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        <Collapsible
+          open={radiologyOrderOpen}
+          onOpenChange={setRadiologyOrderOpen}
+        >
+          <SidebarGroup className="p-0">
+            <CollapsibleTrigger className="w-full bg-transparent">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                <div className="flex items-center gap-3">
+                  <Bolt className="size-3" />
+                  <span>RADIOLOGY ORDER</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform duration-200",
+                    radiologyOrderOpen ? "rotate-180" : "",
+                  )}
+                />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-background">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {visibleRadiologyOrders.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

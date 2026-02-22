@@ -154,6 +154,7 @@ export const getOrdersAPI = async (req: Request) => {
       // const defaultSelectedIds = query.defaultSelectedIds;
       const cancelled = query.cancelled;
       const outsourced = query.outsourced;
+      const opdId = query.opdId;
 
       const skip = (page - 1) * limit;
       const and: Prisma.PatientWhereInput[] = [];
@@ -166,6 +167,12 @@ export const getOrdersAPI = async (req: Request) => {
 
       if (name) {
         and.push({ firstName: { contains: name } });
+      }
+
+      if (opdId) {
+        and.push({
+          pathologyTestOrders: { some: { opdId: { equals: opdId } } },
+        });
       }
 
       if (createdAtFrom || createdAtTo) {
@@ -354,10 +361,10 @@ export const updateOrderAPI = async (req: Request, user: User) => {
     bodySchema: partialPathologyTestOrder,
     req,
     onSuccess: async ({ body }) => {
-      const id = body.orderId;
+      const { results, orderId, ...rest } = body;
 
       const order = await prisma.pathologyTestOrder.findUnique({
-        where: { id },
+        where: { id: orderId },
       });
 
       if (!order) {
@@ -367,19 +374,17 @@ export const updateOrderAPI = async (req: Request, user: User) => {
         });
       }
 
-      const { results, ...rest } = body;
-
       const updated = await prisma.pathologyTestOrder.update({
-        where: { id },
+        where: { id: orderId },
         data: {
           ...rest,
           ...(rest.isCancelled && { cancelledById: user.id }),
           ...(results?.length && { resultEnteredById: user.id }),
+          status: PathologyOrderStatus["COMPLETED"],
           results: {
             deleteMany: {},
             create: results?.map((r) => ({
               ...r,
-              orderId: id,
             })),
           },
         },
@@ -1117,6 +1122,8 @@ export const addReferenceRangeAPI = async (req: Request) => {
         const lowerAgeInDays = toDays(lowerAgeDay, lowerAgeMonth, lowerAgeYear);
         const upperAgeInDays = toDays(upperAgeDay, upperAgeMonth, upperAgeYear);
 
+        console.log(lowerAgeInDays, upperAgeInDays, body);
+
         const createdHeader = await tx.referenceRange.create({
           data: {
             ...rest,
@@ -1516,6 +1523,141 @@ export const deleteAPI = async (
           message: "Pathology Test Deleted Successfully",
           data: null,
         });
+      });
+    },
+  });
+};
+
+export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const { opdId } = query;
+
+      if (!opdId) {
+        return apiResponse({
+          status: RESPONSE_STATUS.BAD_REQUEST,
+          message: "OPD ID is required",
+        });
+      }
+
+      const orders = await prisma.pathologyTestOrder.findMany({
+        where: {
+          opdId,
+          status: PathologyOrderStatus["COMPLETED"],
+        },
+        include: {
+          test: {
+            select: {
+              id: true,
+              name: true,
+              section: true,
+              container: true,
+              sampleType: true,
+            },
+          },
+          results: {
+            include: {
+              parameter: {
+                select: {
+                  id: true,
+                  name: true,
+                  isDescriptiveOnly: true,
+                  parameterOptions: true,
+                },
+              },
+            },
+          },
+          patient: {
+            select: {
+              id: true,
+              uhid: true,
+              firstName: true,
+              lastName: true,
+              dob: true,
+              gender: true,
+            },
+          },
+          verifiedBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          resultEnteredBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      if (!orders || orders.length === 0) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "No completed pathology orders found for this OPD",
+          data: [],
+        });
+      }
+
+      // Get all unique parameter IDs to batch fetch reference ranges
+      const allParameterIds = [
+        ...new Set(
+          orders.flatMap((order) =>
+            order.results.map((result) => result.parameterId),
+          ),
+        ),
+      ];
+
+      // Fetch all reference ranges in a single query
+      const allReferenceRanges = await prisma.referenceRange.findMany({
+        where: {
+          testParameterId: { in: allParameterIds },
+        },
+      });
+
+      // Enrich orders with appropriate reference ranges based on patient age and gender
+      const enrichedOrders = orders.map((order) => {
+        const gender =
+          order.patient.gender === "Female"
+            ? ReferenceRangeSex["FEMALE"]
+            : ReferenceRangeSex["MALE"];
+
+        const ageInDays = differenceInDays(new Date(), order.patient.dob);
+
+        const enrichedResults = order.results.map((result) => {
+          const applicableReferenceRanges = allReferenceRanges.filter(
+            (range) =>
+              range.testParameterId === result.parameterId &&
+              (range.applicableGender === gender ||
+                range.applicableGender === ReferenceRangeSex.Both) &&
+              (!range.lowerAgeInDays || range.lowerAgeInDays <= ageInDays) &&
+              (!range.upperAgeInDays || range.upperAgeInDays >= ageInDays),
+          );
+
+          console.log(ageInDays, allReferenceRanges, gender);
+
+          return {
+            ...result,
+            applicableReferenceRanges,
+          };
+        });
+
+        return {
+          ...order,
+          results: enrichedResults,
+        };
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Completed Pathology Orders with Results Fetched Successfully",
+        data: enrichedOrders,
       });
     },
   });

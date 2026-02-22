@@ -141,7 +141,7 @@ const partialPathologyTestOrder = pathologyTestOrder.partial().extend({
 });
 
 const pathologyResultsEntry = z.object({
-  parameters: z.array(pathologyTestResults).optional(),
+  results: z.array(pathologyTestResults).optional(),
   orderId: z.coerce.number().min(1),
 });
 

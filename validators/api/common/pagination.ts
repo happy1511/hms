@@ -4,6 +4,7 @@ import {
   IdentityType,
   PathologyOrderStatus,
   PathologyTestSection,
+  RadiologyOrderStatus,
   RadiologySection,
   Status,
 } from "@/generated/prisma/enums";
@@ -15,6 +16,7 @@ const paginationValidator = z.object({
   search: z.string().optional(),
   status: z.enum(Status).optional(),
   testStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
+  radiologyStatus: z.array(z.enum(RadiologyOrderStatus)).optional(),
   cancelled: z
     .string()
     .transform((t) => (t === "true" ? true : false))
@@ -37,7 +39,10 @@ const paginationValidator = z.object({
   pathologyTestId: z.coerce.number().optional(),
   defaultSelectedIds: z.array(z.coerce.number()).optional(),
   transactionType: z.enum(["opd", "ipd"]).optional(),
-  opdId: z.coerce.number().min(1).optional(),
+  opdId: z.coerce
+    .number()
+    .optional()
+    .transform((t) => Number(t)),
   consultantDoctorId: z.coerce
     .number()
     .optional()

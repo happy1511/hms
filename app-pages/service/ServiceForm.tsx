@@ -66,7 +66,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const pathologyQuery = useInfinitePathologyTestsList(
     {
       name: pathologySearchValue,
-      defaultSelectedIds: defaultValues.connectedLabTests,
+      defaultSelectedIds: defaultValues.connectedLabTests as number[],
     },
     10,
     type === "LAB_TEST" || type === "CLINICAL_TEST",
@@ -74,7 +74,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const radiologyQuery = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
-      defaultSelectedIds: defaultValues.connectedRadiologyTests,
+      defaultSelectedIds: defaultValues.connectedRadiologyTests as number[],
     },
     10,
     type === "RADIOLOGY_TEST" || type === "CLINICAL_TEST",

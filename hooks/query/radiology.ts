@@ -1,11 +1,27 @@
 import { RadiologyTemplate, RadiologyTest } from "@/generated/prisma/client";
-import { RADIOLOGY, RADIOLOGY_TEMPLATE } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  CANCEL_RADIOLOGY_ORDERS,
+  OUTSOURCE_RADIOLOGY_ORDERS,
+  RADIOLOGY,
+  RADIOLOGY_COMPLETED_ORDERS_WITH_RESULTS,
+  RADIOLOGY_ORDER_TEMPLATE,
+  RADIOLOGY_ORDERS,
+  RADIOLOGY_TEMPLATE,
+} from "@/lib/apiDefinations";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  RadiologyOrderByPatientsType,
+  RadiologyTestOrderWithResults,
+  RadiologyTestResultType,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
   PartialRadiologyTemplateValidatorType,
   PartialRadiologyTestValidatorType,
+  RadiologyOrderValidatorType,
   RadiologyTemplateValidatorType,
   RadiologyTestValidatorType,
 } from "@/validators/api/masters/radiologyTest";
@@ -27,6 +43,17 @@ const updateRadiologyTest = createRequest<ApiResponse<RadiologyTest>>(
   RADIOLOGY,
   "PUT",
 );
+const updateRadiologyOrder = createRequest<
+  ApiResponse<RadiologyOrderValidatorType>,
+  undefined,
+  { id: number }
+>(RADIOLOGY_ORDERS, "PUT");
+const cancelRadiologyOrder = createRequest<
+  ApiResponse<RadiologyOrderValidatorType>
+>(CANCEL_RADIOLOGY_ORDERS, "PUT");
+const outsourceRadiologyOrder = createRequest<
+  ApiResponse<RadiologyOrderValidatorType>
+>(OUTSOURCE_RADIOLOGY_ORDERS, "PUT");
 const deleteRadiologyTest = createRequest<
   ApiResponse<null>,
   undefined,
@@ -59,6 +86,18 @@ const getRadiologyTemplateDetails = createRequest<
   undefined,
   { id: string }
 >((p) => `${RADIOLOGY_TEMPLATE}/${p.id}`, "GET");
+const getRadiologyOrderTemplate = createRequest<
+  ApiResponse<RadiologyTestResultType>,
+  { orderId: string }
+>(RADIOLOGY_ORDER_TEMPLATE, "GET");
+const getRadiologyOrders = createRequest<
+  PaginatedResponse<RadiologyOrderByPatientsType>,
+  { limit: number; name?: string; createdAt?: string; status?: string }
+>(RADIOLOGY_ORDERS, "GET");
+const getCompletedRadiologyOrdersWithResults = createRequest<
+  ApiResponse<RadiologyTestOrderWithResults[]>,
+  { opdId: number }
+>(RADIOLOGY_COMPLETED_ORDERS_WITH_RESULTS, "GET");
 
 export const useRadiologyTestsList = (
   filters: FilterValues,
@@ -80,6 +119,39 @@ export const useRadiologyTestsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
+        },
+      }),
+  });
+};
+
+export const useRadiologyOrdersList = (
+  filters: FilterValues,
+  page: number,
+  limit: number,
+) => {
+  return useQuery<
+    PaginatedResponse<RadiologyOrderByPatientsType>,
+    AxiosError<ApiResponse<null>>,
+    PaginatedResponse<RadiologyOrderByPatientsType>,
+    [string, FilterValues, number, number]
+  >({
+    queryKey: ["radiology-orders", filters, page, limit],
+    queryFn: () =>
+      getRadiologyOrders({
+        pageParam: page,
+        params: {
+          limit,
+
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.testStatus && { testStatus: filters.testStatus }),
+          ...(filters.outsourced !== undefined && {
+            outsourced: filters.outsourced,
+          }),
+          ...(filters.cancelled !== undefined && {
+            cancelled: filters.cancelled,
+          }),
         },
       }),
   });
@@ -122,6 +194,25 @@ export const useInfiniteRadiologyTestsList = (
   });
 };
 
+export const useGetRadiologyOrderTemplate = (id?: string) => {
+  return useQuery<
+    ApiResponse<RadiologyTestResultType>,
+    AxiosError<ApiResponse<null>>,
+    RadiologyTestResultType,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-radiology-order-templates", id],
+    queryFn: () =>
+      getRadiologyOrderTemplate({
+        params: {
+          orderId: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
+};
+
 export const useCreateRadiologyTest = () => {
   const queryClient = useQueryClient();
   return useMutation<
@@ -148,12 +239,34 @@ export const useUpdateRadiologyTest = () => {
     AxiosError<ApiResponse<null>>,
     PartialRadiologyTestValidatorType
   >({
-    mutationKey: ["update-pathology-test"],
+    mutationKey: ["update-Radiology-test"],
     mutationFn: (data) => updateRadiologyTest({ body: data }),
     onSuccess: () => {
       toast.success("Test updated Successfully");
       queryClient.invalidateQueries({
         queryKey: ["radiology-tests"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateRadiologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<RadiologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    RadiologyOrderValidatorType
+  >({
+    mutationKey: ["update-radiology-order"],
+    mutationFn: (data) =>
+      updateRadiologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order updated Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["radiology-orders"],
       });
     },
     onError: showError,
@@ -175,6 +288,50 @@ export const useDeleteRadiologyTest = () => {
       toast.success("Test Deleted Successfully");
       queryClient.invalidateQueries({
         queryKey: ["radiology-tests"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useCancelRadiologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<RadiologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    RadiologyOrderValidatorType
+  >({
+    mutationKey: ["cancel-radiology-order"],
+    mutationFn: (data) =>
+      cancelRadiologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order Cancelled Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["radiology-orders"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useOutsourceRadiologyTestOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<RadiologyOrderValidatorType>,
+    AxiosError<ApiResponse<null>>,
+    RadiologyOrderValidatorType
+  >({
+    mutationKey: ["outsource-radiology-order"],
+    mutationFn: (data) =>
+      outsourceRadiologyOrder({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Order outsource Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["radiology-orders"],
       });
     },
     onError: showError,
@@ -251,7 +408,7 @@ export const useUpdateRadiologyTemplate = () => {
     AxiosError<ApiResponse<null>>,
     PartialRadiologyTemplateValidatorType
   >({
-    mutationKey: ["update-pathology-template"],
+    mutationKey: ["update-Radiology-template"],
     mutationFn: (data) => updateRadiologyTemplate({ body: data }),
     onSuccess: () => {
       toast.success("Template updated Successfully");
@@ -281,5 +438,24 @@ export const useDeleteRadiologyTemplate = () => {
       });
     },
     onError: showError,
+  });
+};
+
+export const useCompletedRadiologyOrdersWithResults = (opdId?: number) => {
+  return useQuery<
+    ApiResponse<RadiologyTestOrderWithResults[]>,
+    AxiosError<ApiResponse<null>>,
+    RadiologyTestOrderWithResults[],
+    [string, number | undefined]
+  >({
+    queryKey: ["completed-radiology-orders-with-results", opdId],
+    queryFn: () =>
+      getCompletedRadiologyOrdersWithResults({
+        params: {
+          opdId: opdId as number,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!opdId,
   });
 };

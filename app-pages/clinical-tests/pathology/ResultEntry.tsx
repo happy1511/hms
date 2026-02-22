@@ -21,7 +21,7 @@ import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 const buildDefaultValues = (data: PathologyTestResultType) => {
-  const params: PathologyResultEntryValidatorType["parameters"] = [];
+  const params: PathologyResultEntryValidatorType["results"] = [];
 
   data.test.testHeaders.forEach((header) => {
     header.testParameters.forEach((param) => {
@@ -32,7 +32,9 @@ const buildDefaultValues = (data: PathologyTestResultType) => {
     });
   });
 
-  return { parameters: params, orderId: data.id };
+  console.log(params);
+
+  return { results: params, orderId: data.id };
 };
 
 const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
@@ -93,7 +95,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
                           <FormInput
                             control={control}
                             type="text"
-                            name={`parameters.${index}.textValue`}
+                            name={`results.${index}.textValue`}
                             hideError
                           />
                         ) : param.parameterOptions?.length ? (
@@ -105,7 +107,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
                                 value: o.id,
                                 label: o.value,
                               }))}
-                              name={`parameters.${index}.optionId`}
+                              name={`results.${index}.optionId`}
                               hideError
                             />
                           </>
@@ -114,7 +116,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
                             <FormInput
                               control={control}
                               type="number"
-                              name={`parameters.${index}.numericValue`}
+                              name={`results.${index}.numericValue`}
                               hideError
                             />
                           </>

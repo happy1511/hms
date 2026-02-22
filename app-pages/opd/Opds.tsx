@@ -196,7 +196,7 @@ const OPDs = () => {
       ),
     },
     {
-      accessorKey: "consultant",
+      accessorKey: "referring",
       header: ({ column }) => {
         return <SortableHeader<OPDType> label="	Referred By" column={column} />;
       },
@@ -290,7 +290,7 @@ const OPDs = () => {
 
   return (
     <CustomLayout
-      title="Walk In Queue"
+      title="Patient OPD"
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
       {canView && (

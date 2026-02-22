@@ -253,6 +253,7 @@ export interface FilterValues {
   consultantDoctorId?: string;
   defaultSelectedIds?: string[] | number[];
   testStatus?: PathologyOrderStatus[];
+  opdId?: number;
 }
 
 // ----------------------------------
@@ -753,3 +754,218 @@ export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
     };
   };
 }>;
+
+export type RadiologyOrderByPatientsType = Prisma.PatientGetPayload<{
+  include: {
+    radiologyTestOrders: {
+      select: {
+        id: true;
+        opdId: true;
+        status: true;
+        createdAt: true;
+        updatedAt: true;
+        sampleTakenAt: true;
+        resultEnteredAt: true;
+        verifiedAt: true;
+        isCancelled: true;
+        isOutSourced: true;
+
+        test: {
+          select: {
+            id: true;
+            name: true;
+            section: true;
+          };
+        };
+
+        opd: {
+          select: {
+            consultantDoctor: {
+              select: {
+                user: {
+                  select: {
+                    id: true;
+                    name: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+
+        resultEnteredBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+
+        verifiedBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+
+        sampleTakenBy: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type RadiologyOrderType = Prisma.RadiologyTestOrderGetPayload<{
+  select: {
+    id: true;
+    opdId: true;
+    status: true;
+    createdAt: true;
+    updatedAt: true;
+    sampleTakenAt: true;
+    resultEnteredAt: true;
+    verifiedAt: true;
+    isCancelled: true;
+    isOutSourced: true;
+
+    test: {
+      select: {
+        id: true;
+        name: true;
+        section: true;
+      };
+    };
+
+    opd: {
+      select: {
+        consultantDoctor: {
+          select: {
+            user: {
+              select: {
+                id: true;
+                name: true;
+              };
+            };
+          };
+        };
+      };
+    };
+
+    resultEnteredBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+
+    verifiedBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+
+    sampleTakenBy: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+  };
+}>;
+
+export type RadiologyTestResultType = Prisma.RadiologyTestOrderGetPayload<{
+  include: {
+    patient: true;
+    test: {
+      include: {
+        template: true;
+      };
+    };
+  };
+}>;
+
+export interface RadiologyTestOrderWithResults {
+  id: number;
+  test: {
+    id: number;
+    name: string;
+    section: string;
+    template?: {
+      id: number;
+      name: string;
+      section: string;
+      content: string;
+    } | null;
+  };
+  results: Array<{
+    id: number;
+    value?: string | null;
+    remark?: string | null;
+    template: {
+      id: number;
+      name: string;
+      content: string;
+      section: string;
+    };
+  }>;
+  patient: {
+    id: number;
+    uhid: string;
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: string;
+  };
+  verifiedBy?: { id: number; name: string } | null;
+  resultEnteredBy?: { id: number; name: string } | null;
+  createdAt: string;
+}
+
+export interface PathologyTestOrderWithResults {
+  id: number;
+  test: {
+    id: number;
+    name: string;
+    section: string;
+    container: string;
+    sampleType: string;
+  };
+  results: Array<{
+    id: number;
+    parameterId: number;
+    numericValue?: number | null;
+    textValue?: string | null;
+    optionId?: number | null;
+    remark?: string | null;
+    parameter: {
+      id: number;
+      name: string;
+      isDescriptiveOnly: boolean;
+      parameterOptions: Array<{
+        id: number;
+        value: string;
+      }>;
+    };
+    applicableReferenceRanges: Array<{
+      id: number;
+      lowerRange?: number | null;
+      upperRange?: number | null;
+      unit?: string | null;
+    }>;
+  }>;
+  patient: {
+    id: number;
+    uhid: string;
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: string;
+  };
+  verifiedBy?: { id: number; name: string } | null;
+  resultEnteredBy?: { id: number; name: string } | null;
+  createdAt: string;
+}

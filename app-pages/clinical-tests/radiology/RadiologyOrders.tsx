@@ -9,33 +9,31 @@ import {
   ActionType,
   ModuleType,
   PathologyOrderStatus,
+  RadiologyOrderStatus,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
-  useCancelPathologyTestOrder,
-  useMarkSamplePathologyTestOrder,
-  useOutsourcePathologyTestOrder,
-  usePathologyOrdersList,
-} from "@/hooks/query/pathology";
+  useCancelRadiologyTestOrder,
+  useOutsourceRadiologyTestOrder,
+  useRadiologyOrdersList,
+} from "@/hooks/query/radiology";
 import {
   ColumnDefWithClass,
   FilterConfig,
   FilterValues,
-  PathologyOrderByPatientsType,
-  PathologyOrderType,
+  RadiologyOrderByPatientsType,
+  RadiologyOrderType,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-const Actions = ({ data }: { data: PathologyOrderType }) => {
+const Actions = ({ data }: { data: RadiologyOrderType }) => {
   const { mutateAsync: outsource, isPending: outsourcing } =
-    useOutsourcePathologyTestOrder();
+    useOutsourceRadiologyTestOrder();
   const { mutateAsync: cancel, isPending: cancelling } =
-    useCancelPathologyTestOrder();
-  const { mutateAsync: markSample, isPending: marking } =
-    useMarkSamplePathologyTestOrder();
+    useCancelRadiologyTestOrder();
 
   const router = useRouter();
 
@@ -47,16 +45,12 @@ const Actions = ({ data }: { data: PathologyOrderType }) => {
     outsource({ orderId: data.id, isOutSourced: value });
   };
 
-  const handleMarksSample = () => {
-    markSample({ orderId: data.id });
-  };
-
   const items = [];
 
   if (
     !data.isCancelled &&
     !data.isOutSourced &&
-    data.status !== PathologyOrderStatus["COMPLETED"]
+    data.status !== RadiologyOrderStatus["COMPLETED"]
   ) {
     items.push({
       label: "Cancel",
@@ -76,7 +70,7 @@ const Actions = ({ data }: { data: PathologyOrderType }) => {
   if (
     !data.isOutSourced &&
     !data.isCancelled &&
-    data.status !== PathologyOrderStatus["COMPLETED"]
+    data.status !== RadiologyOrderStatus["COMPLETED"]
   ) {
     items.push({
       label: "OutSource",
@@ -94,26 +88,13 @@ const Actions = ({ data }: { data: PathologyOrderType }) => {
   }
 
   if (
-    data.status === PathologyOrderStatus["SAMPLE_PENDING"] &&
-    !data.isCancelled &&
-    !data.isOutSourced
-  ) {
-    items.push({
-      label: "Mark As Sample Taken",
-      onClick: handleMarksSample,
-      disabled: marking,
-    });
-  }
-
-  if (
     data.status !== PathologyOrderStatus["COMPLETED"] &&
     !data.isCancelled &&
     !data.isOutSourced
   ) {
     items.push({
       label: "Result Entry",
-      onClick: () => router.push(`/pathology/result-entry/${data.id}`),
-      disabled: marking,
+      onClick: () => router.push(`/radiology/result-entry/${data.id}`),
     });
   }
 
@@ -152,7 +133,7 @@ const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
-const PathologyOrders = ({
+const RadiologyOrders = ({
   cancelled,
   outsourced,
   title,
@@ -167,17 +148,14 @@ const PathologyOrders = ({
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = usePathologyOrdersList(
+  const { data, isLoading, isError, error } = useRadiologyOrdersList(
     {
       ...filters,
       cancelled,
       outsourced,
       testStatus:
         !cancelled && !outsourced
-          ? [
-              PathologyOrderStatus["RESULT_PENDING"],
-              PathologyOrderStatus["SAMPLE_PENDING"],
-            ]
+          ? [RadiologyOrderStatus["RESULT_PENDING"]]
           : [],
     },
     page,
@@ -190,7 +168,7 @@ const PathologyOrders = ({
   const patientOrders = useMemo(
     () =>
       data?.data.find((p) => p.id === effectiveSelectedPatient)
-        ?.pathologyTestOrders || [],
+        ?.radiologyTestOrders || [],
     [effectiveSelectedPatient, data],
   );
   const selectedPatientData = useMemo(
@@ -204,26 +182,16 @@ const PathologyOrders = ({
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_ORDER,
+    ModuleType.RADIOLOGY_ORDER,
     ActionType.VIEW,
   );
-  // const canUpdate = hasActionPermission(
-  //   profile?.data,
-  //   ModuleType.PATHOLOGY_TEST_MASTER,
-  //   ActionType.UPDATE,
-  // );
-  // const canDelete = hasActionPermission(
-  //   profile?.data,
-  //   ModuleType.PATHOLOGY_TEST_MASTER,
-  //   ActionType.DELETE,
-  // );
 
-  const patientColumns: ColumnDefWithClass<PathologyOrderByPatientsType>[] = [
+  const patientColumns: ColumnDefWithClass<RadiologyOrderByPatientsType>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderByPatientsType>
+          <SortableHeader<RadiologyOrderByPatientsType>
             label="Patient"
             column={column}
           />
@@ -239,12 +207,12 @@ const PathologyOrders = ({
     },
   ];
 
-  const columns: ColumnDefWithClass<PathologyOrderType>[] = [
+  const columns: ColumnDefWithClass<RadiologyOrderType>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderType> label="ID" column={column} />
+          <SortableHeader<RadiologyOrderType> label="ID" column={column} />
         );
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
@@ -255,7 +223,7 @@ const PathologyOrders = ({
       accessorKey: "name",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderType> label="Test" column={column} />
+          <SortableHeader<RadiologyOrderType> label="Test" column={column} />
         );
       },
       cell: ({ row }) => row.original.test.name,
@@ -266,7 +234,7 @@ const PathologyOrders = ({
       accessorKey: "Doctor",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderType> label="Doctor" column={column} />
+          <SortableHeader<RadiologyOrderType> label="Doctor" column={column} />
         );
       },
       cell: ({ row }) => row.original.opd.consultantDoctor.user.name || "-",
@@ -277,7 +245,7 @@ const PathologyOrders = ({
       accessorKey: "status",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderType> label="Status" column={column} />
+          <SortableHeader<RadiologyOrderType> label="Status" column={column} />
         );
       },
       cell: ({ row }) => row.original.status || "-",
@@ -289,7 +257,7 @@ const PathologyOrders = ({
       accessorKey: "createdAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<PathologyOrderType>
+          <SortableHeader<RadiologyOrderType>
             label="Created at"
             column={column}
           />
@@ -322,11 +290,6 @@ const PathologyOrders = ({
         onSubmit={setFilters}
       />
       <div className="flex gap-4 items-center text-xs font-medium mb-2">
-        <div className="flex items-center gap-1">
-          <span className="w-3 h-3 bg-yellow-100 border rounded-sm"></span>
-          Sample Pending
-        </div>
-
         <div className="flex items-center gap-1">
           <span className="w-3 h-3 bg-blue-100 border rounded-sm"></span>
           Result Pending
@@ -418,4 +381,4 @@ const PathologyOrders = ({
   );
 };
 
-export default PathologyOrders;
+export default RadiologyOrders;

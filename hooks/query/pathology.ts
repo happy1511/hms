@@ -7,6 +7,7 @@ import {
   CANCEL_PATHOLOGY_ORDERS,
   OUTSOURCE_PATHOLOGY_ORDERS,
   PATHOLOGY,
+  PATHOLOGY_COMPLETED_ORDERS_WITH_RESULTS,
   PATHOLOGY_ORDER_PARAMETERS,
   PATHOLOGY_ORDERS,
   PATHOLOGY_TEST_OPTION,
@@ -21,6 +22,7 @@ import {
   PaginatedResponse,
   PathologyOrderByPatientsType,
   PathologyTestDataType,
+  PathologyTestOrderWithResults,
   PathologyTestParameterType,
   PathologyTestResultType,
 } from "@/lib/type";
@@ -138,6 +140,10 @@ const getPathologyOrders = createRequest<
   PaginatedResponse<PathologyOrderByPatientsType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(PATHOLOGY_ORDERS, "GET");
+const getCompletedPathologyOrdersWithResults = createRequest<
+  ApiResponse<PathologyTestOrderWithResults[]>,
+  { opdId: number }
+>(PATHOLOGY_COMPLETED_ORDERS_WITH_RESULTS, "GET");
 
 export const usePathologyTestsList = (
   filters: FilterValues,
@@ -194,6 +200,25 @@ export const usePathologyOrdersList = (
           }),
         },
       }),
+  });
+};
+
+export const useCompletedPathologyOrdersWithResults = (opdId?: number) => {
+  return useQuery<
+    ApiResponse<PathologyTestOrderWithResults[]>,
+    AxiosError<ApiResponse<null>>,
+    PathologyTestOrderWithResults[],
+    [string, number | undefined]
+  >({
+    queryKey: ["completed-pathology-orders-with-results", opdId],
+    queryFn: () =>
+      getCompletedPathologyOrdersWithResults({
+        params: {
+          opdId: opdId as number,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!opdId,
   });
 };
 

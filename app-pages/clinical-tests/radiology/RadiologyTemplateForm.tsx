@@ -12,13 +12,14 @@ import {
   Status,
 } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
-import { RadiologyTemplate } from "@/generated/prisma/client";
+import { RadiologyTemplate, RadiologyTest } from "@/generated/prisma/client";
 import {
   radiologyTemplateValidator,
   RadiologyTemplateValidatorType,
 } from "@/validators/api/masters/radiologyTest";
 import {
   useCreateRadiologyTemplate,
+  useInfiniteRadiologyTestsList,
   useRadiologyTemplate,
   useUpdateRadiologyTemplate,
 } from "@/hooks/query/radiology";
@@ -26,12 +27,23 @@ import { useParams, useRouter } from "next/navigation";
 import { LoaderIcon } from "lucide-react";
 import { useProfile } from "@/hooks/query/auth";
 import { hasActionPermission } from "@/lib/utils";
+import { useState } from "react";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { PaginatedResponse } from "@/lib/type";
 
 const CreateUpdateForm = ({ data }: { data?: RadiologyTemplate }) => {
+  const [radiologySearchValue, setRadiologySearchValue] = useState("");
   const { mutateAsync: update, isPending: updating } =
     useUpdateRadiologyTemplate();
   const { mutateAsync: create, isPending: creating } =
     useCreateRadiologyTemplate();
+
+  const radiologyTests = useInfiniteRadiologyTestsList(
+    {
+      name: radiologySearchValue,
+    },
+    10,
+  );
 
   const form = useForm<RadiologyTemplateValidatorType>({
     defaultValues: {
@@ -81,6 +93,23 @@ const CreateUpdateForm = ({ data }: { data?: RadiologyTemplate }) => {
             options={Object.values(Status).map((s) => ({ value: s, label: s }))}
             control={form.control}
             required
+          />
+          <FormInfiniteSelect<
+            RadiologyTest,
+            PaginatedResponse<RadiologyTest>,
+            string,
+            RadiologyTemplateValidatorType
+          >
+            name="radiologyTests"
+            label="Connected Tests"
+            control={form.control}
+            query={radiologyTests}
+            getItems={(d) => d?.data}
+            labelKey={(i) => i.name}
+            valueKey={(i) => String(i?.id)}
+            search={radiologySearchValue}
+            onSearchChange={setRadiologySearchValue}
+            multiple
           />
           <div className="col-span-2">
             <FormField<RadiologyTemplateValidatorType>

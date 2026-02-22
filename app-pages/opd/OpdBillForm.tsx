@@ -406,47 +406,56 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   };
 
   useEffect(() => {
-    if (serviceId) {
-      const service = flatServices?.find((s) => s.id === Number(serviceId));
-      if (!service) {
-        billingItemForm.setValue("rate", 0);
-        billingItemForm.setValue("discountValue", 0);
-        billingItemForm.setValue("discountType", DiscountType["VALUE"]);
-        billingItemForm.setValue("total", 0);
-        billingItemForm.setValue("maxDiscount", 0);
-        billingItemForm.setValue("quantity", 0);
-      } else {
-        billingItemForm.setValue("rate", service.price);
-        billingItemForm.setValue("discountValue", 0);
-        billingItemForm.setValue("discountType", DiscountType["VALUE"]);
-        billingItemForm.setValue("total", service.price);
-        billingItemForm.setValue("quantity", 1);
-        billingItemForm.setValue("maxDiscount", service.maxDiscount);
+    const setIfChanged = (name: keyof billingItemValidatorType, value: any) => {
+      if (billingItemForm.getValues(name) !== value) {
+        billingItemForm.setValue(name, value);
       }
-    } else {
-      billingItemForm.setValue("rate", 0);
-      billingItemForm.setValue("discountValue", 0);
-      billingItemForm.setValue("discountType", DiscountType["VALUE"]);
-      billingItemForm.setValue("total", 0);
-      billingItemForm.setValue("quantity", 0);
-      billingItemForm.setValue("maxDiscount", 0);
+    };
+
+    if (!serviceId) {
+      setIfChanged("rate", 0);
+      setIfChanged("discountValue", 0);
+      setIfChanged("discountType", DiscountType["VALUE"]);
+      setIfChanged("total", 0);
+      setIfChanged("quantity", 0);
+      setIfChanged("maxDiscount", 0);
+      return;
     }
-  }, [serviceId, billingItemForm, flatServices]);
+
+    const service = flatServices?.find((s) => s.id === Number(serviceId));
+
+    if (!service) {
+      setIfChanged("rate", 0);
+      setIfChanged("discountValue", 0);
+      setIfChanged("discountType", DiscountType["VALUE"]);
+      setIfChanged("total", 0);
+      setIfChanged("quantity", 0);
+      setIfChanged("maxDiscount", 0);
+      return;
+    }
+
+    setIfChanged("rate", service.price);
+    setIfChanged("discountValue", 0);
+    setIfChanged("discountType", DiscountType["VALUE"]);
+    setIfChanged("total", service.price);
+    setIfChanged("quantity", 1);
+    setIfChanged("maxDiscount", service.maxDiscount);
+  }, [serviceId, flatServices]);
 
   useEffect(() => {
-    if (serviceId) {
-      const gross = Number(quantity) * Number(rate);
-      const total =
-        discountType === "PERCENTAGE"
-          ? (gross * Number(discountValue)) / 100
-          : gross - Number(discountValue);
-      billingItemForm.setValue("total", total);
-    } else {
-      billingItemForm.setValue("quantity", 0);
-    }
-  }, [quantity, serviceId, billingItemForm, rate, discountType, discountValue]);
+    if (!serviceId) return;
 
-  console.log(billingItemForm.getValues());
+    const gross = Number(quantity) * Number(rate);
+
+    const total =
+      discountType === "PERCENTAGE"
+        ? (gross * Number(discountValue)) / 100
+        : gross - Number(discountValue);
+
+    if (billingItemForm.getValues("total") !== total) {
+      billingItemForm.setValue("total", total);
+    }
+  }, [quantity, rate, discountType, discountValue, serviceId]);
 
   return (
     <CustomLayout
@@ -962,8 +971,6 @@ const OpdBillForm = () => {
   if (params?.patientId && !patient) {
     return <div />;
   }
-
-  console.log(form.formState.errors);
 
   return (
     <Form {...form}>

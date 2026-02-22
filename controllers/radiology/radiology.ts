@@ -3,9 +3,16 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import {
+  Prisma,
+  RadiologyOrderStatus,
+  ServiceApplicableOn,
+  ServiceType,
+  User,
+} from "@/generated/prisma/client";
 import {
   partialRadiologyTemplateValidator,
+  partialRadiologyTestOrder,
   partialRadiologyTestValidator,
   radiologyTemplateValidator,
   radiologyTestValidator,
@@ -108,6 +115,21 @@ export const createAPI = async (req: Request) => {
             price: body.price,
             status: body.status,
             section: body.section,
+          },
+        });
+
+        await tx.service.create({
+          data: {
+            name: body.name,
+            type: ServiceType["RADIOLOGY_TEST"],
+            price: body.price,
+            applicableOn: ServiceApplicableOn["BOTH"],
+            status: body.status,
+            radiologyTests: {
+              create: {
+                testId: createdTest.id,
+              },
+            },
           },
         });
 
@@ -235,25 +257,22 @@ export const getTemplateDetailsAPI = async (
     params,
     onSuccess: async ({ params }) => {
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.radiologyTemplate.findUnique({
+        const existingTemplate = await tx.radiologyTemplate.findUnique({
           where: { id: params.templateId },
+          include: { radiologyTests: true },
         });
 
-        if (!existingTest) {
+        if (!existingTemplate) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Radiology Template not found",
           });
         }
 
-        const template = await prisma.radiologyTemplate.findUnique({
-          where: { id: params.templateId },
-        });
-
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "Radiology Template Fetched Successfully",
-          data: template,
+          data: existingTemplate,
         });
       });
     },
@@ -266,30 +285,50 @@ export const createTemplateAPI = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.radiologyTemplate.findFirst({
+        const existingTemplate = await tx.radiologyTemplate.findFirst({
           where: { name: body.name },
         });
 
-        if (existingTest) {
+        if (existingTemplate) {
           return apiResponse({
             status: RESPONSE_STATUS.BAD_REQUEST,
             message: "Template with this name already exists",
           });
         }
 
-        const createdTest = await tx.radiologyTemplate.create({
+        if (body.radiologyTests?.length) {
+          const tests = await tx.radiologyTest.findMany({
+            where: { id: { in: body.radiologyTests } },
+            select: { id: true },
+          });
+
+          if (tests.length !== body.radiologyTests.length) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "One or more radiology tests are invalid",
+            });
+          }
+        }
+
+        const createdTemplate = await tx.radiologyTemplate.create({
           data: {
             name: body.name,
             section: body.section,
             status: body.status,
             content: body.content,
+            radiologyTests: {
+              connect: (body.radiologyTests ?? []).map((id) => ({ id })),
+            },
+          },
+          include: {
+            radiologyTests: true,
           },
         });
 
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Radiology Template Created Successfully",
-          data: createdTest,
+          data: createdTemplate,
         });
       });
     },
@@ -334,27 +373,468 @@ export const updateTemplateAPI = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
+
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.radiologyTemplate.findUnique({
+        const existingTemplate = await tx.radiologyTemplate.findUnique({
           where: { id: data.templateId },
+          include: { radiologyTests: { select: { id: true } } },
         });
 
-        if (!existingTest) {
+        if (!existingTemplate) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Radiology Template not found",
           });
         }
 
-        await prisma.radiologyTemplate.delete({
+        // optional: check duplicate name (excluding self)
+        const duplicate = await tx.radiologyTemplate.findFirst({
+          where: {
+            name: data.name,
+            id: { not: data.templateId },
+          },
+        });
+
+        if (duplicate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Template with this name already exists",
+          });
+        }
+
+        // validate radiology tests
+        if (data.radiologyTests?.length) {
+          const tests = await tx.radiologyTest.findMany({
+            where: { id: { in: data.radiologyTests } },
+            select: { id: true },
+          });
+
+          if (tests.length !== data.radiologyTests.length) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "One or more radiology tests are invalid",
+            });
+          }
+        }
+
+        const updatedTemplate = await tx.radiologyTemplate.update({
           where: { id: data.templateId },
+          data: {
+            name: data.name,
+            section: data.section,
+            status: data.status,
+            content: data.content,
+
+            // 🔑 this replaces previous relations completely
+            radiologyTests: {
+              set: (data.radiologyTests ?? []).map((id) => ({ id })),
+            },
+          },
+          include: {
+            radiologyTests: true,
+          },
         });
 
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
-          message: "Radiology Template Deleted Successfully",
-          data: null,
+          message: "Radiology Template Updated Successfully",
+          data: updatedTemplate,
         });
+      });
+    },
+  });
+};
+
+export const getOrdersAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const status = query.radiologyStatus ?? "";
+      const name = query.search ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+      // const defaultSelectedIds = query.defaultSelectedIds;
+      const cancelled = query.cancelled;
+      const outsourced = query.outsourced;
+      const opdId = query.opdId;
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.PatientWhereInput[] = [];
+
+      if (status) {
+        and.push({
+          radiologyTestOrders: { some: { status: { in: status } } },
+        });
+      }
+
+      if (name) {
+        and.push({ firstName: { contains: name } });
+      }
+
+      if (opdId) {
+        and.push({
+          radiologyTestOrders: { some: { opdId: { equals: opdId } } },
+        });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          radiologyTestOrders: {
+            some: {
+              createdAt: {
+                ...(createdAtFrom && { gte: createdAtFrom }),
+                ...(createdAtTo && { lte: createdAtTo }),
+              },
+            },
+          },
+        });
+      }
+
+      and.push({
+        radiologyTestOrders: {
+          some: {
+            isCancelled: cancelled === true ? true : false,
+            isOutSourced: outsourced === true ? true : false,
+          },
+        },
+      });
+
+      const where: Prisma.PatientWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.patient.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          include: {
+            radiologyTestOrders: {
+              where: {
+                isOutSourced: outsourced === true ? true : false,
+                isCancelled: cancelled === true ? true : false,
+              },
+              select: {
+                id: true,
+                opdId: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                sampleTakenAt: true,
+                resultEnteredAt: true,
+                verifiedAt: true,
+                isOutSourced: true,
+                isCancelled: true,
+                test: {
+                  select: {
+                    id: true,
+                    name: true,
+                    section: true,
+                  },
+                },
+
+                opd: {
+                  select: {
+                    consultantDoctor: {
+                      select: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+
+                resultEnteredBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+
+                verifiedBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+
+                sampleTakenBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+
+        prisma.patient.count({
+          where,
+        }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Pathology Orders Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const getOrderDetailsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: partialRadiologyTestOrder,
+    req,
+    onSuccess: async ({ query }) => {
+      const { orderId } = query;
+
+      const order = await prisma.radiologyTestOrder.findFirst({
+        where: { id: orderId },
+        include: {
+          patient: true,
+        },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Radiology Order Not Found",
+        });
+      }
+
+      const data = await prisma.radiologyTestOrder.findFirst({
+        where: { id: orderId },
+        include: {
+          patient: true,
+          test: {
+            include: {
+              template: true,
+            },
+          },
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Radiology Order Parameters Fetched Successfully",
+        data: { ...data, order },
+      });
+    },
+  });
+};
+
+export const updateOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialRadiologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const { results, orderId, ...rest } = body;
+
+      const order = await prisma.radiologyTestOrder.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const updated = await prisma.radiologyTestOrder.update({
+        where: { id: orderId },
+        data: {
+          ...rest,
+          ...(rest.isCancelled && { cancelledById: user.id }),
+          ...(results && { resultEnteredById: user.id }),
+          status: RadiologyOrderStatus["COMPLETED"],
+          results: {
+            deleteMany: {},
+            create: results,
+          },
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Updated Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const cancelOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialRadiologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.radiologyTestOrder.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const { isCancelled } = body;
+
+      const updated = await prisma.radiologyTestOrder.update({
+        where: { id },
+        data: {
+          isCancelled,
+          ...(isCancelled
+            ? { cancelledById: user.id }
+            : { cancelledById: null }),
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Cancelled Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const markOutsourceOrderAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialRadiologyTestOrder,
+    req,
+    onSuccess: async ({ body }) => {
+      const id = body.orderId;
+
+      const order = await prisma.radiologyTestOrder.findUnique({
+        where: { id },
+      });
+
+      if (!order) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Order not found",
+        });
+      }
+
+      const { isOutSourced } = body;
+
+      const updated = await prisma.radiologyTestOrder.update({
+        where: { id },
+        data: {
+          isOutSourced,
+        },
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Order Updated Successfully",
+        data: updated,
+      });
+    },
+  });
+};
+
+export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const { opdId } = query;
+
+      if (!opdId) {
+        return apiResponse({
+          status: RESPONSE_STATUS.BAD_REQUEST,
+          message: "OPD ID is required",
+        });
+      }
+
+      const orders = await prisma.radiologyTestOrder.findMany({
+        where: {
+          opdId,
+          status: RadiologyOrderStatus["COMPLETED"],
+        },
+        include: {
+          test: {
+            select: {
+              id: true,
+              name: true,
+              section: true,
+              template: {
+                select: {
+                  id: true,
+                  name: true,
+                  section: true,
+                  content: true,
+                },
+              },
+            },
+          },
+          results: {
+            include: {
+              template: {
+                select: {
+                  id: true,
+                  name: true,
+                  content: true,
+                  section: true,
+                },
+              },
+            },
+          },
+          patient: {
+            select: {
+              id: true,
+              uhid: true,
+              firstName: true,
+              lastName: true,
+              dob: true,
+              gender: true,
+            },
+          },
+          verifiedBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          resultEnteredBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      if (!orders || orders.length === 0) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "No completed radiology orders found for this OPD",
+          data: [],
+        });
+      }
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Completed Radiology Orders with Results Fetched Successfully",
+        data: orders,
       });
     },
   });

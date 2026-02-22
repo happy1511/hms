@@ -225,6 +225,21 @@ export function CustomTable<TData, TValue>({
     enableSorting,
   });
 
+  const getStatusRowClass = (row: any) => {
+    const status = row.original?.status;
+
+    switch (status) {
+      case "SAMPLE_PENDING":
+        return "bg-yellow-100";
+      case "RESULT_PENDING":
+        return "bg-blue-100";
+      case "COMPLETED":
+        return "bg-green-100";
+      default:
+        return rowBgClass;
+    }
+  };
+
   // Infinite scroll
   useEffect(() => {
     if (!useInfiniteScroll) return;
@@ -304,7 +319,10 @@ export function CustomTable<TData, TValue>({
                 return (
                   <TableRow
                     key={row.id}
-                    className="bg-primary/10 font-semibold"
+                    className={clsx(
+                      "mb-2 h-7 border-t border-b border-primary/20",
+                      getStatusRowClass(row),
+                    )}
                   >
                     <TableCell colSpan={finalColumns.length}>
                       <button

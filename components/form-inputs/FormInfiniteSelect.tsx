@@ -347,7 +347,7 @@ function InnerSelect<
       GroupBase<Option<TItem, TValue>>,
       Additional
     >
-      isMulti={multiple ? false : undefined}
+      isMulti={multiple as any}
       value={selectedValue}
       loadOptions={loadOptions}
       additional={{ page: 1 }}
@@ -366,6 +366,7 @@ function InnerSelect<
         option: () => "text-tiny! py-1!",
       }}
       onChange={(selected) => {
+        console.log(selected);
         if (multiple) {
           const vals =
             (selected as Option<TItem, TValue>[] | null)?.map((o) => o.value) ??

@@ -17,16 +17,16 @@ const serviceValidator = z.object({
     .min(0, "Max Discount must be a positive number")
     .optional(),
   applicableOn: z.enum(ServiceApplicableOn).optional(),
-  connectedLabTests: z.array(z.number()).optional(),
-  connectedRadiologyTests: z.array(z.number()).optional(),
+  connectedLabTests: z.array(z.coerce.number()).optional(),
+  connectedRadiologyTests: z.array(z.coerce.number()).optional(),
 });
 
 const partialServiceValidator = serviceValidator.partial().extend({
   serviceId: z.number().min(1, "Service Id is required"),
 });
 
-type ServiceValidatorType = z.infer<typeof serviceValidator>;
-type PartialServiceValidatorType = z.infer<typeof partialServiceValidator>;
+type ServiceValidatorType = z.input<typeof serviceValidator>;
+type PartialServiceValidatorType = z.input<typeof partialServiceValidator>;
 
 export { serviceValidator, partialServiceValidator };
 export type { ServiceValidatorType, PartialServiceValidatorType };
