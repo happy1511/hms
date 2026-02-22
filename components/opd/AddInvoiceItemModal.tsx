@@ -55,8 +55,8 @@ const AddInvoiceItemModal = ({
     resolver: zodResolver(addOpdBillItemValidator),
   });
 
-  const billingSectionId = billingItemForm.watch("billingSectionId");
-  const serviceId = billingItemForm.watch("serviceId");
+  const billingSection = billingItemForm.watch("billingSection");
+  const service = billingItemForm.watch("service");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
   const discountValue = billingItemForm.watch("discountValue");
@@ -68,7 +68,7 @@ const AddInvoiceItemModal = ({
   );
 
   const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, billingSectionId: billingSectionId as string },
+    { name: serviceSearch, billingSectionId: billingSection.id as string },
     10,
   );
 
@@ -94,38 +94,37 @@ const AddInvoiceItemModal = ({
       }
     };
 
-    if (!serviceId) {
+    if (!service?.id) {
       setIfChanged("rate", 0);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      setIfChanged("maxDiscount", 0);
       return;
     }
 
-    const service = flatServices?.find((s) => s.id === Number(serviceId));
+    const existingService = flatServices?.find(
+      (s) => s.id === Number(service.id),
+    );
 
-    if (!service) {
+    if (!existingService) {
       setIfChanged("rate", 0);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      setIfChanged("maxDiscount", 0);
       return;
     }
 
-    setIfChanged("rate", service.price);
+    setIfChanged("rate", existingService.price);
     setIfChanged("discountValue", 0);
     setIfChanged("discountType", DiscountType["VALUE"]);
-    setIfChanged("total", service.price);
+    setIfChanged("total", existingService.price);
     setIfChanged("quantity", 1);
-    setIfChanged("maxDiscount", service.maxDiscount);
-  }, [serviceId, flatServices]);
+  }, [service.id, flatServices]);
 
   useEffect(() => {
-    if (!serviceId) return;
+    if (!service.id) return;
 
     const gross = Number(quantity) * Number(rate);
 
@@ -137,7 +136,7 @@ const AddInvoiceItemModal = ({
     if (billingItemForm.getValues("total") !== total) {
       billingItemForm.setValue("total", total);
     }
-  }, [quantity, rate, discountType, discountValue, serviceId]);
+  }, [quantity, rate, discountType, discountValue, service]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,7 +178,7 @@ const AddInvoiceItemModal = ({
                 >
                   control={billingItemForm.control}
                   label="Billing Section"
-                  name="billingSectionId"
+                  name="billingSection"
                   query={billingItemQuery}
                   getItems={(p) => p?.data}
                   valueKey={(i) => String(i?.id)}
@@ -197,7 +196,7 @@ const AddInvoiceItemModal = ({
                   >
                     control={billingItemForm.control}
                     label="Service"
-                    name="serviceId"
+                    name="service"
                     query={servicesQuery}
                     getItems={(p) => p?.data}
                     valueKey={(i) => String(i?.id)}

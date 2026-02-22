@@ -234,14 +234,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
   const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
 
-  const flatBillingItems = useMemo(
-    () =>
-      billingItemQuery.data?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ label: f.name, value: f.id })),
-      ),
-    [billingItemQuery.data],
-  );
-
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
@@ -411,7 +403,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      billingItemForm.setValue("service.maxDiscount", 0);
       return;
     }
 
@@ -425,7 +416,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      billingItemForm.setValue("service.maxDiscount", 0);
       return;
     }
 
@@ -434,10 +424,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     setIfChanged("discountType", DiscountType["VALUE"]);
     setIfChanged("total", existingService.price);
     setIfChanged("quantity", 1);
-    billingItemForm.setValue(
-      "service.maxDiscount",
-      existingService.maxDiscount ?? 0,
-    );
   }, [service, flatServices]);
 
   useEffect(() => {
