@@ -15,6 +15,7 @@ import {
   addOpdBillItemValidator,
   addOpdTransactionValidator,
   consultationFileValidator,
+  opdInvoiceValidator,
   opdValidator,
   partialOpdValidator,
   vitalsValidator,
@@ -123,6 +124,401 @@ export const getAPI = async (req: Request) => {
   });
 };
 
+export const getQueueAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+      const consultantDoctorId = query.consultantDoctorId
+        ? Number(query.consultantDoctorId)
+        : null;
+      const referringDoctorId = query.referringDoctorId
+        ? Number(query.referringDoctorId)
+        : null;
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.OpdWhereInput[] = [];
+
+      if (consultantDoctorId) {
+        and.push({ consultantDoctorId });
+      }
+      if (referringDoctorId) {
+        and.push({ referringDoctorId });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      and.push({ isInQueue: true });
+
+      const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.opd.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          select: {
+            id: true,
+            arrivalState: true,
+            total: true,
+            discountType: true,
+            discountValue: true,
+            rate: true,
+            transactions: true,
+            isInQueue: true,
+            consultantDoctor: {
+              select: {
+                user: {
+                  omit: {
+                    password: true,
+                  },
+                },
+              },
+            },
+            referringDoctor: {
+              select: {
+                user: {
+                  omit: {
+                    password: true,
+                  },
+                },
+              },
+            },
+            patient: {
+              select: {
+                uhid: true,
+                lastName: true,
+                firstName: true,
+                middleName: true,
+                dob: true,
+                maritalStatus: true,
+                relations: true,
+                addresses: true,
+                contacts: true,
+                gender: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.opd.count({ where }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Opds Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const getConsultationAPI = async (
+  req: Request,
+  { params }: { params: { opdId: number } },
+  user: User,
+) => {
+  return validateRequest({
+    paramsSchema: partialOpdValidator,
+    params,
+    req,
+    onSuccess: async ({ params }) => {
+      const { opdId } = params;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const consultation = await tx.opd.findUnique({
+          where: { id: opdId },
+          select: {
+            id: true,
+            patient: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            consultation: true,
+            vital: true,
+            advisedPathologyTests: {
+              include: {
+                test: true,
+              },
+            },
+            advisedRadiologyTests: {
+              include: {
+                test: true,
+              },
+            },
+            prescription: {
+              select: {
+                followUpAdvice: true,
+                followUpAfterDays: true,
+                followUpDate: true,
+                otherAdvice: true,
+                opdId: true,
+                drugs: {
+                  select: {
+                    name: true,
+                    days: true,
+                    frequency: true,
+                    remarks: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Consultations Fetched Successfully",
+          data: {
+            opdId: consultation?.id,
+            ...consultation?.consultation,
+            advisedPathologyTests: consultation?.advisedPathologyTests?.map(
+              (t) => ({ name: t.test.name, id: t.testId }),
+            ),
+            advisedRadiologyTests: consultation?.advisedRadiologyTests?.map(
+              (t) => ({ name: t.test.name, id: t.testId }),
+            ),
+            vitals: { ...consultation?.vital, opdId: consultation?.id },
+            prescription: {
+              ...consultation?.prescription,
+              opdId: consultation?.id,
+            },
+          },
+        });
+      });
+    },
+  });
+};
+
+export const getInvoiceDetailsAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: partialOpdValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const { opdId } = query;
+
+      const [billingItems, opd] = await prisma.$transaction([
+        prisma.billingSection.findMany({
+          where: {},
+          select: {
+            id: true,
+            name: true,
+            opdBillingItems: {
+              where: {
+                opdId: opdId,
+              },
+              select: {
+                quantity: true,
+                total: true,
+                discountType: true,
+                discountValue: true,
+                rate: true,
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    maxDiscount: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+        prisma.opd.findUnique({
+          where: { id: opdId },
+          select: {
+            id: true,
+            total: true,
+            discountType: true,
+            discountValue: true,
+            rate: true,
+            transactions: true,
+            patient: {
+              select: {
+                id: true,
+                uhid: true,
+                lastName: true,
+                firstName: true,
+                middleName: true,
+                dob: true,
+                maritalStatus: true,
+                gender: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Opds Fetched Successfully",
+        data: { ...opd, billingItems: billingItems },
+      });
+    },
+  });
+};
+export const updateInvoiceAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: opdInvoiceValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      return prisma.$transaction(async (tx) => {
+        const { opdId, billingItem, transactions, ...invoice } = body;
+
+        const existingOPD = await tx.opd.findFirst({
+          where: { id: opdId },
+          include: {
+            opdBillingItems: true,
+            transactions: true,
+          },
+        });
+
+        if (!existingOPD) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Opd Not Found",
+          });
+        }
+
+        /* ------------------------------------------------------- */
+        /* 1️⃣ UPDATE OPD MAIN INVOICE */
+        /* ------------------------------------------------------- */
+
+        const updatedOpd = await tx.opd.update({
+          where: { id: opdId },
+          data: {
+            rate: invoice.rate,
+            discountType: invoice.discountType,
+            discountValue: invoice.discountValue,
+            total: invoice.total,
+            isFree: invoice.isFree,
+            isPaid: !invoice.isFree && invoice.total === 0 ? true : true,
+          },
+        });
+
+        /* ------------------------------------------------------- */
+        /* 2️⃣ HANDLE BILLING ITEMS (CREATE / UPDATE / DELETE) */
+        /* ------------------------------------------------------- */
+
+        const existingItems = existingOPD.opdBillingItems;
+
+        // Flatten incoming billing items
+        const incomingItems = billingItem.flatMap((b) => b.opdBillingItems);
+
+        const incomingIds = incomingItems
+          .map((i) => i.index)
+          .filter((id): id is number => !!id);
+
+        // DELETE removed items
+        const toDelete = existingItems.filter(
+          (item) => !incomingIds.includes(item.id),
+        );
+
+        if (toDelete.length) {
+          await tx.opdBillingItem.deleteMany({
+            where: {
+              id: { in: toDelete.map((d) => d.id) },
+            },
+          });
+        }
+
+        // UPSERT incoming items
+        for (const item of incomingItems) {
+          if (item.index) {
+            // UPDATE
+            await tx.opdBillingItem.update({
+              where: { id: item.index },
+              data: {
+                billingSectionId: item.billingSection.id,
+                serviceId: item.service.id,
+                quantity: item.quantity,
+                rate: item.rate,
+                discountType: item.discountType,
+                discountValue: item.discountValue,
+                total: item.total,
+              },
+            });
+          } else {
+            // CREATE
+            await tx.opdBillingItem.create({
+              data: {
+                opdId,
+                billingSectionId: item.billingSection.id,
+                serviceId: item.service.id,
+                quantity: item.quantity,
+                rate: item.rate,
+                discountType: item.discountType,
+                discountValue: item.discountValue,
+                total: item.total,
+              },
+            });
+          }
+        }
+
+        /* ------------------------------------------------------- */
+        /* 3️⃣ HANDLE TRANSACTIONS (REPLACE STRATEGY) */
+        /* ------------------------------------------------------- */
+
+        // Delete all old transactions
+        await tx.transaction.deleteMany({
+          where: { opdId },
+        });
+
+        // Create new transactions
+        if (!invoice.isFree && transactions.length > 0) {
+          await tx.transaction.createMany({
+            data: transactions.map((t) => ({
+              opdId,
+              amount: t.amount,
+              mode: t.mode,
+              remarks: t.remarks,
+              receivedById: user.id,
+            })),
+          });
+        }
+
+        /* ------------------------------------------------------- */
+        /* 4️⃣ FINAL RESPONSE */
+        /* ------------------------------------------------------- */
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Invoice updated successfully",
+          data: updatedOpd,
+        });
+      });
+    },
+  });
+};
 export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: opdValidator,
@@ -170,6 +566,7 @@ export const createAPI = async (req: Request, user: User) => {
             );
 
             if (homeAddress) {
+              const { location, ...rest } = homeAddress;
               await tx.patientAddress.upsert({
                 where: {
                   type_patientId: {
@@ -178,11 +575,13 @@ export const createAPI = async (req: Request, user: User) => {
                   },
                 },
                 create: {
-                  ...homeAddress,
+                  ...rest,
+                  locationId: location.id,
                   patientId: existingPatient.id,
                 },
                 update: {
-                  ...homeAddress,
+                  ...rest,
+                  locationId: location.id,
                 },
               });
             }
@@ -301,8 +700,8 @@ export const createAPI = async (req: Request, user: User) => {
             opdBillingItems: {
               create:
                 body.billingItem?.map((item) => ({
-                  billingSectionId: item.billingSectionId,
-                  serviceId: item.serviceId,
+                  billingSectionId: item.billingSection.id,
+                  serviceId: item.service.id,
                   quantity: item.quantity,
                   rate: item.rate,
                   discountType: item.discountType,
@@ -325,7 +724,7 @@ export const createAPI = async (req: Request, user: User) => {
 
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
-            serviceId: { in: body.billingItem?.map((s) => s.serviceId) },
+            serviceId: { in: body.billingItem?.map((s) => s.service.id) },
           },
         });
 
@@ -341,7 +740,7 @@ export const createAPI = async (req: Request, user: User) => {
 
         const radiologyServices = await tx.radiologyTestService.findMany({
           where: {
-            serviceId: { in: body.billingItem?.map((s) => s.serviceId) },
+            serviceId: { in: body.billingItem?.map((s) => s.service.id) },
           },
         });
 
@@ -389,8 +788,8 @@ export const addItemAPI = async (req: Request, user: User) => {
             opdBillingItems: {
               create: [
                 {
-                  billingSectionId: body.billingSectionId,
-                  serviceId: body.serviceId,
+                  billingSectionId: body.billingSection.id,
+                  serviceId: body.service.id,
                   quantity: body.quantity,
                   rate: body.rate,
                   discountType: body.discountType,
@@ -405,7 +804,7 @@ export const addItemAPI = async (req: Request, user: User) => {
 
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
-            serviceId: { equals: body.serviceId },
+            serviceId: { equals: body.service.id },
           },
         });
 
@@ -421,7 +820,7 @@ export const addItemAPI = async (req: Request, user: User) => {
 
         const radiologyServices = await tx.radiologyTestService.findMany({
           where: {
-            serviceId: { equals: body.serviceId },
+            serviceId: { equals: body.service.id },
           },
         });
 
@@ -489,145 +888,6 @@ export const addTransactionAPI = async (req: Request, user: User) => {
   });
 };
 
-export const getQueueAPI = async (req: Request) => {
-  return validateRequest({
-    querySchema: paginationValidator,
-    req,
-    onSuccess: async ({ query }) => {
-      const page = Number(query.page ?? 1);
-      const limit = Number(query.limit ?? 10);
-      const createdAtFrom = query["createdAt[from]"] ?? "";
-      const createdAtTo = query["createdAt[to]"] ?? "";
-      const consultantDoctorId = query.consultantDoctorId
-        ? Number(query.consultantDoctorId)
-        : null;
-      const referringDoctorId = query.referringDoctorId
-        ? Number(query.referringDoctorId)
-        : null;
-
-      const skip = (page - 1) * limit;
-      const and: Prisma.OpdWhereInput[] = [];
-
-      if (consultantDoctorId) {
-        and.push({ consultantDoctorId });
-      }
-      if (referringDoctorId) {
-        and.push({ referringDoctorId });
-      }
-
-      if (createdAtFrom || createdAtTo) {
-        and.push({
-          createdAt: {
-            ...(createdAtFrom && { gte: createdAtFrom }),
-            ...(createdAtTo && { lte: createdAtTo }),
-          },
-        });
-      }
-
-      and.push({ isInQueue: true });
-
-      const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
-
-      const [items, total] = await prisma.$transaction([
-        prisma.opd.findMany({
-          skip,
-          take: limit,
-          orderBy: { createdAt: "desc" },
-          where,
-          select: {
-            id: true,
-            arrivalState: true,
-            total: true,
-            discountType: true,
-            discountValue: true,
-            rate: true,
-            transactions: true,
-            isInQueue: true,
-            consultantDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            patient: {
-              select: {
-                uhid: true,
-                lastName: true,
-                firstName: true,
-                middleName: true,
-                dob: true,
-                maritalStatus: true,
-                relations: true,
-                addresses: true,
-                contacts: true,
-                gender: true,
-              },
-            },
-            createdAt: true,
-            updatedAt: true,
-          },
-        }),
-        prisma.opd.count({ where }),
-      ]);
-
-      return apiResponse({
-        status: RESPONSE_STATUS.SUCCESS,
-        message: "Opds Fetched Successfully",
-        data: items,
-        total,
-      });
-    },
-  });
-};
-
-export const deleteQueueAPI = async (req: Request) => {
-  return validateRequest({
-    bodySchema: partialOpdValidator,
-    req,
-    onSuccess: async ({ body }) => {
-      const data = body;
-
-      return prisma.$transaction(async (tx) => {
-        const existingOpd = await tx.opd.findUnique({
-          where: { id: data.opdId },
-        });
-
-        if (!existingOpd) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Opd not found",
-          });
-        }
-
-        const updatedOpd = await tx.opd.update({
-          where: { id: body.opdId },
-          data: {
-            isInQueue: false,
-          },
-        });
-
-        return apiResponse({
-          status: RESPONSE_STATUS.SUCCESS,
-          message: "Opd Removed from queue Successfully",
-          data: updatedOpd,
-        });
-      });
-    },
-  });
-};
-
 export const updateVitalsAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: vitalsValidator,
@@ -662,99 +922,6 @@ export const updateVitalsAPI = async (req: Request, user: User) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Vitals Updated Successfully",
           data: updatedVitals,
-        });
-      });
-    },
-  });
-};
-
-export const getConsultationAPI = async (
-  req: Request,
-  { params }: { params: { opdId: number } },
-  user: User,
-) => {
-  return validateRequest({
-    paramsSchema: partialOpdValidator,
-    params,
-    req,
-    onSuccess: async ({ params }) => {
-      const { opdId } = params;
-
-      return prisma.$transaction(async (tx) => {
-        const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
-        });
-
-        if (!existingOpd) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Opd not found",
-          });
-        }
-
-        const consultation = await tx.opd.findUnique({
-          where: { id: opdId },
-          select: {
-            id: true,
-            patient: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-            consultation: true,
-            vital: true,
-            advisedPathologyTests: {
-              select: {
-                testId: true,
-              },
-            },
-            advisedRadiologyTests: {
-              select: {
-                testId: true,
-                test: {
-                  select: { name: true, id: true },
-                },
-              },
-            },
-            prescription: {
-              select: {
-                followUpAdvice: true,
-                followUpAfterDays: true,
-                followUpDate: true,
-                otherAdvice: true,
-                opdId: true,
-                drugs: {
-                  select: {
-                    name: true,
-                    days: true,
-                    frequency: true,
-                    remarks: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        return apiResponse({
-          status: RESPONSE_STATUS.SUCCESS,
-          message: "Consultations Fetched Successfully",
-          data: {
-            opdId: consultation?.id,
-            ...consultation?.consultation,
-            advisedPathologyTests: consultation?.advisedPathologyTests?.map(
-              (t) => t.testId,
-            ),
-            advisedRadiologyTests: consultation?.advisedRadiologyTests?.map(
-              (t) => t.testId,
-            ),
-            vitals: { ...consultation?.vital, opdId: consultation?.id },
-            prescription: {
-              ...consultation?.prescription,
-              opdId: consultation?.id,
-            },
-          },
         });
       });
     },
@@ -833,11 +1000,11 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
         });
 
         const pathologyToDelete = existingPathology.filter(
-          (e) => !advisedPathologyTests?.includes(e.testId),
+          (e) => !advisedPathologyTests?.find((t) => t.id === e.testId),
         );
 
         const pathologyToAdd = advisedPathologyTests?.filter(
-          (id) => !existingPathology.some((e) => e.testId === id),
+          (test) => !existingPathology.some((e) => e.testId === test.id),
         );
 
         if (pathologyToDelete.length) {
@@ -851,7 +1018,7 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
             data: pathologyToAdd.map((testId) => ({
               opdId,
               consultationId: consultantFile.id,
-              testId,
+              testId: testId.id,
             })),
             skipDuplicates: true,
           });
@@ -864,11 +1031,11 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
         });
 
         const radiologyToDelete = existingRadiology.filter(
-          (e) => !advisedRadiologyTests?.includes(e.testId),
+          (e) => !advisedRadiologyTests?.find((t) => t.id === e.testId),
         );
 
         const radiologyToAdd = advisedRadiologyTests?.filter(
-          (id) => !existingRadiology.some((e) => e.testId === id),
+          (test) => !existingRadiology.some((e) => e.testId === test.id),
         );
 
         if (radiologyToDelete.length) {
@@ -882,7 +1049,7 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
             data: radiologyToAdd.map((testId) => ({
               opdId,
               consultationId: consultantFile.id,
-              testId,
+              testId: testId.id,
             })),
             skipDuplicates: true,
           });
@@ -935,6 +1102,42 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Consultations Updated Successfully",
+      });
+    },
+  });
+};
+
+export const deleteQueueAPI = async (req: Request) => {
+  return validateRequest({
+    bodySchema: partialOpdValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: data.opdId },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const updatedOpd = await tx.opd.update({
+          where: { id: body.opdId },
+          data: {
+            isInQueue: false,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Opd Removed from queue Successfully",
+          data: updatedOpd,
+        });
       });
     },
   });

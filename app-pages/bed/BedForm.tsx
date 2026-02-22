@@ -28,13 +28,14 @@ const CreateForm = () => {
   const wardQuery = useInfiniteWardsList({ name: floorSearchValue }, 10);
 
   const form = useForm<BedValidatorType>({
-    defaultValues: {},
     resolver: zodResolver(bedValidator),
   });
 
   const onSubmit = (values: BedValidatorType) => {
     create(values);
   };
+
+  console.log(form.getValues());
 
   return (
     <Form {...form}>
@@ -50,15 +51,16 @@ const CreateForm = () => {
           <FormInfiniteSelect<
             WardType,
             PaginatedResponse<WardType>,
-            string,
+            number,
             BedValidatorType
           >
-            name="wardId"
+            name="ward"
+            label="Ward"
             control={form.control}
             query={wardQuery}
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
-            valueKey={(data) => String(data?.id)}
+            valueKey={(data) => data.id}
             search={floorSearchValue}
             onSearchChange={setFloorSearchValue}
             required
@@ -80,7 +82,7 @@ const UpdateForm = ({ data }: { data: BedType }) => {
   const form = useForm<PartialBedValidatorType>({
     defaultValues: {
       bedNumber: data.bedNumber,
-      wardId: data.wardId,
+      ward: data.ward,
       status: data.status,
       occupied: data.occupied,
       bedId: Number(data.id),
@@ -91,6 +93,8 @@ const UpdateForm = ({ data }: { data: BedType }) => {
   const onSubmit = (values: PartialBedValidatorType) => {
     update({ ...values, bedId: Number(data.id) });
   };
+
+  console.log(form.getValues());
 
   return (
     <Form {...form}>
@@ -115,15 +119,15 @@ const UpdateForm = ({ data }: { data: BedType }) => {
           <FormInfiniteSelect<
             WardType,
             PaginatedResponse<WardType>,
-            string,
+            number,
             PartialBedValidatorType
           >
-            name="wardId"
+            name="ward"
             control={form.control}
             query={wardQuery}
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
-            valueKey={(data) => String(data?.id)}
+            valueKey={(data) => data.id}
             search={wardSearch}
             onSearchChange={setWardSearch}
             required

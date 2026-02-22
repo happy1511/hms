@@ -1,9 +1,9 @@
-import { BillingSection } from "@/generated/prisma/client";
 import {
   BILLING_SECTIONS,
   OPD,
   OPD_BILLING_ITEM,
   OPD_CONSULTATION,
+  OPD_INVOICE_DETAILS,
   OPD_QUEUE,
   OPD_TRANSACTION,
   OPD_VITALS,
@@ -11,6 +11,7 @@ import {
 import {
   ApiResponse,
   FilterValues,
+  OpdInvoiceDetails,
   OPDType,
   PaginatedResponse,
 } from "@/lib/type";
@@ -21,6 +22,7 @@ import {
   addOpdBillItemValidatorType,
   addOpdTransactionValidatorType,
   consultantFileType,
+  opdInvoiceValidatorType,
   opdValidatorType,
   partialOpdValidatorType,
   vitalValidatorType,
@@ -50,11 +52,10 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
   OPD_CONSULTATION,
   "PUT",
 );
-const updateBillingSection = createRequest<
-  ApiResponse<BillingSection>,
-  undefined,
-  { id: string }
->((p) => `${BILLING_SECTIONS}/${p.id}`, "PUT");
+const updateInvoiceDetails = createRequest<ApiResponse<OpdInvoiceDetails>>(
+  OPD_INVOICE_DETAILS,
+  "PUT",
+);
 const deleteBillingSection = createRequest<
   ApiResponse<null>,
   undefined,
@@ -71,6 +72,10 @@ const getOPDs = createRequest<
   PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(OPD, "GET");
+const getOPDInvoiceDetails = createRequest<
+  ApiResponse<OpdInvoiceDetails>,
+  { opdId?: string }
+>(OPD_INVOICE_DETAILS, "GET");
 const getOPDQueue = createRequest<
   PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
@@ -97,14 +102,35 @@ export const useOpdList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
-          ...(filters.consultantDoctorId && {
-            consultantDoctorId: filters.consultantDoctorId,
+          ...(filters.consultantDoctor && {
+            consultantDoctorId: filters.consultantDoctor.userId,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,
           }),
         },
       }),
+  });
+};
+
+export const useOpdInvoiceDetails = (filters: FilterValues) => {
+  return useQuery<
+    ApiResponse<OpdInvoiceDetails>,
+    AxiosError<ApiResponse<null>>,
+    OpdInvoiceDetails,
+    [string, FilterValues]
+  >({
+    queryKey: ["invoice-details", filters],
+    queryFn: () =>
+      getOPDInvoiceDetails({
+        params: {
+          ...(filters.opdId && {
+            opdId: String(filters.opdId),
+          }),
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!filters.opdId,
   });
 };
 
@@ -129,8 +155,8 @@ export const useOpdQueueList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
-          ...(filters.consultantDoctorId && {
-            consultantDoctorId: filters.consultantDoctorId,
+          ...(filters.consultantDoctor && {
+            consultantDoctorId: filters.consultantDoctor.userId,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,
@@ -271,6 +297,24 @@ export const useUpdateOpdVitals = () => {
       queryClient.invalidateQueries({
         queryKey: ["opds"],
       });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateOpdInvoice = () => {
+  return useMutation<
+    ApiResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    opdInvoiceValidatorType
+  >({
+    mutationKey: ["update-opd-invoice"],
+    mutationFn: (data) =>
+      updateInvoiceDetails({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("Invoice Updated Successfully");
     },
     onError: showError,
   });

@@ -298,7 +298,7 @@ export const createTemplateAPI = async (req: Request) => {
 
         if (body.radiologyTests?.length) {
           const tests = await tx.radiologyTest.findMany({
-            where: { id: { in: body.radiologyTests } },
+            where: { id: { in: body.radiologyTests.map((i) => i.id) } },
             select: { id: true },
           });
 
@@ -317,7 +317,9 @@ export const createTemplateAPI = async (req: Request) => {
             status: body.status,
             content: body.content,
             radiologyTests: {
-              connect: (body.radiologyTests ?? []).map((id) => ({ id })),
+              connect: (body.radiologyTests?.map((i) => i.id) ?? []).map(
+                (id) => ({ id }),
+              ),
             },
           },
           include: {
@@ -405,7 +407,7 @@ export const updateTemplateAPI = async (req: Request) => {
         // validate radiology tests
         if (data.radiologyTests?.length) {
           const tests = await tx.radiologyTest.findMany({
-            where: { id: { in: data.radiologyTests } },
+            where: { id: { in: data.radiologyTests.map((i) => i.id) } },
             select: { id: true },
           });
 
@@ -427,7 +429,9 @@ export const updateTemplateAPI = async (req: Request) => {
 
             // 🔑 this replaces previous relations completely
             radiologyTests: {
-              set: (data.radiologyTests ?? []).map((id) => ({ id })),
+              set: (data.radiologyTests?.map((i) => i.id) ?? []).map((id) => ({
+                id,
+              })),
             },
           },
           include: {

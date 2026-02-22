@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { AppointmentStatus, Prisma } from "@/generated/prisma/client";
+import { AppointmentStatus, Doctor, Prisma } from "@/generated/prisma/client";
 import {
   appointmentValidator,
   partialAppointmentValidator,
@@ -97,6 +97,7 @@ export const createAPI = async (req: Request) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
+        const { doctor, ...rest } = data;
         const existingPatient = await tx.patient.findFirst({
           where: { id: data.patientId },
         });
@@ -110,7 +111,7 @@ export const createAPI = async (req: Request) => {
         const existingAppointment = await tx.appointment.findFirst({
           where: {
             patientId: data.patientId,
-            doctorId: data.doctorId,
+            doctorId: doctor.userId,
             appointmentDate: data.appointmentDate,
             status: AppointmentStatus.SCHEDULED,
           },
@@ -124,7 +125,7 @@ export const createAPI = async (req: Request) => {
         }
 
         const existingDoctor = await tx.doctor.findUnique({
-          where: { userId: data.doctorId },
+          where: { userId: doctor.userId },
         });
 
         if (!existingDoctor) {
@@ -136,7 +137,7 @@ export const createAPI = async (req: Request) => {
 
         const appointment = await tx.appointment.create({
           data: {
-            ...data,
+            ...rest,
             patientId: existingPatient.id,
             doctorId: existingDoctor.userId,
           },
@@ -165,6 +166,7 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
+        const { doctor, ...rest } = data;
         const existingAppointment = await tx.appointment.findUnique({
           where: { id: data.appointmentId },
         });
@@ -176,10 +178,25 @@ export const updateAPI = async (
           });
         }
 
+        let existingDoctor: Doctor | null = null;
+        if (doctor) {
+          existingDoctor = await tx.doctor.findUnique({
+            where: { userId: doctor?.userId },
+          });
+
+          if (!existingDoctor) {
+            return apiResponse({
+              status: RESPONSE_STATUS.NOT_FOUND,
+              message: "Doctor not found",
+            });
+          }
+        }
+
         const updatedAppointment = await tx.appointment.update({
           where: { id: data.appointmentId },
           data: {
-            ...data,
+            ...rest,
+            ...(existingDoctor && { doctorId: existingDoctor.userId }),
           },
         });
 

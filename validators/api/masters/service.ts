@@ -17,8 +17,10 @@ const serviceValidator = z.object({
     .min(0, "Max Discount must be a positive number")
     .optional(),
   applicableOn: z.enum(ServiceApplicableOn).optional(),
-  connectedLabTests: z.array(z.coerce.number()).optional(),
-  connectedRadiologyTests: z.array(z.coerce.number()).optional(),
+  connectedLabTests: z.array(z.object({ id: z.coerce.number() })).optional(),
+  connectedRadiologyTests: z
+    .array(z.object({ id: z.coerce.number() }))
+    .optional(),
 });
 
 const partialServiceValidator = serviceValidator.partial().extend({

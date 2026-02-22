@@ -4,7 +4,6 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Ward } from "@/generated/prisma/client";
 import { Status } from "@/generated/prisma/enums";
 import { useInfiniteFloorsList } from "@/hooks/query/floor";
 import { useCreateWard, useGetWard, useUpdateWard } from "@/hooks/query/ward";
@@ -20,15 +19,22 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PaginatedResponse } from "@/lib/type";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { WardGetPayload } from "@/generated/prisma/models";
 
-const getInitialValues = (data?: Ward): WardValidatorType => ({
+const getInitialValues = (
+  data?: WardGetPayload<{ include: { floor: true } }>,
+): WardValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? null,
   status: data?.status ?? Status["active"],
-  floorId: data?.floorId ?? undefined,
+  floor: data?.floor ?? undefined,
 });
 
-const UpdateCreateForm = ({ data }: { data?: Ward }) => {
+const UpdateCreateForm = ({
+  data,
+}: {
+  data?: WardGetPayload<{ include: { floor: true } }>;
+}) => {
   const [floorSearchValue, setFloorSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateWard();
   const { mutateAsync: update, isPending: updating } = useUpdateWard();
@@ -73,7 +79,7 @@ const UpdateCreateForm = ({ data }: { data?: Ward }) => {
             WardValidatorType
           >
             label="Floor"
-            name="floorId"
+            name="floor"
             control={form.control}
             query={floorQuery}
             getItems={(p) => p?.data}

@@ -233,27 +233,19 @@ const Prescription = ({
   );
 };
 
-const Advice = ({
-  form,
-  data,
-}: {
-  data?: consultantFileType;
-  form: UseFormReturn<consultantFileType>;
-}) => {
+const Advice = ({ form }: { form: UseFormReturn<consultantFileType> }) => {
   const [pathologySearchValue, setPathologySearchValue] = useState("");
   const [radiologySearchValue, setRadiologySearchValue] = useState("");
 
   const pathologyTests = useInfinitePathologyTestsList(
     {
       name: pathologySearchValue,
-      defaultSelectedIds: (data?.advisedPathologyTests as string[]) || [],
     },
     10,
   );
   const radiologyTests = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
-      defaultSelectedIds: (data?.advisedRadiologyTests as string[]) || [],
     },
     10,
   );
@@ -421,7 +413,7 @@ const ConsultationForm = ({ data }: { data?: consultantFileType }) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <VitalsComplaintAndHistoryNotes form={form} />
-        <Advice form={form} data={data} />
+        <Advice form={form} />
         <Prescription form={form} />
         <CustomButton disabled={isPending} type="submit">
           Save

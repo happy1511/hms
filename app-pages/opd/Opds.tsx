@@ -58,6 +58,10 @@ const Actions = ({ data }: { data: OPDType }) => {
                 label: "Add Invoice Item",
                 onClick: () => setAddInvoiceItemModal(true),
               },
+              {
+                label: "View Invoice",
+                onClick: () => router.push(`/opd/invoice/${data.id}`),
+              },
             ],
             label: "Invoice",
           },
@@ -276,7 +280,7 @@ const OPDs = () => {
     { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
     {
       label: "Filter by Consultant",
-      valueKey: "consultantDoctorId",
+      valueKey: "consultantDoctor",
       type: "infiniteSelect",
       placeholder: "Search by name here.",
       query: consultantQuery,

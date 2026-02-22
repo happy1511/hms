@@ -98,3 +98,4 @@ export const OPD_BILLING_ITEM = "/opd/invoice-item";
 export const OPD_CONSULTATION = "/opd/consultation";
 export const OPD_VITALS = "/opd/vitals";
 export const OPD_TRANSACTION = "/opd/transaction";
+export const OPD_INVOICE_DETAILS = "/opd/invoice-details";

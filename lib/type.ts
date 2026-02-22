@@ -100,7 +100,7 @@ export type Primitive = string | number;
 export interface FormInfiniteSelectProps<
   TItem,
   TPage,
-  TValue extends Primitive,
+  TValue,
   TFieldValues extends FieldValues,
 > {
   name: FieldPath<TFieldValues>;
@@ -118,6 +118,7 @@ export interface FormInfiniteSelectProps<
   hideError?: boolean;
   search: string;
   onSearchChange: (val: string) => void;
+  compareKey?: (item: TItem) => unknown;
 }
 
 export interface FormCheckboxProps<T extends FieldValues> {
@@ -250,7 +251,7 @@ export interface FilterValues {
   referringDoctorId?: string;
   cancelled?: boolean;
   outsourced?: boolean;
-  consultantDoctorId?: string;
+  consultantDoctor?: { userId: string };
   defaultSelectedIds?: string[] | number[];
   testStatus?: PathologyOrderStatus[];
   opdId?: number;
@@ -968,4 +969,31 @@ export interface PathologyTestOrderWithResults {
   verifiedBy?: { id: number; name: string } | null;
   resultEnteredBy?: { id: number; name: string } | null;
   createdAt: string;
+}
+
+export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    opdBillingItems: {
+      select: {
+        quantity: true;
+        total: true;
+        discountType: true;
+        discountValue: true;
+        rate: true;
+        service: {
+          select: {
+            id: true;
+            name: true;
+            maxDiscount: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export interface OpdInvoiceDetails extends OPDType {
+  billingItems: InvoiceBillingItem[];
 }

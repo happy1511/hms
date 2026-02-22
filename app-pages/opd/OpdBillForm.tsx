@@ -38,6 +38,7 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
+import { PatientAddressValidatorType } from "@/validators/api/masters/patient";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -114,8 +115,8 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
         {
           type: AddressType.HOME,
           addressLineOne: homeAddress?.addressLineOne ?? "",
-          locationId: homeAddress?.locationId ?? undefined,
-        },
+          location: homeAddress?.location,
+        } as PatientAddressValidatorType,
       ],
 
       // ---------- CONTACTS ----------
@@ -218,7 +219,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     resolver: zodResolver(billingItemValidator),
   });
 
-  const serviceId = billingItemForm.watch("serviceId");
+  const service = billingItemForm.watch("service");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
   const discountValue = billingItemForm.watch("discountValue");
@@ -274,6 +275,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           />
         );
       },
+      cell: ({ row }) => row.original.service.name,
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -295,6 +297,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       header: ({ column }) => (
         <SortableHeader label="Billing Section" column={column} />
       ),
+      cell: ({ row }) => row.original.billingSection.name,
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -381,24 +384,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const handleAddUpdate = () => {
     billingItemForm.handleSubmit(() => {
       const values = billingItemForm.getValues();
-      const service = flatServices?.find(
-        (s) => s.id === Number(values.serviceId),
-      );
-      const billingItem = flatBillingItems?.find(
-        (s) => s.value === Number(values.billingSectionId),
-      );
 
       if (typeof values.index === "number") {
         update(values.index as number, {
           ...values,
-          serviceName: service?.name || "",
-          billingSectionName: billingItem?.label || "",
         });
       } else {
         append({
           ...values,
-          serviceName: service?.name || "",
-          billingSectionName: billingItem?.label || "",
         });
       }
       billingItemForm.reset({});
@@ -412,38 +405,43 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       }
     };
 
-    if (!serviceId) {
+    if (!service?.id) {
       setIfChanged("rate", 0);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      setIfChanged("maxDiscount", 0);
+      billingItemForm.setValue("service.maxDiscount", 0);
       return;
     }
 
-    const service = flatServices?.find((s) => s.id === Number(serviceId));
+    const existingService = flatServices?.find(
+      (s) => s.id === Number(service.id),
+    );
 
-    if (!service) {
+    if (!existingService) {
       setIfChanged("rate", 0);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
       setIfChanged("total", 0);
       setIfChanged("quantity", 0);
-      setIfChanged("maxDiscount", 0);
+      billingItemForm.setValue("service.maxDiscount", 0);
       return;
     }
 
-    setIfChanged("rate", service.price);
+    setIfChanged("rate", existingService.price);
     setIfChanged("discountValue", 0);
     setIfChanged("discountType", DiscountType["VALUE"]);
-    setIfChanged("total", service.price);
+    setIfChanged("total", existingService.price);
     setIfChanged("quantity", 1);
-    setIfChanged("maxDiscount", service.maxDiscount);
-  }, [serviceId, flatServices]);
+    billingItemForm.setValue(
+      "service.maxDiscount",
+      existingService.maxDiscount ?? 0,
+    );
+  }, [service, flatServices]);
 
   useEffect(() => {
-    if (!serviceId) return;
+    if (!service) return;
 
     const gross = Number(quantity) * Number(rate);
 
@@ -455,7 +453,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     if (billingItemForm.getValues("total") !== total) {
       billingItemForm.setValue("total", total);
     }
-  }, [quantity, rate, discountType, discountValue, serviceId]);
+  }, [quantity, rate, discountType, discountValue, service]);
 
   return (
     <CustomLayout
@@ -479,7 +477,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         >
           control={billingItemForm.control}
           label="Billing Section"
-          name="billingSectionId"
+          name="billingSection"
           query={billingItemQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -497,7 +495,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           >
             control={billingItemForm.control}
             label="Service"
-            name="serviceId"
+            name="service"
             query={servicesQuery}
             getItems={(p) => p?.data}
             valueKey={(i) => String(i?.id)}
@@ -561,8 +559,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         <CustomTable
           data={addedBillingItems}
           columns={columns}
-          enableGrouping
-          grouping={["billingSectionName"]}
+          // enableGrouping
+          // grouping={["billingSectionName"]}
           getRowId={(row) => row.index as string}
         />
       </div>
@@ -720,8 +718,8 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             <CustomTable
               data={addedTransactions}
               columns={columns}
-              enableGrouping
-              grouping={["billingSectionName"]}
+              // enableGrouping
+              // grouping={["billingSectionName"]}
               getRowId={(row) => row.index as string}
             />
           </div>
@@ -813,7 +811,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         >
           control={form.control}
           label="City"
-          name="patient.addresses.0.locationId"
+          name="patient.addresses.0.location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -830,7 +828,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         >
           control={form.control}
           label="State"
-          name="patient.addresses.0.locationId"
+          name="patient.addresses.0.location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -847,7 +845,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         >
           control={form.control}
           label="Country"
-          name="patient.addresses.0.locationId"
+          name="patient.addresses.0.location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -864,7 +862,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         >
           control={form.control}
           label="Post Code"
-          name="patient.addresses.0.locationId"
+          name="patient.addresses.0.location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}

@@ -30,11 +30,13 @@ export interface DropdownGroup {
 interface CommonActionDropdownProps {
   triggerLabel?: string;
   groups: DropdownGroup[];
+  align?: "center" | "end" | "start";
 }
 
 const CustomActionDropdown: React.FC<CommonActionDropdownProps> = ({
   triggerLabel = "Open",
   groups,
+  align = "end",
 }) => {
   const renderItem = (item: DropdownItem, index: number) => {
     // if item has sub items → render submenu
@@ -89,7 +91,7 @@ const CustomActionDropdown: React.FC<CommonActionDropdownProps> = ({
         <Button variant="outline">{triggerLabel}</Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="p-0 bg-white" align="end">
+      <DropdownMenuContent className="p-0 bg-white" align={align}>
         {groups.map((group, groupIndex) => (
           <React.Fragment key={groupIndex}>
             <DropdownMenuGroup>

@@ -1,4 +1,5 @@
 import { Ward } from "@/generated/prisma/client";
+import { WardGetPayload } from "@/generated/prisma/models";
 import { WARDS } from "@/lib/apiDefinations";
 import {
   ApiResponse,
@@ -32,10 +33,11 @@ const deleteWard = createRequest<ApiResponse<null>, undefined, { id: string }>(
   (p) => `${WARDS}/${p.id}`,
   "DELETE",
 );
-const getWard = createRequest<ApiResponse<Ward>, undefined, { id: string }>(
-  (p) => `${WARDS}/${p.id}`,
-  "GET",
-);
+const getWard = createRequest<
+  ApiResponse<WardGetPayload<{ include: { floor: true } }>>,
+  undefined,
+  { id: string }
+>((p) => `${WARDS}/${p.id}`, "GET");
 
 const getWards = createRequest<
   PaginatedResponse<Ward>,
@@ -70,9 +72,9 @@ export const useWardsList = (
 
 export const useGetWard = (id?: string) => {
   return useQuery<
-    ApiResponse<Ward>,
+    ApiResponse<WardGetPayload<{ include: { floor: true } }>>,
     AxiosError<ApiResponse<null>>,
-    Ward,
+    WardGetPayload<{ include: { floor: true } }>,
     [string, string | undefined]
   >({
     queryKey: ["get-wards", id],
@@ -119,7 +121,7 @@ export const useUpdateWard = () => {
   >({
     mutationKey: ["update-ward"],
     mutationFn: (data) =>
-      updateWard({ body: data, urlHelpers: { id: data.wardId.toString() } }),
+      updateWard({ body: data, urlHelpers: { id: String(data.wardId) } }),
     onSuccess: () => {
       toast.success("Ward Updated Successfully");
       queryClient.invalidateQueries({
@@ -141,7 +143,7 @@ export const useDeleteWard = () => {
   >({
     mutationKey: ["delete-ward"],
     mutationFn: (data) =>
-      deleteWard({ urlHelpers: { id: data.wardId.toString() } }),
+      deleteWard({ urlHelpers: { id: String(data.wardId) } }),
     onSuccess: () => {
       toast.success("Ward Deleted Successfully");
       queryClient.invalidateQueries({

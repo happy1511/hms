@@ -255,7 +255,7 @@ const AddressInfoFormForm = ({
         >
           control={addressForm.control}
           label="City"
-          name="locationId"
+          name="location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -272,7 +272,7 @@ const AddressInfoFormForm = ({
         >
           control={addressForm.control}
           label="State"
-          name="locationId"
+          name="location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -289,7 +289,7 @@ const AddressInfoFormForm = ({
         >
           control={addressForm.control}
           label="Country"
-          name="locationId"
+          name="location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}
@@ -306,7 +306,7 @@ const AddressInfoFormForm = ({
         >
           control={addressForm.control}
           label="Post Code"
-          name="locationId"
+          name="location"
           query={locationQuery}
           getItems={(p) => p?.data}
           valueKey={(i) => String(i?.id)}

@@ -48,7 +48,7 @@ const AppointmentForm = () => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-2 space-y-3 gap-x-2">
             <div>
-              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
                   Appointment Type
                 </Label>
@@ -87,7 +87,7 @@ const AppointmentForm = () => {
               />
             </div>
             <div className="relative">
-              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
                   Appointment Type
                 </Label>
@@ -114,7 +114,7 @@ const AppointmentForm = () => {
               />
             </div>
             <div>
-              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
                   Appt. Date/Time
                 </Label>
@@ -138,7 +138,7 @@ const AppointmentForm = () => {
               />
             </div>
             <div>
-              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
                   Consultant Doctor
                 </Label>
@@ -149,11 +149,11 @@ const AppointmentForm = () => {
                     string,
                     AppointmentValidatorType
                   >
-                    name="doctorId"
+                    name="doctor"
                     control={form.control}
                     query={doctorQuery}
                     getItems={(data) => data?.data}
-                    labelKey={(data) => data.name}
+                    labelKey={(data) => data.user?.name}
                     valueKey={(data) => data.userId}
                     search={doctorSearchValue}
                     onSearchChange={setDoctorSearchValue}
@@ -163,7 +163,7 @@ const AppointmentForm = () => {
                 </div>
               </div>
               <ErrorMessage
-                name="doctorId"
+                name="doctor"
                 errors={form.formState.errors}
                 render={({ message }) => (
                   <p className="font-semibold text-tiny! ms-1">{message}</p>
@@ -171,7 +171,7 @@ const AppointmentForm = () => {
               />
             </div>
             <div className="col-span-2 ">
-              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+              <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-1 border-r border-black/15 px-2 bg-pink-50">
                   Remarks
                 </Label>

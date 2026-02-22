@@ -6,7 +6,7 @@ const radiologyTemplateValidator = z.object({
   section: z.enum(RadiologySection),
   status: z.enum(Status).optional(),
   content: z.string().min(1, "Content is required"),
-  radiologyTests: z.array(z.coerce.number()).optional(),
+  radiologyTests: z.array(z.object({ id: z.coerce.number() })).optional(),
 });
 
 const radiologyTestValidator = z.object({

@@ -117,6 +117,7 @@ export const createAPI = async (req: Request) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
+        const { name, floor, status, description } = data;
         const existingWard = await tx.ward.findFirst({
           where: { name: data.name },
         });
@@ -128,11 +129,9 @@ export const createAPI = async (req: Request) => {
           });
         }
 
-        const { name, floorId, status, description } = data;
-
         const existingFloor = await tx.floor.findUnique({
           where: {
-            id: floorId,
+            id: floor?.id,
           },
           select: { id: true },
         });
@@ -176,6 +175,7 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
+        const { description, name, floor, status } = data;
         const existingWard = await tx.ward.findUnique({
           where: { id: data.wardId },
           include: { floor: true },
@@ -204,11 +204,9 @@ export const updateAPI = async (
           }
         }
 
-        const { description, name, floorId, status } = data;
-
         const existingFloor = await tx.floor.findUnique({
           where: {
-            id: floorId,
+            id: floor?.id,
           },
           select: { id: true },
         });
@@ -226,7 +224,7 @@ export const updateAPI = async (
           data: {
             name,
             description,
-            floorId,
+            floorId: floor?.id,
             status,
           },
         });

@@ -12,7 +12,7 @@ import {
   Status,
 } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
-import { RadiologyTemplate, RadiologyTest } from "@/generated/prisma/client";
+import { RadiologyTest } from "@/generated/prisma/client";
 import {
   radiologyTemplateValidator,
   RadiologyTemplateValidatorType,
@@ -30,8 +30,13 @@ import { hasActionPermission } from "@/lib/utils";
 import { useState } from "react";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { PaginatedResponse } from "@/lib/type";
+import { RadiologyTemplateGetPayload } from "@/generated/prisma/models";
 
-const CreateUpdateForm = ({ data }: { data?: RadiologyTemplate }) => {
+const CreateUpdateForm = ({
+  data,
+}: {
+  data?: RadiologyTemplateGetPayload<{ include: { radiologyTests: true } }>;
+}) => {
   const [radiologySearchValue, setRadiologySearchValue] = useState("");
   const { mutateAsync: update, isPending: updating } =
     useUpdateRadiologyTemplate();
@@ -51,6 +56,7 @@ const CreateUpdateForm = ({ data }: { data?: RadiologyTemplate }) => {
       name: data?.name || "",
       section: data?.section || undefined,
       status: data?.status || undefined,
+      radiologyTests: data?.radiologyTests || [],
     },
     resolver: zodResolver(radiologyTemplateValidator),
   });

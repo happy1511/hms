@@ -102,9 +102,9 @@ export const getDetailsAPI = async (
         where: { id },
         select: {
           id: true,
-          wardId: true,
           ward: {
             select: {
+              id: true,
               name: true,
               floor: { select: { id: true, name: true } },
             },
@@ -140,7 +140,7 @@ export const createAPI = async (req: Request) => {
 
       return prisma.$transaction(async (tx) => {
         const existingWard = await tx.ward.findFirst({
-          where: { id: data.wardId },
+          where: { id: data.ward.id },
         });
 
         if (!existingWard) {
@@ -150,9 +150,9 @@ export const createAPI = async (req: Request) => {
           });
         }
 
-        const { countOfBEd, wardId } = data;
+        const { countOfBEd, ward } = data;
         const lastBed = await tx.bed.findFirst({
-          where: { wardId },
+          where: { wardId: ward.id },
           orderBy: { id: "desc" },
         });
 
@@ -166,7 +166,7 @@ export const createAPI = async (req: Request) => {
             return tx.bed.create({
               data: {
                 bedNumber,
-                wardId,
+                wardId: ward.id,
               },
             });
           }),
@@ -195,8 +195,9 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
+        const { bedId, ward, status, occupied } = data;
         const existingBed = await tx.bed.findUnique({
-          where: { id: data.bedId },
+          where: { id: bedId },
         });
 
         if (!existingBed) {
@@ -206,9 +207,9 @@ export const updateAPI = async (
           });
         }
 
-        if (data.wardId) {
+        if (ward?.id) {
           const existingWard = await tx.ward.findUnique({
-            where: { id: data.wardId },
+            where: { id: ward.id },
           });
 
           if (!existingWard) {
@@ -218,13 +219,12 @@ export const updateAPI = async (
             });
           }
         }
-        const { bedId, wardId, status, occupied } = data;
 
         let newBedNumber = existingBed.bedNumber;
 
-        if (existingBed.wardId !== wardId) {
+        if (existingBed.wardId !== ward?.id) {
           const lastBedInNewWard = await tx.bed.findFirst({
-            where: { wardId },
+            where: { wardId: ward?.id },
             orderBy: { id: "desc" },
           });
 
@@ -238,7 +238,7 @@ export const updateAPI = async (
         const updatedBed = await tx.bed.update({
           where: { id: bedId },
           data: {
-            wardId,
+            wardId: ward?.id,
             bedNumber: newBedNumber,
             status,
             occupied,

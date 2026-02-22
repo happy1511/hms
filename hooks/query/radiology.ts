@@ -1,4 +1,5 @@
 import { RadiologyTemplate, RadiologyTest } from "@/generated/prisma/client";
+import { RadiologyTemplateGetPayload } from "@/generated/prisma/models";
 import {
   CANCEL_RADIOLOGY_ORDERS,
   OUTSOURCE_RADIOLOGY_ORDERS,
@@ -82,7 +83,9 @@ const getRadiologyTemplates = createRequest<
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(RADIOLOGY_TEMPLATE, "GET");
 const getRadiologyTemplateDetails = createRequest<
-  ApiResponse<RadiologyTemplate>,
+  ApiResponse<
+    RadiologyTemplateGetPayload<{ include: { radiologyTests: true } }>
+  >,
   undefined,
   { id: string }
 >((p) => `${RADIOLOGY_TEMPLATE}/${p.id}`, "GET");
@@ -365,9 +368,11 @@ export const useRadiologyTemplatesList = (
 
 export const useRadiologyTemplate = (id?: string) => {
   return useQuery<
-    ApiResponse<RadiologyTemplate>,
+    ApiResponse<
+      RadiologyTemplateGetPayload<{ include: { radiologyTests: true } }>
+    >,
     AxiosError<ApiResponse<null>>,
-    RadiologyTemplate,
+    RadiologyTemplateGetPayload<{ include: { radiologyTests: true } }>,
     [string, string | undefined]
   >({
     queryKey: ["get-beds", id],

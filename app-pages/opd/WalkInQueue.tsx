@@ -184,7 +184,7 @@ const WalkInQueue = () => {
   const neededFilters: FilterConfig<FilterValues>[] = [
     {
       label: "Filter by Consultant",
-      valueKey: "consultantDoctorId",
+      valueKey: "consultantDoctor",
       type: "infiniteSelect",
       placeholder: "Search by name here.",
       query: consultantQuery,

@@ -42,9 +42,9 @@ const getInitialValues = (data?: ServiceDataType): ServiceValidatorType => ({
   discountAvailable: data?.discountAvailable ?? false,
   price: data?.price ?? 0,
   applicableOn: data?.applicableOn ?? ServiceApplicableOn["BOTH"],
-  connectedLabTests: data?.pathologyTests?.map((t) => t.testId) ?? undefined,
+  connectedLabTests: data?.pathologyTests?.map((t) => t.test) ?? undefined,
   connectedRadiologyTests:
-    data?.radiologyTests?.map((t) => t.testId) ?? undefined,
+    data?.radiologyTests?.map((t) => t.test) ?? undefined,
 });
 
 const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
@@ -66,7 +66,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const pathologyQuery = useInfinitePathologyTestsList(
     {
       name: pathologySearchValue,
-      defaultSelectedIds: defaultValues.connectedLabTests as number[],
     },
     10,
     type === "LAB_TEST" || type === "CLINICAL_TEST",
@@ -74,7 +73,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
   const radiologyQuery = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
-      defaultSelectedIds: defaultValues.connectedRadiologyTests as number[],
     },
     10,
     type === "RADIOLOGY_TEST" || type === "CLINICAL_TEST",
@@ -87,6 +85,8 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
       create(values);
     }
   };
+
+  console.log(form.getValues());
 
   return (
     <Form {...form}>

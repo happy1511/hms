@@ -261,7 +261,7 @@ export const getDetailsAPI = async (
           bloodGroup: true,
           relations: true,
           contacts: true,
-          addresses: true,
+          addresses: { include: { location: true } },
           identifications: true,
           emergencyContacts: true,
         },
@@ -384,14 +384,14 @@ export const updateAPI = async (
                 deleteMany: {
                   id: {
                     notIn: addresses
-                      .map((a) => a.id)
+                      .map((a) => a.location.id)
                       .filter(Boolean) as number[],
                   },
                 },
-                upsert: addresses.map(({ id, ...rest }) => ({
+                upsert: addresses.map(({ id, location, ...rest }) => ({
                   where: { id: id ?? 0 },
-                  create: rest,
-                  update: rest,
+                  create: { ...rest, locationId: location.id },
+                  update: { ...rest, locationId: location.id },
                 })),
               }
             : undefined,

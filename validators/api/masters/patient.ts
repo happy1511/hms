@@ -16,7 +16,7 @@ const patientAddress = z.object({
   addressLineOne: z.string().min(1, "Address Line One is required"),
   addressLineTwo: z.string().optional().nullable(),
   addressLineThree: z.string().optional().nullable(),
-  locationId: z.coerce.number(),
+  location: z.object({ id: z.coerce.number() }),
 });
 
 const patientContact = z.object({

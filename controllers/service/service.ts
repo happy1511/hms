@@ -187,7 +187,7 @@ export const createAPI = async (req: Request) => {
 
         if (connectedLabTests) {
           const existingLabTests = await tx.pathologyTest.findMany({
-            where: { id: { in: connectedLabTests } },
+            where: { id: { in: connectedLabTests?.map((t) => t.id) } },
             select: { id: true },
           });
           if (existingLabTests.length !== connectedLabTests.length) {
@@ -200,7 +200,7 @@ export const createAPI = async (req: Request) => {
 
         if (connectedRadiologyTests) {
           const existingRadiologyTests = await tx.radiologyTest.findMany({
-            where: { id: { in: connectedRadiologyTests } },
+            where: { id: { in: connectedRadiologyTests?.map((t) => t.id) } },
             select: { id: true },
           });
           if (
@@ -224,13 +224,13 @@ export const createAPI = async (req: Request) => {
             discountAvailable,
             applicableOn: applicableOn || ServiceApplicableOn["BOTH"],
             pathologyTests: {
-              create: connectedLabTests?.map((testId: number) => ({
-                testId,
+              create: connectedLabTests?.map((test) => ({
+                testId: test.id,
               })),
             },
             radiologyTests: {
-              create: connectedRadiologyTests?.map((testId: number) => ({
-                testId,
+              create: connectedRadiologyTests?.map((test) => ({
+                testId: test.id,
               })),
             },
           },
@@ -285,7 +285,7 @@ export const updateAPI = async (
 
         if (connectedLabTests) {
           const existingLabTests = await tx.pathologyTest.findMany({
-            where: { id: { in: connectedLabTests } },
+            where: { id: { in: connectedLabTests?.map((t) => t.id) } },
             select: { id: true },
           });
           if (existingLabTests.length !== connectedLabTests.length) {
@@ -298,7 +298,7 @@ export const updateAPI = async (
 
         if (connectedRadiologyTests) {
           const existingRadiologyTests = await tx.radiologyTest.findMany({
-            where: { id: { in: connectedRadiologyTests } },
+            where: { id: { in: connectedRadiologyTests?.map((t) => t.id) } },
             select: { id: true },
           });
           if (
@@ -324,14 +324,14 @@ export const updateAPI = async (
             discountAvailable,
             pathologyTests: {
               deleteMany: {},
-              create: connectedLabTests?.map((testId: number) => ({
-                testId,
+              create: connectedLabTests?.map((test) => ({
+                testId: test.id,
               })),
             },
             radiologyTests: {
               deleteMany: {},
-              create: connectedRadiologyTests?.map((testId: number) => ({
-                testId,
+              create: connectedRadiologyTests?.map((test) => ({
+                testId: test.id,
               })),
             },
           },

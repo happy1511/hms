@@ -1,6 +1,7 @@
 import { BloodGroup, Gender, MaritalStatus } from "@/generated/prisma/enums";
 import { PatientType } from "@/lib/type";
 import {
+  PatientAddressValidatorType,
   patientValidator,
   PatientValidatorType,
 } from "@/validators/api/masters/patient";
@@ -30,7 +31,7 @@ const getInitialValues = (data?: PatientType): PatientValidatorType => ({
   maritalStatus: data?.maritalStatus ?? MaritalStatus.Married,
   religion: data?.religion ?? "",
   bloodGroup: data?.bloodGroup ?? BloodGroup.A_NEGATIVE,
-  addresses: data?.addresses ?? [],
+  addresses: (data?.addresses as PatientAddressValidatorType[]) ?? [],
   contacts: data?.contacts ?? [],
   relations: data?.relations ?? [],
   identifications: data?.identifications ?? [],
@@ -65,6 +66,8 @@ const PatientFormTabs = ({ data }: { data?: PatientType }) => {
       create(values as PatientValidatorType);
     }
   };
+
+  console.log(form.formState.errors, form.getValues());
 
   const goNext = () => {
     setActiveTab((pre) => (Number(pre) + 1).toString());
