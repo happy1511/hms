@@ -35,7 +35,7 @@ const CustomFilters = <T extends FieldValues>({
       // ---------------- TEXT ----------------
       case "text":
         return (
-          <div className="grid grid-cols-5 border border-black/15 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-5 border border-black/15 rounded-lg">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
@@ -57,7 +57,7 @@ const CustomFilters = <T extends FieldValues>({
       // ---------------- SELECT ----------------
       case "select":
         return (
-          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px]">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
@@ -80,7 +80,7 @@ const CustomFilters = <T extends FieldValues>({
       // ---------------- INFINITE SELECT ----------------
       case "infiniteSelect":
         return (
-          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px]">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
@@ -107,7 +107,7 @@ const CustomFilters = <T extends FieldValues>({
       // ---------------- DATE ----------------
       case "date":
         return (
-          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px]">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
@@ -129,7 +129,7 @@ const CustomFilters = <T extends FieldValues>({
       // ---------------- DATE RANGE ----------------
       case "dateRange":
         return (
-          <div className="grid grid-cols-5 border border-black/15 rounded-[4px] overflow-hidden">
+          <div className="grid grid-cols-5 border border-black/15 rounded-[4px]">
             <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
               {label}
             </Label>
