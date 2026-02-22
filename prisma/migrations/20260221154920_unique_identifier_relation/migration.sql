@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `patientrelations` MODIFY `type` ENUM('NONE', 'WIFE_OF', 'HUSBAND_OF', 'SON_OF', 'DAUGHTER_OF', 'BROTHER_OF', 'SISTER_OF', 'FATHER_OF', 'MOTHER_OF', 'OTHER') NOT NULL;
+ALTER TABLE `PatientRelations` MODIFY `type` ENUM('NONE', 'WIFE_OF', 'HUSBAND_OF', 'SON_OF', 'DAUGHTER_OF', 'BROTHER_OF', 'SISTER_OF', 'FATHER_OF', 'MOTHER_OF', 'OTHER') NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX `PatientRelations_patientId_name_type_key` ON `PatientRelations`(`patientId`, `name`, `type`);

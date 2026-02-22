@@ -123,8 +123,9 @@ export function PatientViewModal({
                 <div>{address.type}</div>
                 <div>
                   {address.addressLineOne}, {address.addressLineTwo},
-                  {address.addressLineThree}, {address.city}, {address.state},{" "}
-                  {address.postalCode}, {address.country}
+                  {address.addressLineThree}, {address.location?.city},{" "}
+                  {address.location?.state}, {address.location?.postcode},{" "}
+                  {address.location?.country}
                 </div>
               </>
             ))}

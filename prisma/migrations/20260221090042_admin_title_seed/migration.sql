@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `patient` ADD COLUMN `title` ENUM('DR', 'MR', 'MS', 'MRS', 'BABY', 'MASTER') NOT NULL;
+ALTER TABLE `Patient` ADD COLUMN `title` ENUM('DR', 'MR', 'MS', 'MRS', 'BABY', 'MASTER') NOT NULL;
 
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `title` ENUM('DR', 'MR', 'MS', 'MRS', 'BABY', 'MASTER') NOT NULL DEFAULT 'MR';
+ALTER TABLE `User` ADD COLUMN `title` ENUM('DR', 'MR', 'MS', 'MRS', 'BABY', 'MASTER') NOT NULL DEFAULT 'MR';

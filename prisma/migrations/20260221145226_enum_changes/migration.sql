@@ -9,10 +9,10 @@
 
 */
 -- AlterTable
-ALTER TABLE `patientaddress` MODIFY `type` ENUM('BILLING', 'CONTACT', 'BUSINESS', 'HOME', 'POSTAL', 'SHIPPING') NOT NULL DEFAULT 'HOME';
+ALTER TABLE `PatientAddress` MODIFY `type` ENUM('BILLING', 'CONTACT', 'BUSINESS', 'HOME', 'POSTAL', 'SHIPPING') NOT NULL DEFAULT 'HOME';
 
 -- AlterTable
-ALTER TABLE `patientidentification` MODIFY `type` ENUM('ADHAR_CARD', 'DRIVING_LICENSE', 'PAN_CARD', 'VOTER_CARD') NOT NULL;
+ALTER TABLE `PatientIdentification` MODIFY `type` ENUM('ADHAR_CARD', 'DRIVING_LICENSE', 'PAN_CARD', 'VOTER_CARD') NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX `PatientAddress_type_patientId_key` ON `PatientAddress`(`type`, `patientId`);

@@ -306,7 +306,7 @@ const Doctors = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
-            getRowId={(data) => String(data.id)}
+            getRowId={(data) => String(data.userId)}
           />
         </>
       )}

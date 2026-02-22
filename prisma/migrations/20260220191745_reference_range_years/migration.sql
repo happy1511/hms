@@ -12,7 +12,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `referencerange` DROP COLUMN `lowerDay`,
+ALTER TABLE `ReferenceRange` DROP COLUMN `lowerDay`,
     DROP COLUMN `lowerMonth`,
     DROP COLUMN `lowerYear`,
     DROP COLUMN `upperDay`,

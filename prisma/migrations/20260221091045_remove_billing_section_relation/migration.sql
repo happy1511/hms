@@ -7,14 +7,14 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `billingsectionservice` DROP FOREIGN KEY `BillingSectionService_billingSectionId_fkey`;
+ALTER TABLE `BillingSectionService` DROP FOREIGN KEY `BillingSectionService_billingSectionId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `billingsectionservice` DROP FOREIGN KEY `BillingSectionService_serviceId_fkey`;
+ALTER TABLE `BillingSectionService` DROP FOREIGN KEY `BillingSectionService_serviceId_fkey`;
 
 -- AlterTable
-ALTER TABLE `billingsection` DROP COLUMN `isPathologyTest`,
+ALTER TABLE `BillingSection` DROP COLUMN `isPathologyTest`,
     DROP COLUMN `isRadiologyTest`;
 
 -- DropTable
-DROP TABLE `billingsectionservice`;
+DROP TABLE `BillingSectionService`;
