@@ -259,7 +259,7 @@ export const getTemplateDetailsAPI = async (
       return prisma.$transaction(async (tx) => {
         const existingTemplate = await tx.radiologyTemplate.findUnique({
           where: { id: params.templateId },
-          include: { radiologyTests: true },
+          include: { radiologyTests: true, radiologyTestResults: true },
         });
 
         if (!existingTemplate) {
@@ -619,6 +619,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
         where: { id: orderId },
         include: {
           patient: true,
+          results: true,
           test: {
             include: {
               template: true,

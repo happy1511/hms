@@ -261,6 +261,7 @@ export const getDetailsAPI = async (
           bloodGroup: true,
           relations: true,
           contacts: true,
+          title: true,
           addresses: { include: { location: true } },
           identifications: true,
           emergencyContacts: true,
@@ -307,7 +308,13 @@ export const createAPI = async (req: Request) => {
             create: contacts,
           },
           addresses: {
-            create: addresses,
+            create: addresses.map((l) => ({
+              addressLineOne: l.addressLineOne,
+              addressLineThree: l.addressLineThree,
+              addressLineTwo: l.addressLineTwo,
+              locationId: l.location.id,
+              type: l.type,
+            })),
           },
           relations: {
             create: relations,

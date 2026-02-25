@@ -1,17 +1,13 @@
 import {
   BILLING_SECTIONS,
   OPD,
-  OPD_BILLING_ITEM,
   OPD_CONSULTATION,
-  OPD_INVOICE_DETAILS,
   OPD_QUEUE,
-  OPD_TRANSACTION,
   OPD_VITALS,
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   FilterValues,
-  OpdInvoiceDetails,
   OPDType,
   PaginatedResponse,
 } from "@/lib/type";
@@ -19,10 +15,7 @@ import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import { PartialBillingSectionValidatorType } from "@/validators/api/masters/billingSection";
 import {
-  addOpdBillItemValidatorType,
-  addOpdTransactionValidatorType,
   consultantFileType,
-  opdInvoiceValidatorType,
   opdValidatorType,
   partialOpdValidatorType,
   vitalValidatorType,
@@ -39,21 +32,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const createOpd = createRequest<ApiResponse<OPDType>>(OPD, "POST");
-const createBillingItem = createRequest<ApiResponse<OPDType>>(
-  OPD_BILLING_ITEM,
-  "POST",
-);
-const createTransaction = createRequest<ApiResponse<OPDType>>(
-  OPD_TRANSACTION,
-  "POST",
-);
 const updateVitals = createRequest<ApiResponse<OPDType>>(OPD_VITALS, "PUT");
 const updateConsultation = createRequest<ApiResponse<OPDType>>(
   OPD_CONSULTATION,
-  "PUT",
-);
-const updateInvoiceDetails = createRequest<ApiResponse<OpdInvoiceDetails>>(
-  OPD_INVOICE_DETAILS,
   "PUT",
 );
 const deleteBillingSection = createRequest<
@@ -72,10 +53,6 @@ const getOPDs = createRequest<
   PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(OPD, "GET");
-const getOPDInvoiceDetails = createRequest<
-  ApiResponse<OpdInvoiceDetails>,
-  { opdId?: string }
->(OPD_INVOICE_DETAILS, "GET");
 const getOPDQueue = createRequest<
   PaginatedResponse<OPDType>,
   { limit: number; name?: string; createdAt?: string; status?: string }
@@ -110,27 +87,6 @@ export const useOpdList = (
           }),
         },
       }),
-  });
-};
-
-export const useOpdInvoiceDetails = (filters: FilterValues) => {
-  return useQuery<
-    ApiResponse<OpdInvoiceDetails>,
-    AxiosError<ApiResponse<null>>,
-    OpdInvoiceDetails,
-    [string, FilterValues]
-  >({
-    queryKey: ["invoice-details", filters],
-    queryFn: () =>
-      getOPDInvoiceDetails({
-        params: {
-          ...(filters.opdId && {
-            opdId: String(filters.opdId),
-          }),
-        },
-      }),
-    select: (data) => data.data,
-    enabled: !!filters.opdId,
   });
 };
 
@@ -241,44 +197,6 @@ export const useCreateOpd = () => {
   });
 };
 
-export const useCreateOpdTransaction = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<OPDType>,
-    AxiosError<ApiResponse<null>>,
-    addOpdTransactionValidatorType
-  >({
-    mutationKey: ["create-opd-transaction"],
-    mutationFn: (data) => createTransaction({ body: data }),
-    onSuccess: () => {
-      toast.success("Transaction Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["opds"],
-      });
-    },
-    onError: showError,
-  });
-};
-
-export const useCreateOpdBillingItem = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ApiResponse<OPDType>,
-    AxiosError<ApiResponse<null>>,
-    addOpdBillItemValidatorType
-  >({
-    mutationKey: ["create-opd-billing-item"],
-    mutationFn: (data) => createBillingItem({ body: data }),
-    onSuccess: () => {
-      toast.success("Billing Item Created Successfully");
-      queryClient.invalidateQueries({
-        queryKey: ["opds"],
-      });
-    },
-    onError: showError,
-  });
-};
-
 export const useUpdateOpdVitals = () => {
   const queryClient = useQueryClient();
 
@@ -297,24 +215,6 @@ export const useUpdateOpdVitals = () => {
       queryClient.invalidateQueries({
         queryKey: ["opds"],
       });
-    },
-    onError: showError,
-  });
-};
-
-export const useUpdateOpdInvoice = () => {
-  return useMutation<
-    ApiResponse<OPDType>,
-    AxiosError<ApiResponse<null>>,
-    opdInvoiceValidatorType
-  >({
-    mutationKey: ["update-opd-invoice"],
-    mutationFn: (data) =>
-      updateInvoiceDetails({
-        body: data,
-      }),
-    onSuccess: () => {
-      toast.success("Invoice Updated Successfully");
     },
     onError: showError,
   });

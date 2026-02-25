@@ -255,6 +255,7 @@ export interface FilterValues {
   defaultSelectedIds?: string[] | number[];
   testStatus?: PathologyOrderStatus[];
   opdId?: number;
+  invoiceId?: number;
 }
 
 // ----------------------------------
@@ -565,11 +566,7 @@ export type OPDType = Prisma.OpdGetPayload<{
   select: {
     id: true;
     arrivalState: true;
-    total: true;
-    discountType: true;
-    discountValue: true;
-    rate: true;
-    transactions: true;
+    invoice: { include: { transactions: true } };
     isInQueue: true;
     consultantDoctor: {
       select: {
@@ -609,6 +606,38 @@ export type OPDType = Prisma.OpdGetPayload<{
     updatedAt: true;
   };
 }>;
+
+export type InvoiceType = Prisma.InvoiceGetPayload<{
+  include: {
+    transactions: { include: { receivedBy: { select: { name: true } } } };
+    billingItems: true;
+    opd: {
+      include: {
+        patient: {
+          include: {
+            addresses: true;
+            contacts: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type BillingSections = Prisma.BillingSectionGetPayload<{
+  include: {
+    transactions: { include: { receivedBy: { select: { name: true } } } };
+    invoiceBillingItems: {
+      include: {
+        service: true;
+      };
+    };
+  };
+}>;
+
+export type InvoiceGroupedBySection = InvoiceType & {
+  sections: BillingSections[];
+};
 
 export type PathologyOrderByPatientsType = Prisma.PatientGetPayload<{
   include: {
@@ -975,7 +1004,7 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
   select: {
     id: true;
     name: true;
-    opdBillingItems: {
+    invoiceBillingItems: {
       select: {
         quantity: true;
         total: true;

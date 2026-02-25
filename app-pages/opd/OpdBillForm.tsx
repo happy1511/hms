@@ -97,7 +97,18 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
 
   return {
     patientId: data?.id ?? undefined,
-
+    invoice: {
+      billingType: PaymentCategory["SELF_PAY"],
+      billingItems: [],
+      rate: 0,
+      transactions: [],
+      createdAt: new Date(),
+      discountType: DiscountType["VALUE"],
+      discountValue: 0,
+      isFree: false,
+      isPaid: false,
+      total: 0,
+    },
     patient: {
       firstName: data?.firstName ?? "",
       middleName: data?.middleName ?? null,
@@ -149,17 +160,7 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
     },
 
     arrivalState: OpdArrival.ROUTINE,
-    isPaid: false,
-    isFree: false,
-    transactions: [],
-    discountType: "VALUE",
-    discountValue: 0,
-    rate: 0,
-    remarks: "",
-    total: 0,
-    billingItem: [],
-    consultantDoctorId: undefined,
-    billingType: PaymentCategory["SELF_PAY"],
+    consultantDoctor: { userId: null },
   };
 };
 
@@ -211,7 +212,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const [serviceSearch, setServiceSearch] = useState("");
 
   const { append, update, remove } = useFieldArray({
-    name: "billingItem",
+    name: "invoice.billingItems",
     control: form.control,
   });
 
@@ -224,7 +225,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const rate = billingItemForm.watch("rate");
   const discountValue = billingItemForm.watch("discountValue");
   const discountType = billingItemForm.watch("discountType");
-  const addedBillingItems = form.watch("billingItem");
+  const addedBillingItems = form.watch("invoice.billingItems");
   const editingIndex = billingItemForm.watch("index");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
@@ -565,7 +566,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
 const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const { append, update, remove } = useFieldArray({
-    name: "transactions",
+    name: "invoice.transactions",
     control: form.control,
   });
 
@@ -573,8 +574,8 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     resolver: zodResolver(transactionsValidator),
   });
 
-  const addedTransactions = form.watch("transactions");
-  const isPaid = form.watch("isPaid");
+  const addedTransactions = form.watch("invoice.transactions");
+  const isPaid = form.watch("invoice.isPaid");
   const editingIndex = transactionForm.watch("index");
 
   const columns: ColumnDefWithClass<transactionValidatorType>[] = [
@@ -643,7 +644,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         <FormField<opdValidatorType>
           label="Payment received for this invoice?"
           type="radio"
-          name="isPaid"
+          name="invoice.isPaid"
           control={form.control}
           options={[
             { value: "true", label: "Yes" },
@@ -655,7 +656,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           <FormField<opdValidatorType>
             label="This invoice is 'Free of cost (FOC)'."
             type="checkbox"
-            name="isFree"
+            name="invoice.isFree"
             control={form.control}
             required
           />
@@ -982,14 +983,14 @@ const OpdBillForm = () => {
         >
           <FormField<opdValidatorType>
             label="Billing Date"
-            name="createdAt"
+            name="invoice.createdAt"
             control={form.control}
             type="date"
             required
           />
           <FormField<opdValidatorType>
             label="Billing Type"
-            name="billingType"
+            name="invoice.billingType"
             control={form.control}
             type="select"
             options={Object.values(PaymentCategory).map((p) => ({
@@ -1005,11 +1006,11 @@ const OpdBillForm = () => {
             opdValidatorType
           >
             label="Consultant"
-            name="consultantDoctorId"
+            name="consultantDoctor"
             control={form.control}
             query={consultingDoctorQuery}
             getItems={(data) => data?.data}
-            labelKey={(item) => item?.user.name}
+            labelKey={(item) => item?.user?.name}
             valueKey={(item) => String(item?.userId)}
             search={consultantValue}
             onSearchChange={setConsultantValue}
@@ -1022,11 +1023,11 @@ const OpdBillForm = () => {
             opdValidatorType
           >
             label="Referred By"
-            name="referredDoctorId"
+            name="referredDoctor"
             control={form.control}
             query={referringDoctorQuery}
             getItems={(data) => data?.data}
-            labelKey={(item) => item?.user.name}
+            labelKey={(item) => item?.user?.name}
             valueKey={(item) => String(item?.userId)}
             search={referringValue}
             onSearchChange={setReferringValue}

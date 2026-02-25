@@ -17,7 +17,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 const buildDefaultValues = (data: PathologyTestResultType) => {
@@ -32,13 +32,12 @@ const buildDefaultValues = (data: PathologyTestResultType) => {
     });
   });
 
-  console.log(params);
-
   return { results: params, orderId: data.id };
 };
 
 const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
   const { mutateAsync, isPending } = useUpdatePathologyTestOrder();
+  const router = useRouter();
 
   const form = useForm({
     resolver: zodResolver(pathologyResultsEntry),
@@ -48,11 +47,14 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
   const { control, handleSubmit } = form;
 
   const onSubmit = (values: PathologyResultEntryValidatorType) => {
-    mutateAsync({ ...values, orderId: data.id });
+    mutateAsync(
+      { ...values, orderId: data.id },
+      { onSuccess: () => router.back() },
+    );
   };
 
   let globalIndex = 0;
-  console.log(form.formState.errors);
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 my-2">

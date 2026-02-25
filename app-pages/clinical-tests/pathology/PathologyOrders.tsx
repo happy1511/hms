@@ -29,7 +29,13 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-const Actions = ({ data }: { data: PathologyOrderType }) => {
+const Actions = ({
+  data,
+  canPrint,
+}: {
+  data: PathologyOrderType;
+  canPrint: boolean;
+}) => {
   const { mutateAsync: outsource, isPending: outsourcing } =
     useOutsourcePathologyTestOrder();
   const { mutateAsync: cancel, isPending: cancelling } =
@@ -89,6 +95,14 @@ const Actions = ({ data }: { data: PathologyOrderType }) => {
     items.push({
       label: "Cancel OutSource",
       onClick: () => handleOutSource(false),
+      disabled: outsourcing,
+    });
+  }
+
+  if (data.status === PathologyOrderStatus["COMPLETED"] && canPrint) {
+    items.push({
+      label: "Print",
+      onClick: () => router.push(`/pathology-print/${data.id}`),
       disabled: outsourcing,
     });
   }
@@ -207,6 +221,11 @@ const PathologyOrders = ({
     ModuleType.PATHOLOGY_ORDER,
     ActionType.VIEW,
   );
+  const canPrint = hasActionPermission(
+    profile?.data,
+    ModuleType.PATHOLOGY_ORDER,
+    ActionType.PRINT,
+  );
   // const canUpdate = hasActionPermission(
   //   profile?.data,
   //   ModuleType.PATHOLOGY_TEST_MASTER,
@@ -309,7 +328,9 @@ const PathologyOrders = ({
     {
       id: "actions",
       header: () => <p>Action</p>,
-      cell: ({ row }) => <Actions data={row.original} />,
+      cell: ({ row }) => (
+        <Actions canPrint={Boolean(canPrint)} data={row.original} />
+      ),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },

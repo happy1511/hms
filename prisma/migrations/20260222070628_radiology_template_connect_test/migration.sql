@@ -5,7 +5,13 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `RadiologyTemplate` DROP COLUMN `radiologyTestId`;
+-- 1. Drop foreign key constraint
+ALTER TABLE `RadiologyTemplate`
+DROP FOREIGN KEY `RadiologyTemplate_radiologyTestId_fkey`;
+
+-- 2. Then drop the column
+ALTER TABLE `RadiologyTemplate`
+DROP COLUMN `radiologyTestId`;
 
 ALTER TABLE `RadiologyTest` ADD COLUMN `templateId` INTEGER NULL;
 

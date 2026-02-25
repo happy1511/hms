@@ -8,10 +8,6 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { PlusIcon } from "lucide-react";
-import {
-  addOpdBillItemValidator,
-  addOpdBillItemValidatorType,
-} from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfiniteServicesList } from "@/hooks/query/service";
@@ -20,11 +16,15 @@ import { Form } from "../ui/form";
 import CustomButton from "../common/CustomButton";
 import FormField from "../form-inputs/FormField";
 import { DiscountType } from "@/generated/prisma/enums";
-import { useCreateOpdBillingItem } from "@/hooks/query/opd";
 import AddPaymentModal from "./AddPayment";
 import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 import { PaginatedResponse, ServiceDataType } from "@/lib/type";
 import { BillingSection } from "@/generated/prisma/client";
+import { useCreateInvoiceBillingItem } from "@/hooks/query/invoice";
+import {
+  addInvoiceBillItemValidator,
+  addInvoiceBillItemValidatorType,
+} from "@/validators/api/invoice/invoice";
 
 interface Props {
   billId: number;
@@ -46,16 +46,16 @@ const AddInvoiceItemModal = ({
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
 
-  const { mutateAsync, isPending } = useCreateOpdBillingItem();
+  const { mutateAsync, isPending } = useCreateInvoiceBillingItem();
 
-  const billingItemForm = useForm<addOpdBillItemValidatorType>({
+  const billingItemForm = useForm<addInvoiceBillItemValidatorType>({
     defaultValues: {
-      billId: billId,
+      id: billId,
+      createdAt: new Date(),
     },
-    resolver: zodResolver(addOpdBillItemValidator),
+    resolver: zodResolver(addInvoiceBillItemValidator),
   });
 
-  const billingSection = billingItemForm.watch("billingSection");
   const service = billingItemForm.watch("service");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
@@ -67,10 +67,7 @@ const AddInvoiceItemModal = ({
     10,
   );
 
-  const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, billingSectionId: billingSection.id as string },
-    10,
-  );
+  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
 
   const flatServices = useMemo(
     () =>
@@ -80,13 +77,13 @@ const AddInvoiceItemModal = ({
     [servicesQuery.data],
   );
 
-  const onSubmit = (values: addOpdBillItemValidatorType) => {
+  const onSubmit = (values: addInvoiceBillItemValidatorType) => {
     mutateAsync(values);
   };
 
   useEffect(() => {
     const setIfChanged = (
-      name: keyof addOpdBillItemValidatorType,
+      name: keyof addInvoiceBillItemValidatorType,
       value: any,
     ) => {
       if (billingItemForm.getValues(name) !== value) {
@@ -121,10 +118,10 @@ const AddInvoiceItemModal = ({
     setIfChanged("discountType", DiscountType["VALUE"]);
     setIfChanged("total", existingService.price);
     setIfChanged("quantity", 1);
-  }, [service.id, flatServices]);
+  }, [service, flatServices]);
 
   useEffect(() => {
-    if (!service.id) return;
+    if (!service?.id) return;
 
     const gross = Number(quantity) * Number(rate);
 
@@ -138,6 +135,7 @@ const AddInvoiceItemModal = ({
     }
   }, [quantity, rate, discountType, discountValue, service]);
 
+  console.log(billingItemForm.formState.errors);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -174,7 +172,7 @@ const AddInvoiceItemModal = ({
                   BillingSection,
                   PaginatedResponse<BillingSection>,
                   string,
-                  addOpdBillItemValidatorType
+                  addInvoiceBillItemValidatorType
                 >
                   control={billingItemForm.control}
                   label="Billing Section"
@@ -192,7 +190,7 @@ const AddInvoiceItemModal = ({
                     ServiceDataType,
                     PaginatedResponse<ServiceDataType>,
                     string,
-                    addOpdBillItemValidatorType
+                    addInvoiceBillItemValidatorType
                   >
                     control={billingItemForm.control}
                     label="Service"

@@ -29,7 +29,13 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-const Actions = ({ data }: { data: RadiologyOrderType }) => {
+const Actions = ({
+  data,
+  canPrint,
+}: {
+  data: RadiologyOrderType;
+  canPrint: boolean;
+}) => {
   const { mutateAsync: outsource, isPending: outsourcing } =
     useOutsourceRadiologyTestOrder();
   const { mutateAsync: cancel, isPending: cancelling } =
@@ -87,8 +93,16 @@ const Actions = ({ data }: { data: RadiologyOrderType }) => {
     });
   }
 
+  if (data.status === RadiologyOrderStatus["COMPLETED"] && canPrint) {
+    items.push({
+      label: "Print",
+      onClick: () => router.push(`/radiology-print/${data.id}`),
+      disabled: outsourcing,
+    });
+  }
+
   if (
-    data.status !== PathologyOrderStatus["COMPLETED"] &&
+    data.status !== RadiologyOrderStatus["COMPLETED"] &&
     !data.isCancelled &&
     !data.isOutSourced
   ) {
@@ -185,6 +199,11 @@ const RadiologyOrders = ({
     ModuleType.RADIOLOGY_ORDER,
     ActionType.VIEW,
   );
+  const canPrint = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_ORDER,
+    ActionType.PRINT,
+  );
 
   const patientColumns: ColumnDefWithClass<RadiologyOrderByPatientsType>[] = [
     {
@@ -277,7 +296,9 @@ const RadiologyOrders = ({
     {
       id: "actions",
       header: () => <p>Action</p>,
-      cell: ({ row }) => <Actions data={row.original} />,
+      cell: ({ row }) => (
+        <Actions canPrint={Boolean(canPrint)} data={row.original} />
+      ),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },

@@ -180,6 +180,7 @@ enum ModuleType {
   PATHOLOGY_ORDER
   RADIOLOGY_ORDER
   LOCATION_MASTER
+  INVOICE
 }
 
 enum ActionType {
@@ -769,7 +770,7 @@ model RadiologyTestResult {
   id         Int     @id @default(autoincrement())
   orderId    Int
   templateId Int
-  value      String?
+  value      String? @db.LongText
 
   remark String?
 
@@ -802,7 +803,7 @@ model RadiologyTemplate {
   id      Int              @id @default(autoincrement())
   section RadiologySection
   name    String
-  content String
+  content String           @db.LongText
   status  Status           @default(active)
 
   createdAt            DateTime              @default(now())
@@ -818,27 +819,27 @@ model BillingSection {
   description String?
   status      Status  @default(active)
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  opdBillingItems OpdBillingItem[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  invoiceBillingItems InvoiceBillingItem[]
 }
 
 model Service {
   id                Int                    @id @default(autoincrement())
-  name              String                 @unique
+  name              String
   description       String?
   type              ServiceType
   price             Float
   discountAvailable Boolean                @default(false)
-  maxDiscount       Float?
+  maxDiscount       Float?                 @default(0)
   applicableOn      ServiceApplicableOn    @default(BOTH)
   status            Status                 @default(active)
   pathologyTests    PathologyTestService[]
   radiologyTests    RadiologyTestService[]
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  opdBillingItems OpdBillingItem[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  invoiceBillingItems InvoiceBillingItem[]
 }
 
 model PathologyTestService {
@@ -881,8 +882,47 @@ model Transaction {
   updatedAt    DateTime @updatedAt
   receivedById Int
 
-  receivedBy User @relation(fields: [receivedById], references: [id])
-  opd        Opd? @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  receivedBy User     @relation(fields: [receivedById], references: [id])
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  invoiceId  Int?
+}
+
+model InvoiceBillingItem {
+  id               Int          @id @default(autoincrement())
+  opdId            Int?
+  billingSectionId Int
+  serviceId        Int
+  quantity         Int
+  rate             Float
+  discountType     DiscountType
+  discountValue    Float
+  total            Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  invoice        Invoice?       @relation(fields: [invoiceId], references: [id])
+  invoiceId      Int?
+}
+
+model Invoice {
+  id            Int                  @id @default(autoincrement())
+  rate          Float
+  discountType  DiscountType
+  discountValue Float
+  total         Float
+  isPaid        Boolean              @default(false)
+  isFree        Boolean              @default(false)
+  billingType   PaymentCategory
+  billingItems  InvoiceBillingItem[]
+  transactions  Transaction[]
+
+  opd Opd?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 // -------------------- OPD File Management --------------------
@@ -974,20 +1014,14 @@ model OpdConsultation {
 // -------------------- Opd Management --------------------
 
 model Opd {
-  id                 Int             @id @default(autoincrement())
+  id                 Int        @id @default(autoincrement())
   patientId          Int
   arrivalState       OpdArrival
   remarks            String?
-  rate               Float
-  discountType       DiscountType
-  discountValue      Float
-  total              Float
-  isPaid             Boolean         @default(false)
-  isFree             Boolean         @default(false)
   consultantDoctorId Int
   referringDoctorId  Int?
-  billingType        PaymentCategory
-  isInQueue          Boolean         @default(true)
+  isInQueue          Boolean    @default(true)
+  invoiceId          Int        @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -995,8 +1029,7 @@ model Opd {
   consultantDoctor      Doctor                  @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
   referringDoctor       Doctor?                 @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
   patient               Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  opdBillingItems       OpdBillingItem[]
-  transactions          Transaction[]
+  invoice               Invoice                 @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   consultation          OpdConsultation?
   vital                 Vital?
   advisedPathologyTests AdvisedPathologyTests[]
@@ -1005,23 +1038,4 @@ model Opd {
   prescribedDrugs       PrescribedDrugs[]
   pathologyTestOrders   PathologyTestOrder[]
   radiologyTestOrders   RadiologyTestOrder[]
-}
-
-model OpdBillingItem {
-  id               Int          @id @default(autoincrement())
-  opdId            Int
-  billingSectionId Int
-  serviceId        Int
-  quantity         Int
-  rate             Float
-  discountType     DiscountType
-  discountValue    Float
-  total            Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  opd            Opd            @relation(fields: [opdId], references: [id], onDelete: Cascade)
-  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
-  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 }

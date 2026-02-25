@@ -326,6 +326,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
                   testParameters: {
                     include: {
                       parameterOptions: true,
+                      pathologyTestResults: true,
                       referenceRanges: {
                         where: {
                           OR: [

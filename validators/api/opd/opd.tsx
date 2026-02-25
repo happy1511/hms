@@ -1,11 +1,11 @@
 import {
   DiscountType,
   OpdArrival,
-  PaymentCategory,
   PaymentMode,
 } from "@/generated/prisma/enums";
 import { z } from "zod";
 import { patientValidator } from "../masters/patient";
+import { invoiceValidator } from "../invoice/invoice";
 
 // -------------------- Opd Bill --------------------
 
@@ -37,213 +37,12 @@ const opdBaseValidator = z.object({
   patient: patientValidator,
   arrivalState: z.enum(OpdArrival),
   remarks: z.string().max(500).optional(),
-  rate: z.coerce.number(),
-  discountType: z.enum(DiscountType).default(DiscountType.VALUE),
-  discountValue: z.coerce.number().default(0),
-  total: z.coerce.number().optional(),
-  isFree: z.coerce.boolean().default(false),
-  isPaid: z.coerce.boolean().default(false),
-  createdAt: z.coerce.date().default(new Date()),
-  consultantDoctorId: z.coerce.number(),
-  referredDoctorId: z.coerce.number().optional(),
-  billingType: z.enum(PaymentCategory),
-  billingItem: z.array(billingItemValidator),
-  transactions: z.array(transactionsValidator),
+  consultantDoctor: z.object({ userId: z.coerce.number() }),
+  referredDoctor: z.object({ userId: z.coerce.number() }).optional(),
+  invoice: invoiceValidator,
 });
 
-const opdInvoiceValidator = z
-  .object({
-    opdId: z.coerce.number(),
-    rate: z.coerce.number(),
-    discountType: z.enum(DiscountType).default(DiscountType.VALUE),
-    discountValue: z.coerce.number().default(0),
-    total: z.coerce.number().optional(),
-    isFree: z.coerce.boolean().default(false),
-    billingItem: z.array(
-      z.object({
-        id: z.coerce.number(),
-        opdBillingItems: z.array(billingItemValidator),
-      }),
-    ),
-    transactions: z.array(transactionsValidator),
-  })
-  .transform((data) => {
-    const billingItem = data.billingItem.map((item) => {
-      const opdBillingItems = item.opdBillingItems.map((t) => {
-        const gross = t.quantity * t.rate;
-
-        const discount =
-          t.discountType === DiscountType["PERCENTAGE"]
-            ? (gross * t.discountValue) / 100
-            : t.discountValue;
-
-        return {
-          ...t,
-          total: gross - discount,
-        };
-      });
-
-      return {
-        ...item,
-        opdBillingItems,
-      };
-    });
-
-    const subTotal = billingItem.reduce(
-      (sum, i) => sum + i.opdBillingItems.reduce((s, j) => s + j.total, 0),
-      0,
-    );
-
-    const discount =
-      data.discountType === DiscountType["PERCENTAGE"]
-        ? (subTotal * data.discountValue) / 100
-        : data.discountValue;
-
-    const total = subTotal - discount;
-
-    return {
-      ...data,
-      billingItem,
-      total,
-    };
-  })
-  .superRefine((data, ctx) => {
-    const total = data.total ?? 0;
-
-    const transactionSum = data.transactions.reduce(
-      (sum, t) => sum + t.amount,
-      0,
-    );
-
-    data.billingItem.forEach((item, index) => {
-      item.opdBillingItems.forEach((t, rowIndex) => {
-        const gross = t.quantity * t.rate;
-
-        const discount =
-          t.discountType === DiscountType["PERCENTAGE"]
-            ? (gross * t.discountValue) / 100
-            : t.discountValue;
-
-        const maxAllowed =
-          t.discountType === DiscountType["PERCENTAGE"]
-            ? (gross * (t.service.maxDiscount ?? 0)) / 100
-            : (t.service.maxDiscount ?? 0);
-
-        if (discount > maxAllowed) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Discount cannot exceed max discount (${t.service.maxDiscount})`,
-            path: [
-              "billingItem",
-              index,
-              "opdBillingItems",
-              rowIndex,
-              "discountValue",
-            ],
-          });
-        }
-      });
-    });
-    if (data.isFree) {
-      if (transactionSum > 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Transactions should not exist for free OPD",
-          path: ["transactions"],
-        });
-      }
-      return;
-    }
-
-    if (transactionSum > total) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Transaction total (${transactionSum}) must equal bill total (${total})`,
-        path: ["transactions"],
-      });
-    }
-  });
-
-const opdValidator = opdBaseValidator
-  .transform((data) => {
-    const billingItem = data.billingItem.map((item) => {
-      const gross = item.quantity * item.rate;
-
-      const discount =
-        item.discountType === DiscountType["PERCENTAGE"]
-          ? (gross * item.discountValue) / 100
-          : item.discountValue;
-
-      return {
-        ...item,
-        total: gross - discount,
-      };
-    });
-
-    const subTotal = billingItem.reduce((sum, i) => sum + i.total, 0);
-
-    const discount =
-      data.discountType === DiscountType["PERCENTAGE"]
-        ? (subTotal * data.discountValue) / 100
-        : data.discountValue;
-
-    const total = subTotal - discount;
-
-    return {
-      ...data,
-      billingItem,
-      total,
-    };
-  })
-  .superRefine((data, ctx) => {
-    const total = data.total ?? 0;
-
-    const transactionSum = data.transactions.reduce(
-      (sum, t) => sum + t.amount,
-      0,
-    );
-
-    data.billingItem.forEach((item, index) => {
-      const gross = item.quantity * item.rate;
-
-      const discount =
-        item.discountType === DiscountType["PERCENTAGE"]
-          ? (gross * item.discountValue) / 100
-          : item.discountValue;
-
-      const maxAllowed =
-        item.discountType === DiscountType["PERCENTAGE"]
-          ? (gross * (item.service.maxDiscount ?? 0)) / 100
-          : (item.service.maxDiscount ?? 0);
-
-      if (discount > maxAllowed) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Discount cannot exceed max discount (${item.service.maxDiscount})`,
-          path: ["billingItem", index, "discountValue"],
-        });
-      }
-    });
-
-    if (data.isFree) {
-      if (transactionSum > 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Transactions should not exist for free OPD",
-          path: ["transactions"],
-        });
-      }
-      return;
-    }
-
-    if (transactionSum !== total) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Transaction total (${transactionSum}) must equal bill total (${total})`,
-        path: ["transactions"],
-      });
-    }
-  });
+const opdValidator = opdBaseValidator;
 
 const partialOpdValidator = opdBaseValidator.partial().extend({
   opdId: z.coerce.number(),
@@ -319,7 +118,6 @@ type transactionValidatorType = z.input<typeof transactionsValidator>;
 type addOpdTransactionValidatorType = z.input<
   typeof addOpdTransactionValidator
 >;
-type opdInvoiceValidatorType = z.input<typeof opdInvoiceValidator>;
 
 // -------------------- Opd File --------------------
 type vitalValidatorType = z.input<typeof vitalsValidator>;
@@ -336,7 +134,6 @@ export {
   vitalsValidator,
   consultationFileValidator,
   prescribedDrugValidator,
-  opdInvoiceValidator,
 };
 export type {
   opdValidatorType,
@@ -348,5 +145,4 @@ export type {
   vitalValidatorType,
   consultantFileType,
   prescribedDrugType,
-  opdInvoiceValidatorType,
 };

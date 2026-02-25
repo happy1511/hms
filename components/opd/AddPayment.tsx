@@ -8,17 +8,17 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { PlusIcon } from "lucide-react";
-import {
-  addOpdTransactionValidator,
-  addOpdTransactionValidatorType,
-} from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form } from "../ui/form";
 import CustomButton from "../common/CustomButton";
 import FormField from "../form-inputs/FormField";
 import { PaymentMode } from "@/generated/prisma/enums";
-import { useCreateOpdTransaction } from "@/hooks/query/opd";
+import {
+  addInvoiceTransactionValidator,
+  addInvoiceTransactionValidatorType,
+} from "@/validators/api/invoice/invoice";
+import { useCreateInvoiceTransaction } from "@/hooks/query/invoice";
 
 interface Props {
   billId: number;
@@ -28,16 +28,16 @@ interface Props {
 }
 
 const AddPaymentModal = ({ billId, open, onOpenChange, trigger }: Props) => {
-  const { mutateAsync, isPending } = useCreateOpdTransaction();
+  const { mutateAsync, isPending } = useCreateInvoiceTransaction();
 
-  const transactionForm = useForm<addOpdTransactionValidatorType>({
+  const transactionForm = useForm<addInvoiceTransactionValidatorType>({
     defaultValues: {
-      billId: billId,
+      id: billId,
     },
-    resolver: zodResolver(addOpdTransactionValidator),
+    resolver: zodResolver(addInvoiceTransactionValidator),
   });
 
-  const onSubmit = (values: addOpdTransactionValidatorType) => {
+  const onSubmit = (values: addInvoiceTransactionValidatorType) => {
     mutateAsync(values);
   };
 

@@ -1,14 +1,9 @@
 "use client";
 
 import { Form } from "@/components/ui/form";
-import { useOpdInvoiceDetails, useUpdateOpdInvoice } from "@/hooks/query/opd";
 import { useInfiniteServicesList } from "@/hooks/query/service";
 import { InvoiceBillingItem } from "@/lib/type";
-import {
-  billingItemValidatorType,
-  opdInvoiceValidator,
-  opdInvoiceValidatorType,
-} from "@/validators/api/opd/opd";
+import { billingItemValidatorType } from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -31,21 +26,26 @@ import { format } from "date-fns";
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
+import {
+  updateInvoiceValidator,
+  updateInvoiceValidatorType,
+} from "@/validators/api/invoice/invoice";
+import { useInvoiceDetails, useUpdateInvoice } from "@/hooks/query/invoice";
 
 const getSumOfBillingItem = (item: InvoiceBillingItem) => {
-  return item.opdBillingItems.reduce((sum, item) => sum + item.total, 0);
+  return item.invoiceBillingItems.reduce((sum, item) => sum + item.total, 0);
 };
 
 type Props = {
-  form: UseFormReturn<opdInvoiceValidatorType>;
+  form: UseFormReturn<updateInvoiceValidatorType>;
   selectedIndex: number;
   data: InvoiceBillingItem;
 };
 
 type ServiceRowProps = {
   index: number;
-  form: UseFormReturn<opdInvoiceValidatorType>;
-  fieldName: Path<opdInvoiceValidatorType>;
+  form: UseFormReturn<updateInvoiceValidatorType>;
+  fieldName: Path<updateInvoiceValidatorType>;
   remove: (index: number) => void;
 };
 
@@ -54,25 +54,25 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
   const [serviceSearch, setServiceSearch] = useState("");
   const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
 
-  const rowPath = `${fieldName}.${index}` as Path<opdInvoiceValidatorType>;
+  const rowPath = `${fieldName}.${index}` as Path<updateInvoiceValidatorType>;
 
   const service = watch(
-    `${rowPath}.service` as Path<opdInvoiceValidatorType>,
+    `${rowPath}.service` as Path<updateInvoiceValidatorType>,
   ) as billingItemValidatorType["service"];
   const quantity = watch(
-    `${rowPath}.quantity` as Path<opdInvoiceValidatorType>,
+    `${rowPath}.quantity` as Path<updateInvoiceValidatorType>,
   );
-  const rate = watch(`${rowPath}.rate` as Path<opdInvoiceValidatorType>);
+  const rate = watch(`${rowPath}.rate` as Path<updateInvoiceValidatorType>);
   const discountType = watch(
-    `${rowPath}.discountType` as Path<opdInvoiceValidatorType>,
+    `${rowPath}.discountType` as Path<updateInvoiceValidatorType>,
   );
   const discountValue = watch(
-    `${rowPath}.discountValue` as Path<opdInvoiceValidatorType>,
+    `${rowPath}.discountValue` as Path<updateInvoiceValidatorType>,
   );
   const maxDiscount = watch(
-    `${rowPath}.maxDiscount` as Path<opdInvoiceValidatorType>,
+    `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
-  const total = watch(`${rowPath}.total` as Path<opdInvoiceValidatorType>);
+  const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
 
   const flatServices = useMemo(
     () =>
@@ -95,17 +95,17 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
     if (!existingService) return;
 
     setValue(
-      `${rowPath}.rate` as Path<opdInvoiceValidatorType>,
+      `${rowPath}.rate` as Path<updateInvoiceValidatorType>,
       existingService.price,
     );
-    setValue(`${rowPath}.quantity` as Path<opdInvoiceValidatorType>, 1);
+    setValue(`${rowPath}.quantity` as Path<updateInvoiceValidatorType>, 1);
     setValue(
-      `${rowPath}.discountType` as Path<opdInvoiceValidatorType>,
+      `${rowPath}.discountType` as Path<updateInvoiceValidatorType>,
       DiscountType.VALUE,
     );
-    setValue(`${rowPath}.discountValue` as Path<opdInvoiceValidatorType>, 0);
+    setValue(`${rowPath}.discountValue` as Path<updateInvoiceValidatorType>, 0);
     setValue(
-      `${rowPath}.maxDiscount` as Path<opdInvoiceValidatorType>,
+      `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
       existingService.maxDiscount ?? 0,
     );
   }, [service, flatServices]);
@@ -121,10 +121,13 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
     const newTotal = gross - discount;
 
     if (
-      getValues(`${rowPath}.total` as Path<opdInvoiceValidatorType>) !==
+      getValues(`${rowPath}.total` as Path<updateInvoiceValidatorType>) !==
       newTotal
     ) {
-      setValue(`${rowPath}.total` as Path<opdInvoiceValidatorType>, newTotal);
+      setValue(
+        `${rowPath}.total` as Path<updateInvoiceValidatorType>,
+        newTotal,
+      );
     }
   }, [quantity, rate, discountType, discountValue]);
 
@@ -147,7 +150,7 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         <div className="px-2 py-1">
           <FormInfiniteSelect
             control={control}
-            name={`${rowPath}.service` as Path<opdInvoiceValidatorType>}
+            name={`${rowPath}.service` as Path<updateInvoiceValidatorType>}
             query={servicesQuery}
             getItems={(p) => p?.data}
             valueKey={(i) => String(i.id)}
@@ -165,7 +168,7 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         <div className="px-2 py-1">
           <FormField
             type="number"
-            name={`${rowPath}.quantity` as Path<opdInvoiceValidatorType>}
+            name={`${rowPath}.quantity` as Path<updateInvoiceValidatorType>}
             control={control}
             hideError
           />
@@ -177,7 +180,7 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         <div className="px-2 py-1">
           <FormField
             type="number"
-            name={`${rowPath}.rate` as Path<opdInvoiceValidatorType>}
+            name={`${rowPath}.rate` as Path<updateInvoiceValidatorType>}
             control={control}
             hideError
           />
@@ -189,7 +192,7 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         <div className="px-2 py-1">
           <FormField
             type="select"
-            name={`${rowPath}.discountType` as Path<opdInvoiceValidatorType>}
+            name={`${rowPath}.discountType` as Path<updateInvoiceValidatorType>}
             control={control}
             options={Object.keys(DiscountType).map((t) => ({
               label: t,
@@ -205,7 +208,9 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         <div className="px-2 py-1">
           <FormField
             type="number"
-            name={`${rowPath}.discountValue` as Path<opdInvoiceValidatorType>}
+            name={
+              `${rowPath}.discountValue` as Path<updateInvoiceValidatorType>
+            }
             control={control}
             hideError
           />
@@ -235,15 +240,17 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
 };
 
 const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
-  const { control, watch } = form;
+  const { control } = form;
 
   const fieldName =
-    `billingItem.${selectedIndex}.opdBillingItems` as ArrayPath<opdInvoiceValidatorType>;
+    `billingSections.${selectedIndex}.billingItems` as ArrayPath<updateInvoiceValidatorType>;
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: fieldName as ArrayPath<opdInvoiceValidatorType>,
+    name: fieldName as ArrayPath<updateInvoiceValidatorType>,
   });
+
+  console.log(form.getValues());
 
   if (selectedIndex === null) {
     return <div className="p-4 text-muted">Select billing section</div>;
@@ -321,16 +328,18 @@ const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
 const InvoiceDetails = () => {
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const { opdId }: { opdId: string } = useParams();
-  const { data, isLoading } = useOpdInvoiceDetails({ opdId: Number(opdId) });
-  const { mutateAsync, isPending } = useUpdateOpdInvoice();
+  const { invoiceId }: { invoiceId: string } = useParams();
+  const { data, isLoading } = useInvoiceDetails({
+    invoiceId: Number(invoiceId),
+  });
+  const { mutateAsync, isPending } = useUpdateInvoice();
   const router = useRouter();
 
-  const form = useForm<opdInvoiceValidatorType>({
-    resolver: zodResolver(opdInvoiceValidator),
+  const form = useForm<updateInvoiceValidatorType>({
+    resolver: zodResolver(updateInvoiceValidator),
   });
 
-  const onSubmit = (values: opdInvoiceValidatorType) => {
+  const onSubmit = (values: updateInvoiceValidatorType) => {
     mutateAsync(values);
   };
 
@@ -338,9 +347,9 @@ const InvoiceDetails = () => {
     if (!data) return;
 
     form.reset({
-      billingItem: data.billingItems.map((section) => ({
+      billingSections: data.sections.map((section) => ({
         id: section.id,
-        opdBillingItems: section.opdBillingItems.map((item) => ({
+        billingItems: section.invoiceBillingItems.map((item) => ({
           quantity: item.quantity,
           total: item.total,
           discountType: item.discountType,
@@ -352,14 +361,19 @@ const InvoiceDetails = () => {
           rate: item.rate,
           billingSection: section,
           createdAt: new Date(),
+          itemId: item?.id,
+          index: crypto.randomUUID(),
         })),
       })),
       transactions: data.transactions,
       rate: data.rate,
       discountType: data.discountType,
       discountValue: data.discountValue,
+      billingType: data.billingType,
       isFree: false,
-      opdId: data.id,
+      total: data.total,
+      isPaid: data.isPaid,
+      id: data.id,
     });
   }, [data]);
 
@@ -412,7 +426,7 @@ const InvoiceDetails = () => {
             <div className="flex gap-2">
               <Badge className="text-tiny! h-4 min-w-4 px-1 rounded-none bg-background text-black">
                 <User className="fill-black size-2" />
-                {data.patient?.firstName} {data.patient?.lastName}
+                {data.opd?.patient.firstName} {data.opd?.patient.lastName}
               </Badge>
 
               <Badge className="text-tiny! h-4 min-w-4 px-1 rounded-none bg-secondary text-white">
@@ -428,13 +442,13 @@ const InvoiceDetails = () => {
             </div>
           </div>
           <Tabs
-            defaultValue={String(data.billingItems[0]?.id)}
+            defaultValue={String(data.sections[0]?.id)}
             className="flex h-full overflow-hidden bg-white"
             orientation="vertical"
           >
             <div className="h-full border-r">
               <TabsList className="flex flex-col w-56 rounded-none p-0 items-stretch justify-start overflow-x-hidden overflow-y-auto">
-                {data.billingItems.map((item) => (
+                {data.sections.map((item) => (
                   <TabsTrigger
                     key={item.id}
                     value={String(item.id)}
@@ -450,7 +464,7 @@ const InvoiceDetails = () => {
                       variant="secondary"
                       className="text-tiny! h-4 min-w-4 px-1 rounded-full ml-1 shrink-0 bg-background text-black"
                     >
-                      {item.opdBillingItems?.length}
+                      {item.invoiceBillingItems?.length}
                     </Badge>
                   </TabsTrigger>
                 ))}
@@ -459,7 +473,7 @@ const InvoiceDetails = () => {
 
             {/* TAB CONTENT */}
             <div className="flex-1 overflow-hidden">
-              {data.billingItems.map((item, index) => (
+              {data.sections.map((item, index) => (
                 <TabsContent
                   key={item.id}
                   value={String(item.id)}
@@ -480,7 +494,7 @@ const InvoiceDetails = () => {
         billId={data.id}
         open={transactionsOpen}
         onOpenChange={setTransactionsOpen}
-        patientName={`${data.patient.firstName} ${data.patient.lastName}`}
+        patientName={`${data.opd?.patient.firstName} ${data.opd?.patient.lastName}`}
         data={data.transactions || []}
         trigger={<div />}
       />

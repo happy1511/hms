@@ -8,6 +8,7 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddVitalsModal from "@/components/opd/AddVitalsModal";
+import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -44,6 +45,7 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 
 const Actions = ({ data }: { data: OPDType }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
+  const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const [addVitalsModal, setAddVitalsModal] = useState(false);
   const router = useRouter();
 
@@ -60,8 +62,12 @@ const Actions = ({ data }: { data: OPDType }) => {
               },
               {
                 label: "View Invoice",
-                onClick: () => router.push(`/opd/invoice/${data.id}`),
+                onClick: () => router.push(`/invoice/${data.invoice.id}`),
               },
+              // {
+              //   label: "View Invoice Details",
+              //   onClick: () => setViewInvoiceModal(true),
+              // },
             ],
             label: "Invoice",
           },
@@ -85,9 +91,9 @@ const Actions = ({ data }: { data: OPDType }) => {
         ]}
       />
       <AddInvoiceItemModal
-        billId={data.id}
+        billId={data.invoice.id}
         billPaid={0}
-        billTotal={data.total}
+        billTotal={data.invoice.total}
         open={addInvoiceItemModal}
         onOpenChange={setAddInvoiceItemModal}
         trigger={<div />}
@@ -98,6 +104,12 @@ const Actions = ({ data }: { data: OPDType }) => {
         onOpenChange={setAddVitalsModal}
         trigger={<div />}
         vital={data.vital}
+      />
+      <ViewInvoiceModal
+        opd={data}
+        open={viewInvoiceModal}
+        onOpenChange={setViewInvoiceModal}
+        trigger={<div />}
       />
     </>
   );
@@ -219,7 +231,7 @@ const OPDs = () => {
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
-          ₹ {row.original.rate}
+          ₹ {row.original.invoice.rate}
         </div>
       ),
     },
@@ -231,9 +243,10 @@ const OPDs = () => {
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
           ₹{" "}
-          {row.original.discountType === "PERCENTAGE"
-            ? (row.original.discountValue * row.original.rate) / 100
-            : row.original.discountValue}
+          {row.original.invoice.discountType === "PERCENTAGE"
+            ? (row.original.invoice.discountValue * row.original.invoice.rate) /
+              100
+            : row.original.invoice.discountValue}
         </div>
       ),
     },
@@ -245,7 +258,7 @@ const OPDs = () => {
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
-          ₹ {row.original.total}
+          ₹ {row.original.invoice.total}
         </div>
       ),
     },
@@ -257,14 +270,21 @@ const OPDs = () => {
       cell: ({ row }) => (
         <div>
           ₹{" "}
-          {row.original.transactions?.reduce((accumulator, currentItem) => {
-            return accumulator + currentItem.amount;
-          }, 0)}
+          {row.original.invoice.transactions?.reduce(
+            (accumulator, currentItem) => {
+              return accumulator + currentItem.amount;
+            },
+            0,
+          )}
           <TransactionsModal
             billId={row.original.id}
             patientName={`${row.original.patient.firstName} ${row.original.patient.lastName}`}
-            data={row.original.transactions || []}
-            trigger={<div className="text-blue-400">Details</div>}
+            data={row.original.invoice.transactions || []}
+            trigger={
+              <div className="text-blue-400 hover:underline cursor-pointer">
+                Details
+              </div>
+            }
           />
         </div>
       ),

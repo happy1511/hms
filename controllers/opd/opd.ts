@@ -12,10 +12,7 @@ import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
-  addOpdBillItemValidator,
-  addOpdTransactionValidator,
   consultationFileValidator,
-  opdInvoiceValidator,
   opdValidator,
   partialOpdValidator,
   vitalsValidator,
@@ -67,11 +64,7 @@ export const getAPI = async (req: Request) => {
           select: {
             id: true,
             arrivalState: true,
-            total: true,
-            discountType: true,
-            discountValue: true,
-            rate: true,
-            transactions: true,
+            invoice: { include: { transactions: true } },
             isInQueue: true,
             consultantDoctor: {
               select: {
@@ -172,11 +165,7 @@ export const getQueueAPI = async (req: Request) => {
           select: {
             id: true,
             arrivalState: true,
-            total: true,
-            discountType: true,
-            discountValue: true,
-            rate: true,
-            transactions: true,
+            invoice: { include: { transactions: true } },
             isInQueue: true,
             consultantDoctor: {
               select: {
@@ -317,208 +306,6 @@ export const getConsultationAPI = async (
   });
 };
 
-export const getInvoiceDetailsAPI = async (req: Request) => {
-  return validateRequest({
-    querySchema: partialOpdValidator,
-    req,
-    onSuccess: async ({ query }) => {
-      const { opdId } = query;
-
-      const [billingItems, opd] = await prisma.$transaction([
-        prisma.billingSection.findMany({
-          where: {},
-          select: {
-            id: true,
-            name: true,
-            opdBillingItems: {
-              where: {
-                opdId: opdId,
-              },
-              select: {
-                quantity: true,
-                total: true,
-                discountType: true,
-                discountValue: true,
-                rate: true,
-                service: {
-                  select: {
-                    id: true,
-                    name: true,
-                    maxDiscount: true,
-                  },
-                },
-              },
-            },
-          },
-        }),
-        prisma.opd.findUnique({
-          where: { id: opdId },
-          select: {
-            id: true,
-            total: true,
-            discountType: true,
-            discountValue: true,
-            rate: true,
-            transactions: true,
-            patient: {
-              select: {
-                id: true,
-                uhid: true,
-                lastName: true,
-                firstName: true,
-                middleName: true,
-                dob: true,
-                maritalStatus: true,
-                gender: true,
-              },
-            },
-            createdAt: true,
-            updatedAt: true,
-          },
-        }),
-      ]);
-
-      return apiResponse({
-        status: RESPONSE_STATUS.SUCCESS,
-        message: "Opds Fetched Successfully",
-        data: { ...opd, billingItems: billingItems },
-      });
-    },
-  });
-};
-export const updateInvoiceAPI = async (req: Request, user: User) => {
-  return validateRequest({
-    bodySchema: opdInvoiceValidator,
-    req,
-    onSuccess: async ({ body }) => {
-      return prisma.$transaction(async (tx) => {
-        const { opdId, billingItem, transactions, ...invoice } = body;
-
-        const existingOPD = await tx.opd.findFirst({
-          where: { id: opdId },
-          include: {
-            opdBillingItems: true,
-            transactions: true,
-          },
-        });
-
-        if (!existingOPD) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Opd Not Found",
-          });
-        }
-
-        /* ------------------------------------------------------- */
-        /* 1️⃣ UPDATE OPD MAIN INVOICE */
-        /* ------------------------------------------------------- */
-
-        const updatedOpd = await tx.opd.update({
-          where: { id: opdId },
-          data: {
-            rate: invoice.rate,
-            discountType: invoice.discountType,
-            discountValue: invoice.discountValue,
-            total: invoice.total,
-            isFree: invoice.isFree,
-            isPaid: !invoice.isFree && invoice.total === 0 ? true : true,
-          },
-        });
-
-        /* ------------------------------------------------------- */
-        /* 2️⃣ HANDLE BILLING ITEMS (CREATE / UPDATE / DELETE) */
-        /* ------------------------------------------------------- */
-
-        const existingItems = existingOPD.opdBillingItems;
-
-        // Flatten incoming billing items
-        const incomingItems = billingItem.flatMap((b) => b.opdBillingItems);
-
-        const incomingIds = incomingItems
-          .map((i) => i.index)
-          .filter((id): id is number => !!id);
-
-        // DELETE removed items
-        const toDelete = existingItems.filter(
-          (item) => !incomingIds.includes(item.id),
-        );
-
-        if (toDelete.length) {
-          await tx.opdBillingItem.deleteMany({
-            where: {
-              id: { in: toDelete.map((d) => d.id) },
-            },
-          });
-        }
-
-        // UPSERT incoming items
-        for (const item of incomingItems) {
-          if (item.index) {
-            // UPDATE
-            await tx.opdBillingItem.update({
-              where: { id: item.index },
-              data: {
-                billingSectionId: item.billingSection.id,
-                serviceId: item.service.id,
-                quantity: item.quantity,
-                rate: item.rate,
-                discountType: item.discountType,
-                discountValue: item.discountValue,
-                total: item.total,
-              },
-            });
-          } else {
-            // CREATE
-            await tx.opdBillingItem.create({
-              data: {
-                opdId,
-                billingSectionId: item.billingSection.id,
-                serviceId: item.service.id,
-                quantity: item.quantity,
-                rate: item.rate,
-                discountType: item.discountType,
-                discountValue: item.discountValue,
-                total: item.total,
-              },
-            });
-          }
-        }
-
-        /* ------------------------------------------------------- */
-        /* 3️⃣ HANDLE TRANSACTIONS (REPLACE STRATEGY) */
-        /* ------------------------------------------------------- */
-
-        // Delete all old transactions
-        await tx.transaction.deleteMany({
-          where: { opdId },
-        });
-
-        // Create new transactions
-        if (!invoice.isFree && transactions.length > 0) {
-          await tx.transaction.createMany({
-            data: transactions.map((t) => ({
-              opdId,
-              amount: t.amount,
-              mode: t.mode,
-              remarks: t.remarks,
-              receivedById: user.id,
-            })),
-          });
-        }
-
-        /* ------------------------------------------------------- */
-        /* 4️⃣ FINAL RESPONSE */
-        /* ------------------------------------------------------- */
-
-        return apiResponse({
-          status: RESPONSE_STATUS.SUCCESS,
-          message: "Invoice updated successfully",
-          data: updatedOpd,
-        });
-      });
-    },
-  });
-};
 export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: opdValidator,
@@ -664,7 +451,13 @@ export const createAPI = async (req: Request, user: User) => {
                 create: contacts,
               },
               addresses: {
-                create: addresses,
+                create: addresses.map((l) => ({
+                  addressLineOne: l.addressLineOne,
+                  addressLineThree: l.addressLineThree,
+                  addressLineTwo: l.addressLineTwo,
+                  locationId: l.location.id,
+                  type: l.type,
+                })),
               },
               relations: {
                 create: relations,
@@ -682,24 +475,14 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
-        const createdOpd = await tx.opd.create({
+        const { billingItems, createdAt, transactions, ...rest } = body.invoice;
+
+        const invoice = await tx.invoice.create({
           data: {
-            patientId: existingPatient.id,
-            arrivalState: body.arrivalState,
-            remarks: body.remarks,
-            rate: body.rate,
-            discountType: body.discountType,
-            discountValue: body.discountValue,
-            total: body.total,
-            isPaid: body.isPaid,
-            isFree: body.isFree,
-            consultantDoctorId: body.consultantDoctorId,
-            referringDoctorId: body.referredDoctorId,
-            billingType: body.billingType,
-            createdAt: body.createdAt,
-            opdBillingItems: {
+            ...rest,
+            billingItems: {
               create:
-                body.billingItem?.map((item) => ({
+                billingItems?.map((item) => ({
                   billingSectionId: item.billingSection.id,
                   serviceId: item.service.id,
                   quantity: item.quantity,
@@ -707,181 +490,68 @@ export const createAPI = async (req: Request, user: User) => {
                   discountType: item.discountType,
                   discountValue: item.discountValue,
                   total: item.total,
-                  createdAt: item.createdAt,
+                  createdAt: createdAt,
                 })) || [],
             },
-
             transactions: {
-              create: body.transactions?.map((transaction) => ({
-                amount: transaction.amount,
-                mode: transaction.mode,
-                remarks: transaction.remarks,
-                receivedById: user.id,
-              })),
-            },
-          },
-        });
-
-        const pathologyServices = await tx.pathologyTestService.findMany({
-          where: {
-            serviceId: { in: body.billingItem?.map((s) => s.service.id) },
-          },
-        });
-
-        if (pathologyServices?.length) {
-          await tx.pathologyTestOrder.createMany({
-            data: pathologyServices.map((service) => ({
-              opdId: createdOpd.id,
-              patientId: createdOpd.patientId,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        const radiologyServices = await tx.radiologyTestService.findMany({
-          where: {
-            serviceId: { in: body.billingItem?.map((s) => s.service.id) },
-          },
-        });
-
-        if (radiologyServices?.length) {
-          await tx.radiologyTestOrder.createMany({
-            data: radiologyServices.map((service) => ({
-              opdId: createdOpd.id,
-              patientId: createdOpd.patientId,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        return apiResponse({
-          status: RESPONSE_STATUS.CREATED,
-          message: "OPD Created Successfully",
-          data: createdOpd,
-        });
-      });
-    },
-  });
-};
-
-export const addItemAPI = async (req: Request, user: User) => {
-  return validateRequest({
-    bodySchema: addOpdBillItemValidator,
-    req,
-    user,
-    onSuccess: async ({ body }) => {
-      return prisma.$transaction(async (tx) => {
-        const existingOPD = await tx.opd.findFirst({
-          where: { id: body.billId },
-        });
-
-        if (!existingOPD) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Opd Not Found",
-          });
-        }
-
-        const updatedOpd = await tx.opd.update({
-          where: { id: body.billId },
-          data: {
-            opdBillingItems: {
-              create: [
-                {
-                  billingSectionId: body.billingSection.id,
-                  serviceId: body.service.id,
-                  quantity: body.quantity,
-                  rate: body.rate,
-                  discountType: body.discountType,
-                  discountValue: body.discountValue,
-                  total: body.total,
-                  createdAt: body.createdAt,
-                },
-              ],
-            },
-          },
-        });
-
-        const pathologyServices = await tx.pathologyTestService.findMany({
-          where: {
-            serviceId: { equals: body.service.id },
-          },
-        });
-
-        if (pathologyServices?.length) {
-          await tx.pathologyTestOrder.createMany({
-            data: pathologyServices.map((service) => ({
-              opdId: updatedOpd.id,
-              patientId: updatedOpd.patientId,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        const radiologyServices = await tx.radiologyTestService.findMany({
-          where: {
-            serviceId: { equals: body.service.id },
-          },
-        });
-
-        if (radiologyServices?.length) {
-          await tx.radiologyTestOrder.createMany({
-            data: radiologyServices.map((service) => ({
-              opdId: updatedOpd.id,
-              patientId: updatedOpd.patientId,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        return apiResponse({
-          status: RESPONSE_STATUS.CREATED,
-          message: "OPD Created Successfully",
-          data: updatedOpd,
-        });
-      });
-    },
-  });
-};
-
-export const addTransactionAPI = async (req: Request, user: User) => {
-  return validateRequest({
-    bodySchema: addOpdTransactionValidator,
-    req,
-    user,
-    onSuccess: async ({ body }) => {
-      return prisma.$transaction(async (tx) => {
-        const existingOPD = await tx.opd.findFirst({
-          where: { id: body.billId },
-        });
-
-        if (!existingOPD) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Opd Not Found",
-          });
-        }
-
-        const updatedOpd = await tx.opd.update({
-          where: { id: body.billId },
-          data: {
-            transactions: {
-              create: [
-                {
-                  amount: body.amount,
-                  mode: body.mode,
+              create:
+                transactions?.map((transaction) => ({
+                  amount: transaction.amount,
+                  mode: transaction.mode,
+                  remarks: transaction.remarks,
                   receivedById: user.id,
-                  remarks: body.remarks,
-                },
-              ],
+                })) || [],
             },
+            opd: {
+              create: {
+                patientId: existingPatient.id,
+                arrivalState: body.arrivalState,
+                remarks: body.remarks,
+                consultantDoctorId: body.consultantDoctor.userId,
+                referringDoctorId: body.referredDoctor?.userId,
+                createdAt: createdAt,
+              },
+            },
+          },
+          include: { opd: true },
+        });
+
+        const pathologyServices = await tx.pathologyTestService.findMany({
+          where: {
+            serviceId: { in: billingItems?.map((s) => s.service.id) },
           },
         });
 
+        if (pathologyServices?.length) {
+          await tx.pathologyTestOrder.createMany({
+            data: pathologyServices.map((service) => ({
+              opdId: invoice.opd!.id,
+              patientId: invoice.opd!.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
+
+        const radiologyServices = await tx.radiologyTestService.findMany({
+          where: {
+            serviceId: { in: billingItems?.map((s) => s.service.id) },
+          },
+        });
+
+        if (radiologyServices?.length) {
+          await tx.radiologyTestOrder.createMany({
+            data: radiologyServices.map((service) => ({
+              opdId: invoice.opd!.id,
+              patientId: invoice.opd!.patientId,
+              testId: service.testId,
+            })),
+          });
+        }
+
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
-          message: "Transactions Created Successfully",
-          data: updatedOpd,
+          message: "OPD Created Successfully",
+          data: invoice,
         });
       });
     },

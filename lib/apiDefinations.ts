@@ -94,8 +94,12 @@ export const RADIOLOGY_COMPLETED_ORDERS_WITH_RESULTS =
 // ----------------------------------
 export const OPD = "/opd";
 export const OPD_QUEUE = "/opd/queue";
-export const OPD_BILLING_ITEM = "/opd/invoice-item";
 export const OPD_CONSULTATION = "/opd/consultation";
 export const OPD_VITALS = "/opd/vitals";
-export const OPD_TRANSACTION = "/opd/transaction";
-export const OPD_INVOICE_DETAILS = "/opd/invoice-details";
+
+// ----------------------------------
+// ---------INVOICE ENDPOINTS--------
+// ----------------------------------
+export const INVOICE_TRANSACTION = "/invoice/transaction";
+export const INVOICE = "/invoice";
+export const INVOICE_BILLING_ITEM = "/invoice/billing-item";

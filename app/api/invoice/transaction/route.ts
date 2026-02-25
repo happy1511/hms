@@ -1,4 +1,4 @@
-import { addTransactionAPI } from "@/controllers/opd/opd";
+import { addTransactionAPI } from "@/controllers/invoice/invoice";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { withErrorHandling } from "@/lib/errorHandler";
 import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["OPD_BILL"], action: ActionType["CREATE"] }],
-      (req, user) => addTransactionAPI(req, user),
+      [{ module: ModuleType["INVOICE"], action: ActionType["UPDATE"] }],
+      addTransactionAPI,
     ),
   );
 }

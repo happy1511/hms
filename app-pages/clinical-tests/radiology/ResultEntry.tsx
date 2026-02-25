@@ -16,7 +16,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 const buildDefaultValues = (data: RadiologyTestResultType) => {
@@ -31,6 +31,7 @@ const buildDefaultValues = (data: RadiologyTestResultType) => {
 
 const ResultEntryForm = ({ data }: { data: RadiologyTestResultType }) => {
   const { mutateAsync, isPending } = useUpdateRadiologyTestOrder();
+  const router = useRouter();
 
   const form = useForm<RadiologyResultEntryValidatorType>({
     resolver: zodResolver(radiologyResultsEntry),
@@ -40,10 +41,13 @@ const ResultEntryForm = ({ data }: { data: RadiologyTestResultType }) => {
   const { control, handleSubmit } = form;
 
   const onSubmit = (values: RadiologyResultEntryValidatorType) => {
-    mutateAsync({
-      ...values,
-      orderId: data.id,
-    });
+    mutateAsync(
+      {
+        ...values,
+        orderId: data.id,
+      },
+      { onSuccess: () => router.back() },
+    );
   };
 
   return (
