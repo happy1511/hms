@@ -15,6 +15,14 @@ const paginationValidator = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().optional(),
   status: z.enum(Status).optional(),
+  nonOccupied: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
+  isDischarged: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
   testStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
   radiologyStatus: z.array(z.enum(RadiologyOrderStatus)).optional(),
   cancelled: z
@@ -30,6 +38,7 @@ const paginationValidator = z.object({
   uhid: z.string().optional(),
   contactNo: z.string().optional(),
   roomId: z.coerce.number().min(1).optional(),
+  roomTypeId: z.coerce.number().min(1).optional(),
   departmentId: z.coerce.number().min(1).optional(),
   doctorId: z.coerce.number().min(1).optional(),
   billingSectionId: z.coerce.number().min(1).optional(),

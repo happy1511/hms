@@ -9,7 +9,14 @@ import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { BillingSection, Location } from "@/generated/prisma/client";
+import {
+  Bed,
+  BillingSection,
+  Department,
+  Location,
+  Room,
+  RoomType,
+} from "@/generated/prisma/client";
 import {
   AddressType,
   BloodGroup,
@@ -17,6 +24,8 @@ import {
   DiscountType,
   Gender,
   IdentityType,
+  IpdArrival,
+  IpdCareType,
   MaritalStatus,
   NameTitle,
   OpdArrival,
@@ -25,11 +34,15 @@ import {
   RelationshipType,
   Status,
 } from "@/generated/prisma/enums";
+import { useInfiniteBedsList } from "@/hooks/query/bed";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import { useInfiniteDepartmentsList } from "@/hooks/query/department";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
+import { useCreateIpd } from "@/hooks/query/ipd";
 import { useInfiniteLocationsList } from "@/hooks/query/locations";
-import { useCreateOpd } from "@/hooks/query/opd";
 import { useGetPatient } from "@/hooks/query/patient";
+import { useInfiniteRoomsList } from "@/hooks/query/room";
+import { useInfiniteRoomTypeList } from "@/hooks/query/roomType";
 import { useInfiniteServicesList } from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
@@ -44,8 +57,8 @@ import {
   transactionsValidator,
   transactionValidatorType,
 } from "@/validators/api/invoice/invoice";
+import { ipdValidator, ipdValidatorType } from "@/validators/api/ipd/ipd";
 import { PatientAddressValidatorType } from "@/validators/api/masters/patient";
-import { opdValidator, opdValidatorType } from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
@@ -58,7 +71,7 @@ import {
   UseFormReturn,
 } from "react-hook-form";
 
-const getInitialValues = (data?: PatientType): opdValidatorType => {
+const getInitialValues = (data?: PatientType): ipdValidatorType => {
   // ---------------- CONTACT MAP (only required types) ----------------
   const contactMap: Record<ContactType, string> = {
     [ContactType.PHONE]: "",
@@ -96,6 +109,10 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
 
   return {
     patientId: data?.id ?? undefined,
+    bed: { id: null },
+    department: { id: null },
+    roomType: { id: null },
+    room: { id: null },
     invoice: {
       billingType: PaymentCategory["SELF_PAY"],
       billingItems: [],
@@ -206,7 +223,7 @@ const Actions = ({
   );
 };
 
-const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
+const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
 
@@ -563,7 +580,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   );
 };
 
-const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
+const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const { append, update, remove } = useFieldArray({
     name: "invoice.transactions",
     control: form.control,
@@ -640,7 +657,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   return (
     <CustomLayout title="Payment" contentClassName="grid grid-cols-2 space-x-2">
       <div className="col-span-2">
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Payment received for this invoice?"
           type="radio"
           name="invoice.isPaid"
@@ -652,7 +669,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           required
         />
         {isPaid === "false" && (
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="This invoice is 'Free of cost (FOC)'."
             type="checkbox"
             name="invoice.isFree"
@@ -715,7 +732,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   );
 };
 
-const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
+const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [locationSearch, setLocationSearch] = useState("");
   const locationQuery = useInfiniteLocationsList({ name: locationSearch }, 10);
 
@@ -725,7 +742,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       contentClassName="grid grid-cols-2 space-x-2 pb-0"
     >
       <div>
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Title"
           name="patient.title"
           control={form.control}
@@ -733,28 +750,28 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           options={Object.keys(NameTitle).map((t) => ({ label: t, value: t }))}
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="First Name"
           name="patient.firstName"
           control={form.control}
           type="text"
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Last Name"
           name="patient.lastName"
           control={form.control}
           type="text"
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Date of Birth"
           name="patient.dob"
           control={form.control}
           type="date"
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Gender"
           name="patient.gender"
           control={form.control}
@@ -762,7 +779,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           type="select"
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Relation"
           name="patient.relations.0.type"
           control={form.control}
@@ -773,7 +790,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           type="select"
           required
         />
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Relative Name"
           name="patient.relations.0.name"
           control={form.control}
@@ -782,7 +799,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         />
       </div>
       <div>
-        <FormField<opdValidatorType>
+        <FormField<ipdValidatorType>
           label="Address Line 1"
           name="patient.addresses.0.addressLineOne"
           control={form.control}
@@ -793,7 +810,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           Location,
           PaginatedResponse<Location>,
           string,
-          opdValidatorType
+          ipdValidatorType
         >
           control={form.control}
           label="City"
@@ -810,7 +827,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           Location,
           PaginatedResponse<Location>,
           string,
-          opdValidatorType
+          ipdValidatorType
         >
           control={form.control}
           label="State"
@@ -827,7 +844,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           Location,
           PaginatedResponse<Location>,
           string,
-          opdValidatorType
+          ipdValidatorType
         >
           control={form.control}
           label="Country"
@@ -844,7 +861,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           Location,
           PaginatedResponse<Location>,
           string,
-          opdValidatorType
+          ipdValidatorType
         >
           control={form.control}
           label="Post Code"
@@ -858,41 +875,41 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           onSearchChange={setLocationSearch}
         />
         <div className="grid grid-cols-2 space-x-2">
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Phone"
             name="patient.contacts.0.value"
             control={form.control}
             type="text"
           />
 
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Aadhar Number"
             name="patient.identifications.0.number"
             control={form.control}
             type="text"
           />
 
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Mobile"
             name="patient.contacts.1.value"
             control={form.control}
             type="text"
           />
 
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Voter Card Number"
             name="patient.identifications.1.number"
             control={form.control}
             type="text"
           />
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Email"
             name="patient.contacts.2.value"
             control={form.control}
             type="text"
           />
 
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Driving License"
             name="patient.identifications.2.number"
             control={form.control}
@@ -904,13 +921,56 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   );
 };
 
-const OpdBillForm = () => {
+const IpdBillForm = () => {
   const [consultantValue, setConsultantValue] = useState("");
   const [referringValue, setReferringValue] = useState("");
+  const [departmentValue, setDepartmentValue] = useState("");
+  const [roomTypeValue, setRoomTypeValue] = useState("");
+  const [roomValue, setRoomValue] = useState("");
+  const [bedValue, setBedValue] = useState("");
 
-  const { mutateAsync, isPending } = useCreateOpd();
+  const { mutateAsync, isPending } = useCreateIpd();
   const params: { patientId: string } = useParams();
   const { data: patient, isLoading } = useGetPatient(params?.patientId);
+
+  const form = useForm<ipdValidatorType>({
+    defaultValues: getInitialValues(patient),
+    resolver: zodResolver(ipdValidator),
+  });
+
+  const roomTypeId = form.watch("roomType.id");
+  const departmentId = form.watch("department.id");
+  const roomId = form.watch("room.id");
+
+  const departmentQuery = useInfiniteDepartmentsList(
+    {
+      name: departmentValue,
+    },
+    10,
+  );
+  const roomTypeQuery = useInfiniteRoomTypeList(
+    {
+      name: roomTypeValue,
+      departmentId: departmentId as string,
+    },
+    10,
+  );
+  const roomQuery = useInfiniteRoomsList(
+    {
+      name: roomValue,
+      roomTypeId: roomTypeId as string,
+    },
+    10,
+  );
+
+  const bedQuery = useInfiniteBedsList(
+    {
+      name: bedValue,
+      roomId: roomId as string,
+      nonOccupied: true,
+    },
+    10,
+  );
   const consultingDoctorQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
@@ -925,12 +985,7 @@ const OpdBillForm = () => {
     10,
   );
 
-  const form = useForm<opdValidatorType>({
-    defaultValues: getInitialValues(patient),
-    resolver: zodResolver(opdValidator),
-  });
-
-  const onSubmit = (values: opdValidatorType) => {
+  const onSubmit = (values: ipdValidatorType) => {
     mutateAsync(values);
   };
 
@@ -963,12 +1018,12 @@ const OpdBillForm = () => {
           title="Patient Registration"
           contentClassName="grid grid-cols-2 pb-0 space-x-2"
         >
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Arrival State"
             name="arrivalState"
             control={form.control}
             type="select"
-            options={Object.values(OpdArrival).map((a) => ({
+            options={Object.values(IpdArrival).map((a) => ({
               label: a,
               value: a,
             }))}
@@ -980,14 +1035,14 @@ const OpdBillForm = () => {
           title="Billing"
           contentClassName="grid grid-cols-2 pb-0 space-x-2"
         >
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Billing Date"
             name="invoice.createdAt"
             control={form.control}
             type="date"
             required
           />
-          <FormField<opdValidatorType>
+          <FormField<ipdValidatorType>
             label="Billing Type"
             name="invoice.billingType"
             control={form.control}
@@ -1002,7 +1057,7 @@ const OpdBillForm = () => {
             Doctor,
             PaginatedResponse<Doctor>,
             string,
-            opdValidatorType
+            ipdValidatorType
           >
             label="Consultant"
             name="consultantDoctor"
@@ -1019,7 +1074,7 @@ const OpdBillForm = () => {
             Doctor,
             PaginatedResponse<Doctor>,
             string,
-            opdValidatorType
+            ipdValidatorType
           >
             label="Referred By"
             name="referredDoctor"
@@ -1032,10 +1087,89 @@ const OpdBillForm = () => {
             onSearchChange={setReferringValue}
             required
           />
+          <FormField<ipdValidatorType>
+            label="Care Type"
+            name="careType"
+            control={form.control}
+            type="select"
+            options={Object.values(IpdCareType).map((a) => ({
+              label: a,
+              value: a,
+            }))}
+            required
+          />
+          <FormInfiniteSelect<
+            Department,
+            PaginatedResponse<Department>,
+            string,
+            ipdValidatorType
+          >
+            label="In-Patient Department"
+            name="department"
+            control={form.control}
+            query={departmentQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.name}
+            valueKey={(item) => String(item?.id)}
+            search={departmentValue}
+            onSearchChange={setDepartmentValue}
+            required
+          />
+          <FormInfiniteSelect<
+            RoomType,
+            PaginatedResponse<RoomType>,
+            string,
+            ipdValidatorType
+          >
+            label="Room Type"
+            name="roomType"
+            control={form.control}
+            query={roomTypeQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.name}
+            valueKey={(item) => String(item?.id)}
+            search={roomTypeValue}
+            onSearchChange={setRoomTypeValue}
+            required
+          />
+          <FormInfiniteSelect<
+            Room,
+            PaginatedResponse<Room>,
+            string,
+            ipdValidatorType
+          >
+            label="Room"
+            name="room"
+            control={form.control}
+            query={roomQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.name}
+            valueKey={(item) => String(item?.id)}
+            search={roomValue}
+            onSearchChange={setRoomValue}
+            required
+          />
+          <FormInfiniteSelect<
+            Bed,
+            PaginatedResponse<Bed>,
+            string,
+            ipdValidatorType
+          >
+            label="Bed"
+            name="bed"
+            control={form.control}
+            query={bedQuery}
+            getItems={(data) => data?.data}
+            labelKey={(item) => item?.bedNumber}
+            valueKey={(item) => String(item?.id)}
+            search={bedValue}
+            onSearchChange={setBedValue}
+            required
+          />
         </CustomLayout>
-        <BillingItems form={form} />
+        {/* <BillingItems form={form} />
 
-        <Transactions form={form} />
+        <Transactions form={form} /> */}
 
         <CustomButton disabled={isPending} type="submit">
           Submit
@@ -1045,4 +1179,4 @@ const OpdBillForm = () => {
   );
 };
 
-export default OpdBillForm;
+export default IpdBillForm;

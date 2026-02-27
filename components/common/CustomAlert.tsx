@@ -20,6 +20,9 @@ interface Props {
   triggerButton: React.ReactNode;
   handleConfirm: () => void;
   pending?: boolean;
+
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CustomAlert({
@@ -30,9 +33,11 @@ export function CustomAlert({
   handleConfirm,
   triggerButton,
   pending,
+  open,
+  onOpenChange,
 }: Props) {
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogTrigger asChild>{triggerButton}</AlertDialogTrigger>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>

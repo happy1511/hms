@@ -177,6 +177,7 @@ enum ModuleType {
   PATHOLOGY_TEST_MASTER
   RADIOLOGY_TEST_MASTER
   OPD_BILL
+  IPD_BILL
   OPD_QUEUE
   PATHOLOGY_ORDER
   RADIOLOGY_ORDER
@@ -271,6 +272,19 @@ enum OpdArrival {
   AYUSHMAN_IP_SECOND
   AYUSHMAN_IP_THIRD
   OTHER
+}
+
+enum IpdArrival {
+  ROUTINE
+  EMERGENCY
+  PLANNED
+  OP
+  OTHER
+}
+
+enum IpdCareType {
+  SURGICAL
+  MEDICAL
 }
 
 enum DiscountType {
@@ -454,6 +468,8 @@ model Doctor {
   appointment   Appointment[]
   consultingOpd Opd[]                @relation("ConsultantDoctorOpds")
   referringOpd  Opd[]                @relation("ReferringDoctorOpds")
+  consultingIpd Ipd[]                @relation("ConsultantDoctorIpds")
+  referringIpd  Ipd[]                @relation("ReferringDoctorIpds")
 }
 
 model DoctorAvailableDay {
@@ -562,8 +578,10 @@ model Patient {
   emergencyContacts   emergencyContact[]
   notes               PatientNotes[]
   opds                Opd[]
+  ipds                Ipd[]
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
+  beds                Bed[]
 }
 
 // -------------------- Facility Management --------------------
@@ -603,18 +621,23 @@ model Room {
   roomType  RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
 
   beds Bed[]
+  ipds Ipd[]
 }
 
 model Bed {
-  id        Int      @id @default(autoincrement())
-  roomId    Int
-  bedNumber String
-  name      String?
-  status    Status   @default(active)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  patientId  Int?
+  bedNumber  String
+  name       String?
+  status     Status   @default(active)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isOccupied Boolean  @default(false)
 
-  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  room    Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  ipds    Ipd[]
 }
 
 // -------------------- Appointment Management --------------------
@@ -709,8 +732,9 @@ model ReferenceRange {
 
 // -------------------- Pathology Lab Order Management --------------------
 model PathologyTestOrder {
-  id        Int @id @default(autoincrement())
-  opdId     Int
+  id        Int  @id @default(autoincrement())
+  opdId     Int?
+  ipdId     Int?
   patientId Int
   testId    Int
 
@@ -734,7 +758,8 @@ model PathologyTestOrder {
   test            PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
   status          PathologyOrderStatus  @default(SAMPLE_PENDING)
   results         PathologyTestResult[]
-  opd             Opd                   @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  opd             Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd             Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 }
 
 model PathologyTestResult {
@@ -756,8 +781,9 @@ model PathologyTestResult {
 
 // -------------------- Radiology Lab Order Management --------------------
 model RadiologyTestOrder {
-  id        Int @id @default(autoincrement())
-  opdId     Int
+  id        Int  @id @default(autoincrement())
+  opdId     Int?
+  ipdId     Int?
   patientId Int
   testId    Int
 
@@ -781,7 +807,8 @@ model RadiologyTestOrder {
   test            RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
   status          RadiologyOrderStatus  @default(RESULT_PENDING)
   results         RadiologyTestResult[]
-  opd             Opd                   @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  opd             Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd             Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 }
 
 model RadiologyTestResult {
@@ -938,6 +965,7 @@ model Invoice {
   transactions  Transaction[]
 
   opd Opd?
+  ipd Ipd?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -1056,4 +1084,32 @@ model Opd {
   prescribedDrugs       PrescribedDrugs[]
   pathologyTestOrders   PathologyTestOrder[]
   radiologyTestOrders   RadiologyTestOrder[]
+}
+
+// -------------------- Ipd Management --------------------
+
+model Ipd {
+  id                 Int         @id @default(autoincrement())
+  patientId          Int
+  arrivalState       IpdArrival
+  remarks            String?
+  consultantDoctorId Int
+  referringDoctorId  Int?
+  bedId              Int
+  invoiceId          Int         @unique
+  careType           IpdCareType @default(MEDICAL)
+  isDischarged       Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bed                 Bed                  @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
+  referringDoctor     Doctor?              @relation("ReferringDoctorIpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  invoice             Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  pathologyTestOrders PathologyTestOrder[]
+  radiologyTestOrders RadiologyTestOrder[]
+  room                Room?                @relation(fields: [roomId], references: [id])
+  roomId              Int?
 }

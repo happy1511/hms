@@ -18,6 +18,7 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const status = query.status ?? "";
+      const roomTypeId = query.roomTypeId ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -30,6 +31,10 @@ export const getAPI = async (req: Request) => {
 
       if (status) {
         and.push({ status: { equals: status } });
+      }
+
+      if (roomTypeId) {
+        and.push({ roomTypeId: { equals: roomTypeId } });
       }
 
       if (createdAtFrom || createdAtTo) {

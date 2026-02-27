@@ -25,9 +25,11 @@ import { useForm } from "react-hook-form";
 const Actions = ({
   data,
   createOpd,
+  createIpd,
 }: {
   data: Patient;
   createOpd: boolean;
+  createIpd: boolean;
 }) => {
   return (
     <>
@@ -35,6 +37,14 @@ const Actions = ({
         <Link
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-tiny rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
           href={`/opd/bill/${data.id}`}
+        >
+          Select
+        </Link>
+      )}
+      {createIpd && (
+        <Link
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-tiny rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
+          href={`/ipd/bill/${data.id}`}
         >
           Select
         </Link>
@@ -49,6 +59,7 @@ const PatientSearch = () => {
   const [page, setPage] = useState(1);
   const query = useSearchParams();
   const opdCreate = query.get("opdCreate");
+  const ipdCreate = query.get("ipdCreate");
   const router = useRouter();
 
   const { data: profile } = useProfile(false);
@@ -82,9 +93,18 @@ const PatientSearch = () => {
     ActionType.CREATE,
   );
 
+  const canCreateIPD = hasActionPermission(
+    profile?.data,
+    ModuleType.OPD_BILL,
+    ActionType.CREATE,
+  );
+
   const handleRegister = () => {
     if (canCreateOPD && opdCreate) {
       router.push("/opd/bill/new");
+      return;
+    } else if (canCreateIPD && ipdCreate) {
+      router.push("/ipd/bill/new");
       return;
     } else {
       router.push("/patient/new");
@@ -132,7 +152,11 @@ const PatientSearch = () => {
         return <SortableHeader<Patient> label="Actions" column={column} />;
       },
       cell: ({ row }) => (
-        <Actions data={row.original} createOpd={Boolean(canCreateOPD)} />
+        <Actions
+          data={row.original}
+          createIpd={!!canCreateIPD && !!ipdCreate}
+          createOpd={!!canCreateOPD && !!opdCreate}
+        />
       ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",

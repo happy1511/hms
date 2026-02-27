@@ -21,16 +21,13 @@ import {
 } from "react-hook-form";
 import {
   Appointment,
-  Bed,
   emergencyContact,
-  Floor,
   Patient,
   PatientContact,
   PatientIdentification,
   PatientNotes,
   PatientRelations,
   Prisma,
-  Ward,
 } from "@/generated/prisma/client";
 import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 
@@ -240,12 +237,15 @@ export interface FormRadioGroupProps<T extends FieldValues> {
 export interface FilterValues {
   name?: string;
   status?: string;
+  nonOccupied?: boolean;
   createdAt?: string;
   uhid?: string;
   contactNo?: string;
   doctorType?: DoctorType;
-  wardId?: string;
+  roomTypeId?: string;
   departmentId?: string;
+  isDischarged?: boolean;
+  roomId?: string;
   documentType?: string;
   billingSectionId?: string;
   referringDoctorId?: string;
@@ -428,18 +428,6 @@ export interface PatientType extends Patient {
   notes: PatientNotes[];
 }
 
-export interface FloorType extends Floor {
-  departments?: Ward[];
-}
-
-export interface WardType extends Ward {
-  floor?: FloorType;
-}
-
-export interface BedType extends Bed {
-  ward?: WardType;
-}
-
 export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
   include: {
     patient: true;
@@ -604,6 +592,45 @@ export type OPDType = Prisma.OpdGetPayload<{
     vital: true;
     createdAt: true;
     updatedAt: true;
+  };
+}>;
+
+export type IPDType = Prisma.IpdGetPayload<{
+  include: {
+    invoice: { include: { transactions: true } };
+    consultantDoctor: {
+      select: {
+        user: {
+          omit: {
+            password: true;
+          };
+        };
+      };
+    };
+    referringDoctor: {
+      select: {
+        user: {
+          omit: {
+            password: true;
+          };
+        };
+      };
+    };
+    patient: {
+      select: {
+        id: true;
+        uhid: true;
+        lastName: true;
+        firstName: true;
+        middleName: true;
+        dob: true;
+        maritalStatus: true;
+        relations: true;
+        addresses: true;
+        contacts: true;
+        gender: true;
+      };
+    };
   };
 }>;
 

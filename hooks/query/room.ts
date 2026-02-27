@@ -166,7 +166,7 @@ export const useInfiniteRoomsList = (filters: FilterValues, limit: number) => {
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(filters.roomTypeId && { roomTypeId: filters.roomTypeId }),
         },
       }),
 

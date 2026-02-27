@@ -56,7 +56,7 @@ interface SidebarItem {
 
 const opdItems: SidebarItem[] = [
   {
-    title: "PATIENTS (OPD/IPD)",
+    title: "PATIENTS OPD",
     url: "/opd/patients",
     icon: Users,
     module: [ModuleType.OPD_BILL],
@@ -83,9 +83,18 @@ const opdItems: SidebarItem[] = [
 ];
 
 const ipdItems = [
-  { title: "IN-PATIENTS LIST", url: "/ipd/in-patients", icon: BedDouble },
-  { title: "DISCHARGED PATIENTS", url: "/ipd/discharged", icon: UserCheck },
-  { title: "PATIENTS (OPD/IPD)", url: "/ipd/patients", icon: Users },
+  {
+    title: "PATIENTS IPD",
+    url: "/ipd/patients",
+    icon: Users,
+    module: [ModuleType.IPD_BILL],
+  },
+  {
+    title: "DISCHARGED PATIENTS",
+    url: "/ipd/discharged",
+    icon: UserCheck,
+    module: [ModuleType.IPD_BILL],
+  },
   { title: "MLC PATIENTS", url: "/ipd/mlc", icon: AlertTriangle },
   { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
 ];

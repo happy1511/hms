@@ -8,7 +8,13 @@ import {
   BedValidatorType,
   PartialBedValidatorType,
 } from "@/validators/api/masters/bed";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -54,10 +60,41 @@ export const useBedsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.wardId && { wardId: filters.wardId }),
-          ...(filters.departmentId && { departmentId: filters.departmentId }),
         },
       }),
+  });
+};
+
+export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
+  return useInfiniteQuery<
+    PaginatedResponse<Bed>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<Bed>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["beds-infinite", filters, limit],
+
+    queryFn: ({ pageParam = 1 }) =>
+      getBeds({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.roomId && { roomId: filters.roomId }),
+          ...(filters.nonOccupied && { nonOccupied: filters.nonOccupied }),
+        },
+      }),
+
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };
 

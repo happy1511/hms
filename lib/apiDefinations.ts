@@ -103,6 +103,12 @@ export const OPD_CONSULTATION = "/opd/consultation";
 export const OPD_VITALS = "/opd/vitals";
 
 // ----------------------------------
+// ---------IPD ENDPOINTS--------
+// ----------------------------------
+export const IPD = "/ipd";
+export const IPD_DISCHARGE = "/ipd/discharge-patient";
+
+// ----------------------------------
 // ---------INVOICE ENDPOINTS--------
 // ----------------------------------
 export const INVOICE_TRANSACTION = "/invoice/transaction";

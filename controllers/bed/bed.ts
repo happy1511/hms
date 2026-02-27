@@ -18,6 +18,7 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const status = query.status ?? "";
+      const nonOccupied = query.nonOccupied ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
       const roomId = query.roomId ? Number(query.roomId) : null;
@@ -30,6 +31,10 @@ export const getAPI = async (req: Request) => {
 
       if (roomId) {
         and.push({ roomId: roomId });
+      }
+
+      if (typeof nonOccupied == "boolean" && nonOccupied) {
+        and.push({ isOccupied: false });
       }
 
       if (departmentId) {

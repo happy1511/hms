@@ -1,5 +1,6 @@
 "use client";
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
@@ -7,19 +8,18 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
-import AddVitalsModal from "@/components/opd/AddVitalsModal";
-import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import AddPaymentModal from "@/components/opd/AddPayment";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useOpdList } from "@/hooks/query/opd";
+import { useDischargeIpd, useIpdList } from "@/hooks/query/ipd";
 import {
   ColumnDefWithClass,
   Doctor,
   FilterConfig,
   FilterValues,
-  OPDType,
+  IPDType,
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
@@ -34,66 +34,67 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
     <>
       {canCreate && (
         <CustomButton
-          onClick={() => router.push("/patient/search?opdCreate=true")}
+          onClick={() => router.push("/patient/search?ipdCreate=true")}
         >
-          New OPD
+          New IPD
         </CustomButton>
       )}
     </>
   );
 };
 
-const Actions = ({ data }: { data: OPDType }) => {
+const Actions = ({ data }: { data: IPDType }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
-  const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
-  const [addVitalsModal, setAddVitalsModal] = useState(false);
+  const [addPaymentModal, setAddPaymentModal] = useState(false);
+  const [dischargeModal, setDischargeModal] = useState(false);
+
+  const { mutateAsync: dischargeIpd, isPending: dischargePending } =
+    useDischargeIpd();
   const router = useRouter();
+
+  const actionsGroups = [
+    {
+      items: [
+        {
+          label: "Add Invoice Item",
+          onClick: () => setAddInvoiceItemModal(true),
+        },
+        {
+          label: "View Invoice",
+          onClick: () => router.push(`/invoice/${data.invoice.id}`),
+        },
+        {
+          label: "Add Payment",
+          onClick: () => setAddPaymentModal(true),
+        },
+        // {
+        //   label: "View Invoice Details",
+        //   onClick: () => setViewInvoiceModal(true),
+        // },
+      ],
+      label: "Invoice",
+    },
+  ];
+
+  if (!data.isDischarged) {
+    actionsGroups.push({
+      items: [
+        {
+          label: "Discharge Patient",
+          onClick: () => setDischargeModal(true),
+        },
+      ],
+      label: "IPD",
+    });
+  }
 
   return (
     <>
       <CustomActionDropdown
         triggerLabel="Actions"
-        groups={[
-          {
-            items: [
-              {
-                label: "Add Invoice Item",
-                onClick: () => setAddInvoiceItemModal(true),
-              },
-              {
-                label: "View Invoice",
-                onClick: () => router.push(`/invoice/${data.invoice.id}`),
-              },
-              // {
-              //   label: "View Invoice Details",
-              //   onClick: () => setViewInvoiceModal(true),
-              // },
-            ],
-            label: "Invoice",
-          },
-          {
-            items: [
-              {
-                label: "Create New OPD",
-                onClick: () => router.push(`/opd/bill/${data.patient.id}`),
-              },
-              {
-                label: "Add to IPD",
-                onClick: () => router.push(`/ipd/bill/${data.patient.id}`),
-              },
-              {
-                label: "Vitals",
-                onClick: () => setAddVitalsModal(true),
-              },
-              {
-                label: "View Consultation File",
-                onClick: () => router.push(`/opd/consultation/${data.id}`),
-              },
-            ],
-            label: "OPD",
-          },
-        ]}
+        groups={[...actionsGroups]}
       />
+
       <AddInvoiceItemModal
         billId={data.invoice.id}
         billPaid={0}
@@ -102,24 +103,30 @@ const Actions = ({ data }: { data: OPDType }) => {
         onOpenChange={setAddInvoiceItemModal}
         trigger={<div />}
       />
-      <AddVitalsModal
-        opdId={data.id}
-        open={addVitalsModal}
-        onOpenChange={setAddVitalsModal}
+
+      <AddPaymentModal
+        billId={data.invoice.id}
+        open={addPaymentModal}
+        onOpenChange={setAddPaymentModal}
         trigger={<div />}
-        vital={data.vital}
       />
-      <ViewInvoiceModal
-        opd={data}
-        open={viewInvoiceModal}
-        onOpenChange={setViewInvoiceModal}
-        trigger={<div />}
+
+      <CustomAlert
+        triggerButton={<div />}
+        open={dischargeModal}
+        onOpenChange={setDischargeModal}
+        title="Discharge Patient?"
+        description="Are you sure you want to discharge patient?"
+        cancelText="Cancel"
+        confirmText="Delete"
+        handleConfirm={() => dischargeIpd({ ipdId: data.id })}
+        pending={dischargePending}
       />
     </>
   );
 };
 
-const OPDs = () => {
+const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
@@ -133,7 +140,11 @@ const OPDs = () => {
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useOpdList(filters, page, limit);
+  const { data, isLoading, isError, error } = useIpdList(
+    { ...filters, isDischarged: !!discharged },
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <div />;
@@ -141,21 +152,21 @@ const OPDs = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
     ActionType.VIEW,
   );
 
   const canCreate = hasActionPermission(
     profile?.data,
-    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
     ActionType.CREATE,
   );
 
-  const columns: ColumnDefWithClass<OPDType>[] = [
+  const columns: ColumnDefWithClass<IPDType>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="OPD" column={column} />;
+        return <SortableHeader<IPDType> label="IPD" column={column} />;
       },
       cell: ({ row }) => <span>{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -164,7 +175,7 @@ const OPDs = () => {
     {
       accessorKey: "patientName",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Patient" column={column} />;
+        return <SortableHeader<IPDType> label="Patient" column={column} />;
       },
       cell: ({ row }) => (
         <div>
@@ -184,11 +195,6 @@ const OPDs = () => {
               {row.original.patient.gender},{" "}
               {formatAge(row.original.patient.dob)}{" "}
             </div>
-            {row.original.isInQueue && (
-              <div className="text-[10px] bg-orange-200 inline px-2">
-                In Queue{" "}
-              </div>
-            )}
           </div>
         </div>
       ),
@@ -196,7 +202,7 @@ const OPDs = () => {
     {
       accessorKey: "createdDate",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Date/Time" column={column} />;
+        return <SortableHeader<IPDType> label="Date/Time" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -207,7 +213,7 @@ const OPDs = () => {
     {
       accessorKey: "consultant",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Consultant" column={column} />;
+        return <SortableHeader<IPDType> label="Consultant" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -218,7 +224,7 @@ const OPDs = () => {
     {
       accessorKey: "referring",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="	Referred By" column={column} />;
+        return <SortableHeader<IPDType> label="	Referred By" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -231,7 +237,7 @@ const OPDs = () => {
     {
       accessorKey: "total",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Total" column={column} />;
+        return <SortableHeader<IPDType> label="Total" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -242,7 +248,7 @@ const OPDs = () => {
     {
       accessorKey: "discount",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Discount" column={column} />;
+        return <SortableHeader<IPDType> label="Discount" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -258,7 +264,7 @@ const OPDs = () => {
     {
       accessorKey: "final",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Final" column={column} />;
+        return <SortableHeader<IPDType> label="Final" column={column} />;
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
@@ -269,7 +275,7 @@ const OPDs = () => {
     {
       accessorKey: "paid",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="Paid" column={column} />;
+        return <SortableHeader<IPDType> label="Paid" column={column} />;
       },
       cell: ({ row }) => (
         <div>
@@ -318,7 +324,7 @@ const OPDs = () => {
 
   return (
     <CustomLayout
-      title="Patient OPD"
+      title="Patient IPD"
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
       {canView && (
@@ -347,4 +353,4 @@ const OPDs = () => {
   );
 };
 
-export default OPDs;
+export default IPDs;

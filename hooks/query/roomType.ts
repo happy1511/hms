@@ -169,9 +169,9 @@ export const useInfiniteRoomTypeList = (
         params: {
           limit,
           ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.departmentId && { departmentId: filters.departmentId }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.doctorType && { doctorType: filters.doctorType }),
         },
       }),
 

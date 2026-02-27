@@ -1,37 +1,9 @@
-import {
-  DiscountType,
-  OpdArrival,
-  PaymentMode,
-} from "@/generated/prisma/enums";
+import { OpdArrival } from "@/generated/prisma/enums";
 import { z } from "zod";
 import { patientValidator } from "../masters/patient";
 import { invoiceValidator } from "../invoice/invoice";
 
 // -------------------- Opd Bill --------------------
-
-const billingItemValidator = z.object({
-  index: z.coerce.number().optional(),
-  billingSection: z.object({ id: z.coerce.number().min(1), name: z.string() }),
-  service: z.object({
-    id: z.coerce.number().min(1),
-    name: z.string(),
-    maxDiscount: z.number(),
-  }),
-  rate: z.coerce.number(),
-  quantity: z.coerce.number(),
-  discountType: z.enum(DiscountType).default(DiscountType.VALUE),
-  discountValue: z.coerce.number().default(0),
-  total: z.coerce.number(),
-  createdAt: z.coerce.date(),
-});
-
-const transactionsValidator = z.object({
-  index: z.coerce.number().optional(),
-  amount: z.coerce.number(),
-  mode: z.enum(PaymentMode).default(PaymentMode.CASH),
-  remarks: z.string().max(500).nullable().optional(),
-});
-
 const opdBaseValidator = z.object({
   patientId: z.coerce.number().min(1, "Patient is required").optional(),
   patient: patientValidator,
@@ -46,14 +18,6 @@ const opdValidator = opdBaseValidator;
 
 const partialOpdValidator = opdBaseValidator.partial().extend({
   opdId: z.coerce.number(),
-});
-
-const addOpdBillItemValidator = billingItemValidator.extend({
-  billId: z.coerce.number(),
-});
-
-const addOpdTransactionValidator = transactionsValidator.extend({
-  billId: z.coerce.number(),
 });
 
 // -------------------- Opd File --------------------
@@ -112,12 +76,6 @@ const consultationFileValidator = consultationValidator.extend({
 // -------------------- Opd Bill --------------------
 type opdValidatorType = z.input<typeof opdValidator>;
 type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
-type addOpdBillItemValidatorType = z.input<typeof addOpdBillItemValidator>;
-type billingItemValidatorType = z.input<typeof billingItemValidator>;
-type transactionValidatorType = z.input<typeof transactionsValidator>;
-type addOpdTransactionValidatorType = z.input<
-  typeof addOpdTransactionValidator
->;
 
 // -------------------- Opd File --------------------
 type vitalValidatorType = z.input<typeof vitalsValidator>;
@@ -126,22 +84,14 @@ type prescribedDrugType = z.input<typeof prescribedDrugValidator>;
 
 export {
   opdValidator,
-  billingItemValidator,
-  transactionsValidator,
   partialOpdValidator,
-  addOpdBillItemValidator,
-  addOpdTransactionValidator,
   vitalsValidator,
   consultationFileValidator,
   prescribedDrugValidator,
 };
 export type {
   opdValidatorType,
-  billingItemValidatorType,
-  transactionValidatorType,
   partialOpdValidatorType,
-  addOpdBillItemValidatorType,
-  addOpdTransactionValidatorType,
   vitalValidatorType,
   consultantFileType,
   prescribedDrugType,
