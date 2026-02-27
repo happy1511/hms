@@ -31,14 +31,19 @@ export const PATIENT = "/patient";
 export const PATIENT_DOCUMENTS = "/patient/documents";
 
 // ----------------------------------
-// ---------FLOORS ENDPOINTS--------
+// ---------DEPARTMENTS ENDPOINTS--------
 // ----------------------------------
-export const FLOORS = "/floor";
+export const DEPARTMENTS = "/department";
 
 // ----------------------------------
-// ---------WARDS ENDPOINTS--------
+// ---------ROOM TYPE ENDPOINTS--------
 // ----------------------------------
-export const WARDS = "/ward";
+export const ROOM_TYPE = "/room-type";
+
+// ----------------------------------
+// ---------ROOM ENDPOINTS--------
+// ----------------------------------
+export const ROOMS = "/room";
 
 // ----------------------------------
 // ---------BED ENDPOINTS--------

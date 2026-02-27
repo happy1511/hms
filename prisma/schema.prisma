@@ -166,8 +166,9 @@ enum ResultType {
 enum ModuleType {
   USER
   DOCTOR_MASTER
-  FLOOR_MASTER
-  WARD_MASTER
+  DEPARTMENT_MASTER
+  ROOM_TYPE_MASTER
+  ROOM_MASTER
   BED_MASTER
   APPOINTMENT
   PATIENT_MASTER
@@ -566,37 +567,54 @@ model Patient {
 }
 
 // -------------------- Facility Management --------------------
-model Floor {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+model Department {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
   description String?
-  departments Ward[]
-  status      Status   @default(active)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      Status     @default(active)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  roomTypes   RoomType[]
 }
 
-model Ward {
-  id          Int      @id @default(autoincrement())
-  floorId     Int
-  floor       Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  name        String   @unique
+model RoomType {
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  description  String?
+  departmentId Int
+
+  status     Status     @default(active)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  rooms Room[]
+}
+
+model Room {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
   description String?
-  status      Status   @default(active)
-  beds        Bed[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  roomTypeId  Int
+
+  status    Status   @default(active)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  roomType  RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  beds Bed[]
 }
 
 model Bed {
   id        Int      @id @default(autoincrement())
-  wardId    Int
-  ward      Ward     @relation(fields: [wardId], references: [id], onDelete: Cascade)
+  roomId    Int
   bedNumber String
+  name      String?
   status    Status   @default(active)
-  occupied  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 // -------------------- Appointment Management --------------------

@@ -5,10 +5,12 @@ import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
+import { Room } from "@/generated/prisma/client";
 import { Status } from "@/generated/prisma/enums";
+import { BedGetPayload } from "@/generated/prisma/models";
 import { useCreateBed, useGetBed, useUpdateBed } from "@/hooks/query/bed";
-import { useInfiniteWardsList } from "@/hooks/query/ward";
-import { BedType, PaginatedResponse, WardType } from "@/lib/type";
+import { useInfiniteRoomsList } from "@/hooks/query/room";
+import { PaginatedResponse } from "@/lib/type";
 import {
   bedValidator,
   BedValidatorType,
@@ -23,9 +25,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 const CreateForm = () => {
-  const [floorSearchValue, setFloorSearchValue] = useState("");
+  const [roomSearchValue, setRoomSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateBed();
-  const wardQuery = useInfiniteWardsList({ name: floorSearchValue }, 10);
+  const roomQuery = useInfiniteRoomsList({ name: roomSearchValue }, 10);
 
   const form = useForm<BedValidatorType>({
     resolver: zodResolver(bedValidator),
@@ -49,20 +51,20 @@ const CreateForm = () => {
             required
           />
           <FormInfiniteSelect<
-            WardType,
-            PaginatedResponse<WardType>,
+            Room,
+            PaginatedResponse<Room>,
             number,
             BedValidatorType
           >
-            name="ward"
-            label="Ward"
+            name="room"
+            label="Room"
             control={form.control}
-            query={wardQuery}
+            query={roomQuery}
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
             valueKey={(data) => data.id}
-            search={floorSearchValue}
-            onSearchChange={setFloorSearchValue}
+            search={roomSearchValue}
+            onSearchChange={setRoomSearchValue}
             required
           />
         </div>
@@ -74,17 +76,20 @@ const CreateForm = () => {
   );
 };
 
-const UpdateForm = ({ data }: { data: BedType }) => {
+const UpdateForm = ({
+  data,
+}: {
+  data: BedGetPayload<{ include: { room: true } }>;
+}) => {
   const { mutateAsync: update, isPending: updating } = useUpdateBed();
-  const [wardSearch, setWardSearch] = useState("");
-  const wardQuery = useInfiniteWardsList({ name: wardSearch }, 10);
+  const [roomSearch, setRoomSearch] = useState("");
+  const roomQuery = useInfiniteRoomsList({ name: roomSearch }, 10);
 
   const form = useForm<PartialBedValidatorType>({
     defaultValues: {
       bedNumber: data.bedNumber,
-      ward: data.ward,
+      room: data.room,
       status: data.status,
-      occupied: data.occupied,
       bedId: Number(data.id),
     },
     resolver: zodResolver(partialBedValidator),
@@ -117,19 +122,19 @@ const UpdateForm = ({ data }: { data: BedType }) => {
             required
           />
           <FormInfiniteSelect<
-            WardType,
-            PaginatedResponse<WardType>,
+            Room,
+            PaginatedResponse<Room>,
             number,
             PartialBedValidatorType
           >
-            name="ward"
+            name="room"
             control={form.control}
-            query={wardQuery}
+            query={roomQuery}
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
             valueKey={(data) => data.id}
-            search={wardSearch}
-            onSearchChange={setWardSearch}
+            search={roomSearch}
+            onSearchChange={setRoomSearch}
             required
           />
         </div>

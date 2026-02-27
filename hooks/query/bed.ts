@@ -1,4 +1,5 @@
 import { Bed } from "@/generated/prisma/client";
+import { BedGetPayload } from "@/generated/prisma/models";
 import { BEDS } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -13,21 +14,23 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const createBeds = createRequest<ApiResponse<Bed[]>>(BEDS, "POST");
-const updateBed = createRequest<ApiResponse<Bed>, undefined, { id: string }>(
-  (p) => `${BEDS}/${p.id}`,
-  "PUT",
-);
+const updateBed = createRequest<
+  ApiResponse<BedGetPayload<{ include: { room: true } }>>,
+  undefined,
+  { id: string }
+>((p) => `${BEDS}/${p.id}`, "PUT");
 const deleteBed = createRequest<ApiResponse<null>, undefined, { id: string }>(
   (p) => `${BEDS}/${p.id}`,
   "DELETE",
 );
-const getBed = createRequest<ApiResponse<Bed>, undefined, { id: string }>(
-  (p) => `${BEDS}/${p.id}`,
-  "GET",
-);
+const getBed = createRequest<
+  ApiResponse<BedGetPayload<{ include: { room: true } }>>,
+  undefined,
+  { id: string }
+>((p) => `${BEDS}/${p.id}`, "GET");
 
 const getBeds = createRequest<
-  PaginatedResponse<Bed>,
+  PaginatedResponse<BedGetPayload<{ include: { room: true } }>>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(BEDS, "GET");
 
@@ -37,9 +40,9 @@ export const useBedsList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<Bed>,
+    PaginatedResponse<BedGetPayload<{ include: { room: true } }>>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<Bed>,
+    PaginatedResponse<BedGetPayload<{ include: { room: true } }>>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["beds", filters, page, limit],
@@ -52,7 +55,7 @@ export const useBedsList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.wardId && { wardId: filters.wardId }),
-          ...(filters.floorId && { floorId: filters.floorId }),
+          ...(filters.departmentId && { departmentId: filters.departmentId }),
         },
       }),
   });
@@ -60,9 +63,9 @@ export const useBedsList = (
 
 export const useGetBed = (id?: string) => {
   return useQuery<
-    ApiResponse<Bed>,
+    ApiResponse<BedGetPayload<{ include: { room: true } }>>,
     AxiosError<ApiResponse<null>>,
-    Bed,
+    BedGetPayload<{ include: { room: true } }>,
     [string, string | undefined]
   >({
     queryKey: ["get-beds", id],
@@ -103,7 +106,7 @@ export const useUpdateBed = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<Bed>,
+    ApiResponse<BedGetPayload<{ include: { room: true } }>>,
     AxiosError<ApiResponse<null>>,
     PartialBedValidatorType
   >({

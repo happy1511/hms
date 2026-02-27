@@ -9,14 +9,10 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
+import { BedGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useBedsList, useDeleteBed } from "@/hooks/query/bed";
-import {
-  BedType,
-  ColumnDefWithClass,
-  FilterConfig,
-  FilterValues,
-} from "@/lib/type";
+import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
@@ -63,7 +59,7 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: BedType;
+  data: BedGetPayload<{ include: { room: true } }>;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
@@ -73,12 +69,13 @@ const Actions = ({
   return (
     <>
       {canView && (
-        <DataViewModal<BedType>
+        <DataViewModal<BedGetPayload<{ include: { room: true } }>>
           data={data}
           title="Bed Details"
           fields={[
             { key: "id", label: "BedId" },
             { key: "bedNumber", label: "bedNumber" },
+            { key: "roomId", label: "room" },
             { key: "status", label: "Status" },
             { key: "createdAt", label: "Created At" },
             { key: "updatedAt", label: "Updated At" },
@@ -148,11 +145,18 @@ const Beds = () => {
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<BedType>[] = [
+  const columns: ColumnDefWithClass<
+    BedGetPayload<{ include: { room: true } }>
+  >[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="ID" column={column} />;
+        return (
+          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+            label="ID"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -161,7 +165,12 @@ const Beds = () => {
     {
       accessorKey: "bedNumber",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="Bed Number" column={column} />;
+        return (
+          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+            label="Bed Number"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => (
         <Link
@@ -175,20 +184,16 @@ const Beds = () => {
       cellClassName: "min-w-50",
     },
     {
-      accessorKey: "ward",
-      header: ({ column }) => {
-        return <SortableHeader<BedType> label="Ward Name" column={column} />;
-      },
-      cell: ({ row }) => row.original.ward?.name || "-",
-      headerClassName: "min-w-50",
-      cellClassName: "min-w-50",
-    },
-    {
       accessorKey: "floor",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="Floor Name" column={column} />;
+        return (
+          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+            label="Floor Name"
+            column={column}
+          />
+        );
       },
-      cell: ({ row }) => row.original.ward?.floor?.name || "-",
+      cell: ({ row }) => row.original.room?.name || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -205,7 +210,12 @@ const Beds = () => {
     {
       accessorKey: "createdAt",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="Created at" column={column} />;
+        return (
+          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+            label="Created at"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => {
         return (
@@ -221,7 +231,12 @@ const Beds = () => {
     {
       accessorKey: "updatedAt",
       header: ({ column }) => {
-        return <SortableHeader<BedType> label="Updated at" column={column} />;
+        return (
+          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+            label="Updated at"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => {
         return (

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const bedValidator = z.object({
   countOfBEd: z.number().min(1, "Count of Beds is required"),
-  ward: z.object({
+  room: z.object({
     id: z.coerce.number().min(1),
     name: z.string().min(1, "Ward name is required"),
   }),
@@ -12,7 +12,7 @@ const bedValidator = z.object({
 const partialBedValidator = z.object({
   bedId: z.number().min(1, "Bed Id is required"),
   bedNumber: z.string().min(1, "Bed Name is required").optional(),
-  ward: z
+  room: z
     .object({
       id: z.coerce.number().min(1),
       name: z.string().min(1, "Ward name is required"),

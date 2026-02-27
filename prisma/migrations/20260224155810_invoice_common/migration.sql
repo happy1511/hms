@@ -14,22 +14,22 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `opdbillingitem` DROP FOREIGN KEY `OpdBillingItem_billingSectionId_fkey`;
+ALTER TABLE `OpdBillingItem` DROP FOREIGN KEY `OpdBillingItem_billingSectionId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `opdbillingitem` DROP FOREIGN KEY `OpdBillingItem_opdId_fkey`;
+ALTER TABLE `OpdBillingItem` DROP FOREIGN KEY `OpdBillingItem_opdId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `opdbillingitem` DROP FOREIGN KEY `OpdBillingItem_serviceId_fkey`;
+ALTER TABLE `OpdBillingItem` DROP FOREIGN KEY `OpdBillingItem_serviceId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `transaction` DROP FOREIGN KEY `Transaction_opdId_fkey`;
+ALTER TABLE `Transaction` DROP FOREIGN KEY `Transaction_opdId_fkey`;
 
 -- DropIndex
-DROP INDEX `Transaction_opdId_fkey` ON `transaction`;
+DROP INDEX `Transaction_opdId_fkey` ON `Transaction`;
 
 -- AlterTable
-ALTER TABLE `opd` DROP COLUMN `billingType`,
+ALTER TABLE `Opd` DROP COLUMN `billingType`,
     DROP COLUMN `discountType`,
     DROP COLUMN `discountValue`,
     DROP COLUMN `isFree`,
@@ -39,10 +39,10 @@ ALTER TABLE `opd` DROP COLUMN `billingType`,
     ADD COLUMN `invoiceId` INTEGER NOT NULL;
 
 -- AlterTable
-ALTER TABLE `transaction` ADD COLUMN `invoiceId` INTEGER NULL;
+ALTER TABLE `Transaction` ADD COLUMN `invoiceId` INTEGER NULL;
 
 -- DropTable
-DROP TABLE `opdbillingitem`;
+DROP TABLE `OpdBillingItem`;
 
 -- CreateTable
 CREATE TABLE `InvoiceBillingItem` (

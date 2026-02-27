@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `radiologytemplate` MODIFY `content` LONGTEXT NOT NULL;
+ALTER TABLE `RadiologyTemplate` MODIFY `content` LONGTEXT NOT NULL;

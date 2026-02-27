@@ -109,16 +109,22 @@ const masters: SidebarItem[] = [
     module: [ModuleType.USER],
   },
   {
-    title: "FLOORS",
-    url: "/floors",
+    title: "DEPARTMENTS",
+    url: "/departments",
     icon: Layers,
-    module: [ModuleType.FLOOR_MASTER],
+    module: [ModuleType.DEPARTMENT_MASTER],
   },
   {
-    title: "WARDS",
-    url: "/wards",
+    title: "ROOM TYPE",
+    url: "/room-types",
     icon: DoorClosed,
-    module: [ModuleType.WARD_MASTER],
+    module: [ModuleType.ROOM_TYPE_MASTER],
+  },
+  {
+    title: "ROOMS",
+    url: "/room",
+    icon: BedDouble,
+    module: [ModuleType.ROOM_MASTER],
   },
   {
     title: "BEDS",

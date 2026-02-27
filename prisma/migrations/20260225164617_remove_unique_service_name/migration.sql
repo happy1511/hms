@@ -5,10 +5,10 @@
 
 */
 -- DropIndex
-DROP INDEX `Invoice_opdId_key` ON `invoice`;
+DROP INDEX `Invoice_opdId_key` ON `Invoice`;
 
 -- DropIndex
-DROP INDEX `Service_name_key` ON `service`;
+DROP INDEX `Service_name_key` ON `Service`;
 
 -- AlterTable
-ALTER TABLE `invoice` DROP COLUMN `opdId`;
+ALTER TABLE `Invoice` DROP COLUMN `opdId`;

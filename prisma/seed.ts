@@ -47,6 +47,7 @@ const addActionsAndModules = async () => {
       create: { name: m },
     });
   }
+  console.log("---- Seeding Modules Completed -----");
 };
 
 /* ---------------------------------- */

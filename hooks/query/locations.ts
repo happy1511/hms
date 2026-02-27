@@ -59,7 +59,7 @@ export const useLocationsList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.wardId && { wardId: filters.wardId }),
-          ...(filters.floorId && { floorId: filters.floorId }),
+          ...(filters.departmentId && { departmentId: filters.departmentId }),
         },
       }),
   });

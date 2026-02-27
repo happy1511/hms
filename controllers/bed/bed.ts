@@ -20,18 +20,20 @@ export const getAPI = async (req: Request) => {
       const status = query.status ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
-      const wardId = query.wardId ? Number(query.wardId) : null;
-      const floorId = query.floorId ? Number(query.floorId) : null;
+      const roomId = query.roomId ? Number(query.roomId) : null;
+      const departmentId = query.departmentId
+        ? Number(query.departmentId)
+        : null;
 
       const skip = (page - 1) * limit;
       const and: Prisma.BedWhereInput[] = [];
 
-      if (wardId) {
-        and.push({ wardId: wardId });
+      if (roomId) {
+        and.push({ roomId: roomId });
       }
 
-      if (floorId) {
-        and.push({ ward: { floorId: floorId } });
+      if (departmentId) {
+        and.push({ room: { roomType: { departmentId: departmentId } } });
       }
 
       if (search) {
@@ -62,11 +64,11 @@ export const getAPI = async (req: Request) => {
           select: {
             id: true,
             bedNumber: true,
-            wardId: true,
-            ward: {
+            roomId: true,
+            room: {
               select: {
                 name: true,
-                floor: { select: { id: true, name: true } },
+                roomType: { select: { id: true, name: true } },
               },
             },
             status: true,
@@ -102,16 +104,15 @@ export const getDetailsAPI = async (
         where: { id },
         select: {
           id: true,
-          ward: {
+          room: {
             select: {
               id: true,
               name: true,
-              floor: { select: { id: true, name: true } },
+              roomType: { select: { id: true, name: true } },
             },
           },
           bedNumber: true,
           status: true,
-          occupied: true,
         },
       });
 
@@ -139,8 +140,8 @@ export const createAPI = async (req: Request) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const existingWard = await tx.ward.findFirst({
-          where: { id: data.ward.id },
+        const existingWard = await tx.room.findFirst({
+          where: { id: data.room.id },
         });
 
         if (!existingWard) {
@@ -150,9 +151,9 @@ export const createAPI = async (req: Request) => {
           });
         }
 
-        const { countOfBEd, ward } = data;
+        const { countOfBEd, room } = data;
         const lastBed = await tx.bed.findFirst({
-          where: { wardId: ward.id },
+          where: { roomId: room.id },
           orderBy: { id: "desc" },
         });
 
@@ -166,7 +167,7 @@ export const createAPI = async (req: Request) => {
             return tx.bed.create({
               data: {
                 bedNumber,
-                wardId: ward.id,
+                roomId: room.id,
               },
             });
           }),
@@ -195,7 +196,7 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const { bedId, ward, status, occupied } = data;
+        const { bedId, room, status, occupied } = data;
         const existingBed = await tx.bed.findUnique({
           where: { id: bedId },
         });
@@ -207,9 +208,9 @@ export const updateAPI = async (
           });
         }
 
-        if (ward?.id) {
-          const existingWard = await tx.ward.findUnique({
-            where: { id: ward.id },
+        if (room?.id) {
+          const existingWard = await tx.room.findUnique({
+            where: { id: room.id },
           });
 
           if (!existingWard) {
@@ -222,9 +223,9 @@ export const updateAPI = async (
 
         let newBedNumber = existingBed.bedNumber;
 
-        if (existingBed.wardId !== ward?.id) {
+        if (existingBed.roomId !== room?.id) {
           const lastBedInNewWard = await tx.bed.findFirst({
-            where: { wardId: ward?.id },
+            where: { roomId: room?.id },
             orderBy: { id: "desc" },
           });
 
@@ -238,10 +239,9 @@ export const updateAPI = async (
         const updatedBed = await tx.bed.update({
           where: { id: bedId },
           data: {
-            wardId: ward?.id,
+            roomId: room?.id,
             bedNumber: newBedNumber,
             status,
-            occupied,
           },
         });
 

@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `radiologytestresult` MODIFY `value` LONGTEXT NULL;
+ALTER TABLE `RadiologyTestResult` MODIFY `value` LONGTEXT NULL;

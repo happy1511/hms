@@ -208,7 +208,7 @@ CREATE TABLE `Floor` (
 -- CreateTable
 CREATE TABLE `Ward` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `floorId` INTEGER NOT NULL,
+    `departmentId` INTEGER NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NULL,
     `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
@@ -626,7 +626,7 @@ ALTER TABLE `PatientAddress` ADD CONSTRAINT `PatientAddress_patientId_fkey` FORE
 ALTER TABLE `PatientIdentification` ADD CONSTRAINT `PatientIdentification_patientId_fkey` FOREIGN KEY (`patientId`) REFERENCES `Patient`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Ward` ADD CONSTRAINT `Ward_floorId_fkey` FOREIGN KEY (`floorId`) REFERENCES `Floor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Ward` ADD CONSTRAINT `Ward_departmentId_fkey` FOREIGN KEY (`departmentId`) REFERENCES `Floor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Bed` ADD CONSTRAINT `Bed_wardId_fkey` FOREIGN KEY (`wardId`) REFERENCES `Ward`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

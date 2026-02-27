@@ -245,7 +245,7 @@ export interface FilterValues {
   contactNo?: string;
   doctorType?: DoctorType;
   wardId?: string;
-  floorId?: string;
+  departmentId?: string;
   documentType?: string;
   billingSectionId?: string;
   referringDoctorId?: string;
