@@ -1,5 +1,7 @@
+import Dashboard from "@/app-pages/dashboard/Dashboard";
+
 const page = () => {
-  return <div>page</div>;
+  return <Dashboard />;
 };
 
 export default page;

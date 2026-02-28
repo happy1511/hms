@@ -1053,3 +1053,27 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
 export interface OpdInvoiceDetails extends OPDType {
   billingItems: InvoiceBillingItem[];
 }
+
+export interface DashboardType {
+  patients: {
+    opd: number;
+    ipd: number;
+  };
+  collections: {
+    opd: number;
+    ipd: number;
+  };
+  billing: {
+    opd: number;
+    ipd: number;
+  };
+  transactions: {
+    mode: string;
+    amount: number;
+  }[];
+  sectionWiseBilling: {
+    id: number;
+    name: string;
+    total: number;
+  }[];
+}

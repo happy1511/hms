@@ -10,6 +10,11 @@ export const PROFILE = "/auth/profile";
 export const PERMISSION = "/permission";
 
 // ----------------------------------
+// ---DASHBOARD ENDPOINTS----------
+// ----------------------------------
+export const DASHBOARD = "/dashboard";
+
+// ----------------------------------
 // ---------LOCATION ENDPOINTS--------
 // ----------------------------------
 export const LOCATIONS = "/locations";

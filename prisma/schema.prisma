@@ -164,6 +164,7 @@ enum ResultType {
 }
 
 enum ModuleType {
+  DASHBOARD
   USER
   DOCTOR_MASTER
   DEPARTMENT_MASTER

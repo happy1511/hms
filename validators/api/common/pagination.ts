@@ -37,15 +37,38 @@ const paginationValidator = z.object({
   doctorType: z.enum(DoctorType).optional(),
   uhid: z.string().optional(),
   contactNo: z.string().optional(),
-  roomId: z.coerce.number().min(1).optional(),
-  roomTypeId: z.coerce.number().min(1).optional(),
-  departmentId: z.coerce.number().min(1).optional(),
-  doctorId: z.coerce.number().min(1).optional(),
-  billingSectionId: z.coerce.number().min(1).optional(),
+  roomId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((t) => Number(t)),
+  roomTypeId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((t) => Number(t)),
+  departmentId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((t) => Number(t)),
+  doctorId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((t) => Number(t)),
+  billingSectionId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((t) => Number(t)),
   documentType: z.enum(IdentityType).optional(),
   pathologyTestType: z.enum(PathologyTestSection).optional(),
   radiologyTestType: z.enum(RadiologySection).optional(),
-  pathologyTestId: z.coerce.number().optional(),
+  pathologyTestId: z.coerce
+    .number()
+    .optional()
+    .transform((t) => Number(t)),
   defaultSelectedIds: z.array(z.coerce.number()).optional(),
   transactionType: z.enum(["opd", "ipd"]).optional(),
   opdId: z.coerce
