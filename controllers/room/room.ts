@@ -79,7 +79,7 @@ export const getAPI = async (req: Request) => {
 
 export const getDetailsAPI = async (
   req: Request,
-  { params }: { params: { wardId: string } },
+  { params }: { params: { roomId: string } },
 ) => {
   return validateRequest({
     paramsSchema: partialRoomValidator,
@@ -169,7 +169,7 @@ export const createAPI = async (req: Request) => {
 };
 export const updateAPI = async (
   req: Request,
-  { params }: { params: { wardId: string } },
+  { params }: { params: { roomId: string } },
 ) => {
   return validateRequest({
     bodySchema: partialRoomValidator,
@@ -246,7 +246,7 @@ export const updateAPI = async (
 
 export const deleteAPI = async (
   req: Request,
-  { params }: { params: { wardId: string } },
+  { params }: { params: { roomId: string } },
 ) => {
   return validateRequest({
     bodySchema: partialRoomValidator,

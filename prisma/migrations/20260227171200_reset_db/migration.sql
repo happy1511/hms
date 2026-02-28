@@ -1,37 +1,37 @@
 /*
   Warnings:
 
-  - You are about to drop the column `occupied` on the `bed` table. All the data in the column will be lost.
-  - You are about to drop the column `wardId` on the `bed` table. All the data in the column will be lost.
+  - You are about to drop the column `occupied` on the `Bed` table. All the data in the column will be lost.
+  - You are about to drop the column `wardId` on the `Bed` table. All the data in the column will be lost.
   - The values [FLOOR_MASTER,WARD_MASTER] on the enum `Module_name` will be removed. If these variants are still used in the database, this will fail.
   - You are about to drop the `floor` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `ward` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `Ward` table. If the table is not empty, all the data it contains will be lost.
   - Added the required column `roomId` to the `Bed` table without a default value. This is not possible if the table is not empty.
 
 */
 -- DropForeignKey
-ALTER TABLE `bed` DROP FOREIGN KEY `Bed_wardId_fkey`;
+ALTER TABLE `Bed` DROP FOREIGN KEY `Bed_wardId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `ward` DROP FOREIGN KEY `Ward_departmentId_fkey`;
+ALTER TABLE `Ward` DROP FOREIGN KEY `Ward_departmentId_fkey`;
 
 -- DropIndex
-DROP INDEX `Bed_wardId_fkey` ON `bed`;
+DROP INDEX `Bed_wardId_fkey` ON `Bed`;
 
 -- AlterTable
-ALTER TABLE `bed` DROP COLUMN `occupied`,
+ALTER TABLE `Bed` DROP COLUMN `occupied`,
     DROP COLUMN `wardId`,
     ADD COLUMN `name` VARCHAR(191) NULL,
     ADD COLUMN `roomId` INTEGER NOT NULL;
 
 -- AlterTable
-ALTER TABLE `module` MODIFY `name` ENUM('USER', 'DOCTOR_MASTER', 'DEPARTMENT_MASTER', 'ROOM_TYPE_MASTER', 'ROOM_MASTER', 'BED_MASTER', 'APPOINTMENT', 'PATIENT_MASTER', 'BILLING_SECTION_MASTER', 'SERVICE_MASTER', 'PATHOLOGY_TEST_MASTER', 'RADIOLOGY_TEST_MASTER', 'OPD_BILL', 'OPD_QUEUE', 'PATHOLOGY_ORDER', 'RADIOLOGY_ORDER', 'LOCATION_MASTER', 'INVOICE') NOT NULL;
+ALTER TABLE `Module` MODIFY `name` ENUM('USER', 'DOCTOR_MASTER', 'DEPARTMENT_MASTER', 'ROOM_TYPE_MASTER', 'ROOM_MASTER', 'BED_MASTER', 'APPOINTMENT', 'PATIENT_MASTER', 'BILLING_SECTION_MASTER', 'SERVICE_MASTER', 'PATHOLOGY_TEST_MASTER', 'RADIOLOGY_TEST_MASTER', 'OPD_BILL', 'OPD_QUEUE', 'PATHOLOGY_ORDER', 'RADIOLOGY_ORDER', 'LOCATION_MASTER', 'INVOICE') NOT NULL;
 
 -- DropTable
-DROP TABLE `floor`;
+DROP TABLE `Floor`;
 
 -- DropTable
-DROP TABLE `ward`;
+DROP TABLE `Ward`;
 
 -- CreateTable
 CREATE TABLE `Department` (

@@ -288,7 +288,7 @@ const PathologyOrders = ({
           <SortableHeader<PathologyOrderType> label="Doctor" column={column} />
         );
       },
-      cell: ({ row }) => row.original.opd.consultantDoctor.user.name || "-",
+      cell: ({ row }) => row.original.opd?.consultantDoctor.user.name || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

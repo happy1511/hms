@@ -58,7 +58,6 @@ export const useLocationsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.wardId && { wardId: filters.wardId }),
           ...(filters.departmentId && { departmentId: filters.departmentId }),
         },
       }),

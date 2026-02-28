@@ -5,7 +5,7 @@ import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ wardId: string }> },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
   const p = await params;
   return withErrorHandling(() =>
@@ -24,7 +24,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ wardId: string }> },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
   const p = await params;
   return withErrorHandling(() =>
@@ -43,7 +43,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ wardId: string }> },
+  { params }: { params: Promise<{ roomId: string }> },
 ) {
   const p = await params;
   return withErrorHandling(() =>

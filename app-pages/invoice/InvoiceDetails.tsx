@@ -3,7 +3,6 @@
 import { Form } from "@/components/ui/form";
 import { useInfiniteServicesList } from "@/hooks/query/service";
 import { InvoiceBillingItem } from "@/lib/type";
-import { billingItemValidatorType } from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -27,6 +26,7 @@ import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
 import {
+  billingItemValidatorType,
   updateInvoiceValidator,
   updateInvoiceValidatorType,
 } from "@/validators/api/invoice/invoice";
