@@ -199,12 +199,11 @@ export const deleteAPI = async (
   { params }: { params: { sectionId: number } },
 ) => {
   return validateRequest({
-    bodySchema: partialBillingSectionValidator,
     paramsSchema: partialBillingSectionValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingBillingSection = await tx.billingSection.findUnique({
           where: { id: data.sectionId },

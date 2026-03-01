@@ -113,8 +113,8 @@ const NotesInfoForm = ({
                 <Trash2 className="size-2.5 text-destructive" />
               </Button>
             }
-            title="Delete Address?"
-            description="Are you sure you want to delete Address?"
+            title="Delete Note?"
+            description="Are you sure you want to delete note?"
             cancelText="Cancel"
             confirmText="Delete"
             handleConfirm={() => remove(0)}

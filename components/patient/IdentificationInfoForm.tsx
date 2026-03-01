@@ -113,8 +113,8 @@ const IdentificationInfoForm = ({
                 <Trash2 className="size-2.5 text-destructive" />
               </Button>
             }
-            title="Delete Address?"
-            description="Are you sure you want to delete Address?"
+            title="Delete Identification?"
+            description="Are you sure you want to delete identification?"
             cancelText="Cancel"
             confirmText="Delete"
             handleConfirm={() => remove(0)}

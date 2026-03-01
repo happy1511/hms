@@ -240,12 +240,11 @@ export const deleteAPI = async (
   { params }: { params: { typeId: string } },
 ) => {
   return validateRequest({
-    bodySchema: partialRoomTypeValidator,
     paramsSchema: partialRoomTypeValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingRoomType = await tx.roomType.findUnique({
           where: { id: data.typeId },

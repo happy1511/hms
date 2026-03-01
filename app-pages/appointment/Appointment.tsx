@@ -109,8 +109,8 @@ const Actions = ({
               <Trash2 className="size-2.5 text-destructive" />
             </Button>
           }
-          title="Delete User?"
-          description="Are you sure you want to delete user?"
+          title="Delete Appointment?"
+          description="Are you sure you want to delete appointment?"
           cancelText="Cancel"
           confirmText="Delete"
           handleConfirm={() => deleteUser({ id: data.id })}

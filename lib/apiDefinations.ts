@@ -41,6 +41,21 @@ export const PATIENT_DOCUMENTS = "/patient/documents";
 export const DEPARTMENTS = "/department";
 
 // ----------------------------------
+// ---------SUPPLIER ENDPOINTS--------
+// ----------------------------------
+export const DRUG_SUPPLIER = "/supplier";
+
+// ----------------------------------
+// ---------DRUG CATEGORY ENDPOINTS--------
+// ----------------------------------
+export const DRUG_CATEGORY = "/drug-category";
+
+// ----------------------------------
+// ---------DRUG ENDPOINTS--------
+// ----------------------------------
+export const PHARMACY_DRUG = "/drug";
+
+// ----------------------------------
 // ---------ROOM TYPE ENDPOINTS--------
 // ----------------------------------
 export const ROOM_TYPE = "/room-type";

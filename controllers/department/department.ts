@@ -200,12 +200,11 @@ export const deleteAPI = async (
   { params }: { params: { departmentId: string } },
 ) => {
   return validateRequest({
-    bodySchema: partialDepartmentValidator,
     paramsSchema: partialDepartmentValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingDepartment = await tx.department.findUnique({
           where: { id: data.departmentId },

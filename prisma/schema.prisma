@@ -164,8 +164,8 @@ enum ResultType {
 }
 
 enum ModuleType {
-  DASHBOARD
   USER
+  DASHBOARD
   DOCTOR_MASTER
   DEPARTMENT_MASTER
   ROOM_TYPE_MASTER
@@ -177,13 +177,18 @@ enum ModuleType {
   SERVICE_MASTER
   PATHOLOGY_TEST_MASTER
   RADIOLOGY_TEST_MASTER
-  OPD_BILL
   IPD_BILL
+  OPD_BILL
   OPD_QUEUE
   PATHOLOGY_ORDER
   RADIOLOGY_ORDER
   LOCATION_MASTER
   INVOICE
+  PHARMACY_SUPPLIER
+  PHARMACY_DRUG_MASTER
+  PHARMACY_DRUG_CATEGORY_MASTER
+  PHARMACY_PURCHASE_ORDER
+  PHARMACY_GRN
 }
 
 enum ActionType {
@@ -1114,3 +1119,99 @@ model Ipd {
   room                Room?                @relation(fields: [roomId], references: [id])
   roomId              Int?
 }
+
+// -------------------- Drug Management --------------------
+
+model DrugCategory {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drugs         Drug[]
+  purchaseItems PurchaseItem[]
+}
+
+model Drug {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String?
+  categoryId     Int
+  hsnCode        Int
+  gstPercentage  Float   @default(0)
+  cGstPercentage Float   @default(0)
+  sGstPercentage Float   @default(0)
+  iGstPercentage Float   @default(0)
+  manufacturer   String
+  unit           String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category       DrugCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  inventoryItems InventoryItems[]
+  purchaseItems  PurchaseItem[]
+}
+
+model DrugSupplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  gstIn     Int?
+  email     String?
+  phone     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  inventoryItems InventoryItems[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model InventoryItems {
+  id                Int      @id @default(autoincrement())
+  drugId            Int
+  batchNo           Int
+  expiryDate        DateTime
+  manufacturingDate DateTime
+  purchasePrice     Float
+  mrp               Float
+  sellingPrice      Float
+  wholeSalePrice    Float
+  quantityInStock   Int
+  supplierId        Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  drug     Drug         @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  supplier DrugSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseItem {
+  id                 Int   @id @default(autoincrement())
+  drugId             Int
+  quantity           Int
+  categoryId         Int
+  discountPercentage Float @default(0)
+  rate               Float @default(0)
+  total              Float @default(0)
+  purchaseOrderId    Int
+
+  category      DrugCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  drug          Drug          @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+}
+
+model PurchaseOrder {
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  remarks    String?
+  orderDate  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  supplier DrugSupplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items    PurchaseItem[]
+}
+
+// -------------------- Pharmacy Management --------------------

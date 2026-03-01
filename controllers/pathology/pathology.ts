@@ -1497,12 +1497,11 @@ export const deleteAPI = async (
   { params }: { params: { testId: number } },
 ) => {
   return validateRequest({
-    bodySchema: partialPathologyTestValidator,
     paramsSchema: partialPathologyTestValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingTest = await tx.pathologyTest.findUnique({
           where: { id: data.testId },

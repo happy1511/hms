@@ -357,12 +357,11 @@ export const deleteAPI = async (
   { params }: { params: { userId: string } },
 ) => {
   return validateRequest({
-    bodySchema: partialDoctorValidator,
     paramsSchema: partialDoctorValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       const existingUser = await prisma.user.findUnique({
         where: { id: data.userId },
         include: { doctor: true },

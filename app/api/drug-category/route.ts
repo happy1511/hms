@@ -1,0 +1,34 @@
+import { createAPI, getAPI } from "@/controllers/drug-category/drugCategory";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { withErrorHandling } from "@/lib/errorHandler";
+import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
+
+export async function GET(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["PHARMACY_DRUG_CATEGORY_MASTER"],
+          action: ActionType["VIEW"],
+        },
+      ],
+      () => getAPI(request),
+    ),
+  );
+}
+
+export async function POST(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["PHARMACY_DRUG_CATEGORY_MASTER"],
+          action: ActionType["CREATE"],
+        },
+      ],
+      () => createAPI(request),
+    ),
+  );
+}

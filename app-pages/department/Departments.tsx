@@ -104,8 +104,8 @@ const Actions = ({
               <Trash2 className="size-2.5 text-destructive" />
             </Button>
           }
-          title="Delete Doctor?"
-          description="Are you sure you want to delete doctor?"
+          title="Delete Department?"
+          description="Are you sure you want to delete department?"
           cancelText="Cancel"
           confirmText="Delete"
           handleConfirm={() => deleteFloor({ departmentId: Number(data.id) })}

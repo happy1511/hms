@@ -352,12 +352,11 @@ export const deleteAPI = async (
   { params }: { params: { serviceId: number } },
 ) => {
   return validateRequest({
-    bodySchema: partialServiceValidator,
     paramsSchema: partialServiceValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingService = await tx.service.findUnique({
           where: { id: data.serviceId },

@@ -1,0 +1,203 @@
+import { prisma } from "@/services/prisma";
+import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { validateRequest } from "@/lib/validator";
+import { apiResponse } from "@/lib/apiResponse";
+import { paginationValidator } from "@/validators/api/common/pagination";
+import { Prisma } from "@/generated/prisma/client";
+import {
+  drugValidator,
+  partialDrugValidator,
+} from "@/validators/api/masters/drug";
+
+export const getAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: paginationValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const search = query.search ?? "";
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+
+      const skip = (page - 1) * limit;
+      const and: Prisma.DrugWhereInput[] = [];
+
+      if (search) {
+        and.push({ name: { contains: search } });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom && { gte: createdAtFrom }),
+            ...(createdAtTo && { lte: createdAtTo }),
+          },
+        });
+      }
+
+      const where: Prisma.DrugWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.drug.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+        }),
+        prisma.drug.count({ where }),
+      ]);
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Drug Fetched Successfully",
+        data: items,
+        total,
+      });
+    },
+  });
+};
+
+export const getDetailsAPI = async (
+  req: Request,
+  { params }: { params: { drugId: string } },
+) => {
+  return validateRequest({
+    paramsSchema: partialDrugValidator,
+    req,
+    params,
+    onSuccess: async ({ params }) => {
+      const id = params.drugId;
+
+      const details = await prisma.drug.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          inventoryItems: { include: { drug: true } },
+          purchaseItems: { include: { drug: true } },
+        },
+      });
+
+      if (!details) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Drug not found",
+        });
+      }
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Drug Fetched Successfully",
+        data: details,
+      });
+    },
+  });
+};
+
+export const createAPI = async (req: Request) => {
+  return validateRequest({
+    bodySchema: drugValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { category, ...rest } = body;
+      return prisma.$transaction(async (tx) => {
+        const existingCategory = await tx.drugCategory.findUnique({
+          where: { id: category?.id },
+        });
+
+        if (!existingCategory) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Category not found",
+          });
+        }
+
+        const data = await tx.drug.create({
+          data: { ...rest, categoryId: category.id },
+        });
+        return apiResponse({
+          status: RESPONSE_STATUS.CREATED,
+          message: "Drug Created Successfully",
+          data: data,
+        });
+      });
+    },
+  });
+};
+
+export const updateAPI = async (
+  req: Request,
+  { params }: { params: { drugId: string } },
+) => {
+  return validateRequest({
+    bodySchema: partialDrugValidator,
+    paramsSchema: partialDrugValidator,
+    params,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+
+      return prisma.$transaction(async (tx) => {
+        const { category, ...rest } = data;
+
+        const existingCategory = await tx.drugCategory.findUnique({
+          where: { id: category?.id },
+        });
+
+        if (!existingCategory) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Category not found",
+          });
+        }
+
+        const updatedDrug = await tx.drug.update({
+          where: { id: data.drugId },
+          data: rest,
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Drug Updated Successfully",
+          data: updatedDrug,
+        });
+      });
+    },
+  });
+};
+
+export const deleteAPI = async (
+  req: Request,
+  { params }: { params: { drugId: string } },
+) => {
+  return validateRequest({
+    paramsSchema: partialDrugValidator,
+    params,
+    req,
+    onSuccess: async ({ params }) => {
+      const data = params;
+      return prisma.$transaction(async (tx) => {
+        const existingDrug = await tx.drug.findUnique({
+          where: { id: data.drugId },
+        });
+
+        if (!existingDrug) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Drug not found",
+          });
+        }
+
+        await prisma.drug.delete({
+          where: { id: data.drugId },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Drug Deleted Successfully",
+          data: null,
+        });
+      });
+    },
+  });
+};

@@ -140,8 +140,8 @@ const EmergencyContactInfoForm = ({
                 <Trash2 className="size-2.5 text-destructive" />
               </Button>
             }
-            title="Delete Address?"
-            description="Are you sure you want to delete Address?"
+            title="Delete Contact?"
+            description="Are you sure you want to delete contact?"
             cancelText="Cancel"
             confirmText="Delete"
             handleConfirm={() => remove(0)}

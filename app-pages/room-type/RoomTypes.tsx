@@ -101,8 +101,8 @@ const Actions = ({
               <Trash2 className="size-2.5 text-destructive" />
             </Button>
           }
-          title="Delete Ward?"
-          description="Are you sure you want to delete ward?"
+          title="Delete Room Type?"
+          description="Are you sure you want to delete room type?"
           cancelText="Cancel"
           confirmText="Delete"
           handleConfirm={() => deleteWard({ typeId: Number(data.id) })}

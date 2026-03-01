@@ -164,6 +164,27 @@ const billingMasters: SidebarItem[] = [
   },
 ];
 
+const pharmacyMasters: SidebarItem[] = [
+  {
+    title: "DRUG CATEGORY",
+    url: "/drug-category",
+    icon: Bolt,
+    module: [ModuleType.PHARMACY_DRUG_CATEGORY_MASTER],
+  },
+  {
+    title: "DRUG SUPPLIER",
+    url: "/drug-supplier",
+    icon: Bolt,
+    module: [ModuleType.PHARMACY_SUPPLIER],
+  },
+  {
+    title: "DRUG",
+    url: "/drug",
+    icon: Bolt,
+    module: [ModuleType.PHARMACY_DRUG_MASTER],
+  },
+];
+
 const labMasters: SidebarItem[] = [
   {
     title: "RADIOLOGY TEMPLATES",
@@ -230,6 +251,7 @@ export function CustomSidebar() {
   const [financeOpen, setFinanceOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [billingMasterOpen, setBillingMasterOpen] = useState(false);
+  const [pharmacyMasterOpen, setPharmacyMasterOpen] = useState(false);
   const [labMasterOpen, setLabMasterOpen] = useState(false);
   const [radiologyOrderOpen, setRadiologyOrderOpen] = useState(false);
   const [pathologyOrderOpen, setPathologyOrderOpen] = useState(false);
@@ -258,6 +280,9 @@ export function CustomSidebar() {
     hasModulePermission(data.data, item.module),
   );
   const visibleRadiologyOrders = radiologyOrders.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visiblePharmacyMaster = pharmacyMasters.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
 
@@ -571,6 +596,49 @@ export function CustomSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {visibleBillingMasters.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        {/* Pharmacy Master Section */}
+        <Collapsible
+          open={pharmacyMasterOpen}
+          onOpenChange={setPharmacyMasterOpen}
+        >
+          <SidebarGroup className="p-0">
+            <CollapsibleTrigger className="w-full bg-transparent">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                <div className="flex items-center gap-3">
+                  <Bolt className="size-3" />
+                  <span>PHARMACY MASTERS</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform duration-200",
+                    pharmacyMasterOpen ? "rotate-180" : "",
+                  )}
+                />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-background">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {visiblePharmacyMaster.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

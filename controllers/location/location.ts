@@ -128,7 +128,7 @@ export const deleteAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        await prisma.location.delete({
+        await tx.location.delete({
           where: { id: data.id },
         });
 

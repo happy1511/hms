@@ -265,12 +265,11 @@ export const deleteAPI = async (
   { params }: { params: { bedId: number } },
 ) => {
   return validateRequest({
-    bodySchema: partialBedValidator,
     paramsSchema: partialBedValidator,
     params,
     req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+    onSuccess: async ({ params }) => {
+      const data = params;
       return prisma.$transaction(async (tx) => {
         const existingBed = await tx.bed.findUnique({
           where: { id: data.bedId },
