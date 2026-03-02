@@ -10,7 +10,7 @@ import {
 import { generateUUID } from "@/lib/utils";
 import { updatePermissions } from "../user/user";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Days, Prisma } from "@/generated/prisma/client";
+import { Days, Prisma, Status } from "@/generated/prisma/client";
 
 export const updateAvailability = async (
   availableDays: DoctorValidatorType["availableDays"],
@@ -218,25 +218,29 @@ export const createAPI = async (req: Request) => {
         }
       }
 
-      const existingDoctor = await prisma.doctor.findFirst({
-        where: {
-          OR: [
-            {
-              licenseNumber: data.licenseNumber,
-            },
-            {
-              phoneNumber: data.phoneNumber,
-            },
-          ],
-        },
-      });
+      const duplicateChecks: Prisma.DoctorWhereInput[] = [];
+      if (data.licenseNumber?.trim()) {
+        duplicateChecks.push({ licenseNumber: data.licenseNumber.trim() });
+      }
+      if (data.phoneNumber?.trim()) {
+        duplicateChecks.push({ phoneNumber: data.phoneNumber.trim() });
+      }
+      if (data.email?.trim()) {
+        duplicateChecks.push({ email: data.email.trim() });
+      }
 
-      if (existingDoctor) {
-        return apiResponse({
-          status: RESPONSE_STATUS.BAD_REQUEST,
-          message:
-            "doctor with this license number or phone number already exists",
+      if (duplicateChecks.length) {
+        const existingDoctor = await prisma.doctor.findFirst({
+          where: { OR: duplicateChecks },
         });
+
+        if (existingDoctor) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message:
+              "doctor with this license number, phone number or email already exists",
+          });
+        }
       }
       const {
         permissions,
@@ -250,19 +254,31 @@ export const createAPI = async (req: Request) => {
 
       const user = await prisma.user.create({
         data: {
-          password,
+          password:
+            password ||
+            `Ref@${String(loginId).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}`,
           title,
           name,
           loginId,
-          status,
+          status: status ?? Status.active,
           username: loginId,
         },
       });
 
-      await updatePermissions(permissions, user.id);
+      await updatePermissions(permissions || [], user.id);
+
+      const doctorData = {
+        ...rest,
+        licenseNumber: rest.licenseNumber?.trim() || null,
+        specialization: rest.specialization?.trim() || null,
+        qualifications: rest.qualifications?.trim() || null,
+        yearsExperience: rest.yearsExperience ?? null,
+        email: rest.email?.trim() || null,
+        phoneNumber: rest.phoneNumber?.trim() || null,
+      };
 
       const doctor = await prisma.doctor.create({
-        data: { ...rest, userId: user.id },
+        data: { ...doctorData, userId: user.id },
       });
 
       const availability = await updateAvailability(availableDays, user.id);

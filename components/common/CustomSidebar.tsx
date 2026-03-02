@@ -8,10 +8,8 @@ import {
   Calendar,
   UserCircle,
   FileText,
-  FolderOpen,
   BedDouble,
   UserCheck,
-  AlertTriangle,
   DollarSign,
   ChevronDown,
   Stethoscope,
@@ -73,12 +71,12 @@ const opdItems: SidebarItem[] = [
     icon: Calendar,
     module: [ModuleType.APPOINTMENT],
   },
-  {
-    title: "SCANNED REPORTS",
-    url: "/opd/reports",
-    icon: FileText,
-    module: [ModuleType.APPOINTMENT],
-  },
+  // {
+  //   title: "SCANNED REPORTS",
+  //   url: "/opd/reports",
+  //   icon: FileText,
+  //   module: [ModuleType.APPOINTMENT],
+  // },
   // { title: "PATIENT DOCUMENTS", url: "/patient/documents", icon: FolderOpen },
 ];
 
@@ -95,8 +93,8 @@ const ipdItems = [
     icon: UserCheck,
     module: [ModuleType.IPD_BILL],
   },
-  { title: "MLC PATIENTS", url: "/ipd/mlc", icon: AlertTriangle },
-  { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
+  // { title: "MLC PATIENTS", url: "/ipd/mlc", icon: AlertTriangle },
+  // { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
 ];
 
 const pharmacyItems = [
@@ -112,11 +110,33 @@ const pharmacyItems = [
     icon: Users,
     module: [ModuleType.PHARMACY_GRN],
   },
+  {
+    title: "INVENTORY",
+    url: "/pharmacy/inventory",
+    icon: Users,
+    module: [ModuleType.PHARMACY_GRN, ModuleType.PHARMACY_SALE_BILL],
+  },
+  {
+    title: "PHARMACY SALE BILL",
+    url: "/pharmacy/sale-bill",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SALE_BILL],
+  },
 ];
 
-const financeItems = [
-  { title: "BILLING", url: "/finance/billing", icon: FileText },
-  { title: "PAYMENTS", url: "/finance/payments", icon: DollarSign },
+const financeItems: SidebarItem[] = [
+  {
+    title: "BILLING",
+    url: "/finance/billing",
+    icon: FileText,
+    module: [ModuleType.INVOICE],
+  },
+  {
+    title: "PAYMENTS",
+    url: "/finance/payments",
+    icon: DollarSign,
+    module: [ModuleType.INVOICE],
+  },
 ];
 
 const masters: SidebarItem[] = [
@@ -299,6 +319,9 @@ export function CustomSidebar() {
     hasModulePermission(data.data, item.module),
   );
   const visiblePharmacyMaster = pharmacyMasters.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visibleFinance = financeItems.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
 
@@ -485,7 +508,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {financeItems.map((item) => (
+                  {visibleFinance.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

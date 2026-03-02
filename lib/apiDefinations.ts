@@ -60,6 +60,8 @@ export const PHARMACY_DRUG = "/drug";
 // ----------------------------------
 export const PHARMACY_PURCHASE_ORDER = "/pharmacy/purchase-order";
 export const PHARMACY_GRN = "/pharmacy/grn";
+export const PHARMACY_SALE_BILL = "/pharmacy/sale-bill";
+export const PHARMACY_INVENTORY = "/pharmacy/inventory";
 
 // ----------------------------------
 // ---------ROOM TYPE ENDPOINTS--------

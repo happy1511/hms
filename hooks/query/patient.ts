@@ -12,7 +12,12 @@ import {
   PartialPatientValidatorType,
   PatientValidatorType,
 } from "@/validators/api/masters/patient";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -163,5 +168,31 @@ export const useDeletePatient = () => {
       toast.success("Patient Deleted Successfully");
     },
     onError: showError,
+  });
+};
+
+export const useInfinitePatientsList = (filters: FilterValues, limit: number) => {
+  return useInfiniteQuery<
+    PaginatedResponse<PatientType>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<PatientType>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["patients-infinite", filters, limit],
+    queryFn: ({ pageParam = 1 }) =>
+      getPatients({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.uhid && { uhid: filters.uhid }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.contactNo && { contactNo: filters.contactNo }),
+        },
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };

@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, PurchaseOrderStatus } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -73,35 +73,81 @@ export const createAPI = async (req: Request) => {
           });
         }
 
+        const existingGrn = await tx.gRN.findUnique({
+          where: { orderId },
+        });
+        if (existingGrn) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "GRN already exists for this order",
+          });
+        }
+
         const data = await tx.gRN.create({
           data: {
             orderId,
-            grnItems: {
-              create: grnItems.map((i) => ({
-                purchaseItem: { connect: { id: i.id } },
-                inventoryItem: {
-                  create: {
-                    drugId: i.drug.id,
-                    batchNo: i.batchNo,
-                    expiryDate: i.expiryDate,
-                    manufacturingDate: i.manufacturingDate,
-                    purchasePrice: i.purchasePrice,
-                    mrp: i.mrp,
-                    sellingPrice: i.sellingPrice,
-                    wholeSalePrice: i.wholeSalePrice,
-                    quantityInStock: i.quantityInStock,
-                    supplierId: existingOrder.supplierId,
-                  },
-                },
-              })),
-            },
           },
         });
+
+        for (const i of grnItems) {
+          const existingInventory = await tx.inventoryItems.findFirst({
+            where: {
+              drugId: i.drug.id,
+              supplierId: existingOrder.supplierId,
+              batchNo: i.batchNo,
+            },
+          });
+
+          let inventoryItemId = existingInventory?.id;
+
+          if (existingInventory) {
+            const updatedInventory = await tx.inventoryItems.update({
+              where: { id: existingInventory.id },
+              data: {
+                quantityInStock: {
+                  increment: i.quantity,
+                },
+                expiryDate: i.expiryDate,
+                manufacturingDate: i.manufacturingDate,
+                purchasePrice: i.purchasePrice,
+                mrp: i.mrp,
+                sellingPrice: i.sellingPrice,
+                wholeSalePrice: i.wholeSalePrice,
+              },
+            });
+            inventoryItemId = updatedInventory.id;
+          } else {
+            const newInventory = await tx.inventoryItems.create({
+              data: {
+                drugId: i.drug.id,
+                batchNo: i.batchNo,
+                expiryDate: i.expiryDate,
+                manufacturingDate: i.manufacturingDate,
+                purchasePrice: i.purchasePrice,
+                mrp: i.mrp,
+                sellingPrice: i.sellingPrice,
+                wholeSalePrice: i.wholeSalePrice,
+                quantityInStock: i.quantity,
+                supplierId: existingOrder.supplierId,
+              },
+            });
+            inventoryItemId = newInventory.id;
+          }
+
+          await tx.gRNItems.create({
+            data: {
+              grnId: data.id,
+              purchaseItemId: i.id,
+              inventoryItemId: inventoryItemId!,
+            },
+          });
+        }
 
         await tx.purchaseOrder.update({
           where: { id: data.orderId },
           data: {
             grnId: data.id,
+            status: PurchaseOrderStatus.received,
           },
         });
 

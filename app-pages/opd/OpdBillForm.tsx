@@ -217,6 +217,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
   const billingItemForm = useForm<billingItemValidatorType>({
     resolver: zodResolver(billingItemValidator),
+    defaultValues: {
+      createdAt: new Date(),
+      quantity: 1,
+      rate: 0,
+      discountType: DiscountType.VALUE,
+      discountValue: 0,
+      total: 0,
+    },
   });
 
   const service = billingItemForm.watch("service");
@@ -433,7 +441,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
     const total =
       discountType === "PERCENTAGE"
-        ? (gross * Number(discountValue)) / 100
+        ? gross - (gross * Number(discountValue)) / 100
         : gross - Number(discountValue);
 
     if (billingItemForm.getValues("total") !== total) {
@@ -771,14 +779,12 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             label: g,
           }))}
           type="select"
-          required
         />
         <FormField<opdValidatorType>
           label="Relative Name"
           name="patient.relations.0.name"
           control={form.control}
           type="text"
-          required
         />
       </div>
       <div>

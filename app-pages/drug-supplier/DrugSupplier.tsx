@@ -255,7 +255,7 @@ const DrugSupplierList = () => {
 
   return (
     <CustomLayout
-      title="Drug Category"
+      title="Drug Suppliers"
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
       {canView && (

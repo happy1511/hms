@@ -23,7 +23,7 @@ const getInitialValues = (data?: DrugSupplier): supplierValidatorType => ({
   name: data?.name ?? "",
   gstIn: data?.gstIn ?? undefined,
   email: data?.email ?? "",
-  phone: data?.phone ?? undefined,
+  phone: data?.phone ?? 0,
 });
 
 const UpdateCreateForm = ({ data }: { data?: DrugSupplier }) => {

@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `purchaseorder` ADD COLUMN `grnId` INTEGER NULL;
+ALTER TABLE `PurchaseOrder` ADD COLUMN `grnId` INTEGER NULL;
 
 -- CreateTable
 CREATE TABLE `GRNItems` (

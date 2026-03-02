@@ -31,6 +31,16 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
               },
             },
           },
+          ipd: {
+            include: {
+              patient: {
+                include: {
+                  addresses: { where: { type: AddressType["HOME"] } },
+                  contacts: { where: { type: ContactType["PHONE"] } },
+                },
+              },
+            },
+          },
         },
       });
 

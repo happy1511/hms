@@ -22,6 +22,7 @@ export const getAPI = async (req: Request) => {
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
       const roomId = query.roomId ? Number(query.roomId) : null;
+      const roomTypeId = query.roomTypeId ? Number(query.roomTypeId) : null;
       const departmentId = query.departmentId
         ? Number(query.departmentId)
         : null;
@@ -33,6 +34,10 @@ export const getAPI = async (req: Request) => {
         and.push({ roomId: roomId });
       }
 
+      if (roomTypeId) {
+        and.push({ room: { roomTypeId } });
+      }
+
       if (typeof nonOccupied == "boolean" && nonOccupied) {
         and.push({ isOccupied: false });
       }
@@ -42,7 +47,14 @@ export const getAPI = async (req: Request) => {
       }
 
       if (search) {
-        and.push({ bedNumber: { contains: search } });
+        and.push({
+          OR: [
+            { bedNumber: { contains: search } },
+            { room: { name: { contains: search } } },
+            { room: { roomType: { name: { contains: search } } } },
+            { room: { roomType: { department: { name: { contains: search } } } } },
+          ],
+        });
       }
 
       if (status) {
@@ -73,7 +85,13 @@ export const getAPI = async (req: Request) => {
             room: {
               select: {
                 name: true,
-                roomType: { select: { id: true, name: true } },
+                roomType: {
+                  select: {
+                    id: true,
+                    name: true,
+                    department: { select: { id: true, name: true } },
+                  },
+                },
               },
             },
             status: true,

@@ -9,14 +9,8 @@ import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import {
-  Bed,
-  BillingSection,
-  Department,
-  Location,
-  Room,
-  RoomType,
-} from "@/generated/prisma/client";
+import { BillingSection, Location } from "@/generated/prisma/client";
+import { BedGetPayload } from "@/generated/prisma/models";
 import {
   AddressType,
   BloodGroup,
@@ -36,13 +30,10 @@ import {
 } from "@/generated/prisma/enums";
 import { useInfiniteBedsList } from "@/hooks/query/bed";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
-import { useInfiniteDepartmentsList } from "@/hooks/query/department";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useCreateIpd } from "@/hooks/query/ipd";
 import { useInfiniteLocationsList } from "@/hooks/query/locations";
 import { useGetPatient } from "@/hooks/query/patient";
-import { useInfiniteRoomsList } from "@/hooks/query/room";
-import { useInfiniteRoomTypeList } from "@/hooks/query/roomType";
 import { useInfiniteServicesList } from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
@@ -70,6 +61,10 @@ import {
   useForm,
   UseFormReturn,
 } from "react-hook-form";
+
+type IpdBed = BedGetPayload<{
+  include: { room: { include: { roomType: { include: { department: true } } } } };
+}>;
 
 const getInitialValues = (data?: PatientType): ipdValidatorType => {
   // ---------------- CONTACT MAP (only required types) ----------------
@@ -110,9 +105,6 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
   return {
     patientId: data?.id ?? undefined,
     bed: { id: null },
-    department: { id: null },
-    roomType: { id: null },
-    room: { id: null },
     invoice: {
       billingType: PaymentCategory["SELF_PAY"],
       billingItems: [],
@@ -234,6 +226,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 
   const billingItemForm = useForm<billingItemValidatorType>({
     resolver: zodResolver(billingItemValidator),
+    defaultValues: {
+      createdAt: new Date(),
+      quantity: 1,
+      rate: 0,
+      discountType: DiscountType.VALUE,
+      discountValue: 0,
+      total: 0,
+    },
   });
 
   const service = billingItemForm.watch("service");
@@ -450,7 +450,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 
     const total =
       discountType === "PERCENTAGE"
-        ? (gross * Number(discountValue)) / 100
+        ? gross - (gross * Number(discountValue)) / 100
         : gross - Number(discountValue);
 
     if (billingItemForm.getValues("total") !== total) {
@@ -788,14 +788,12 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             label: g,
           }))}
           type="select"
-          required
         />
         <FormField<ipdValidatorType>
           label="Relative Name"
           name="patient.relations.0.name"
           control={form.control}
           type="text"
-          required
         />
       </div>
       <div>
@@ -924,9 +922,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 const IpdBillForm = () => {
   const [consultantValue, setConsultantValue] = useState("");
   const [referringValue, setReferringValue] = useState("");
-  const [departmentValue, setDepartmentValue] = useState("");
-  const [roomTypeValue, setRoomTypeValue] = useState("");
-  const [roomValue, setRoomValue] = useState("");
   const [bedValue, setBedValue] = useState("");
 
   const { mutateAsync, isPending } = useCreateIpd();
@@ -938,35 +933,9 @@ const IpdBillForm = () => {
     resolver: zodResolver(ipdValidator),
   });
 
-  const roomTypeId = form.watch("roomType.id");
-  const departmentId = form.watch("department.id");
-  const roomId = form.watch("room.id");
-
-  const departmentQuery = useInfiniteDepartmentsList(
-    {
-      name: departmentValue,
-    },
-    10,
-  );
-  const roomTypeQuery = useInfiniteRoomTypeList(
-    {
-      name: roomTypeValue,
-      departmentId: departmentId as string,
-    },
-    10,
-  );
-  const roomQuery = useInfiniteRoomsList(
-    {
-      name: roomValue,
-      roomTypeId: roomTypeId as string,
-    },
-    10,
-  );
-
   const bedQuery = useInfiniteBedsList(
     {
       name: bedValue,
-      roomId: roomId as string,
       nonOccupied: true,
     },
     10,
@@ -1099,59 +1068,8 @@ const IpdBillForm = () => {
             required
           />
           <FormInfiniteSelect<
-            Department,
-            PaginatedResponse<Department>,
-            string,
-            ipdValidatorType
-          >
-            label="In-Patient Department"
-            name="department"
-            control={form.control}
-            query={departmentQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.name}
-            valueKey={(item) => String(item?.id)}
-            search={departmentValue}
-            onSearchChange={setDepartmentValue}
-            required
-          />
-          <FormInfiniteSelect<
-            RoomType,
-            PaginatedResponse<RoomType>,
-            string,
-            ipdValidatorType
-          >
-            label="Room Type"
-            name="roomType"
-            control={form.control}
-            query={roomTypeQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.name}
-            valueKey={(item) => String(item?.id)}
-            search={roomTypeValue}
-            onSearchChange={setRoomTypeValue}
-            required
-          />
-          <FormInfiniteSelect<
-            Room,
-            PaginatedResponse<Room>,
-            string,
-            ipdValidatorType
-          >
-            label="Room"
-            name="room"
-            control={form.control}
-            query={roomQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.name}
-            valueKey={(item) => String(item?.id)}
-            search={roomValue}
-            onSearchChange={setRoomValue}
-            required
-          />
-          <FormInfiniteSelect<
-            Bed,
-            PaginatedResponse<Bed>,
+            IpdBed,
+            PaginatedResponse<IpdBed>,
             string,
             ipdValidatorType
           >
@@ -1160,7 +1078,9 @@ const IpdBillForm = () => {
             control={form.control}
             query={bedQuery}
             getItems={(data) => data?.data}
-            labelKey={(item) => item?.bedNumber}
+            labelKey={(item) =>
+              `${item.bedNumber} | ${item.room?.roomType?.department?.name ?? "-"} | ${item.room?.roomType?.name ?? "-"} | ${item.room?.name ?? "-"}`
+            }
             valueKey={(item) => String(item?.id)}
             search={bedValue}
             onSearchChange={setBedValue}

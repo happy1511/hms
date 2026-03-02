@@ -255,7 +255,7 @@ const BillingSections = () => {
 
   return (
     <CustomLayout
-      title="Beds"
+      title="Billing Sections"
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
       {canView && (

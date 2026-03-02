@@ -1,12 +1,41 @@
-import { OpdArrival } from "@/generated/prisma/enums";
+import {
+  ContactType,
+  IdentityType,
+  OpdArrival,
+  RelationshipType,
+  Status,
+} from "@/generated/prisma/enums";
 import { z } from "zod";
 import { patientValidator } from "../masters/patient";
 import { invoiceValidator } from "../invoice/invoice";
 
+const opdPatientValidator = patientValidator.extend({
+  contacts: z.array(
+    z.object({
+      type: z.enum(ContactType),
+      value: z.string().optional().nullable(),
+    }),
+  ),
+  relations: z.array(
+    z.object({
+      type: z.enum(RelationshipType).optional().nullable(),
+      name: z.string().optional().nullable(),
+      contact: z.string().optional().nullable(),
+    }),
+  ),
+  identifications: z.array(
+    z.object({
+      type: z.enum(IdentityType),
+      number: z.string().optional().nullable(),
+      active: z.enum(Status),
+    }),
+  ),
+});
+
 // -------------------- Opd Bill --------------------
 const opdBaseValidator = z.object({
   patientId: z.coerce.number().min(1, "Patient is required").optional(),
-  patient: patientValidator,
+  patient: opdPatientValidator,
   arrivalState: z.enum(OpdArrival),
   remarks: z.string().max(500).optional(),
   consultantDoctor: z.object({ userId: z.coerce.number() }),

@@ -1,0 +1,47 @@
+-- AlterTable
+ALTER TABLE `Module` MODIFY `name` ENUM('USER', 'DASHBOARD', 'DOCTOR_MASTER', 'DEPARTMENT_MASTER', 'ROOM_TYPE_MASTER', 'ROOM_MASTER', 'BED_MASTER', 'APPOINTMENT', 'PATIENT_MASTER', 'BILLING_SECTION_MASTER', 'SERVICE_MASTER', 'PATHOLOGY_TEST_MASTER', 'RADIOLOGY_TEST_MASTER', 'IPD_BILL', 'OPD_BILL', 'OPD_QUEUE', 'PATHOLOGY_ORDER', 'RADIOLOGY_ORDER', 'LOCATION_MASTER', 'INVOICE', 'PHARMACY_SUPPLIER', 'PHARMACY_DRUG_MASTER', 'PHARMACY_DRUG_CATEGORY_MASTER', 'PHARMACY_PURCHASE_ORDER', 'PHARMACY_GRN', 'PHARMACY_SALE_BILL') NOT NULL;
+
+-- CreateTable
+CREATE TABLE `DrugBill` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `patientId` INTEGER NULL,
+    `doctorId` INTEGER NULL,
+    `invoiceId` INTEGER NOT NULL,
+
+    UNIQUE INDEX `DrugBill_invoiceId_key`(`invoiceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `DrugSaleItem` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `drugBillId` INTEGER NOT NULL,
+    `inventoryItemId` INTEGER NOT NULL,
+    `quantity` INTEGER NOT NULL,
+    `rate` DOUBLE NOT NULL,
+    `discountType` ENUM('PERCENTAGE', 'VALUE') NOT NULL DEFAULT 'VALUE',
+    `discountValue` DOUBLE NOT NULL DEFAULT 0,
+    `total` DOUBLE NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `DrugSaleItem_drugBillId_idx`(`drugBillId`),
+    INDEX `DrugSaleItem_inventoryItemId_idx`(`inventoryItemId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `DrugBill` ADD CONSTRAINT `DrugBill_invoiceId_fkey` FOREIGN KEY (`invoiceId`) REFERENCES `Invoice`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `DrugBill` ADD CONSTRAINT `DrugBill_patientId_fkey` FOREIGN KEY (`patientId`) REFERENCES `Patient`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `DrugBill` ADD CONSTRAINT `DrugBill_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `Doctor`(`userId`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `DrugSaleItem` ADD CONSTRAINT `DrugSaleItem_drugBillId_fkey` FOREIGN KEY (`drugBillId`) REFERENCES `DrugBill`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `DrugSaleItem` ADD CONSTRAINT `DrugSaleItem_inventoryItemId_fkey` FOREIGN KEY (`inventoryItemId`) REFERENCES `InventoryItems`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -648,6 +648,16 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
         };
       };
     };
+    ipd: {
+      include: {
+        patient: {
+          include: {
+            addresses: true;
+            contacts: true;
+          };
+        };
+      };
+    };
   };
 }>;
 

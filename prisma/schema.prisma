@@ -195,6 +195,7 @@ enum ModuleType {
   PHARMACY_DRUG_CATEGORY_MASTER
   PHARMACY_PURCHASE_ORDER
   PHARMACY_GRN
+  PHARMACY_SALE_BILL
 }
 
 enum ActionType {
@@ -463,15 +464,15 @@ model User {
 model Doctor {
   userId                   Int        @id
   user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  licenseNumber            String     @unique
-  specialization           String
-  qualifications           String
-  yearsExperience          Int
+  licenseNumber            String?    @unique
+  specialization           String?
+  qualifications           String?
+  yearsExperience          Int?
   department               String?
   designation              String?
   doctorType               DoctorType
-  email                    String     @unique
-  phoneNumber              String     @unique
+  email                    String?    @unique
+  phoneNumber              String?    @unique
   emergencyContact         String?
   consultationStartingTime String?
   consultationEndingTime   String?
@@ -1138,9 +1139,10 @@ model DrugBill {
   doctorId  Int?
   invoiceId Int    @unique
 
-  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  patient Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  Doctor?  @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  patient   Patient?      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor    Doctor?       @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  saleItems DrugSaleItem[]
 }
 
 model DrugBillingCategory {
@@ -1204,6 +1206,36 @@ model InventoryItems {
   drug     Drug         @relation(fields: [drugId], references: [id], onDelete: Cascade)
   supplier DrugSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   grnItems GRNItems[]
+  saleItems DrugSaleItem[]
+}
+
+model DrugSaleItem {
+  id              Int   @id @default(autoincrement())
+  drugBillId      Int
+  inventoryItemId Int
+  quantity        Int
+  rate            Float
+  discountType    DiscountType @default(VALUE)
+  discountValue   Float @default(0)
+  taxableAmount   Float @default(0)
+  gstPercentage   Float @default(0)
+  cGstPercentage  Float @default(0)
+  sGstPercentage  Float @default(0)
+  iGstPercentage  Float @default(0)
+  gstAmount       Float @default(0)
+  cGstAmount      Float @default(0)
+  sGstAmount      Float @default(0)
+  iGstAmount      Float @default(0)
+  total           Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drugBill      DrugBill       @relation(fields: [drugBillId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([drugBillId])
+  @@index([inventoryItemId])
 }
 
 model GRNItems {

@@ -8,11 +8,12 @@ import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { RadiologyTest } from "@/generated/prisma/client";
+import { Drug, RadiologyTest } from "@/generated/prisma/client";
 import {
   useGetConsultationFile,
   useUpdateOpdConsultation,
 } from "@/hooks/query/opd";
+import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfinitePathologyTestsList } from "@/hooks/query/pathology";
 import { useInfiniteRadiologyTestsList } from "@/hooks/query/radiology";
 import {
@@ -29,13 +30,14 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useFieldArray,
   UseFieldArrayRemove,
   useForm,
   UseFormReturn,
 } from "react-hook-form";
+import { toast } from "sonner";
 
 const Actions = ({
   data,
@@ -43,7 +45,7 @@ const Actions = ({
   index,
   form,
 }: {
-  form: UseFormReturn<prescribedDrugType>;
+  form: UseFormReturn<prescribedDrugType & { drug?: Drug | null }>;
   data: prescribedDrugType;
   remove: UseFieldArrayRemove;
   index: number;
@@ -53,7 +55,7 @@ const Actions = ({
       <Button
         variant="outline"
         className="h-auto shadow-none p-1 cursor-pointer"
-        onClick={() => form.reset({ ...data, index })}
+        onClick={() => form.reset({ ...data, index, drug: null })}
         type="button"
       >
         <Edit2 className="size-2.5 text-destructive" />
@@ -83,17 +85,31 @@ const Prescription = ({
 }: {
   form: UseFormReturn<consultantFileType>;
 }) => {
+  type prescribedDrugFormType = prescribedDrugType & { drug?: Drug | null };
+
   const { append, update, remove } = useFieldArray({
     name: "prescription.drugs",
     control: form.control,
   });
+  const [drugSearchValue, setDrugSearchValue] = useState("");
+  const drugsQuery = useInfiniteDrugList({ name: drugSearchValue }, 10);
 
-  const prescriptionForm = useForm<prescribedDrugType>({
-    resolver: zodResolver(prescribedDrugValidator),
+  const prescriptionForm = useForm<prescribedDrugFormType>({
+    defaultValues: {
+      drug: null,
+    },
   });
 
   const addedDrugs = form.watch("prescription.drugs");
   const editingIndex = prescriptionForm.watch("index");
+  const selectedDrug = prescriptionForm.watch("drug");
+
+  useEffect(() => {
+    if (!selectedDrug?.name) return;
+    prescriptionForm.setValue("name", selectedDrug.name, {
+      shouldDirty: true,
+    });
+  }, [selectedDrug, prescriptionForm]);
 
   const columns: ColumnDefWithClass<prescribedDrugType>[] = [
     {
@@ -137,30 +153,69 @@ const Prescription = ({
   ];
 
   const handleAddUpdate = () => {
-    prescriptionForm.handleSubmit(() => {
-      const values = prescriptionForm.getValues();
+    const values = prescriptionForm.getValues();
+    const selectedName = values.drug?.name?.trim();
+    const resolvedName = selectedName || values.name?.trim();
 
-      if (typeof values.index === "number") {
-        update(values.index as number, {
-          ...values,
-        });
-      } else {
-        append({
-          ...values,
-        });
-      }
-      prescriptionForm.reset({});
-    })();
+    const parsed = prescribedDrugValidator.safeParse({
+      ...values,
+      name: resolvedName,
+    });
+
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0];
+      toast.error(firstError?.message || "Please fill required drug details");
+      return;
+    }
+
+    const normalizedName = parsed.data.name.trim().toLowerCase();
+    const duplicateIndex = (addedDrugs || []).findIndex(
+      (drug, i) =>
+        drug.name.trim().toLowerCase() === normalizedName &&
+        i !== parsed.data.index,
+    );
+
+    if (duplicateIndex !== -1) {
+      toast.error("This drug is already added in prescription");
+      return;
+    }
+
+    if (typeof parsed.data.index === "number") {
+      update(parsed.data.index, parsed.data);
+    } else {
+      append(parsed.data);
+    }
+
+    prescriptionForm.reset({ drug: null });
+    setDrugSearchValue("");
   };
 
   return (
     <CustomLayout title="Prescription">
-      <div className="py-2 grid grid-cols-4 space-x-2">
+      <div className="py-2 grid grid-cols-5 space-x-2">
+        <FormInfiniteSelect<
+          Drug,
+          PaginatedResponse<Drug>,
+          string,
+          prescribedDrugFormType
+        >
+          name="drug"
+          control={prescriptionForm.control}
+          label="Select Drug"
+          query={drugsQuery}
+          getItems={(d) => d?.data}
+          labelKey={(i) => i.name}
+          valueKey={(i) => String(i.id)}
+          search={drugSearchValue}
+          onSearchChange={setDrugSearchValue}
+          placeholder="Search drug from master"
+        />
         <FormField
           control={prescriptionForm.control}
           label="Name"
           name="name"
           type="text"
+          readOnly
           required
         />
         <FormField
@@ -183,7 +238,7 @@ const Prescription = ({
           name="remarks"
           type="text"
         />
-        <div className="col-span-4 space-x-2">
+        <div className="col-span-5 space-x-2">
           <div className="w-full flex justify-end">
             <CustomButton
               type="button"

@@ -9,6 +9,7 @@ const grnItemValidator = z.object({
     sGstPercentage: z.coerce.number().default(0),
     iGstPercentage: z.coerce.number().default(0),
   }),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   batchNo: z.coerce.number().default(0),
   expiryDate: z.coerce.date(),
   manufacturingDate: z.coerce.date().default(new Date()),
@@ -16,7 +17,6 @@ const grnItemValidator = z.object({
   mrp: z.coerce.number().default(0),
   sellingPrice: z.coerce.number().default(0),
   wholeSalePrice: z.coerce.number().default(0),
-  quantityInStock: z.coerce.number().default(0),
 });
 
 const grnValidator = z.object({

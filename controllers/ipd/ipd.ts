@@ -144,22 +144,27 @@ export const createAPI = async (req: Request, user: User) => {
             });
           } else {
             const relation = patient?.relations?.splice(0, 1);
+            const firstRelation = relation?.[0];
 
-            if (relation.length) {
+            if (firstRelation?.type && firstRelation?.name?.trim()) {
               await tx.patientRelations.upsert({
                 where: {
                   patientId_name_type: {
                     patientId: existingPatient.id,
-                    type: relation[0].type,
-                    name: relation[0].name,
+                    type: firstRelation.type,
+                    name: firstRelation.name.trim(),
                   },
                 },
                 create: {
-                  ...relation[0],
+                  type: firstRelation.type,
+                  name: firstRelation.name.trim(),
+                  contact: firstRelation.contact ?? null,
                   patientId: existingPatient.id,
                 },
                 update: {
-                  ...relation[0],
+                  type: firstRelation.type,
+                  name: firstRelation.name.trim(),
+                  contact: firstRelation.contact ?? null,
                 },
               });
             }
@@ -189,13 +194,17 @@ export const createAPI = async (req: Request, user: User) => {
               });
             }
 
-            const contactsToUpsert = patient?.contacts?.filter((c) =>
-              [
-                ContactType.PHONE,
-                ContactType.MOBILE,
-                ContactType.EMAIL,
-              ].includes(c.type),
-            );
+            const contactsToUpsert = (patient?.contacts ?? [])
+              .filter(
+                (c) =>
+                  [ContactType.PHONE, ContactType.MOBILE, ContactType.EMAIL].includes(
+                    c.type,
+                  ) && Boolean(c.value?.trim()),
+              )
+              .map((c) => ({
+                type: c.type,
+                value: String(c.value).trim(),
+              }));
 
             if (contactsToUpsert?.length) {
               await Promise.all(
@@ -219,14 +228,21 @@ export const createAPI = async (req: Request, user: User) => {
               );
             }
 
-            const documentToUpsert = patient?.identifications?.filter((c) =>
-              [
-                IdentityType.ADHAR_CARD,
-                IdentityType.VOTER_CARD,
-                IdentityType.DRIVING_LICENSE,
-                IdentityType.PAN_CARD,
-              ].includes(c.type),
-            );
+            const documentToUpsert = (patient?.identifications ?? [])
+              .filter(
+                (c) =>
+                  [
+                    IdentityType.ADHAR_CARD,
+                    IdentityType.VOTER_CARD,
+                    IdentityType.DRIVING_LICENSE,
+                    IdentityType.PAN_CARD,
+                  ].includes(c.type) && Boolean(c.number?.trim()),
+              )
+              .map((c) => ({
+                type: c.type,
+                number: String(c.number).trim(),
+                active: c.active,
+              }));
 
             if (documentToUpsert?.length) {
               await Promise.all(
@@ -264,7 +280,12 @@ export const createAPI = async (req: Request, user: User) => {
             data: {
               ...rest,
               contacts: {
-                create: contacts,
+                create: contacts
+                  .filter((c) => Boolean(c.value?.trim()))
+                  .map((c) => ({
+                    type: c.type,
+                    value: String(c.value).trim(),
+                  })),
               },
               addresses: {
                 create: addresses.map((l) => ({
@@ -276,10 +297,22 @@ export const createAPI = async (req: Request, user: User) => {
                 })),
               },
               relations: {
-                create: relations,
+                create: relations
+                  .filter((r) => Boolean(r.type) && Boolean(r.name?.trim()))
+                  .map((r) => ({
+                    type: r.type!,
+                    name: String(r.name).trim(),
+                    contact: r.contact ?? null,
+                  })),
               },
               identifications: {
-                create: identifications,
+                create: identifications
+                  .filter((i) => Boolean(i.number?.trim()))
+                  .map((i) => ({
+                    type: i.type,
+                    number: String(i.number).trim(),
+                    active: i.active,
+                  })),
               },
               emergencyContacts: {
                 create: emergencyContacts,

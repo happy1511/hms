@@ -90,7 +90,7 @@ const PrintInvoice = () => {
 
   const total = subtotal - totalDiscount;
 
-  const patient = data?.opd?.patient;
+  const patient = data?.opd?.patient || data?.ipd?.patient;
 
   return (
     <div className="flex gap-6 h-full w-full">
@@ -125,9 +125,7 @@ const PrintInvoice = () => {
           billingItems={billingItems}
           customer={{
             name: `${patient?.firstName} ${patient?.lastName}`,
-            address: patient?.addresses?.[0]
-              ? formatPatientAddress(patient?.addresses?.[0])
-              : "",
+            address: patient?.addresses?.[0] ? formatPatientAddress(patient) : "",
             phone: patient?.contacts?.[0]?.value || "",
           }}
           invoice={{

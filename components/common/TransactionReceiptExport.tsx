@@ -80,14 +80,14 @@ const TransactionReceiptExport = (data: ReceiptProps) => {
                 <Text style={styles.colMode}>{txn.mode}</Text>
                 <Text style={styles.colRemarks}>{txn.remarks || "-"}</Text>
                 <Text style={styles.colReceived}>{txn.receivedBy}</Text>
-                <Text style={styles.colAmount}>${txn.amount.toFixed(2)}</Text>
+                <Text style={styles.colAmount}>Rs. {txn.amount.toFixed(2)}</Text>
               </View>
             ))}
 
             {/* TOTAL PAID */}
             <View style={styles.paymentBox}>
               <Text style={styles.paymentLabel}>TOTAL RECEIVED</Text>
-              <Text style={styles.paymentAmount}>${totalPaid.toFixed(2)}</Text>
+              <Text style={styles.paymentAmount}>Rs. {totalPaid.toFixed(2)}</Text>
             </View>
 
             {/* FOOTER */}

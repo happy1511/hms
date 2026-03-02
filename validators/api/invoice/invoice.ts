@@ -12,14 +12,14 @@ const billingItemValidator = z.object({
   service: z.object({
     id: z.coerce.number().min(1),
     name: z.string(),
-    maxDiscount: z.number(),
+    maxDiscount: z.coerce.number().nullable().optional().default(0),
   }),
   rate: z.coerce.number(),
   quantity: z.coerce.number(),
   discountType: z.enum(DiscountType).default(DiscountType.VALUE),
   discountValue: z.coerce.number().default(0),
   total: z.coerce.number(),
-  createdAt: z.coerce.date(),
+  createdAt: z.coerce.date().default(new Date()),
 });
 
 const transactionsValidator = z.object({

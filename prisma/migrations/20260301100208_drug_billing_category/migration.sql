@@ -1,27 +1,27 @@
 /*
   Warnings:
 
-  - You are about to drop the column `categoryId` on the `drug` table. All the data in the column will be lost.
-  - You are about to drop the `drugcategory` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the column `categoryId` on the `Drug` table. All the data in the column will be lost.
+  - You are about to drop the `DrugCategory` table. If the table is not empty, all the data it contains will be lost.
 
 */
 -- DropForeignKey
-ALTER TABLE `drug` DROP FOREIGN KEY `Drug_categoryId_fkey`;
+ALTER TABLE `Drug` DROP FOREIGN KEY `Drug_categoryId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `purchaseitem` DROP FOREIGN KEY `PurchaseItem_categoryId_fkey`;
+ALTER TABLE `PurchaseItem` DROP FOREIGN KEY `PurchaseItem_categoryId_fkey`;
 
 -- DropIndex
-DROP INDEX `Drug_categoryId_fkey` ON `drug`;
+DROP INDEX `Drug_categoryId_fkey` ON `Drug`;
 
 -- DropIndex
-DROP INDEX `PurchaseItem_categoryId_fkey` ON `purchaseitem`;
+DROP INDEX `PurchaseItem_categoryId_fkey` ON `PurchaseItem`;
 
 -- AlterTable
-ALTER TABLE `drug` DROP COLUMN `categoryId`;
+ALTER TABLE `Drug` DROP COLUMN `categoryId`;
 
 -- DropTable
-DROP TABLE `drugcategory`;
+DROP TABLE `DrugCategory`;
 
 -- CreateTable
 CREATE TABLE `DrugBillingCategory` (

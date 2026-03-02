@@ -36,8 +36,21 @@ const getBed = createRequest<
 >((p) => `${BEDS}/${p.id}`, "GET");
 
 const getBeds = createRequest<
-  PaginatedResponse<BedGetPayload<{ include: { room: true } }>>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  PaginatedResponse<
+    BedGetPayload<{
+      include: { room: { include: { roomType: { include: { department: true } } } } };
+    }>
+  >,
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string;
+    status?: string;
+    roomId?: string;
+    roomTypeId?: string;
+    departmentId?: string;
+    nonOccupied?: boolean;
+  }
 >(BEDS, "GET");
 
 export const useBedsList = (
@@ -67,9 +80,19 @@ export const useBedsList = (
 
 export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
   return useInfiniteQuery<
-    PaginatedResponse<Bed>,
+    PaginatedResponse<
+      BedGetPayload<{
+        include: { room: { include: { roomType: { include: { department: true } } } } };
+      }>
+    >,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<Bed>>,
+    InfiniteData<
+      PaginatedResponse<
+        BedGetPayload<{
+          include: { room: { include: { roomType: { include: { department: true } } } } };
+        }>
+      >
+    >,
     [string, FilterValues, number]
   >({
     queryKey: ["beds-infinite", filters, limit],
@@ -83,6 +106,8 @@ export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.roomId && { roomId: filters.roomId }),
+          ...(filters.roomTypeId && { roomTypeId: filters.roomTypeId }),
+          ...(filters.departmentId && { departmentId: filters.departmentId }),
           ...(filters.nonOccupied && { nonOccupied: filters.nonOccupied }),
         },
       }),

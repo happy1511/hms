@@ -4,8 +4,6 @@ import CustomButton from "@/components/common/CustomButton";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
-import { useInfiniteDrugList } from "@/hooks/query/drug";
-import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
 import { useCreateGrn } from "@/hooks/query/pharmacyGrn";
 import { useGetPurchaseOrder } from "@/hooks/query/pharmacyPurchaseOrder";
 import {
@@ -15,7 +13,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Path, useFieldArray, useForm, UseFormReturn } from "react-hook-form";
 
 type Props = {
@@ -39,7 +36,7 @@ const getInitialValues = (
     grnItems: data?.items?.map((i) => ({
       drug: i.drug,
       purchasePrice: i.total,
-      quantityInStock: i.quantity,
+      quantity: i.quantity,
       expiryDate: new Date(),
       id: i.id,
     })),
@@ -48,54 +45,13 @@ const getInitialValues = (
 };
 
 const ServiceRow = ({ index, form }: ServiceRowProps) => {
-  const [drugSearch, setDrugSearch] = useState("");
-  const [billingCategorySearch, setBillingCategorySearch] = useState("");
-  const drugsQuery = useInfiniteDrugList({ name: drugSearch }, 10);
-  const billingCategoryQuery = useInfiniteDrugBillingCategoryList(
-    { name: billingCategorySearch },
-    10,
-  );
-
-  const { control, watch, setValue, getValues } = form;
+  const { control } = form;
   const { remove } = useFieldArray({
     control,
     name: "grnItems",
   });
 
   const rowPath = `grnItems.${index}` as Path<grnValidatorType>;
-
-  const quantity = watch(`${rowPath}.quantity` as Path<grnValidatorType>);
-  const rate = watch(`${rowPath}.rate` as Path<grnValidatorType>);
-  const discountPercentage = watch(
-    `${rowPath}.discountPercentage` as Path<grnValidatorType>,
-  );
-  const total = watch(`${rowPath}.total` as Path<grnValidatorType>);
-
-  useEffect(() => {
-    const q = Number(quantity) || 0;
-    const r = Number(rate) || 0;
-    const d = Number(discountPercentage) || 0;
-
-    if (!q || !r) {
-      setValue(`${rowPath}.total` as Path<grnValidatorType>, 0);
-      return;
-    }
-
-    const gross = q * r;
-    const discount = (gross * d) / 100;
-    const finalTotal = +(gross - discount).toFixed(2);
-
-    const currentTotal = getValues(
-      `${rowPath}.total` as Path<grnValidatorType>,
-    );
-
-    if (currentTotal !== finalTotal) {
-      setValue(`${rowPath}.total` as Path<grnValidatorType>, finalTotal, {
-        shouldValidate: false,
-        shouldDirty: true,
-      });
-    }
-  }, [quantity, rate, discountPercentage, getValues, setValue, rowPath]);
 
   return (
     <tr className="border-t align-top">

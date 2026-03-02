@@ -3,11 +3,12 @@
 import TransactionReceiptExport from "@/components/common/TransactionReceiptExport";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
 import { LoaderIcon } from "lucide-react";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const PrintInvoiceTransactions = () => {
   const { invoiceId }: { invoiceId: string } = useParams();
+  const searchParams = useSearchParams();
 
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
@@ -16,6 +17,11 @@ const PrintInvoiceTransactions = () => {
   const [selectedTransactions, setSelectedTransactions] = useState<number[]>(
     [],
   );
+  const transactionIdParam = searchParams.get("transactionId");
+  const selectedTransactionId =
+    transactionIdParam && transactionIdParam.trim() !== ""
+      ? Number(transactionIdParam)
+      : null;
 
   if (isLoading) {
     return (
@@ -27,12 +33,18 @@ const PrintInvoiceTransactions = () => {
 
   if (!data) return <div />;
 
-  const patient = data?.opd?.patient;
+  const patient = data?.opd?.patient || data?.ipd?.patient;
 
-  // default select all after load
-  if (selectedTransactions.length === 0 && data.transactions.length > 0) {
+  useEffect(() => {
+    if (!data?.transactions.length) return;
+
+    if (selectedTransactionId) {
+      setSelectedTransactions([selectedTransactionId]);
+      return;
+    }
+
     setSelectedTransactions(data.transactions.map((t) => t.id));
-  }
+  }, [data?.transactions, selectedTransactionId]);
 
   const filteredTransactions = data.transactions.filter((txn) =>
     selectedTransactions.includes(txn.id),

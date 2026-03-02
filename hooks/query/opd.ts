@@ -31,6 +31,13 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+export type opdConsultationDetailsType = consultantFileType & {
+  patient?: { firstName?: string; lastName?: string };
+  consultantDoctorName?: string | null;
+  referringDoctorName?: string | null;
+  createdAt?: Date | string;
+};
+
 const createOpd = createRequest<ApiResponse<OPDType>>(OPD, "POST");
 const updateVitals = createRequest<ApiResponse<OPDType>>(OPD_VITALS, "PUT");
 const updateConsultation = createRequest<ApiResponse<OPDType>>(
@@ -44,7 +51,7 @@ const deleteBillingSection = createRequest<
 >((p) => `${BILLING_SECTIONS}/${p.id}`, "DELETE");
 const deleteOpdQueue = createRequest<ApiResponse<null>>(OPD_QUEUE, "DELETE");
 const getConsultation = createRequest<
-  ApiResponse<consultantFileType>,
+  ApiResponse<opdConsultationDetailsType>,
   undefined,
   { id: string }
 >((p) => `${OPD_CONSULTATION}/${p.id}`, "GET");
@@ -159,9 +166,9 @@ export const useInfiniteBillingSectionsList = (
 
 export const useGetConsultationFile = (id?: string) => {
   return useQuery<
-    ApiResponse<consultantFileType>,
+    ApiResponse<opdConsultationDetailsType>,
     AxiosError<ApiResponse<null>>,
-    consultantFileType,
+    opdConsultationDetailsType,
     [string, string | undefined]
   >({
     queryKey: ["get-opd-consultation", id],

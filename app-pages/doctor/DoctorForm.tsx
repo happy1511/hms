@@ -70,6 +70,8 @@ const UpdateCreateForm = ({
     defaultValues: getInitialValues(permissions, data),
     resolver: zodResolver(doctorValidator),
   });
+  const selectedDoctorType = form.watch("doctorType");
+  const isConsulting = selectedDoctorType === DoctorType.consulting;
 
   const onSubmit = (values: DoctorValidatorType) => {
     if (data) {
@@ -95,28 +97,28 @@ const UpdateCreateForm = ({
             type="text"
             name="licenseNumber"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Specialization"
             type="text"
             name="specialization"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Qualification"
             type="text"
             name="qualifications"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Experience (years)"
             type="number"
             name="yearsExperience"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Doctor Type"
@@ -146,42 +148,42 @@ const UpdateCreateForm = ({
             type="time"
             name="consultationStartingTime"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Consultancy Ending Time"
             type="time"
             name="consultationEndingTime"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Email"
             type="email"
             name="email"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Phone Number"
             type="text"
             name="phoneNumber"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Emergency Contact No"
             type="text"
             name="emergencyContact"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Password"
             type="text"
             name="password"
             control={form.control}
-            required
+            required={isConsulting}
           />
           <FormField<DoctorValidatorType>
             label="Status"
