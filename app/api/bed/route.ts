@@ -7,7 +7,11 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["BED_MASTER"], action: ActionType["VIEW"] }],
+      [
+        { module: ModuleType["BED_MASTER"], action: ActionType["VIEW"] },
+        { module: ModuleType["IPD_BILL"], action: ActionType["CREATE"] },
+        { module: ModuleType["IPD_BILL"], action: ActionType["UPDATE"] },
+      ],
       () => getAPI(request),
     ),
   );

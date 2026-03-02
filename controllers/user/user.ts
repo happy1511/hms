@@ -103,13 +103,7 @@ export const getAPI = async (req: Request) => {
           take: limit,
           orderBy: { createdAt: "desc" },
           where,
-          select: {
-            id: true,
-            name: true,
-            password: true,
-            loginId: true,
-            createdAt: true,
-            updatedAt: true,
+          include: {
             permissions: {
               select: {
                 permission: {

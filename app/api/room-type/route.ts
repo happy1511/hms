@@ -20,6 +20,14 @@ export async function GET(request: Request) {
           module: ModuleType["BED_MASTER"],
           action: ActionType["UPDATE"],
         },
+        {
+          module: ModuleType["ROOM_MASTER"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["ROOM_MASTER"],
+          action: ActionType["UPDATE"],
+        },
       ],
       () => getAPI(request),
     ),

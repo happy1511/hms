@@ -70,6 +70,17 @@ const UpdateCreateForm = ({
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-2 gap-x-2">
           <FormField<UserValidatorType>
+            label="Title"
+            type="select"
+            name="title"
+            control={form.control}
+            options={Object.keys(NameTitle).map((t) => ({
+              value: t,
+              label: t,
+            }))}
+            required
+          />
+          <FormField<UserValidatorType>
             label="Name"
             type="text"
             name="name"

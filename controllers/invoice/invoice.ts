@@ -240,6 +240,7 @@ export const addItemAPI = async (req: Request, user: User) => {
             discountValue: body.discountValue,
             total: body.total,
             createdAt: body.createdAt,
+            invoiceId: body.id,
           },
         });
 
