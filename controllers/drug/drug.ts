@@ -72,7 +72,6 @@ export const getDetailsAPI = async (
       const details = await prisma.drug.findUnique({
         where: { id },
         include: {
-          category: true,
           inventoryItems: { include: { drug: true } },
           purchaseItems: { include: { drug: true } },
         },
@@ -99,21 +98,9 @@ export const createAPI = async (req: Request) => {
     bodySchema: drugValidator,
     req,
     onSuccess: async ({ body }) => {
-      const { category, ...rest } = body;
       return prisma.$transaction(async (tx) => {
-        const existingCategory = await tx.drugCategory.findUnique({
-          where: { id: category?.id },
-        });
-
-        if (!existingCategory) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Category not found",
-          });
-        }
-
         const data = await tx.drug.create({
-          data: { ...rest, categoryId: category.id },
+          data: body,
         });
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
@@ -138,22 +125,11 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const { category, ...rest } = data;
-
-        const existingCategory = await tx.drugCategory.findUnique({
-          where: { id: category?.id },
-        });
-
-        if (!existingCategory) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Category not found",
-          });
-        }
+        const body = data;
 
         const updatedDrug = await tx.drug.update({
           where: { id: data.drugId },
-          data: rest,
+          data: body,
         });
 
         return apiResponse({

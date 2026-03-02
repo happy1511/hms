@@ -10,7 +10,6 @@ const drugValidator = z.object({
   manufacturer: z.string(),
   unit: z.string(),
   description: z.string().optional(),
-  category: z.object({ id: z.coerce.number() }),
 });
 
 const partialDrugValidator = drugValidator.partial().extend({

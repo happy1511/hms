@@ -24,6 +24,12 @@ enum Status {
   inactive
 }
 
+enum PurchaseOrderStatus {
+  draft
+  placed
+  received
+}
+
 enum DoctorType {
   referring
   consulting
@@ -476,6 +482,7 @@ model Doctor {
   referringOpd  Opd[]                @relation("ReferringDoctorOpds")
   consultingIpd Ipd[]                @relation("ConsultantDoctorIpds")
   referringIpd  Ipd[]                @relation("ReferringDoctorIpds")
+  drugBills     DrugBill[]
 }
 
 model DoctorAvailableDay {
@@ -588,6 +595,7 @@ model Patient {
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
   beds                Bed[]
+  drugBills           DrugBill[]
 }
 
 // -------------------- Facility Management --------------------
@@ -970,8 +978,9 @@ model Invoice {
   billingItems  InvoiceBillingItem[]
   transactions  Transaction[]
 
-  opd Opd?
-  ipd Ipd?
+  opd       Opd?
+  ipd       Ipd?
+  drugBills DrugBill?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -1122,7 +1131,19 @@ model Ipd {
 
 // -------------------- Drug Management --------------------
 
-model DrugCategory {
+model DrugBill {
+  id        Int    @id @default(autoincrement())
+  name      String
+  patientId Int?
+  doctorId  Int?
+  invoiceId Int    @unique
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor?  @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+}
+
+model DrugBillingCategory {
   id          Int     @id @default(autoincrement())
   name        String
   description String?
@@ -1130,7 +1151,6 @@ model DrugCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  drugs         Drug[]
   purchaseItems PurchaseItem[]
 }
 
@@ -1138,7 +1158,6 @@ model Drug {
   id             Int     @id @default(autoincrement())
   name           String
   description    String?
-  categoryId     Int
   hsnCode        Int
   gstPercentage  Float   @default(0)
   cGstPercentage Float   @default(0)
@@ -1150,7 +1169,6 @@ model Drug {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category       DrugCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   inventoryItems InventoryItems[]
   purchaseItems  PurchaseItem[]
 }
@@ -1185,6 +1203,28 @@ model InventoryItems {
 
   drug     Drug         @relation(fields: [drugId], references: [id], onDelete: Cascade)
   supplier DrugSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  grnItems GRNItems[]
+}
+
+model GRNItems {
+  id              Int @id @default(autoincrement())
+  purchaseItemId  Int
+  inventoryItemId Int
+  grnId           Int
+
+  grn           GRN            @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  purchaseItem  PurchaseItem   @relation(fields: [purchaseItemId], references: [id], onDelete: Cascade)
+}
+
+model GRN {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  grnItems GRNItems[]
+  order    PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model PurchaseItem {
@@ -1197,21 +1237,25 @@ model PurchaseItem {
   total              Float @default(0)
   purchaseOrderId    Int
 
-  category      DrugCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  drug          Drug          @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  category      DrugBillingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  drug          Drug                @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id])
+  grnItems      GRNItems[]
 }
 
 model PurchaseOrder {
-  id         Int      @id @default(autoincrement())
+  id         Int                 @id @default(autoincrement())
   supplierId Int
+  grnId      Int?                @unique
   remarks    String?
-  orderDate  DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  orderDate  DateTime            @default(now())
+  status     PurchaseOrderStatus @default(draft)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @default(now()) @updatedAt
 
   supplier DrugSupplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   items    PurchaseItem[]
+  grn      GRN?
 }
 
 // -------------------- Pharmacy Management --------------------

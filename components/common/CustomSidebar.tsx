@@ -99,6 +99,21 @@ const ipdItems = [
   { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
 ];
 
+const pharmacyItems = [
+  {
+    title: "PHARMACY PO",
+    url: "/pharmacy/purchase-order",
+    icon: Users,
+    module: [ModuleType.PHARMACY_PURCHASE_ORDER],
+  },
+  {
+    title: "PHARMACY GRN",
+    url: "/pharmacy/grn",
+    icon: Users,
+    module: [ModuleType.PHARMACY_GRN],
+  },
+];
+
 const financeItems = [
   { title: "BILLING", url: "/finance/billing", icon: FileText },
   { title: "PAYMENTS", url: "/finance/payments", icon: DollarSign },
@@ -248,6 +263,7 @@ const radiologyOrders: SidebarItem[] = [
 export function CustomSidebar() {
   const [opdOpen, setOpdOpen] = useState(true);
   const [ipdOpen, setIpdOpen] = useState(true);
+  const [pharmacyOpen, setPharmacyOpen] = useState(false);
   const [financeOpen, setFinanceOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [billingMasterOpen, setBillingMasterOpen] = useState(false);
@@ -390,6 +406,46 @@ export function CustomSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
                   {ipdItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                      >
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        {/* Pharmacy Section */}
+        <Collapsible open={pharmacyOpen} onOpenChange={setPharmacyOpen}>
+          <SidebarGroup className="p-0">
+            <CollapsibleTrigger className="w-full bg-transparent">
+              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                <div className="flex items-center gap-3">
+                  <BedDouble className="size-3" />
+                  <span>PHARMACY</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform duration-200",
+                    pharmacyOpen ? "rotate-180" : "",
+                  )}
+                />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-background">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0">
+                  {pharmacyItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

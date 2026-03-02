@@ -132,10 +132,10 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
 
         // UPSERT incoming items
         for (const item of incomingItems) {
-          if (item.index) {
+          if (item.itemId) {
             // UPDATE
             await tx.invoiceBillingItem.update({
-              where: { id: item.index },
+              where: { id: item.itemId },
               data: {
                 billingSectionId: item.billingSection.id,
                 serviceId: item.service.id,

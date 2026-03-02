@@ -1,4 +1,4 @@
-import DrugCategoryForm from "@/app-pages/drug-category/DrugCategoryForm";
+import DrugCategoryForm from "@/app-pages/drug-category/DrugBillingCategoryForm";
 
 const page = () => {
   return <DrugCategoryForm />;

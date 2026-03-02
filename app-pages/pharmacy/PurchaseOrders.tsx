@@ -1,4 +1,7 @@
 "use client";
+import CustomActionDropdown, {
+  DropdownItem,
+} from "@/components/common/CustomActionDropdown";
 import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
@@ -7,15 +10,16 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
-import { BedGetPayload } from "@/generated/prisma/models";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
-import { useBedsList, useDeleteBed } from "@/hooks/query/bed";
+import {
+  useDeletePurchaseOrder,
+  usePurchaseOrderList,
+} from "@/hooks/query/pharmacyPurchaseOrder";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
-import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,8 +29,10 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   return (
     <>
       {canCreate && (
-        <CustomButton onClick={() => router.push("/beds/new")}>
-          New Beds
+        <CustomButton
+          onClick={() => router.push("/pharmacy/purchase-order/new")}
+        >
+          New PO
         </CustomButton>
       )}
     </>
@@ -34,22 +40,6 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
 };
 
 const neededFilters: FilterConfig<FilterValues>[] = [
-  {
-    label: "Name",
-    valueKey: "name",
-    type: "text",
-    placeholder: "Search by name here.",
-  },
-  {
-    label: "Status",
-    valueKey: "status",
-    type: "select",
-    placeholder: "Select Status",
-    options: Object.values(Status).map((s) => ({
-      label: s,
-      value: s,
-    })),
-  },
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
@@ -58,67 +48,121 @@ const Actions = ({
   canDelete,
   canEdit,
   canView,
+  canCreateGrn,
 }: {
-  data: BedGetPayload<{ include: { room: true } }>;
+  data: PurchaseOrderGetPayload<{
+    include: {
+      supplier: true;
+      items: { include: { category: true; drug: true } };
+    };
+  }>;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
+  canCreateGrn: boolean;
 }) => {
-  const { mutateAsync: deleteBed, isPending: deletePending } = useDeleteBed();
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [detailsModal, setDetailsModal] = useState(false);
+  const { mutateAsync: deleteOrder, isPending: deletePending } =
+    useDeletePurchaseOrder();
+  const router = useRouter();
+  const actions: DropdownItem[] = [];
+
+  if (canView) {
+    actions.push({
+      label: "View PO",
+      onClick: () => setDetailsModal(true),
+    });
+  }
+
+  if (canCreateGrn && !data.grnId) {
+    actions.push({
+      label: "Create GRN",
+      onClick: () => {
+        console.log("object");
+        router.push(`/pharmacy/grn/${data.id}`);
+      },
+    });
+  }
+
+  if (canEdit) {
+    actions.push({
+      label: "Edit PO",
+      onClick: () => router.push(`/pharmacy/purchase-order/${data.id}`),
+    });
+  }
+
+  if (canDelete) {
+    actions.push({
+      label: "Delete PO",
+      onClick: () => setDeleteModal(true),
+    });
+  }
 
   return (
     <>
+      <CustomActionDropdown
+        triggerLabel="Actions"
+        groups={[
+          {
+            items: actions,
+            label: "PO",
+          },
+        ]}
+      />
+
       {canView && (
-        <DataViewModal<BedGetPayload<{ include: { room: true } }>>
+        <DataViewModal<
+          PurchaseOrderGetPayload<{
+            include: {
+              supplier: true;
+              items: { include: { category: true; drug: true } };
+            };
+          }>
+        >
           data={data}
-          title="Bed Details"
+          title="PO Details"
+          open={detailsModal}
+          onOpenChange={setDetailsModal}
+          trigger={<div />}
           fields={[
-            { key: "id", label: "BedId" },
-            { key: "bedNumber", label: "bedNumber" },
-            { key: "roomId", label: "room" },
+            { key: "id", label: "typeId" },
             { key: "status", label: "Status" },
+            { key: "orderDate", label: "Ordered At" },
             { key: "createdAt", label: "Created At" },
             { key: "updatedAt", label: "Updated At" },
           ]}
         />
       )}
-      {canEdit && (
-        <Link
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/beds/${data.id}`}
-        >
-          <Edit2 className="size-2.5" />
-        </Link>
-      )}
+
       {canDelete && (
         <CustomAlert
-          triggerButton={
-            <Button
-              variant="outline"
-              className="h-auto shadow-none p-1 cursor-pointer"
-            >
-              <Trash2 className="size-2.5 text-destructive" />
-            </Button>
-          }
-          title="Delete Bed?"
-          description="Are you sure you want to delete bed?"
+          triggerButton={<div />}
+          title="Delete PO?"
+          description="Are you sure you want to delete PO?"
           cancelText="Cancel"
           confirmText="Delete"
-          handleConfirm={() => deleteBed({ bedId: Number(data.id) })}
+          handleConfirm={() => deleteOrder({ orderId: Number(data.id) })}
           pending={deletePending}
+          open={deleteModal}
+          onOpenChange={setDeleteModal}
         />
       )}
     </>
   );
 };
 
-const Beds = () => {
+const PurchaseOrders = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useBedsList(filters, page, limit);
+  const { data, isLoading, isError, error } = usePurchaseOrderList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <div />;
@@ -126,33 +170,50 @@ const Beds = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.BED_MASTER,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
     ActionType.VIEW,
+  );
+  const canCreateGrn = hasActionPermission(
+    profile?.data,
+    ModuleType.PHARMACY_GRN,
+    ActionType.CREATE,
   );
   const canCreate = hasActionPermission(
     profile?.data,
-    ModuleType.BED_MASTER,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
     ActionType.CREATE,
   );
   const canUpdate = hasActionPermission(
     profile?.data,
-    ModuleType.BED_MASTER,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
     ActionType.UPDATE,
   );
   const canDelete = hasActionPermission(
     profile?.data,
-    ModuleType.BED_MASTER,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
     ActionType.DELETE,
   );
 
   const columns: ColumnDefWithClass<
-    BedGetPayload<{ include: { room: true } }>
+    PurchaseOrderGetPayload<{
+      include: {
+        supplier: true;
+        items: { include: { category: true; drug: true } };
+      };
+    }>
   >[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
         return (
-          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
             label="ID"
             column={column}
           />
@@ -163,41 +224,75 @@ const Beds = () => {
       cellClassName: "min-w-15 max-w-20",
     },
     {
-      accessorKey: "bedNumber",
+      accessorKey: "supplierName",
       header: ({ column }) => {
         return (
-          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
-            label="Bed Number"
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
+            label="Supplier Name"
             column={column}
           />
         );
       },
       cell: ({ row }) => (
         <Link
-          href={canUpdate ? `/beds/${row.original.id}` : "#"}
+          href={canUpdate ? `/pharmacy/purchase-order/${row.original.id}` : "#"}
           className="hover:underline"
         >
-          {row.original.bedNumber || "-"}
+          {row.original.supplier.name || "-"}
         </Link>
       ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
     {
-      accessorKey: "floor",
+      accessorKey: "grn",
       header: ({ column }) => {
         return (
-          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
-            label="Room Name"
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
+            label="Linked GRN"
             column={column}
           />
         );
       },
-      cell: ({ row }) => row.original.room?.name || "-",
+      cell: ({ row }) => row.original.grnId || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
-
+    {
+      accessorKey: "items",
+      header: ({ column }) => {
+        return (
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
+            label="Items"
+            column={column}
+          />
+        );
+      },
+      cell: ({ row }) => row.original.items.length,
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
     {
       accessorKey: "status",
       header: () => {
@@ -208,10 +303,33 @@ const Beds = () => {
       cellClassName: "min-w-20 max-w-30",
     },
     {
+      accessorKey: "orderDate",
+      header: () => {
+        return <button className="flex">Order Date</button>;
+      },
+      cell: ({ row }) => {
+        return (
+          <div className="flex">
+            {row.original.createdAt &&
+              format(row.original.createdAt, "MMM dd, yyyy")}
+          </div>
+        );
+      },
+      headerClassName: "min-w-20 max-w-30",
+      cellClassName: "min-w-20 max-w-30",
+    },
+    {
       accessorKey: "createdAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
             label="Created at"
             column={column}
           />
@@ -232,7 +350,14 @@ const Beds = () => {
       accessorKey: "updatedAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<BedGetPayload<{ include: { room: true } }>>
+          <SortableHeader<
+            PurchaseOrderGetPayload<{
+              include: {
+                supplier: true;
+                items: { include: { category: true; drug: true } };
+              };
+            }>
+          >
             label="Updated at"
             column={column}
           />
@@ -258,6 +383,7 @@ const Beds = () => {
           canDelete={Boolean(canDelete)}
           canEdit={Boolean(canUpdate)}
           canView={Boolean(canView)}
+          canCreateGrn={Boolean(canCreateGrn)}
         />
       ),
       headerClassName: "min-w-20 max-w-30",
@@ -267,7 +393,7 @@ const Beds = () => {
 
   return (
     <CustomLayout
-      title="Beds"
+      title="Purchase Orders"
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
       {canView && (
@@ -296,4 +422,4 @@ const Beds = () => {
   );
 };
 
-export default Beds;
+export default PurchaseOrders;

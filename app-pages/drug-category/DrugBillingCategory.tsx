@@ -7,13 +7,13 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
-import { DrugCategory } from "@/generated/prisma/client";
+import { DrugBillingCategory } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
-  useDeleteDrugCategory,
-  useDrugCategoryList,
-} from "@/hooks/query/drugCategory";
+  useDeleteDrugBillingCategory,
+  useDrugBillingCategoryList,
+} from "@/hooks/query/drugBillingCategory";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
@@ -61,18 +61,18 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: DrugCategory;
+  data: DrugBillingCategory;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
 }) => {
-  const { mutateAsync: deleteDrugCategory, isPending: deletePending } =
-    useDeleteDrugCategory();
+  const { mutateAsync: deleteDrugBillingCategory, isPending: deletePending } =
+    useDeleteDrugBillingCategory();
 
   return (
     <>
       {canView && (
-        <DataViewModal<DrugCategory>
+        <DataViewModal<DrugBillingCategory>
           data={data}
           title="Room Type Details"
           fields={[
@@ -107,7 +107,7 @@ const Actions = ({
           cancelText="Cancel"
           confirmText="Delete"
           handleConfirm={() =>
-            deleteDrugCategory({ categoryId: Number(data.id) })
+            deleteDrugBillingCategory({ categoryId: Number(data.id) })
           }
           pending={deletePending}
         />
@@ -116,13 +116,13 @@ const Actions = ({
   );
 };
 
-const DrugCategoryList = () => {
+const DrugBillingCategoryList = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useDrugCategoryList(
+  const { data, isLoading, isError, error } = useDrugBillingCategoryList(
     filters,
     page,
     limit,
@@ -153,11 +153,13 @@ const DrugCategoryList = () => {
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<DrugCategory>[] = [
+  const columns: ColumnDefWithClass<DrugBillingCategory>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<DrugCategory> label="ID" column={column} />;
+        return (
+          <SortableHeader<DrugBillingCategory> label="ID" column={column} />
+        );
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -167,7 +169,10 @@ const DrugCategoryList = () => {
       accessorKey: "name",
       header: ({ column }) => {
         return (
-          <SortableHeader<DrugCategory> label="Category Name" column={column} />
+          <SortableHeader<DrugBillingCategory>
+            label="Category Name"
+            column={column}
+          />
         );
       },
       cell: ({ row }) => (
@@ -186,7 +191,10 @@ const DrugCategoryList = () => {
       accessorKey: "createdAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<DrugCategory> label="Created at" column={column} />
+          <SortableHeader<DrugBillingCategory>
+            label="Created at"
+            column={column}
+          />
         );
       },
       cell: ({ row }) => {
@@ -204,7 +212,10 @@ const DrugCategoryList = () => {
       accessorKey: "updatedAt",
       header: ({ column }) => {
         return (
-          <SortableHeader<DrugCategory> label="Updated at" column={column} />
+          <SortableHeader<DrugBillingCategory>
+            label="Updated at"
+            column={column}
+          />
         );
       },
       cell: ({ row }) => {
@@ -265,4 +276,4 @@ const DrugCategoryList = () => {
   );
 };
 
-export default DrugCategoryList;
+export default DrugBillingCategoryList;

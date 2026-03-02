@@ -58,20 +58,20 @@ export function FormDatePicker<T extends FieldValues>({
             </FormLabel>
           )}
 
-          <FormControl className="h-6 flex items-center">
+          <FormControl className="flex items-center">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   id={id}
                   variant="outline"
                   disabled={disabled}
-                  className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 py-1 px-3 flex justify-start ${
+                  className={`rounded-sm m-0 py-1 px-3 flex justify-start items-center selection:text-white bg-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
                     fieldState.invalid
                       ? "border-destructive focus-visible:border-destructive"
                       : ""
                   } ${className}`}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 size-3" />
                   {field.value ? (
                     format(field.value, "PPP")
                   ) : (

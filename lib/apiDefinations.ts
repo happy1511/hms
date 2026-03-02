@@ -56,6 +56,12 @@ export const DRUG_CATEGORY = "/drug-category";
 export const PHARMACY_DRUG = "/drug";
 
 // ----------------------------------
+// ---------PHARMACY ORDER ENDPOINTS--------
+// ----------------------------------
+export const PHARMACY_PURCHASE_ORDER = "/pharmacy/purchase-order";
+export const PHARMACY_GRN = "/pharmacy/grn";
+
+// ----------------------------------
 // ---------ROOM TYPE ENDPOINTS--------
 // ----------------------------------
 export const ROOM_TYPE = "/room-type";

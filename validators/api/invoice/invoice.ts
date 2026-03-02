@@ -6,7 +6,7 @@ import {
 import z from "zod";
 
 const billingItemValidator = z.object({
-  index: z.coerce.number().optional(),
+  index: z.coerce.string().optional(),
   itemId: z.coerce.number().optional(),
   billingSection: z.object({ id: z.coerce.number().min(1), name: z.string() }),
   service: z.object({

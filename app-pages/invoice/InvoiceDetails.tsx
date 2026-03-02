@@ -250,8 +250,6 @@ const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
     name: fieldName as ArrayPath<updateInvoiceValidatorType>,
   });
 
-  console.log(form.getValues());
-
   if (selectedIndex === null) {
     return <div className="p-4 text-muted">Select billing section</div>;
   }
@@ -343,6 +341,8 @@ const InvoiceDetails = () => {
     mutateAsync(values);
   };
 
+  console.log(form.formState.errors, form.getValues());
+
   useEffect(() => {
     if (!data) return;
 
@@ -362,7 +362,6 @@ const InvoiceDetails = () => {
           billingSection: section,
           createdAt: new Date(),
           itemId: item?.id,
-          index: crypto.randomUUID(),
         })),
       })),
       transactions: data.transactions,

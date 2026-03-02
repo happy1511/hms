@@ -1,12 +1,13 @@
-import { DrugCategory } from "@/generated/prisma/client";
+import { DrugBillingCategory } from "@/generated/prisma/client";
 import { DRUG_CATEGORY } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
-  drugCategoryValidatorType,
-  partialDrugCategoryValidatorType,
-} from "@/validators/api/masters/drugCategory";
+  drugBillingCategoryValidatorType,
+  partialDrugBillingCategoryValidatorType,
+} from "@/validators/api/masters/drugBillingCategory";
+
 import {
   InfiniteData,
   useInfiniteQuery,
@@ -18,40 +19,39 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createDrugCategory = createRequest<ApiResponse<DrugCategory>>(
-  DRUG_CATEGORY,
-  "POST",
-);
-const updateDrugCategory = createRequest<
-  ApiResponse<DrugCategory>,
+const createDrugBillingCategory = createRequest<
+  ApiResponse<DrugBillingCategory>
+>(DRUG_CATEGORY, "POST");
+const updateDrugBillingCategory = createRequest<
+  ApiResponse<DrugBillingCategory>,
   undefined,
   { id: string }
 >((p) => `${DRUG_CATEGORY}/${p.id}`, "PUT");
-const deleteDrugCategory = createRequest<
+const deleteDrugBillingCategory = createRequest<
   ApiResponse<null>,
   undefined,
   { id: string }
 >((p) => `${DRUG_CATEGORY}/${p.id}`, "DELETE");
-const getDrugCategory = createRequest<
-  ApiResponse<DrugCategory>,
+const getDrugBillingCategory = createRequest<
+  ApiResponse<DrugBillingCategory>,
   undefined,
   { id: string }
 >((p) => `${DRUG_CATEGORY}/${p.id}`, "GET");
 
 const getDrugCategories = createRequest<
-  PaginatedResponse<DrugCategory>,
+  PaginatedResponse<DrugBillingCategory>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(DRUG_CATEGORY, "GET");
 
-export const useDrugCategoryList = (
+export const useDrugBillingCategoryList = (
   filters: FilterValues,
   page: number,
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<DrugCategory>,
+    PaginatedResponse<DrugBillingCategory>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<DrugCategory>,
+    PaginatedResponse<DrugBillingCategory>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["drug-categories", filters, page, limit],
@@ -67,16 +67,16 @@ export const useDrugCategoryList = (
   });
 };
 
-export const useGetDrugCategory = (id?: string) => {
+export const useGetDrugBillingCategory = (id?: string) => {
   return useQuery<
-    ApiResponse<DrugCategory>,
+    ApiResponse<DrugBillingCategory>,
     AxiosError<ApiResponse<null>>,
-    DrugCategory,
+    DrugBillingCategory,
     [string, string | undefined]
   >({
     queryKey: ["drug", id],
     queryFn: () =>
-      getDrugCategory({
+      getDrugBillingCategory({
         urlHelpers: {
           id: id as string,
         },
@@ -86,16 +86,16 @@ export const useGetDrugCategory = (id?: string) => {
   });
 };
 
-export const useCreateDrugCategory = () => {
+export const useCreateDrugBillingCategory = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<DrugCategory>,
+    ApiResponse<DrugBillingCategory>,
     AxiosError<ApiResponse<null>>,
-    drugCategoryValidatorType
+    drugBillingCategoryValidatorType
   >({
     mutationKey: ["create-drug-category"],
-    mutationFn: (data) => createDrugCategory({ body: data }),
+    mutationFn: (data) => createDrugBillingCategory({ body: data }),
     onSuccess: () => {
       toast.success("Drug Category Created Successfully");
       queryClient.invalidateQueries({
@@ -107,18 +107,18 @@ export const useCreateDrugCategory = () => {
   });
 };
 
-export const useUpdateDrugCategory = () => {
+export const useUpdateDrugBillingCategory = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<DrugCategory>,
+    ApiResponse<DrugBillingCategory>,
     AxiosError<ApiResponse<null>>,
-    partialDrugCategoryValidatorType
+    partialDrugBillingCategoryValidatorType
   >({
     mutationKey: ["update-drug-category"],
     mutationFn: (data) =>
-      updateDrugCategory({
+      updateDrugBillingCategory({
         body: data,
         urlHelpers: { id: String(data.categoryId) },
       }),
@@ -133,17 +133,19 @@ export const useUpdateDrugCategory = () => {
   });
 };
 
-export const useDeleteDrugCategory = () => {
+export const useDeleteDrugBillingCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
     ApiResponse<null>,
     AxiosError<ApiResponse<null>>,
-    partialDrugCategoryValidatorType
+    partialDrugBillingCategoryValidatorType
   >({
     mutationKey: ["delete-drug-category"],
     mutationFn: (data) =>
-      deleteDrugCategory({ urlHelpers: { id: String(data.categoryId) } }),
+      deleteDrugBillingCategory({
+        urlHelpers: { id: String(data.categoryId) },
+      }),
     onSuccess: () => {
       toast.success("Drug Category Deleted Successfully");
       queryClient.invalidateQueries({
@@ -154,14 +156,14 @@ export const useDeleteDrugCategory = () => {
   });
 };
 
-export const useInfiniteDrugCategoryList = (
+export const useInfiniteDrugBillingCategoryList = (
   filters: FilterValues,
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<DrugCategory>,
+    PaginatedResponse<DrugBillingCategory>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<DrugCategory>>,
+    InfiniteData<PaginatedResponse<DrugBillingCategory>>,
     [string, FilterValues, number]
   >({
     queryKey: ["drug-category-infinite", filters, limit],

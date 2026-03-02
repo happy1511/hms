@@ -1,5 +1,4 @@
 import { Drug } from "@/generated/prisma/client";
-import { DrugGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_DRUG } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -28,14 +27,13 @@ const deleteDrug = createRequest<ApiResponse<null>, undefined, { id: string }>(
   (p) => `${PHARMACY_DRUG}/${p.id}`,
   "DELETE",
 );
-const getDrug = createRequest<
-  ApiResponse<DrugGetPayload<{ include: { category: true } }>>,
-  undefined,
-  { id: string }
->((p) => `${PHARMACY_DRUG}/${p.id}`, "GET");
+const getDrug = createRequest<ApiResponse<Drug>, undefined, { id: string }>(
+  (p) => `${PHARMACY_DRUG}/${p.id}`,
+  "GET",
+);
 
 const getDrugs = createRequest<
-  PaginatedResponse<DrugGetPayload<{ include: { category: true } }>>,
+  PaginatedResponse<Drug>,
   { limit: number; name?: string; createdAt?: string; status?: string }
 >(PHARMACY_DRUG, "GET");
 
@@ -45,9 +43,9 @@ export const useDrugList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<DrugGetPayload<{ include: { category: true } }>>,
+    PaginatedResponse<Drug>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<DrugGetPayload<{ include: { category: true } }>>,
+    PaginatedResponse<Drug>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["drugs", filters, page, limit],
@@ -65,9 +63,9 @@ export const useDrugList = (
 
 export const useGetDrug = (id?: string) => {
   return useQuery<
-    ApiResponse<DrugGetPayload<{ include: { category: true } }>>,
+    ApiResponse<Drug>,
     AxiosError<ApiResponse<null>>,
-    DrugGetPayload<{ include: { category: true } }>,
+    Drug,
     [string, string | undefined]
   >({
     queryKey: ["drug", id],

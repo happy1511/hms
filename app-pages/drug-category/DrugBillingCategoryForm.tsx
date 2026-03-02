@@ -8,32 +8,36 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { DrugCategory } from "@/generated/prisma/client";
+import { DrugBillingCategory } from "@/generated/prisma/client";
 import {
-  drugCategoryValidator,
-  drugCategoryValidatorType,
-} from "@/validators/api/masters/drugCategory";
+  drugBillingCategoryValidator,
+  drugBillingCategoryValidatorType,
+} from "@/validators/api/masters/drugBillingCategory";
 import {
-  useCreateDrugCategory,
-  useGetDrugCategory,
-  useUpdateDrugCategory,
-} from "@/hooks/query/drugCategory";
+  useCreateDrugBillingCategory,
+  useGetDrugBillingCategory,
+  useUpdateDrugBillingCategory,
+} from "@/hooks/query/drugBillingCategory";
 
-const getInitialValues = (data?: DrugCategory): drugCategoryValidatorType => ({
+const getInitialValues = (
+  data?: DrugBillingCategory,
+): drugBillingCategoryValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
 });
 
-const UpdateCreateForm = ({ data }: { data?: DrugCategory }) => {
-  const { mutateAsync: create, isPending: creating } = useCreateDrugCategory();
-  const { mutateAsync: update, isPending: updating } = useUpdateDrugCategory();
+const UpdateCreateForm = ({ data }: { data?: DrugBillingCategory }) => {
+  const { mutateAsync: create, isPending: creating } =
+    useCreateDrugBillingCategory();
+  const { mutateAsync: update, isPending: updating } =
+    useUpdateDrugBillingCategory();
 
-  const form = useForm<drugCategoryValidatorType>({
+  const form = useForm<drugBillingCategoryValidatorType>({
     defaultValues: getInitialValues(data),
-    resolver: zodResolver(drugCategoryValidator),
+    resolver: zodResolver(drugBillingCategoryValidator),
   });
 
-  const onSubmit = (values: drugCategoryValidatorType) => {
+  const onSubmit = (values: drugBillingCategoryValidatorType) => {
     if (data) {
       update({ categoryId: Number(data.id), ...values });
     } else {
@@ -45,7 +49,7 @@ const UpdateCreateForm = ({ data }: { data?: DrugCategory }) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-2 gap-x-2">
-          <FormField<drugCategoryValidatorType>
+          <FormField<drugBillingCategoryValidatorType>
             label="Name"
             type="text"
             name="name"
@@ -53,7 +57,7 @@ const UpdateCreateForm = ({ data }: { data?: DrugCategory }) => {
             required
           />
 
-          <FormField<drugCategoryValidatorType>
+          <FormField<drugBillingCategoryValidatorType>
             label="Description"
             type="textarea"
             name="description"
@@ -69,10 +73,11 @@ const UpdateCreateForm = ({ data }: { data?: DrugCategory }) => {
   );
 };
 
-const DrugCategoryForm = () => {
+const DrugBillingCategoryForm = () => {
   const { categoryId }: { categoryId?: string } = useParams();
 
-  const { data, isLoading: fetchingRoomType } = useGetDrugCategory(categoryId);
+  const { data, isLoading: fetchingRoomType } =
+    useGetDrugBillingCategory(categoryId);
 
   if (fetchingRoomType) {
     return (
@@ -99,4 +104,4 @@ const DrugCategoryForm = () => {
   );
 };
 
-export default DrugCategoryForm;
+export default DrugBillingCategoryForm;

@@ -29,7 +29,6 @@ export async function validateRequest<B, Q, P, U>({
   let body: B | undefined;
   let query: Q | undefined;
   let parsedParams: P | undefined;
-
   /* -------- Body validation -------- */
   if (bodySchema) {
     const json = await req.json();

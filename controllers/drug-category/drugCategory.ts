@@ -5,9 +5,9 @@ import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { Prisma } from "@/generated/prisma/client";
 import {
-  drugCategoryValidator,
-  partialDrugCategoryValidator,
-} from "@/validators/api/masters/drugCategory";
+  drugBillingCategoryValidator,
+  partialDrugBillingCategoryValidator,
+} from "@/validators/api/masters/drugBillingCategory";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -21,7 +21,7 @@ export const getAPI = async (req: Request) => {
       const createdAtTo = query["createdAt[to]"] ?? "";
 
       const skip = (page - 1) * limit;
-      const and: Prisma.DrugCategoryWhereInput[] = [];
+      const and: Prisma.DrugBillingCategoryWhereInput[] = [];
 
       if (search) {
         and.push({ name: { contains: search } });
@@ -36,18 +36,18 @@ export const getAPI = async (req: Request) => {
         });
       }
 
-      const where: Prisma.DrugCategoryWhereInput = and.length
+      const where: Prisma.DrugBillingCategoryWhereInput = and.length
         ? { AND: and }
         : {};
 
       const [items, total] = await prisma.$transaction([
-        prisma.drugCategory.findMany({
+        prisma.drugBillingCategory.findMany({
           skip,
           take: limit,
           orderBy: { createdAt: "desc" },
           where,
         }),
-        prisma.drugCategory.count({ where }),
+        prisma.drugBillingCategory.count({ where }),
       ]);
 
       return apiResponse({
@@ -65,16 +65,15 @@ export const getDetailsAPI = async (
   { params }: { params: { categoryId: string } },
 ) => {
   return validateRequest({
-    paramsSchema: partialDrugCategoryValidator,
+    paramsSchema: partialDrugBillingCategoryValidator,
     req,
     params,
     onSuccess: async ({ params }) => {
       const id = params.categoryId;
 
-      const details = await prisma.drugCategory.findUnique({
+      const details = await prisma.drugBillingCategory.findUnique({
         where: { id },
         include: {
-          drugs: true,
           purchaseItems: { include: { drug: true } },
         },
       });
@@ -97,11 +96,11 @@ export const getDetailsAPI = async (
 
 export const createAPI = async (req: Request) => {
   return validateRequest({
-    bodySchema: drugCategoryValidator,
+    bodySchema: drugBillingCategoryValidator,
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
-        const data = await tx.drugCategory.create({ data: body });
+        const data = await tx.drugBillingCategory.create({ data: body });
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Category Created Successfully",
@@ -117,8 +116,8 @@ export const updateAPI = async (
   { params }: { params: { categoryId: string } },
 ) => {
   return validateRequest({
-    bodySchema: partialDrugCategoryValidator,
-    paramsSchema: partialDrugCategoryValidator,
+    bodySchema: partialDrugBillingCategoryValidator,
+    paramsSchema: partialDrugBillingCategoryValidator,
     params,
     req,
     onSuccess: async ({ body }) => {
@@ -126,7 +125,7 @@ export const updateAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const { categoryId, ...rest } = data;
-        const existingCategory = await tx.drugCategory.findUnique({
+        const existingCategory = await tx.drugBillingCategory.findUnique({
           where: { id: categoryId },
         });
 
@@ -137,7 +136,7 @@ export const updateAPI = async (
           });
         }
 
-        const updatedCategory = await tx.drugCategory.update({
+        const updatedCategory = await tx.drugBillingCategory.update({
           where: { id: categoryId },
           data: rest,
         });
@@ -157,13 +156,13 @@ export const deleteAPI = async (
   { params }: { params: { categoryId: string } },
 ) => {
   return validateRequest({
-    paramsSchema: partialDrugCategoryValidator,
+    paramsSchema: partialDrugBillingCategoryValidator,
     params,
     req,
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingCategory = await tx.drugCategory.findUnique({
+        const existingCategory = await tx.drugBillingCategory.findUnique({
           where: { id: data.categoryId },
         });
 
@@ -174,7 +173,7 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.drugCategory.delete({
+        await prisma.drugBillingCategory.delete({
           where: { id: data.categoryId },
         });
 

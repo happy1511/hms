@@ -1,4 +1,4 @@
-import DrugCategoryList from "@/app-pages/drug-category/DrugCategory";
+import DrugCategoryList from "@/app-pages/drug-category/DrugBillingCategory";
 
 const page = () => {
   return <DrugCategoryList />;

@@ -302,12 +302,19 @@ export const updateAPI = async (
         });
       }
 
-      const { availableDays, name, password, permissions, status, ...rest } =
-        data;
+      const {
+        availableDays,
+        name,
+        password,
+        permissions,
+        status,
+        title,
+        ...rest
+      } = data;
 
       const updatedUser = await prisma.user.update({
         where: { id: data.userId },
-        data: { name, password, status },
+        data: { name, password, status, title },
       });
 
       const updatedDoctor = await prisma.doctor.update({

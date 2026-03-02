@@ -12,20 +12,12 @@ import {
   drugValidator,
   drugValidatorType,
 } from "@/validators/api/masters/drug";
-import { DrugGetPayload } from "@/generated/prisma/models";
 import { useCreateDrug, useGetDrug, useUpdateDrug } from "@/hooks/query/drug";
-import { useState } from "react";
-import { useInfiniteDrugCategoryList } from "@/hooks/query/drugCategory";
-import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
-import { PaginatedResponse } from "@/lib/type";
-import { DrugCategory } from "@/generated/prisma/client";
+import { Drug } from "@/generated/prisma/client";
 
-const getInitialValues = (
-  data?: DrugGetPayload<{ include: { category: true } }>,
-): drugValidatorType => ({
+const getInitialValues = (data?: Drug): drugValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
-  category: data?.category ?? { id: null },
   cGstPercentage: data?.cGstPercentage ?? 0,
   sGstPercentage: data?.cGstPercentage ?? 0,
   iGstPercentage: data?.cGstPercentage ?? 0,
@@ -35,18 +27,9 @@ const getInitialValues = (
   unit: data?.unit ?? "",
 });
 
-const UpdateCreateForm = ({
-  data,
-}: {
-  data?: DrugGetPayload<{ include: { category: true } }>;
-}) => {
-  const [categorySearchValue, setCategorySearchValue] = useState("");
+const UpdateCreateForm = ({ data }: { data?: Drug }) => {
   const { mutateAsync: create, isPending: creating } = useCreateDrug();
   const { mutateAsync: update, isPending: updating } = useUpdateDrug();
-  const floorQuery = useInfiniteDrugCategoryList(
-    { name: categorySearchValue },
-    10,
-  );
 
   const form = useForm<drugValidatorType>({
     defaultValues: getInitialValues(data),
@@ -70,24 +53,6 @@ const UpdateCreateForm = ({
             type="text"
             name="name"
             control={form.control}
-            required
-          />
-
-          <FormInfiniteSelect<
-            DrugCategory,
-            PaginatedResponse<DrugCategory>,
-            string,
-            drugValidatorType
-          >
-            label="Category"
-            name="category"
-            control={form.control}
-            query={floorQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i?.id)}
-            labelKey={(i) => i?.name}
-            search={categorySearchValue}
-            onSearchChange={setCategorySearchValue}
             required
           />
 

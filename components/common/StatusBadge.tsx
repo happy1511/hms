@@ -1,9 +1,23 @@
-import { AppointmentStatus, Status } from "@/generated/prisma/enums";
+import {
+  AppointmentStatus,
+  PurchaseOrderStatus,
+  Status,
+} from "@/generated/prisma/enums";
+
 interface Props {
-  status: "success" | "failed" | Status | AppointmentStatus;
+  status:
+    | "success"
+    | "failed"
+    | Status
+    | AppointmentStatus
+    | PurchaseOrderStatus;
 }
 
-const errorStatuses = [Status["inactive"], "failed"];
+const errorStatuses = [
+  Status["inactive"],
+  "failed",
+  PurchaseOrderStatus["draft"],
+];
 
 const StatusBadge = ({ status }: Props) => {
   return errorStatuses.includes(status) ? (
