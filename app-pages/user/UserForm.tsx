@@ -33,6 +33,7 @@ const getInitialValues = (
   } else {
     return {
       name: "",
+      loginId: "",
       password: "",
       title: NameTitle["MR"],
       status: Status["active"],
@@ -75,16 +76,14 @@ const UpdateCreateForm = ({
             control={form.control}
             required
           />
-          {data && (
-            <FormField<UserValidatorType>
-              label="LoginId"
-              type="text"
-              name="loginId"
-              control={form.control}
-              required
-              readOnly
-            />
-          )}
+          <FormField<UserValidatorType>
+            label="Access Code (Phone)"
+            type="text"
+            name="loginId"
+            control={form.control}
+            required
+            readOnly={Boolean(data)}
+          />
           <FormField<UserValidatorType>
             label="Password"
             type="text"

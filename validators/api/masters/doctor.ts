@@ -11,6 +11,7 @@ const optionalPhone = z
   .or(z.literal(""));
 
 const doctorBaseValidator = userValidator.extend({
+  loginId: z.string().optional().or(z.literal("")),
   name: z.string().min(1, "Name is required"),
   password: z.string().min(6).optional().or(z.literal("")),
   status: z.enum(Status).optional().default(Status.active),

@@ -16,7 +16,9 @@ const permissionValidator = z.array(
 const userValidator = z.object({
   name: z.string().min(1, "Name is required"),
   title: z.enum(NameTitle),
-  loginId: z.string().optional(),
+  loginId: z
+    .string()
+    .regex(/^\d{10}$/, "Access code must be a 10-digit phone number"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
   status: z.enum(Status),
   permissions: permissionValidator,

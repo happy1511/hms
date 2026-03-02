@@ -201,20 +201,32 @@ export const createAPI = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      let loginId;
+      const phoneBasedLoginId = data.phoneNumber?.trim();
+      let loginId = phoneBasedLoginId || "";
 
-      while (!loginId) {
-        const id = generateUUID();
-
-        const existingUser = await prisma.user.findUnique({
-          where: { loginId: id },
+      if (phoneBasedLoginId) {
+        const existingUserByLoginId = await prisma.user.findUnique({
+          where: { loginId: phoneBasedLoginId },
         });
 
-        if (existingUser) {
-          continue;
-        } else {
+        if (existingUserByLoginId) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "User access code already exists for this phone number",
+          });
+        }
+      } else {
+        while (!loginId) {
+          const id = generateUUID();
+
+          const existingUser = await prisma.user.findUnique({
+            where: { loginId: id },
+          });
+
+          if (existingUser) {
+            continue;
+          }
           loginId = id;
-          break;
         }
       }
 

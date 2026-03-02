@@ -7,7 +7,6 @@ import {
   userValidator,
   UserValidatorType,
 } from "@/validators/api/masters/user";
-import { generateUUID } from "@/lib/utils";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -245,21 +244,17 @@ export const createAPI = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      let loginId;
+      const loginId = data.loginId.trim();
 
-      while (!loginId) {
-        const id = generateUUID();
+      const existingUser = await prisma.user.findUnique({
+        where: { loginId },
+      });
 
-        const existingUser = await prisma.user.findUnique({
-          where: { loginId: id },
+      if (existingUser) {
+        return apiResponse({
+          status: RESPONSE_STATUS.BAD_REQUEST,
+          message: "User access code already exists for this phone number",
         });
-
-        if (existingUser) {
-          continue;
-        } else {
-          loginId = id;
-          break;
-        }
       }
 
       const { permissions, ...rest } = data;
@@ -272,7 +267,7 @@ export const createAPI = async (req: Request) => {
 
       return apiResponse({
         status: RESPONSE_STATUS.CREATED,
-        message: "Doctor Created Successfully",
+        message: "User Created Successfully",
         data: {
           ...user,
           permissions: updatedPermissions,
