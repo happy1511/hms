@@ -66,6 +66,26 @@ export const auth = async (req: Request) => {
   });
 };
 
+export const logout = async (req: Request) => {
+  return validateRequest({
+    req,
+    onSuccess: async () => {
+      (await cookies()).delete({
+        name: "accessToken",
+      });
+
+      (await cookies()).delete({
+        name: "refreshToken",
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Logout Success",
+      });
+    },
+  });
+};
+
 export const refreshToken = async (req: Request) => {
   return validateRequest({
     bodySchema: refreshTokenValidator,

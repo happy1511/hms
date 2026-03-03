@@ -1,4 +1,4 @@
-import { LOGIN, PROFILE } from "@/lib/apiDefinations";
+import { LOGIN, LOGOUT, PROFILE } from "@/lib/apiDefinations";
 import { ApiResponse, User } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const login = createRequest<ApiResponse<null>>(LOGIN, "POST");
+const logout = createRequest<ApiResponse<null>>(LOGOUT, "POST");
 const profile = createRequest<ApiResponse<User>>(PROFILE, "POST");
 
 export const useLogin = () => {
@@ -23,6 +24,19 @@ export const useLogin = () => {
     onSuccess: () => {
       router.push("/");
       toast.success("Logged In Successfully");
+    },
+    onError: showError,
+  });
+};
+
+export const useLogout = () => {
+  const router = useRouter();
+  return useMutation<ApiResponse<null>, AxiosError<ApiResponse<null>>>({
+    mutationKey: ["logout"],
+    mutationFn: () => logout({}),
+    onSuccess: () => {
+      router.push("/login");
+      toast.success("Logged Out Successfully");
     },
     onError: showError,
   });

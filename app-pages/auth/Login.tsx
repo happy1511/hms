@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 
 const Login = () => {
-  const { mutate } = useLogin();
+  const { mutate, isPending } = useLogin();
 
   const form = useForm<AuthValidatorType>({
     defaultValues: { loginId: "", password: "" },
@@ -52,6 +52,7 @@ const Login = () => {
               {/* Action Buttons */}
               <div className="flex justify-center gap-3 pt-2">
                 <Button
+                  disabled={isPending}
                   type="submit"
                   className="px-8 bg-primary text-primary-foreground hover:bg-primary/90 w-full"
                 >
