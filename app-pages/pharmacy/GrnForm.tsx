@@ -1,6 +1,7 @@
 "use client";
 
 import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
@@ -242,7 +243,11 @@ const GrnForm = () => {
     return <div />;
   }
 
-  return order && <UpdateCreateForm data={order} />;
+  return (
+    <CustomLayout title="GRN">
+      {order && <UpdateCreateForm data={order} />}
+    </CustomLayout>
+  );
 };
 
 export default GrnForm;

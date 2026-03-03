@@ -1,6 +1,7 @@
 "use client";
 
 import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
@@ -70,6 +71,9 @@ const ServiceRow = ({ index, form }: ServiceRowProps) => {
   const quantity = watch(
     `${rowPath}.quantity` as Path<purchaseOrderValidatorType>,
   );
+  const drug = watch(`${rowPath}.drug` as Path<purchaseOrderValidatorType>) as
+    | purchaseOrderValidatorType["items"][number]["drug"]
+    | undefined;
   const rate = watch(`${rowPath}.rate` as Path<purchaseOrderValidatorType>);
   const discountPercentage = watch(
     `${rowPath}.discountPercentage` as Path<purchaseOrderValidatorType>,
@@ -149,7 +153,7 @@ const ServiceRow = ({ index, form }: ServiceRowProps) => {
 
       {/* QTY */}
       <td>
-        <div className="px-2 py-1">
+        <div className="px-2 py-1 min-w-24">
           <FormField
             type="number"
             name={`${rowPath}.quantity` as Path<purchaseOrderValidatorType>}
@@ -161,7 +165,7 @@ const ServiceRow = ({ index, form }: ServiceRowProps) => {
 
       {/* RATE */}
       <td>
-        <div className="px-2 py-1">
+        <div className="px-2 py-1 min-w-28">
           <FormField
             type="number"
             name={`${rowPath}.rate` as Path<purchaseOrderValidatorType>}
@@ -173,7 +177,7 @@ const ServiceRow = ({ index, form }: ServiceRowProps) => {
 
       {/* DISC TYPE */}
       <td>
-        <div className="px-2 py-1">
+        <div className="px-2 py-1 min-w-30">
           <FormField
             type="number"
             name={
@@ -187,66 +191,34 @@ const ServiceRow = ({ index, form }: ServiceRowProps) => {
 
       {/* RATE */}
       <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={
-              `${rowPath}.gstPercentage` as Path<purchaseOrderValidatorType>
-            }
-            control={control}
-            hideError
-            readOnly
-          />
+        <div className="px-2 py-1 text-center min-w-28">
+          <p>{(drug?.gstPercentage as number) ?? 0}</p>
         </div>
       </td>
 
       {/* RATE */}
       <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={
-              `${rowPath}.cGstPercentage` as Path<purchaseOrderValidatorType>
-            }
-            control={control}
-            hideError
-            readOnly
-          />
+        <div className="px-2 py-1 text-center min-w-28">
+          <p>{(drug?.cGstPercentage as number) ?? 0}</p>
         </div>
       </td>
 
       {/* RATE */}
       <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={
-              `${rowPath}.sGstPercentage` as Path<purchaseOrderValidatorType>
-            }
-            control={control}
-            hideError
-            readOnly
-          />
+        <div className="px-2 py-1 text-center min-w-28">
+          <p>{(drug?.sGstPercentage as number) ?? 0}</p>
         </div>
       </td>
 
       {/* RATE */}
       <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={
-              `${rowPath}.iGstPercentage` as Path<purchaseOrderValidatorType>
-            }
-            control={control}
-            hideError
-            readOnly
-          />
+        <div className="px-2 py-1 text-center min-w-28">
+          <p>{(drug?.iGstPercentage as number) ?? 0}</p>
         </div>
       </td>
 
       {/* TOTAL */}
-      <td className="font-semibold w-30">
+      <td className="font-semibold min-w-28">
         <div className="px-2 py-1 text-center">₹ {Number(total)}</div>
       </td>
 
@@ -283,7 +255,13 @@ const BillingItemsTable = ({ form }: Props) => {
               discountPercentage: 0,
               rate: 0,
               total: 0,
-              drug: { id: undefined },
+              drug: {
+                id: undefined,
+                gstPercentage: 0,
+                cGstPercentage: 0,
+                sGstPercentage: 0,
+                iGstPercentage: 0,
+              },
               category: { id: undefined },
             })
           }
@@ -292,11 +270,11 @@ const BillingItemsTable = ({ form }: Props) => {
         </button>
       </div>
 
-      <div className="w-full flex-1">
-        <table className="w-full border text-tiny">
+      <div className="w-full overflow-x-auto pb-20">
+        <table className="w-full border min-w-300 text-tiny">
           <thead className="bg-muted">
             <tr>
-              <th>
+              <th className="min-w-10">
                 <div className="px-2 py-1">#</div>
               </th>
               <th className="w-62.5">
@@ -305,31 +283,31 @@ const BillingItemsTable = ({ form }: Props) => {
               <th className="w-62.5">
                 <div className="px-2 py-1">Category</div>
               </th>
-              <th>
+              <th className="min-w-24">
                 <div className="px-2 py-1">Qty</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">Rate</div>
               </th>
-              <th>
+              <th className="min-w-30">
                 <div className="px-2 py-1">Discount (%)</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">GST (%)</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">cGST (%)</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">sGST (%)</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">iGST (%)</div>
               </th>
-              <th>
+              <th className="min-w-28">
                 <div className="px-2 py-1">Total</div>
               </th>
-              <th></th>
+              <th className="min-w-10"></th>
             </tr>
           </thead>
 
@@ -441,12 +419,15 @@ const PurchaseOrderForm = () => {
   if (params?.orderId && !order) {
     return <div />;
   }
-  console.log(order);
 
-  return params?.orderId ? (
-    <UpdateCreateForm data={order} />
-  ) : (
-    <UpdateCreateForm />
+  return (
+    <CustomLayout title="PO">
+      {params?.orderId ? (
+        <UpdateCreateForm data={order} />
+      ) : (
+        <UpdateCreateForm />
+      )}
+    </CustomLayout>
   );
 };
 

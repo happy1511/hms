@@ -64,10 +64,10 @@ const Actions = ({ data }: { data: OPDType }) => {
                 label: "View Invoice",
                 onClick: () => router.push(`/invoice/${data.invoice.id}`),
               },
-              // {
-              //   label: "View Invoice Details",
-              //   onClick: () => setViewInvoiceModal(true),
-              // },
+              {
+                label: "Print Invoice",
+                onClick: () => setViewInvoiceModal(true),
+              },
             ],
             label: "Invoice",
           },
@@ -310,7 +310,7 @@ const OPDs = () => {
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
       valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).name,
+      labelKey: (i) => (i as Doctor).user.name,
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

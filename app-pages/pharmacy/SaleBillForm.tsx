@@ -4,7 +4,11 @@ import CustomButton from "@/components/common/CustomButton";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
-import { DiscountType, PaymentCategory, PaymentMode } from "@/generated/prisma/enums";
+import {
+  DiscountType,
+  PaymentCategory,
+  PaymentMode,
+} from "@/generated/prisma/enums";
 import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useInfiniteInventoryItems } from "@/hooks/query/pharmacyInventory";
@@ -14,7 +18,12 @@ import {
   useGetSaleBill,
   useUpdateSaleBill,
 } from "@/hooks/query/pharmacySaleBill";
-import { Doctor, FilterValues, PaginatedResponse, PatientType } from "@/lib/type";
+import {
+  Doctor,
+  FilterValues,
+  PaginatedResponse,
+  PatientType,
+} from "@/lib/type";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -26,6 +35,7 @@ import {
   useWatch,
 } from "react-hook-form";
 import { toast } from "sonner";
+import CustomLayout from "@/components/common/CustomLayout";
 
 type InventoryItem = InventoryItemsGetPayload<{
   include: {
@@ -69,9 +79,7 @@ const toValidDate = (value: unknown) => {
   return new Date();
 };
 
-const getInitialValues = (
-  data?: any,
-): SaleBillFormValues => {
+const getInitialValues = (data?: any): SaleBillFormValues => {
   if (!data) {
     return {
       name: "",
@@ -168,7 +176,8 @@ const SaleItemRow = ({
     }) || 0,
   );
   const isOverStock =
-    inventoryItem && Number(quantity || 0) > Number(inventoryItem.quantityInStock);
+    inventoryItem &&
+    Number(quantity || 0) > Number(inventoryItem.quantityInStock);
 
   useEffect(() => {
     if (!inventoryItem) return;
@@ -202,38 +211,53 @@ const SaleItemRow = ({
     const cPct = Number(inventoryItem?.drug?.cGstPercentage ?? 0);
     const sPct = Number(inventoryItem?.drug?.sGstPercentage ?? 0);
     const iPct = Number(inventoryItem?.drug?.iGstPercentage ?? 0);
-    const explicitTax = (net * cPct) / 100 + (net * sPct) / 100 + (net * iPct) / 100;
+    const explicitTax =
+      (net * cPct) / 100 + (net * sPct) / 100 + (net * iPct) / 100;
     const fallbackTax = (net * gstPct) / 100;
-    const tax = Number((explicitTax > 0 ? explicitTax : fallbackTax).toFixed(2));
+    const tax = Number(
+      (explicitTax > 0 ? explicitTax : fallbackTax).toFixed(2),
+    );
     const finalTotal = Number((net + tax).toFixed(2));
 
     const currentTaxable = Number(
       getValues(`${rowPath}.taxableAmount` as Path<SaleBillFormValues>),
     );
     if (currentTaxable !== net) {
-      setValue(`${rowPath}.taxableAmount` as Path<SaleBillFormValues>, net as never, {
-        shouldValidate: false,
-        shouldDirty: true,
-      });
+      setValue(
+        `${rowPath}.taxableAmount` as Path<SaleBillFormValues>,
+        net as never,
+        {
+          shouldValidate: false,
+          shouldDirty: true,
+        },
+      );
     }
     const currentTax = Number(
       getValues(`${rowPath}.gstAmount` as Path<SaleBillFormValues>),
     );
     if (currentTax !== tax) {
-      setValue(`${rowPath}.gstAmount` as Path<SaleBillFormValues>, tax as never, {
-        shouldValidate: false,
-        shouldDirty: true,
-      });
+      setValue(
+        `${rowPath}.gstAmount` as Path<SaleBillFormValues>,
+        tax as never,
+        {
+          shouldValidate: false,
+          shouldDirty: true,
+        },
+      );
     }
 
     const currentTotal = Number(
       getValues(`${rowPath}.total` as Path<SaleBillFormValues>),
     );
     if (currentTotal !== finalTotal) {
-      setValue(`${rowPath}.total` as Path<SaleBillFormValues>, finalTotal as never, {
-        shouldValidate: false,
-        shouldDirty: true,
-      });
+      setValue(
+        `${rowPath}.total` as Path<SaleBillFormValues>,
+        finalTotal as never,
+        {
+          shouldValidate: false,
+          shouldDirty: true,
+        },
+      );
     }
   }, [
     quantity,
@@ -338,14 +362,10 @@ const SaleItemRow = ({
         </div>
       </td>
       <td className="font-medium">
-        <div className="px-2 py-2 text-center">
-          Rs. {gstAmount.toFixed(2)}
-        </div>
+        <div className="px-2 py-2 text-center">Rs. {gstAmount.toFixed(2)}</div>
       </td>
       <td className="font-semibold">
-        <div className="px-2 py-2 text-center">
-          Rs. {rowTotal.toFixed(2)}
-        </div>
+        <div className="px-2 py-2 text-center">Rs. {rowTotal.toFixed(2)}</div>
       </td>
       <td className="w-10">
         <div className="px-2 py-2">
@@ -358,7 +378,11 @@ const SaleItemRow = ({
   );
 };
 
-const SaleItemsTable = ({ form }: { form: UseFormReturn<SaleBillFormValues> }) => {
+const SaleItemsTable = ({
+  form,
+}: {
+  form: UseFormReturn<SaleBillFormValues>;
+}) => {
   const { control } = form;
   const { fields, append } = useFieldArray({
     control,
@@ -570,14 +594,18 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
       return;
     }
 
-    const hasInvalidInventory = values.items.some((item) => !item.inventoryItem?.id);
+    const hasInvalidInventory = values.items.some(
+      (item) => !item.inventoryItem?.id,
+    );
     if (hasInvalidInventory) {
       toast.error("Select inventory item for all rows");
       return;
     }
 
     const hasOverStock = values.items.some(
-      (item) => Number(item.quantity) > Number(item.inventoryItem?.quantityInStock ?? 0),
+      (item) =>
+        Number(item.quantity) >
+        Number(item.inventoryItem?.quantityInStock ?? 0),
     );
     if (hasOverStock) {
       toast.error("One or more rows exceed available stock");
@@ -587,7 +615,9 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
     const payload = {
       name: values.name,
       patientId: values.patient?.id ? Number(values.patient.id) : undefined,
-      doctorId: values.doctor?.userId ? Number(values.doctor.userId) : undefined,
+      doctorId: values.doctor?.userId
+        ? Number(values.doctor.userId)
+        : undefined,
       billingType: values.billingType,
       discountType: values.discountType,
       discountValue: Number(values.discountValue || 0),
@@ -753,7 +783,11 @@ const SaleBillForm = () => {
     return <div />;
   }
 
-  return <UpdateCreateForm data={data} />;
+  return (
+    <CustomLayout title="Sale">
+      <UpdateCreateForm data={data} />
+    </CustomLayout>
+  );
 };
 
 export default SaleBillForm;

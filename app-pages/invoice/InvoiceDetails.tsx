@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
+import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
 import {
   billingItemValidatorType,
   updateInvoiceValidator,
@@ -326,6 +327,7 @@ const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
 const InvoiceDetails = () => {
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [previewInvoiceOpen, setPreviewInvoiceOpen] = useState(false);
   const { invoiceId }: { invoiceId: string } = useParams();
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
@@ -416,6 +418,12 @@ const InvoiceDetails = () => {
               </CustomButton>
               <CustomButton
                 type="button"
+                onClick={() => setPreviewInvoiceOpen(true)}
+              >
+                Preview Invoice
+              </CustomButton>
+              <CustomButton
+                type="button"
                 onClick={() => router.push("/opd/patients")}
                 className="bg-destructive"
               >
@@ -501,6 +509,12 @@ const InvoiceDetails = () => {
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
         billId={data.id}
+        trigger={<div />}
+      />
+      <ViewInvoiceModal
+        invoiceId={data.id}
+        open={previewInvoiceOpen}
+        onOpenChange={setPreviewInvoiceOpen}
         trigger={<div />}
       />
     </>

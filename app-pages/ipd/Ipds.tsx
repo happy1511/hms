@@ -9,6 +9,7 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
+import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -46,6 +47,7 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 const Actions = ({ data }: { data: IPDType }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [addPaymentModal, setAddPaymentModal] = useState(false);
+  const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const [dischargeModal, setDischargeModal] = useState(false);
 
   const { mutateAsync: dischargeIpd, isPending: dischargePending } =
@@ -67,10 +69,10 @@ const Actions = ({ data }: { data: IPDType }) => {
           label: "Add Payment",
           onClick: () => setAddPaymentModal(true),
         },
-        // {
-        //   label: "View Invoice Details",
-        //   onClick: () => setViewInvoiceModal(true),
-        // },
+        {
+          label: "Print Invoice",
+          onClick: () => setViewInvoiceModal(true),
+        },
       ],
       label: "Invoice",
     },
@@ -108,6 +110,13 @@ const Actions = ({ data }: { data: IPDType }) => {
         billId={data.invoice.id}
         open={addPaymentModal}
         onOpenChange={setAddPaymentModal}
+        trigger={<div />}
+      />
+
+      <ViewInvoiceModal
+        invoiceId={data.invoice.id}
+        open={viewInvoiceModal}
+        onOpenChange={setViewInvoiceModal}
         trigger={<div />}
       />
 
@@ -316,7 +325,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
       valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).name,
+      labelKey: (i) => (i as Doctor).user.name,
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

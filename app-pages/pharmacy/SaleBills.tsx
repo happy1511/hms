@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ViewSaleInvoiceModal from "@/components/pharmacy/ViewSaleInvoiceModal";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { DrugBillGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
@@ -206,6 +207,7 @@ const Actions = ({
 }) => {
   const [deleteModal, setDeleteModal] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const { mutateAsync: deleteBill, isPending: deleting } = useDeleteSaleBill();
   const router = useRouter();
   const actions: DropdownItem[] = [];
@@ -232,7 +234,7 @@ const Actions = ({
   if (canPrint) {
     actions.push({
       label: "Print Sale Invoice",
-      onClick: () => router.push(`/pharmacy/sale-invoice/${data.id}`),
+      onClick: () => setViewInvoiceModal(true),
     });
     actions.push({
       label: "Print Receipts",
@@ -267,6 +269,12 @@ const Actions = ({
         onOpenChange={setTransactionsOpen}
         data={data}
         canPrint={canPrint}
+      />
+      <ViewSaleInvoiceModal
+        billId={data.id}
+        open={viewInvoiceModal}
+        onOpenChange={setViewInvoiceModal}
+        trigger={<div />}
       />
     </>
   );

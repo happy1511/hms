@@ -35,16 +35,32 @@ const opdPatientValidator = patientValidator.extend({
 // -------------------- Opd Bill --------------------
 const opdBaseValidator = z.object({
   patientId: z.coerce.number().min(1, "Patient is required").optional(),
-  patient: opdPatientValidator,
+  patient: opdPatientValidator.superRefine((data, ctx) => {
+    if (!data.contacts.find((c) => c.type === ContactType.PHONE)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Phone Number is required`,
+        path: ["contacts", 0, "value"],
+      });
+    }
+  }),
   arrivalState: z.enum(OpdArrival),
   remarks: z.string().max(500).optional(),
-  consultantDoctor: z.object({ userId: z.coerce.number() }),
+  consultantDoctor: z
+    .object({ userId: z.coerce.number() })
+    .superRefine((data, ctx) => {
+      if (!data.userId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Consultant is required`,
+        });
+      }
+    }),
   referredDoctor: z.object({ userId: z.coerce.number() }).optional(),
   invoice: invoiceValidator,
 });
 
 const opdValidator = opdBaseValidator;
-
 const partialOpdValidator = opdBaseValidator.partial().extend({
   opdId: z.coerce.number(),
 });

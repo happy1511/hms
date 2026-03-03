@@ -479,6 +479,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="billing section"
           search={billingItemSearch}
           onSearchChange={setBillingItemSearch}
+          required
         />
         <div className="col-span-2">
           <FormInfiniteSelect<
@@ -497,6 +498,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             placeholder="Select Services"
             search={serviceSearch}
             onSearchChange={setServiceSearch}
+            required
           />
         </div>
         <div className="col-span-2 grid grid-cols-5 space-x-2">
@@ -564,7 +566,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           label="Remarks"
           name="remarks"
           type="textarea"
-          required
         />
       </div>
     </CustomLayout>
@@ -793,6 +794,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           name="patient.addresses.0.addressLineOne"
           control={form.control}
           type="text"
+          required
         />
 
         <FormInfiniteSelect<
@@ -811,6 +813,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="City"
           search={locationSearch}
           onSearchChange={setLocationSearch}
+          required
         />
         <FormInfiniteSelect<
           Location,
@@ -828,6 +831,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="State"
           search={locationSearch}
           onSearchChange={setLocationSearch}
+          required
         />
         <FormInfiniteSelect<
           Location,
@@ -845,6 +849,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="Country"
           search={locationSearch}
           onSearchChange={setLocationSearch}
+          required
         />
         <FormInfiniteSelect<
           Location,
@@ -862,6 +867,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="Country"
           search={locationSearch}
           onSearchChange={setLocationSearch}
+          required
         />
         <div className="grid grid-cols-2 space-x-2">
           <FormField<opdValidatorType>
@@ -869,6 +875,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             name="patient.contacts.0.value"
             control={form.control}
             type="text"
+            required
           />
 
           <FormField<opdValidatorType>
@@ -939,7 +946,7 @@ const OpdBillForm = () => {
   const onSubmit = (values: opdValidatorType) => {
     mutateAsync(values);
   };
-
+  console.log(form.formState.errors);
   useEffect(() => {
     if (patient) {
       form.reset(getInitialValues(patient));
@@ -1013,6 +1020,7 @@ const OpdBillForm = () => {
             label="Consultant"
             name="consultantDoctor"
             control={form.control}
+            placeholder="Consultant Doctor"
             query={consultingDoctorQuery}
             getItems={(data) => data?.data}
             labelKey={(item) => item?.user?.name}
@@ -1029,6 +1037,7 @@ const OpdBillForm = () => {
           >
             label="Referred By"
             name="referredDoctor"
+            placeholder="Referring Doctor"
             control={form.control}
             query={referringDoctorQuery}
             getItems={(data) => data?.data}

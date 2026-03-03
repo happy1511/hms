@@ -71,6 +71,9 @@ export const useCreateInvoiceTransaction = () => {
       queryClient.invalidateQueries({
         queryKey: ["opds"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
     },
     onError: showError,
   });
@@ -89,6 +92,9 @@ export const useCreateInvoiceBillingItem = () => {
       toast.success("Billing Item Created Successfully");
       queryClient.invalidateQueries({
         queryKey: ["opds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["itpds"],
       });
     },
     onError: showError,

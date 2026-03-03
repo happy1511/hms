@@ -23,20 +23,40 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
           transactions: { include: { receivedBy: { select: { name: true } } } },
           opd: {
             include: {
+              consultantDoctor: {
+                select: { user: { select: { name: true } } },
+              },
+              referringDoctor: {
+                select: { user: { select: { name: true } } },
+              },
               patient: {
                 include: {
-                  addresses: { where: { type: AddressType["HOME"] } },
+                  addresses: {
+                    where: { type: AddressType["HOME"] },
+                    include: { location: true },
+                  },
                   contacts: { where: { type: ContactType["PHONE"] } },
+                  relations: true,
                 },
               },
             },
           },
           ipd: {
             include: {
+              consultantDoctor: {
+                select: { user: { select: { name: true } } },
+              },
+              referringDoctor: {
+                select: { user: { select: { name: true } } },
+              },
               patient: {
                 include: {
-                  addresses: { where: { type: AddressType["HOME"] } },
+                  addresses: {
+                    where: { type: AddressType["HOME"] },
+                    include: { location: true },
+                  },
                   contacts: { where: { type: ContactType["PHONE"] } },
+                  relations: true,
                 },
               },
             },
@@ -220,6 +240,7 @@ export const addItemAPI = async (req: Request, user: User) => {
           where: { id: body.id },
           include: {
             opd: true,
+            ipd: true,
           },
         });
 
@@ -272,36 +293,44 @@ export const addItemAPI = async (req: Request, user: User) => {
           },
         });
 
-        const patientId = existingInvoice.opd?.patientId;
-
-        if (!patientId || !existingInvoice.opd) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Patient Or Opd Not Found",
-          });
-        }
-
-        if (pathologyServices?.length) {
-          await tx.pathologyTestOrder.createMany({
-            data: pathologyServices.map((service) => ({
-              opdId: existingInvoice.opd!.id,
-              patientId: existingInvoice.opd!.patientId,
-              testId: service.testId,
-            })),
-          });
-        }
-
         const radiologyServices = await tx.radiologyTestService.findMany({
           where: {
             serviceId: { equals: body.service.id },
           },
         });
 
-        if (radiologyServices?.length) {
+        const needsOrderContext =
+          pathologyServices.length > 0 || radiologyServices.length > 0;
+
+        const patientId =
+          existingInvoice.opd?.patientId ?? existingInvoice.ipd?.patientId;
+        const opdId = existingInvoice.opd?.id;
+        const ipdId = existingInvoice.ipd?.id;
+
+        if (needsOrderContext && (!patientId || (!opdId && !ipdId))) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Patient Or Admission Context Not Found",
+          });
+        }
+
+        if (pathologyServices.length) {
+          await tx.pathologyTestOrder.createMany({
+            data: pathologyServices.map((service) => ({
+              opdId,
+              ipdId,
+              patientId: patientId!,
+              testId: service.testId,
+            })),
+          });
+        }
+
+        if (radiologyServices.length) {
           await tx.radiologyTestOrder.createMany({
             data: radiologyServices.map((service) => ({
-              opdId: existingInvoice.opd!.id,
-              patientId: existingInvoice.opd!.patientId,
+              opdId,
+              ipdId,
+              patientId: patientId!,
               testId: service.testId,
             })),
           });

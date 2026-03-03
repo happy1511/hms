@@ -63,7 +63,9 @@ import {
 } from "react-hook-form";
 
 type IpdBed = BedGetPayload<{
-  include: { room: { include: { roomType: { include: { department: true } } } } };
+  include: {
+    room: { include: { roomType: { include: { department: true } } } };
+  };
 }>;
 
 const getInitialValues = (data?: PatientType): ipdValidatorType => {

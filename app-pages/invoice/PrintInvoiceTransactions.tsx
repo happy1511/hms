@@ -2,9 +2,51 @@
 
 import TransactionReceiptExport from "@/components/common/TransactionReceiptExport";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
+import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+const getPatientAge = (dob?: string | Date) => {
+  if (!dob) return "";
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) return "";
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age -= 1;
+  }
+
+  return String(age);
+};
+
+const formatPatientAddress = (patient: any) => {
+  if (!patient?.addresses?.length) return "";
+
+  const homeAddress =
+    patient.addresses.find((a: any) => a.type === "HOME") ||
+    patient.addresses[0];
+
+  if (!homeAddress) return "";
+
+  const parts = [
+    homeAddress.addressLineOne,
+    homeAddress.addressLineTwo,
+    homeAddress.addressLineThree,
+    homeAddress.location?.postcode,
+    homeAddress.location?.city,
+    homeAddress.location?.state,
+    homeAddress.location?.country,
+  ].filter(Boolean);
+
+  return parts.join(", ");
+};
 
 const PrintInvoiceTransactions = () => {
   const { invoiceId }: { invoiceId: string } = useParams();
@@ -14,14 +56,16 @@ const PrintInvoiceTransactions = () => {
     invoiceId: Number(invoiceId),
   });
 
-  const [selectedTransactions, setSelectedTransactions] = useState<number[]>(
-    [],
-  );
+  const [selectedTransactions, setSelectedTransactions] = useState<
+    number[] | null
+  >(null);
   const transactionIdParam = searchParams.get("transactionId");
   const selectedTransactionId =
     transactionIdParam && transactionIdParam.trim() !== ""
       ? Number(transactionIdParam)
-      : null;
+      : undefined;
+
+  const patient = data?.opd?.patient || data?.ipd?.patient;
 
   if (isLoading) {
     return (
@@ -33,30 +77,29 @@ const PrintInvoiceTransactions = () => {
 
   if (!data) return <div />;
 
-  const patient = data?.opd?.patient || data?.ipd?.patient;
-
-  useEffect(() => {
-    if (!data?.transactions.length) return;
-
-    if (selectedTransactionId) {
-      setSelectedTransactions([selectedTransactionId]);
-      return;
-    }
-
-    setSelectedTransactions(data.transactions.map((t) => t.id));
-  }, [data?.transactions, selectedTransactionId]);
+  const hasDirectTransactionFilter =
+    selectedTransactionId !== undefined && Number.isFinite(selectedTransactionId);
+  const defaultSelectedTransactions = hasDirectTransactionFilter
+    ? [selectedTransactionId]
+    : data.transactions.map((txn) => txn.id);
+  const resolvedSelectedTransactions =
+    selectedTransactions ?? defaultSelectedTransactions;
 
   const filteredTransactions = data.transactions.filter((txn) =>
-    selectedTransactions.includes(txn.id),
+    resolvedSelectedTransactions.includes(txn.id),
   );
 
   const receiptTransactions = filteredTransactions.map((txn) => ({
+    id: txn.id,
     amount: txn.amount,
     mode: txn.mode,
     remarks: txn.remarks || "",
-    receivedBy: `User-${txn.receivedBy?.name}`,
-    date: new Date(txn.createdAt).toLocaleDateString(),
+    receivedBy: txn.receivedBy?.name || "Cashier",
+    date: format(new Date(txn.createdAt), "dd/MM/yyyy - hh:mm a"),
   }));
+
+  const patientAge = getPatientAge(patient?.dob);
+  const genderAge = `${patient?.gender ? String(patient.gender) : "-"}${patientAge ? `, ${patientAge} years` : ""}`;
 
   return (
     <div className="flex gap-6 h-full w-full">
@@ -68,13 +111,20 @@ const PrintInvoiceTransactions = () => {
           <div key={txn.id} className="flex items-center space-x-2">
             <input
               type="checkbox"
-              checked={selectedTransactions.includes(txn.id)}
+              checked={resolvedSelectedTransactions.includes(txn.id)}
               onChange={(e) => {
+                const baseSelection =
+                  selectedTransactions ?? defaultSelectedTransactions;
+
                 if (e.target.checked) {
-                  setSelectedTransactions((prev) => [...prev, txn.id]);
+                  setSelectedTransactions(
+                    baseSelection.includes(txn.id)
+                      ? baseSelection
+                      : [...baseSelection, txn.id],
+                  );
                 } else {
-                  setSelectedTransactions((prev) =>
-                    prev.filter((id) => id !== txn.id),
+                  setSelectedTransactions(
+                    baseSelection.filter((id) => id !== txn.id),
                   );
                 }
               }}
@@ -91,12 +141,16 @@ const PrintInvoiceTransactions = () => {
         <TransactionReceiptExport
           customer={{
             name: `${patient?.firstName} ${patient?.lastName}`,
-            address: patient?.addresses?.[0]?.addressLineOne || "",
+            uhid: patient?.uhid || "",
+            genderAge,
+            address: formatPatientAddress(patient),
             phone: patient?.contacts?.[0]?.value || "",
           }}
           receipt={{
-            number: `RCPT-${data.id}`,
-            date: new Date(data.createdAt).toLocaleDateString(),
+            number: `PR-${data.id}`,
+            date: format(new Date(data.createdAt), "dd/MM/yyyy - hh:mm a"),
+            invoiceNo: `INV-${data.id}`,
+            srn: String(data.opd?.id || data.ipd?.id || "-"),
           }}
           transactions={receiptTransactions}
         />

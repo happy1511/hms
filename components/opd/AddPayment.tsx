@@ -87,7 +87,6 @@ const AddPaymentModal = ({ billId, open, onOpenChange, trigger }: Props) => {
                 label="Remarks"
                 name="remarks"
                 type="textarea"
-                required
               />
               <div className="col-span-2 space-x-2">
                 <div className="w-full flex justify-end">

@@ -1,13 +1,7 @@
-import {
-  Page,
-  Text,
-  View,
-  Document,
-  PDFViewer,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, PDFViewer, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 interface TransactionItem {
+  id?: number;
   amount: number;
   mode: string;
   remarks?: string;
@@ -18,83 +12,62 @@ interface TransactionItem {
 interface ReceiptProps {
   customer: {
     name: string;
+    uhid?: string;
+    genderAge?: string;
     address?: string;
     phone?: string;
     email?: string;
   };
-
   receipt: {
     number: string;
     date: string;
+    invoiceNo?: string;
+    srn?: string;
   };
-
   transactions: TransactionItem[];
 }
 
-/* ---------- CALCULATIONS ---------- */
-
-const calcTotalPaid = (txns: TransactionItem[]) =>
-  txns.reduce((sum, t) => sum + t.amount, 0);
-
-/* ---------- COMPONENT ---------- */
+const money = (value: number) => `Rs. ${value.toFixed(2)}`;
 
 const TransactionReceiptExport = (data: ReceiptProps) => {
-  const totalPaid = calcTotalPaid(data.transactions);
-
   return (
     <PDFViewer className="w-full h-full">
       <Document>
         <Page size="A4" style={styles.page}>
           <View style={styles.frame}>
-            {/* HEADER */}
-            <View style={styles.header}>
-              <View style={styles.meta}>
-                <Text style={styles.title}>PAYMENT RECEIPT</Text>
-                <Text>#{data.receipt.number}</Text>
-                <Text>Date: {data.receipt.date}</Text>
-              </View>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>PAYMENT RECEIPT</Text>
             </View>
 
-            {/* CUSTOMER */}
-            <View style={styles.customer}>
-              <Text style={styles.sectionTitle}>Received From</Text>
-              <Text style={styles.bold}>{data.customer.name}</Text>
-              <Text>{data.customer.address}</Text>
-              <Text>{data.customer.phone}</Text>
-              <Text>{data.customer.email}</Text>
+            <View style={styles.infoTable}>
+              <InfoRow label1="Patient Name" value1={data.customer.name || "-"} label2="UHID" value2={data.customer.uhid || "-"} />
+              <InfoRow label1="Age / Gender" value1={data.customer.genderAge || "-"} label2="Mobile No." value2={data.customer.phone || "-"} />
+              <InfoRow label1="Address" value1={data.customer.address || "-"} label2="" value2="" />
             </View>
 
-            {/* TABLE HEADER */}
-            <View style={styles.tableHeader}>
-              <Text style={styles.colDate}>Date</Text>
-              <Text style={styles.colMode}>Mode</Text>
-              <Text style={styles.colRemarks}>Remarks</Text>
-              <Text style={styles.colReceived}>Received By</Text>
-              <Text style={styles.colAmount}>Amount</Text>
+            <View style={styles.bannerRow}>
+              <Text style={styles.bannerText}>PAYMENT CREDITED TO ORGANISATION</Text>
             </View>
 
-            {/* TRANSACTION ROWS */}
-            {data.transactions.map((txn, i) => (
-              <View key={i} style={styles.row}>
-                <Text style={styles.colDate}>{txn.date}</Text>
-                <Text style={styles.colMode}>{txn.mode}</Text>
-                <Text style={styles.colRemarks}>{txn.remarks || "-"}</Text>
-                <Text style={styles.colReceived}>{txn.receivedBy}</Text>
-                <Text style={styles.colAmount}>Rs. {txn.amount.toFixed(2)}</Text>
+            {data.transactions.map((txn, index) => (
+              <View key={`${txn.id ?? index}`} style={styles.receiptTable}>
+                <KeyValueRow label="SRN" value={data.receipt.srn || "-"} />
+                <KeyValueRow label="INVOICE NO." value={data.receipt.invoiceNo || "-"} />
+                <KeyValueRow
+                  label="RECEIPT NO."
+                  value={
+                    data.transactions.length > 1
+                      ? `${data.receipt.number}-${index + 1}`
+                      : data.receipt.number
+                  }
+                />
+                <KeyValueRow label="PAYMENT ON" value={txn.date || data.receipt.date} />
+                <KeyValueRow label="RECEIVED BY" value={txn.receivedBy || "-"} />
+                <KeyValueRow label="PAYMENT AMOUNT" value={money(txn.amount)} />
+                <KeyValueRow label="PAYMENT MODE" value={txn.mode || "-"} />
+                <KeyValueRow label="REMARKS" value={txn.remarks || "-"} />
               </View>
             ))}
-
-            {/* TOTAL PAID */}
-            <View style={styles.paymentBox}>
-              <Text style={styles.paymentLabel}>TOTAL RECEIVED</Text>
-              <Text style={styles.paymentAmount}>Rs. {totalPaid.toFixed(2)}</Text>
-            </View>
-
-            {/* FOOTER */}
-            <Text style={styles.footer}>
-              This document confirms payment has been successfully received.
-              Thank you for your business.
-            </Text>
           </View>
         </Page>
       </Document>
@@ -102,87 +75,105 @@ const TransactionReceiptExport = (data: ReceiptProps) => {
   );
 };
 
+const InfoRow = ({
+  label1,
+  value1,
+  label2,
+  value2,
+}: {
+  label1: string;
+  value1: string;
+  label2: string;
+  value2: string;
+}) => (
+  <View style={styles.infoRow}>
+    <Text style={styles.infoLabel}>{label1 ? `${label1}:` : ""}</Text>
+    <Text style={styles.infoValue}>{value1}</Text>
+    <Text style={styles.infoLabel}>{label2 ? `${label2}:` : ""}</Text>
+    <Text style={styles.infoValue}>{value2}</Text>
+  </View>
+);
+
+const KeyValueRow = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.kvRow}>
+    <Text style={styles.kvLabel}>{label}:</Text>
+    <Text style={styles.kvValue}>{value}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  page: { backgroundColor: "#fff" },
-
-  frame: {
-    margin: 24,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: "#222",
-    borderStyle: "solid",
-    fontFamily: "Helvetica",
-    fontSize: 10,
-  },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-
-  logo: { width: 120, height: 60 },
-
-  meta: { textAlign: "right" },
-  title: { fontSize: 18, fontFamily: "Helvetica-Bold" },
-
-  customer: { marginBottom: 18 },
-  sectionTitle: { color: "#666", marginBottom: 4 },
-  bold: { fontFamily: "Helvetica-Bold" },
-
-  tableHeader: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    borderTopWidth: 1.5,
-    borderBottomWidth: 1,
-    borderColor: "#000",
-    borderStyle: "solid",
-    fontFamily: "Helvetica-Bold",
-  },
-
-  category: {
-    marginTop: 12,
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderColor: "#000",
-    fontFamily: "Helvetica-Bold",
-  },
-
-  row: {
-    flexDirection: "row",
-    paddingVertical: 4,
-    borderBottomWidth: 0.5,
-    borderColor: "#bbb",
-  },
-
-  colDesc: { width: "45%" },
-  colQty: { width: "10%", textAlign: "center" },
-  colPrice: { width: "15%", textAlign: "right" },
-  colDiscount: { width: "15%", textAlign: "right" },
-  colTotal: { width: "15%", textAlign: "right" },
-
-  paymentBox: {
-    marginTop: 26,
+  page: { backgroundColor: "#ffffff", fontFamily: "Helvetica", fontSize: 9 },
+  frame: { margin: 14, padding: 8 },
+  titleRow: {
+    borderWidth: 1,
+    borderColor: "#111",
     alignItems: "center",
-    borderTopWidth: 1.5,
-    borderBottomWidth: 1.5,
-    paddingVertical: 12,
+    paddingVertical: 2,
+    marginBottom: 4,
   },
-
-  paymentLabel: { fontSize: 10 },
-  paymentAmount: { fontSize: 22, fontFamily: "Helvetica-Bold" },
-
-  footer: {
-    marginTop: 18,
-    textAlign: "center",
-    color: "#555",
-    fontSize: 9,
+  title: { fontFamily: "Helvetica-Bold", fontSize: 10 },
+  infoTable: { borderWidth: 1, borderColor: "#111", marginBottom: 6 },
+  infoRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#111",
+    minHeight: 10,
+    alignItems: "stretch",
   },
-  colDate: { width: "18%" },
-  colMode: { width: "18%" },
-  colRemarks: { width: "28%" },
-  colReceived: { width: "18%" },
-  colAmount: { width: "18%", textAlign: "right" },
+  infoLabel: {
+    width: "19%",
+    borderRightWidth: 1,
+    borderColor: "#111",
+    paddingHorizontal: 4,
+    fontFamily: "Helvetica-Bold",
+    display: "flex",
+    alignItems: "center",
+    paddingVertical: 3,
+  },
+  infoValue: {
+    width: "31%",
+    borderRightWidth: 1,
+    borderColor: "#111",
+    display: "flex",
+    alignItems: "center",
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+  },
+  bannerRow: {
+    borderWidth: 1,
+    borderColor: "#111",
+    marginBottom: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    display: "flex",
+    justifyContent: "center",
+  },
+  bannerText: { textDecoration: "underline" },
+  receiptTable: { borderWidth: 1, borderColor: "#111", marginBottom: 6 },
+  kvRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#111",
+    minHeight: 10,
+    alignItems: "stretch",
+  },
+  kvLabel: {
+    width: "50%",
+    borderRightWidth: 1,
+    borderColor: "#111",
+    paddingHorizontal: 4,
+    fontFamily: "Helvetica-Bold",
+    display: "flex",
+    alignItems: "center",
+    paddingVertical: 3,
+  },
+  kvValue: {
+    width: "50%",
+    paddingHorizontal: 4,
+    display: "flex",
+    alignItems: "center",
+    paddingVertical: 3,
+  },
 });
 
 export default TransactionReceiptExport;

@@ -184,6 +184,7 @@ const AddInvoiceItemModal = ({
                   placeholder="billing section"
                   search={billingItemSearch}
                   onSearchChange={setBillingItemSearch}
+                  required
                 />
                 <div className="col-span-2">
                   <FormInfiniteSelect<
@@ -202,6 +203,7 @@ const AddInvoiceItemModal = ({
                     placeholder="Select Services"
                     search={serviceSearch}
                     onSearchChange={setServiceSearch}
+                    required
                   />
                 </div>
                 <div className="col-span-2 grid grid-cols-5 space-x-2">

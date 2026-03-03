@@ -640,20 +640,58 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
     billingItems: true;
     opd: {
       include: {
+        consultantDoctor: {
+          select: {
+            user: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
+        referringDoctor: {
+          select: {
+            user: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
         patient: {
           include: {
-            addresses: true;
+            addresses: { include: { location: true } };
             contacts: true;
+            relations: true;
           };
         };
       };
     };
     ipd: {
       include: {
+        consultantDoctor: {
+          select: {
+            user: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
+        referringDoctor: {
+          select: {
+            user: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
         patient: {
           include: {
-            addresses: true;
+            addresses: { include: { location: true } };
             contacts: true;
+            relations: true;
           };
         };
       };
