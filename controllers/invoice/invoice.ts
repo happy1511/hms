@@ -244,6 +244,28 @@ export const addItemAPI = async (req: Request, user: User) => {
           },
         });
 
+        const subtotalResult = await tx.invoiceBillingItem.aggregate({
+          where: { invoiceId: body.id },
+          _sum: { total: true },
+        });
+
+        const subTotal = subtotalResult._sum.total ?? 0;
+        const invoiceDiscount =
+          existingInvoice.discountType === "PERCENTAGE"
+            ? (subTotal * existingInvoice.discountValue) / 100
+            : existingInvoice.discountValue;
+        const invoiceTotal = existingInvoice.isFree
+          ? 0
+          : Math.max(subTotal - invoiceDiscount, 0);
+
+        const updatedInvoice = await tx.invoice.update({
+          where: { id: body.id },
+          data: {
+            rate: subTotal,
+            total: invoiceTotal,
+          },
+        });
+
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
             serviceId: { equals: body.service.id },
@@ -288,7 +310,7 @@ export const addItemAPI = async (req: Request, user: User) => {
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Invoice Created Successfully",
-          data: existingInvoice,
+          data: updatedInvoice,
         });
       });
     },
