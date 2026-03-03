@@ -27,6 +27,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -96,8 +97,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.serviceId;
 
-      const service = await prisma.service.findUnique({
-        where: { id },
+      const service = await prisma.service.findFirst({
+        where: { id, isDeleted: false },
         select: {
           id: true,
           name: true,
@@ -162,7 +163,7 @@ export const createAPI = async (req: Request) => {
 
       return prisma.$transaction(async (tx) => {
         const existingService = await tx.service.findFirst({
-          where: { name: data.name },
+          where: { name: data.name, isDeleted: false },
         });
 
         if (existingService) {
@@ -187,7 +188,10 @@ export const createAPI = async (req: Request) => {
 
         if (connectedLabTests) {
           const existingLabTests = await tx.pathologyTest.findMany({
-            where: { id: { in: connectedLabTests?.map((t) => t.id) } },
+            where: {
+              id: { in: connectedLabTests?.map((t) => t.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
           if (existingLabTests.length !== connectedLabTests.length) {
@@ -200,7 +204,10 @@ export const createAPI = async (req: Request) => {
 
         if (connectedRadiologyTests) {
           const existingRadiologyTests = await tx.radiologyTest.findMany({
-            where: { id: { in: connectedRadiologyTests?.map((t) => t.id) } },
+            where: {
+              id: { in: connectedRadiologyTests?.map((t) => t.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
           if (
@@ -259,8 +266,8 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const existingService = await tx.service.findUnique({
-          where: { id: data.serviceId },
+        const existingService = await tx.service.findFirst({
+          where: { id: data.serviceId, isDeleted: false },
         });
 
         if (!existingService) {
@@ -285,7 +292,10 @@ export const updateAPI = async (
 
         if (connectedLabTests) {
           const existingLabTests = await tx.pathologyTest.findMany({
-            where: { id: { in: connectedLabTests?.map((t) => t.id) } },
+            where: {
+              id: { in: connectedLabTests?.map((t) => t.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
           if (existingLabTests.length !== connectedLabTests.length) {
@@ -298,7 +308,10 @@ export const updateAPI = async (
 
         if (connectedRadiologyTests) {
           const existingRadiologyTests = await tx.radiologyTest.findMany({
-            where: { id: { in: connectedRadiologyTests?.map((t) => t.id) } },
+            where: {
+              id: { in: connectedRadiologyTests?.map((t) => t.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
           if (
@@ -358,8 +371,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingService = await tx.service.findUnique({
-          where: { id: data.serviceId },
+        const existingService = await tx.service.findFirst({
+          where: { id: data.serviceId, isDeleted: false },
         });
 
         if (!existingService) {
@@ -369,8 +382,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.service.delete({
+        await tx.service.update({
           where: { id: data.serviceId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

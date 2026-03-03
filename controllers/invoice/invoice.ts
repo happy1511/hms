@@ -18,7 +18,7 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
       const { id } = query;
 
       const existingInvoice = await prisma.invoice.findFirst({
-        where: { id },
+        where: { id, isDeleted: false },
         include: {
           transactions: { include: { receivedBy: { select: { name: true } } } },
           opd: {
@@ -72,7 +72,7 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
       }
 
       const invoiceBillingItems = await prisma.billingSection.findMany({
-        where: {},
+        where: { isDeleted: false },
         include: {
           invoiceBillingItems: {
             where: { invoiceId: id },
@@ -101,7 +101,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         const { billingSections, transactions, id, ...rest } = body;
 
         const existingInvoice = await tx.invoice.findFirst({
-          where: { id },
+          where: { id, isDeleted: false },
           include: {
             transactions: true,
             billingItems: true,
@@ -237,7 +237,7 @@ export const addItemAPI = async (req: Request, user: User) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingInvoice = await tx.invoice.findFirst({
-          where: { id: body.id },
+          where: { id: body.id, isDeleted: false },
           include: {
             opd: true,
             ipd: true,
@@ -290,12 +290,14 @@ export const addItemAPI = async (req: Request, user: User) => {
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
             serviceId: { equals: body.service.id },
+            test: { isDeleted: false },
           },
         });
 
         const radiologyServices = await tx.radiologyTestService.findMany({
           where: {
             serviceId: { equals: body.service.id },
+            test: { isDeleted: false },
           },
         });
 
@@ -354,7 +356,7 @@ export const addTransactionAPI = async (req: Request, user: User) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingInvoice = await tx.invoice.findFirst({
-          where: { id: body.id },
+          where: { id: body.id, isDeleted: false },
         });
 
         if (!existingInvoice) {

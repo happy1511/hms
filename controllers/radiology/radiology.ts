@@ -37,6 +37,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -98,7 +99,7 @@ export const createAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingTest = await tx.radiologyTest.findFirst({
-          where: { name: body.name },
+          where: { name: body.name, isDeleted: false },
         });
 
         if (existingTest) {
@@ -150,8 +151,8 @@ export const deleteAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.radiologyTest.findUnique({
-          where: { id: data.testId },
+        const existingTest = await tx.radiologyTest.findFirst({
+          where: { id: data.testId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -161,8 +162,9 @@ export const deleteAPI = async (req: Request) => {
           });
         }
 
-        await prisma.radiologyTest.delete({
+        await tx.radiologyTest.update({
           where: { id: data.testId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -194,6 +196,7 @@ export const getTemplatesAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -257,8 +260,8 @@ export const getTemplateDetailsAPI = async (
     params,
     onSuccess: async ({ params }) => {
       return prisma.$transaction(async (tx) => {
-        const existingTemplate = await tx.radiologyTemplate.findUnique({
-          where: { id: params.templateId },
+        const existingTemplate = await tx.radiologyTemplate.findFirst({
+          where: { id: params.templateId, isDeleted: false },
           include: { radiologyTests: true, radiologyTestResults: true },
         });
 
@@ -286,7 +289,7 @@ export const createTemplateAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingTemplate = await tx.radiologyTemplate.findFirst({
-          where: { name: body.name },
+          where: { name: body.name, isDeleted: false },
         });
 
         if (existingTemplate) {
@@ -298,7 +301,10 @@ export const createTemplateAPI = async (req: Request) => {
 
         if (body.radiologyTests?.length) {
           const tests = await tx.radiologyTest.findMany({
-            where: { id: { in: body.radiologyTests.map((i) => i.id) } },
+            where: {
+              id: { in: body.radiologyTests.map((i) => i.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
 
@@ -344,8 +350,8 @@ export const deleteTemplateAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.radiologyTemplate.findUnique({
-          where: { id: data.templateId },
+        const existingTest = await tx.radiologyTemplate.findFirst({
+          where: { id: data.templateId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -355,8 +361,9 @@ export const deleteTemplateAPI = async (req: Request) => {
           });
         }
 
-        await prisma.radiologyTemplate.delete({
+        await tx.radiologyTemplate.update({
           where: { id: data.templateId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -377,8 +384,8 @@ export const updateTemplateAPI = async (req: Request) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const existingTemplate = await tx.radiologyTemplate.findUnique({
-          where: { id: data.templateId },
+        const existingTemplate = await tx.radiologyTemplate.findFirst({
+          where: { id: data.templateId, isDeleted: false },
           include: { radiologyTests: { select: { id: true } } },
         });
 
@@ -394,6 +401,7 @@ export const updateTemplateAPI = async (req: Request) => {
           where: {
             name: data.name,
             id: { not: data.templateId },
+            isDeleted: false,
           },
         });
 
@@ -407,7 +415,10 @@ export const updateTemplateAPI = async (req: Request) => {
         // validate radiology tests
         if (data.radiologyTests?.length) {
           const tests = await tx.radiologyTest.findMany({
-            where: { id: { in: data.radiologyTests.map((i) => i.id) } },
+            where: {
+              id: { in: data.radiologyTests.map((i) => i.id) },
+              isDeleted: false,
+            },
             select: { id: true },
           });
 
@@ -470,7 +481,9 @@ export const getOrdersAPI = async (req: Request) => {
 
       if (status) {
         and.push({
-          radiologyTestOrders: { some: { status: { in: status } } },
+          radiologyTestOrders: {
+            some: { status: { in: status }, test: { isDeleted: false } },
+          },
         });
       }
 
@@ -480,7 +493,9 @@ export const getOrdersAPI = async (req: Request) => {
 
       if (opdId) {
         and.push({
-          radiologyTestOrders: { some: { opdId: { equals: opdId } } },
+          radiologyTestOrders: {
+            some: { opdId: { equals: opdId }, test: { isDeleted: false } },
+          },
         });
       }
 
@@ -488,6 +503,7 @@ export const getOrdersAPI = async (req: Request) => {
         and.push({
           radiologyTestOrders: {
             some: {
+              test: { isDeleted: false },
               createdAt: {
                 ...(createdAtFrom && { gte: createdAtFrom }),
                 ...(createdAtTo && { lte: createdAtTo }),
@@ -502,6 +518,7 @@ export const getOrdersAPI = async (req: Request) => {
           some: {
             isCancelled: cancelled === true ? true : false,
             isOutSourced: outsourced === true ? true : false,
+            test: { isDeleted: false },
           },
         },
       });
@@ -519,6 +536,7 @@ export const getOrdersAPI = async (req: Request) => {
               where: {
                 isOutSourced: outsourced === true ? true : false,
                 isCancelled: cancelled === true ? true : false,
+                test: { isDeleted: false },
               },
               select: {
                 id: true,
@@ -602,7 +620,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       const { orderId } = query;
 
       const order = await prisma.radiologyTestOrder.findFirst({
-        where: { id: orderId },
+        where: { id: orderId, test: { isDeleted: false } },
         include: {
           patient: true,
         },
@@ -616,7 +634,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       }
 
       const data = await prisma.radiologyTestOrder.findFirst({
-        where: { id: orderId },
+        where: { id: orderId, test: { isDeleted: false } },
         include: {
           patient: true,
           results: true,
@@ -771,6 +789,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
         where: {
           opdId,
           status: RadiologyOrderStatus["COMPLETED"],
+          test: { isDeleted: false },
         },
         include: {
           test: {

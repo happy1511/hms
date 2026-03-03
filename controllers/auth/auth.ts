@@ -16,8 +16,8 @@ export const auth = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      const user = await prisma.user.findUnique({
-        where: data,
+      const user = await prisma.user.findFirst({
+        where: { ...data, isDeleted: false },
       });
 
       if (!user) {
@@ -92,8 +92,8 @@ export const refreshToken = async (req: Request) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(data.refreshToken) },
+      const user = await prisma.user.findFirst({
+        where: { id: parseInt(data.refreshToken), isDeleted: false },
       });
 
       if (!user) {

@@ -37,6 +37,7 @@ export const getAPI = async (req: Request) => {
           ],
         });
       }
+      and.push({ isDeleted: false });
 
       const where: Prisma.LocationWhereInput = and.length ? { AND: and } : {};
 
@@ -94,8 +95,8 @@ export const updateAPI = async (req: Request) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const existingLocation = await tx.location.findUnique({
-          where: { id: data.id },
+        const existingLocation = await tx.location.findFirst({
+          where: { id: data.id, isDeleted: false },
         });
 
         if (!existingLocation) {
@@ -129,8 +130,20 @@ export const deleteAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        await tx.location.delete({
+        const existingLocation = await tx.location.findFirst({
+          where: { id: data.id, isDeleted: false },
+        });
+
+        if (!existingLocation) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Location not found",
+          });
+        }
+
+        await tx.location.update({
           where: { id: data.id },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

@@ -26,6 +26,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (createdAtFrom || createdAtTo) {
         and.push({
@@ -69,8 +70,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.drugId;
 
-      const details = await prisma.drug.findUnique({
-        where: { id },
+      const details = await prisma.drug.findFirst({
+        where: { id, isDeleted: false },
         include: {
           inventoryItems: { include: { drug: true } },
           purchaseItems: { include: { drug: true } },
@@ -153,8 +154,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingDrug = await tx.drug.findUnique({
-          where: { id: data.drugId },
+        const existingDrug = await tx.drug.findFirst({
+          where: { id: data.drugId, isDeleted: false },
         });
 
         if (!existingDrug) {
@@ -164,8 +165,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.drug.delete({
+        await tx.drug.update({
           where: { id: data.drugId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

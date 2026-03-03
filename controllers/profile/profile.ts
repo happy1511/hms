@@ -8,8 +8,8 @@ export const getProfile = async (req: NextRequest) => {
   const user = await checkAuth(req);
 
   if (user) {
-    const foundUser = await prisma.user.findUnique({
-      where: { id: user.id },
+    const foundUser = await prisma.user.findFirst({
+      where: { id: user.id, isDeleted: false },
       select: {
         id: true,
         name: true,

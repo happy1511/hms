@@ -22,6 +22,7 @@ export const getAPI = async (req: Request) => {
         prisma.invoice.aggregate({
           _sum: { total: true },
           where: {
+            isDeleted: false,
             opd: {
               isNot: null,
             },
@@ -30,6 +31,7 @@ export const getAPI = async (req: Request) => {
         prisma.invoice.aggregate({
           _sum: { total: true },
           where: {
+            isDeleted: false,
             ipd: {
               isNot: null,
             },
@@ -39,6 +41,7 @@ export const getAPI = async (req: Request) => {
           _sum: { amount: true },
           where: {
             invoice: {
+              isDeleted: false,
               opd: { isNot: null },
             },
           },
@@ -47,6 +50,7 @@ export const getAPI = async (req: Request) => {
           _sum: { amount: true },
           where: {
             invoice: {
+              isDeleted: false,
               ipd: { isNot: null },
             },
           },
@@ -61,6 +65,7 @@ export const getAPI = async (req: Request) => {
           },
         }),
         prisma.billingSection.findMany({
+          where: { isDeleted: false },
           select: {
             id: true,
             name: true,

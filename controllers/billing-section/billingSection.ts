@@ -27,6 +27,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -84,8 +85,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.sectionId;
 
-      const billingSection = await prisma.billingSection.findUnique({
-        where: { id },
+      const billingSection = await prisma.billingSection.findFirst({
+        where: { id, isDeleted: false },
         select: {
           id: true,
           name: true,
@@ -119,7 +120,7 @@ export const createAPI = async (req: Request) => {
 
       return prisma.$transaction(async (tx) => {
         const existingBillingSection = await tx.billingSection.findFirst({
-          where: { name: data.name },
+          where: { name: data.name, isDeleted: false },
         });
 
         if (existingBillingSection) {
@@ -162,8 +163,8 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const existingBillingSection = await tx.billingSection.findUnique({
-          where: { id: data.sectionId },
+        const existingBillingSection = await tx.billingSection.findFirst({
+          where: { id: data.sectionId, isDeleted: false },
         });
 
         if (!existingBillingSection) {
@@ -205,8 +206,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingBillingSection = await tx.billingSection.findUnique({
-          where: { id: data.sectionId },
+        const existingBillingSection = await tx.billingSection.findFirst({
+          where: { id: data.sectionId, isDeleted: false },
         });
 
         if (!existingBillingSection) {
@@ -216,8 +217,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.billingSection.delete({
+        await tx.billingSection.update({
           where: { id: data.sectionId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

@@ -24,8 +24,11 @@ export const getAPI = async (req: Request) => {
       const and: Prisma.PurchaseOrderWhereInput[] = [];
 
       if (search) {
-        and.push({ supplier: { name: { contains: search } } });
+        and.push({
+          supplier: { name: { contains: search }, isDeleted: false },
+        });
       }
+      and.push({ isDeleted: false });
 
       if (createdAtFrom || createdAtTo) {
         and.push({
@@ -75,8 +78,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.orderId;
 
-      const details = await prisma.purchaseOrder.findUnique({
-        where: { id },
+      const details = await prisma.purchaseOrder.findFirst({
+        where: { id, isDeleted: false },
         include: {
           supplier: true,
           items: { include: { category: true, drug: true } },
@@ -146,8 +149,8 @@ export const updateAPI = async (
       return prisma.$transaction(async (tx) => {
         const orderId = body.orderId;
 
-        const existingOrder = await tx.purchaseOrder.findUnique({
-          where: { id: orderId },
+        const existingOrder = await tx.purchaseOrder.findFirst({
+          where: { id: orderId, isDeleted: false },
           include: { items: true },
         });
 
@@ -206,8 +209,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingOrder = await tx.purchaseOrder.findUnique({
-          where: { id: data.orderId },
+        const existingOrder = await tx.purchaseOrder.findFirst({
+          where: { id: data.orderId, isDeleted: false },
         });
 
         if (!existingOrder) {
@@ -217,8 +220,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.purchaseOrder.delete({
+        await tx.purchaseOrder.update({
           where: { id: data.orderId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

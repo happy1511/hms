@@ -61,6 +61,7 @@ export const getAPI = async (req: Request) => {
           { user: { loginId: { contains: search } } },
         );
       }
+      and.push({ user: { isDeleted: false } });
 
       if (status) {
         and.push({ user: { status: { equals: status } } });
@@ -117,8 +118,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.userId;
 
-      const doctor = await prisma.doctor.findUnique({
-        where: { userId: id },
+      const doctor = await prisma.doctor.findFirst({
+        where: { userId: id, user: { isDeleted: false } },
         select: {
           user: true,
           userId: true,
@@ -316,8 +317,8 @@ export const updateAPI = async (
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      const existingUser = await prisma.user.findUnique({
-        where: { id: data.userId },
+      const existingUser = await prisma.user.findFirst({
+        where: { id: data.userId, isDeleted: false },
         include: { doctor: true },
       });
 
@@ -395,8 +396,8 @@ export const deleteAPI = async (
     req,
     onSuccess: async ({ params }) => {
       const data = params;
-      const existingUser = await prisma.user.findUnique({
-        where: { id: data.userId },
+      const existingUser = await prisma.user.findFirst({
+        where: { id: data.userId, isDeleted: false },
         include: { doctor: true },
       });
 
@@ -407,8 +408,9 @@ export const deleteAPI = async (
         });
       }
 
-      await prisma.user.delete({
+      await prisma.user.update({
         where: { id: data.userId },
+        data: { isDeleted: true },
       });
 
       return apiResponse({

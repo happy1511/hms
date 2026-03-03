@@ -390,6 +390,7 @@ model Location {
   state            String
   country          String
   postcode         String
+  isDeleted        Boolean          @default(false)
   patientAddresses PatientAddress[]
 
   @@index([city])
@@ -443,6 +444,7 @@ model User {
   title    NameTitle @default(MR)
   password String
   status   Status    @default(active)
+  isDeleted Boolean  @default(false)
   name     String?
   doctor   Doctor?
 
@@ -605,6 +607,7 @@ model Department {
   name        String     @unique
   description String?
   status      Status     @default(active)
+  isDeleted   Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   roomTypes   RoomType[]
@@ -617,6 +620,7 @@ model RoomType {
   departmentId Int
 
   status     Status     @default(active)
+  isDeleted  Boolean    @default(false)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
@@ -631,6 +635,7 @@ model Room {
   roomTypeId  Int
 
   status    Status   @default(active)
+  isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   roomType  RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
@@ -649,6 +654,7 @@ model Bed {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   isOccupied Boolean  @default(false)
+  isDeleted  Boolean  @default(false)
 
   patient Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
   room    Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -677,6 +683,7 @@ model PathologyTest {
   alias       String
   price       Float
   status      Status               @default(active)
+  isDeleted   Boolean              @default(false)
   section     PathologyTestSection
   container   ContainerType
   sampleType  SampleType
@@ -699,6 +706,7 @@ model PathologyTestHeader {
   displayOrder Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  isDeleted    Boolean  @default(false)
 
   testId         Int
   test           PathologyTest            @relation(fields: [testId], references: [id], onDelete: Cascade)
@@ -716,6 +724,7 @@ model PathologyTestParameter {
   test                 PathologyTest?        @relation(fields: [testId], references: [id])
   testId               Int?
   isDescriptiveOnly    Boolean               @default(false)
+  isDeleted            Boolean               @default(false)
   referenceRanges      ReferenceRange[]
   parameterOptions     ParameterOptions[]
   pathologyTestResults PathologyTestResult[]
@@ -726,6 +735,7 @@ model ParameterOptions {
   testParameterId Int
   testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
   value           String
+  isDeleted       Boolean                @default(false)
 }
 
 model ReferenceRange {
@@ -740,6 +750,7 @@ model ReferenceRange {
   lowerRange       Int?
   upperRange       Int?
   unit             String?
+  isDeleted        Boolean          @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -848,6 +859,7 @@ model RadiologyTest {
   alias      String
   price      Float
   status     Status           @default(active)
+  isDeleted  Boolean          @default(false)
   section    RadiologySection
   templateId Int?
 
@@ -865,6 +877,7 @@ model RadiologyTemplate {
   name    String
   content String           @db.LongText
   status  Status           @default(active)
+  isDeleted Boolean        @default(false)
 
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -878,6 +891,7 @@ model BillingSection {
   name        String  @unique
   description String?
   status      Status  @default(active)
+  isDeleted   Boolean @default(false)
 
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
@@ -894,6 +908,7 @@ model Service {
   maxDiscount       Float?                 @default(0)
   applicableOn      ServiceApplicableOn    @default(BOTH)
   status            Status                 @default(active)
+  isDeleted         Boolean                @default(false)
   pathologyTests    PathologyTestService[]
   radiologyTests    RadiologyTestService[]
 
@@ -976,6 +991,7 @@ model Invoice {
   isPaid        Boolean              @default(false)
   isFree        Boolean              @default(false)
   billingType   PaymentCategory
+  isDeleted     Boolean              @default(false)
   billingItems  InvoiceBillingItem[]
   transactions  Transaction[]
 
@@ -1138,6 +1154,7 @@ model DrugBill {
   patientId Int?
   doctorId  Int?
   invoiceId Int    @unique
+  isDeleted Boolean @default(false)
 
   invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   patient   Patient?      @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -1149,6 +1166,7 @@ model DrugBillingCategory {
   id          Int     @id @default(autoincrement())
   name        String
   description String?
+  isDeleted   Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1167,6 +1185,7 @@ model Drug {
   iGstPercentage Float   @default(0)
   manufacturer   String
   unit           String
+  isDeleted      Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1181,6 +1200,7 @@ model DrugSupplier {
   gstIn     Int?
   email     String?
   phone     Int
+  isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -1282,6 +1302,7 @@ model PurchaseOrder {
   remarks    String?
   orderDate  DateTime            @default(now())
   status     PurchaseOrderStatus @default(draft)
+  isDeleted  Boolean             @default(false)
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @default(now()) @updatedAt
 

@@ -27,6 +27,7 @@ export const getAPI = async (req: Request) => {
           },
         });
       }
+      and.push({ order: { is: { isDeleted: false } } });
 
       const where: Prisma.GRNWhereInput = and.length ? { AND: and } : {};
 
@@ -66,8 +67,8 @@ export const createAPI = async (req: Request) => {
         const purchaseItemIdByItemIndex = new Map<number, number>();
 
         if (resolvedOrderId) {
-          const existingOrder = await tx.purchaseOrder.findUnique({
-            where: { id: resolvedOrderId },
+          const existingOrder = await tx.purchaseOrder.findFirst({
+            where: { id: resolvedOrderId, isDeleted: false },
             include: { items: true },
           });
 

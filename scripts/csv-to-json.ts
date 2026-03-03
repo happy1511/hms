@@ -20,6 +20,7 @@ fs.createReadStream(filePath)
         state: state.toString().trim(),
         country: "India",
         postcode: postcode.toString().trim(),
+        isDeleted: false,
       });
     }
   })

@@ -45,6 +45,7 @@ export const getAPI = async (req: Request) => {
           ],
         });
       }
+      and.push({ isDeleted: false, invoice: { isDeleted: false } });
 
       if (createdAtFrom || createdAtTo) {
         and.push({
@@ -107,8 +108,12 @@ export const getDetailsAPI = async (
     params,
     req,
     onSuccess: async ({ params }) => {
-      const details = await prisma.drugBill.findUnique({
-        where: { id: params.billId },
+      const details = await prisma.drugBill.findFirst({
+        where: {
+          id: params.billId,
+          isDeleted: false,
+          invoice: { isDeleted: false },
+        },
         include: {
           patient: true,
           doctor: { include: { user: true } },
@@ -345,8 +350,8 @@ export const updateAPI = async (
     onSuccess: async ({ body, params, user }) => {
       return prisma.$transaction(async (tx) => {
         const billId = Number(params.billId);
-        const existingBill = await tx.drugBill.findUnique({
-          where: { id: billId },
+        const existingBill = await tx.drugBill.findFirst({
+          where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
           include: {
             invoice: { include: { transactions: true } },
             saleItems: true,
@@ -589,8 +594,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       return prisma.$transaction(async (tx) => {
         const billId = Number(params.billId);
-        const existingBill = await tx.drugBill.findUnique({
-          where: { id: billId },
+        const existingBill = await tx.drugBill.findFirst({
+          where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
           include: { saleItems: true },
         });
 
@@ -618,8 +623,14 @@ export const deleteAPI = async (
           });
         }
 
-        await tx.invoice.delete({
+        await tx.invoice.update({
           where: { id: existingBill.invoiceId },
+          data: { isDeleted: true },
+        });
+
+        await tx.drugBill.update({
+          where: { id: existingBill.id },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

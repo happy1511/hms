@@ -121,7 +121,7 @@ export const createAPI = async (req: Request, user: User) => {
         const { patient, patientId, bed } = body;
 
         const existingBed = await prisma.bed.findFirst({
-          where: { id: bed.id, isOccupied: false },
+          where: { id: bed.id, isOccupied: false, isDeleted: false },
         });
 
         if (!existingBed) {

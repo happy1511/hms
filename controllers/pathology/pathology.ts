@@ -51,6 +51,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -80,9 +81,11 @@ export const getAPI = async (req: Request) => {
         selectedItems = await prisma.pathologyTest.findMany({
           where: {
             id: { in: defaultSelectedIds },
+            isDeleted: false,
           },
           select: {
             id: true,
+            isDeleted: true,
             name: true,
             alias: true,
             container: true,
@@ -113,6 +116,7 @@ export const getAPI = async (req: Request) => {
           where,
           select: {
             id: true,
+            isDeleted: true,
             name: true,
             alias: true,
             container: true,
@@ -161,7 +165,9 @@ export const getOrdersAPI = async (req: Request) => {
 
       if (status) {
         and.push({
-          pathologyTestOrders: { some: { status: { in: status } } },
+          pathologyTestOrders: {
+            some: { status: { in: status }, test: { isDeleted: false } },
+          },
         });
       }
 
@@ -171,7 +177,9 @@ export const getOrdersAPI = async (req: Request) => {
 
       if (opdId) {
         and.push({
-          pathologyTestOrders: { some: { opdId: { equals: opdId } } },
+          pathologyTestOrders: {
+            some: { opdId: { equals: opdId }, test: { isDeleted: false } },
+          },
         });
       }
 
@@ -179,6 +187,7 @@ export const getOrdersAPI = async (req: Request) => {
         and.push({
           pathologyTestOrders: {
             some: {
+              test: { isDeleted: false },
               createdAt: {
                 ...(createdAtFrom && { gte: createdAtFrom }),
                 ...(createdAtTo && { lte: createdAtTo }),
@@ -193,6 +202,7 @@ export const getOrdersAPI = async (req: Request) => {
           some: {
             isCancelled: cancelled === true ? true : false,
             isOutSourced: outsourced === true ? true : false,
+            test: { isDeleted: false },
           },
         },
       });
@@ -210,6 +220,7 @@ export const getOrdersAPI = async (req: Request) => {
               where: {
                 isOutSourced: outsourced === true ? true : false,
                 isCancelled: cancelled === true ? true : false,
+                test: { isDeleted: false },
               },
               select: {
                 id: true,
@@ -295,7 +306,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       const { orderId } = query;
 
       const order = await prisma.pathologyTestOrder.findFirst({
-        where: { id: orderId },
+        where: { id: orderId, test: { isDeleted: false } },
         include: {
           patient: true,
         },
@@ -316,7 +327,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       const ageInDays = differenceInDays(new Date(), order.patient.dob);
 
       const data = await prisma.pathologyTestOrder.findFirst({
-        where: { id: orderId },
+        where: { id: orderId, test: { isDeleted: false } },
         include: {
           patient: true,
           test: {
@@ -522,8 +533,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.testId;
 
-      const test = await prisma.pathologyTest.findUnique({
-        where: { id },
+      const test = await prisma.pathologyTest.findFirst({
+        where: { id, isDeleted: false },
         select: {
           id: true,
           name: true,
@@ -537,6 +548,7 @@ export const getDetailsAPI = async (
           createdAt: true,
           updatedAt: true,
           testHeaders: {
+            where: { isDeleted: false },
             select: {
               id: true,
               name: true,
@@ -545,6 +557,7 @@ export const getDetailsAPI = async (
             },
           },
           parameters: {
+            where: { isDeleted: false },
             select: {
               id: true,
               name: true,
@@ -559,6 +572,7 @@ export const getDetailsAPI = async (
                 },
               },
               parameterOptions: {
+                where: { isDeleted: false },
                 select: {
                   id: true,
                   testParameterId: true,
@@ -566,6 +580,7 @@ export const getDetailsAPI = async (
                 },
               },
               referenceRanges: {
+                where: { isDeleted: false },
                 select: {
                   id: true,
                   lowerAgeInDays: true,
@@ -603,7 +618,7 @@ export const createAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingTest = await tx.pathologyTest.findFirst({
-          where: { name: body.name },
+          where: { name: body.name, isDeleted: false },
         });
 
         if (existingTest) {
@@ -948,8 +963,8 @@ export const deleteParameterApi = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingParameter = await tx.pathologyTestParameter.findUnique({
-          where: { id: data.parameterId },
+        const existingParameter = await tx.pathologyTestParameter.findFirst({
+          where: { id: data.parameterId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -959,8 +974,9 @@ export const deleteParameterApi = async (req: Request) => {
           });
         }
 
-        await prisma.pathologyTestParameter.delete({
+        await tx.pathologyTestParameter.update({
           where: { id: data.parameterId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -980,7 +996,7 @@ export const addParameterHeaderAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingTest = await tx.pathologyTest.findFirst({
-          where: { id: body.testId },
+          where: { id: body.testId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -1019,6 +1035,7 @@ export const updateParameterHeaderAPI = async (req: Request) => {
           where: {
             id: body.headerId,
             testId: body.testId,
+            isDeleted: false,
           },
         });
 
@@ -1030,7 +1047,7 @@ export const updateParameterHeaderAPI = async (req: Request) => {
         }
 
         const existingTest = await tx.pathologyTest.findFirst({
-          where: { id: body.testId },
+          where: { id: body.testId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -1067,8 +1084,8 @@ export const deleteParameterHeaderAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingParameter = await tx.pathologyTestHeader.findUnique({
-          where: { id: data.headerId },
+        const existingParameter = await tx.pathologyTestHeader.findFirst({
+          where: { id: data.headerId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1078,8 +1095,9 @@ export const deleteParameterHeaderAPI = async (req: Request) => {
           });
         }
 
-        await prisma.pathologyTestHeader.delete({
+        await tx.pathologyTestHeader.update({
           where: { id: data.headerId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -1099,7 +1117,7 @@ export const addReferenceRangeAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingParameter = await tx.pathologyTestParameter.findFirst({
-          where: { id: body.parameterId },
+          where: { id: body.parameterId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1153,6 +1171,7 @@ export const updateReferenceRangeAPI = async (req: Request) => {
         const existingReferenceRange = await tx.referenceRange.findFirst({
           where: {
             id: body.referenceRangeId,
+            isDeleted: false,
           },
         });
 
@@ -1164,7 +1183,7 @@ export const updateReferenceRangeAPI = async (req: Request) => {
         }
 
         const existingParameter = await tx.pathologyTestParameter.findFirst({
-          where: { id: body.parameterId },
+          where: { id: body.parameterId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1215,8 +1234,8 @@ export const deleteReferenceRangeAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingParameter = await tx.referenceRange.findUnique({
-          where: { id: data.referenceRangeId },
+        const existingParameter = await tx.referenceRange.findFirst({
+          where: { id: data.referenceRangeId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1226,8 +1245,9 @@ export const deleteReferenceRangeAPI = async (req: Request) => {
           });
         }
 
-        await prisma.referenceRange.delete({
+        await tx.referenceRange.update({
           where: { id: data.referenceRangeId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -1247,7 +1267,7 @@ export const addOptionAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const existingParameter = await tx.pathologyTestParameter.findFirst({
-          where: { id: body.parameterId },
+          where: { id: body.parameterId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1282,8 +1302,8 @@ export const deleteOptionAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       const data = body;
       return prisma.$transaction(async (tx) => {
-        const existingParameter = await tx.parameterOptions.findUnique({
-          where: { id: data.optionId },
+        const existingParameter = await tx.parameterOptions.findFirst({
+          where: { id: data.optionId, isDeleted: false },
         });
 
         if (!existingParameter) {
@@ -1293,8 +1313,9 @@ export const deleteOptionAPI = async (req: Request) => {
           });
         }
 
-        await prisma.parameterOptions.delete({
+        await tx.parameterOptions.update({
           where: { id: data.optionId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -1318,8 +1339,8 @@ export const updateAPI = async (
     req,
     onSuccess: async ({ body, params }) => {
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.pathologyTest.findUnique({
-          where: { id: params.testId },
+        const existingTest = await tx.pathologyTest.findFirst({
+          where: { id: params.testId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -1503,8 +1524,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingTest = await tx.pathologyTest.findUnique({
-          where: { id: data.testId },
+        const existingTest = await tx.pathologyTest.findFirst({
+          where: { id: data.testId, isDeleted: false },
         });
 
         if (!existingTest) {
@@ -1514,8 +1535,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.pathologyTest.delete({
+        await tx.pathologyTest.update({
           where: { id: data.testId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
@@ -1546,6 +1568,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
         where: {
           opdId,
           status: PathologyOrderStatus["COMPLETED"],
+          test: { isDeleted: false },
         },
         include: {
           test: {
@@ -1618,6 +1641,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
       const allReferenceRanges = await prisma.referenceRange.findMany({
         where: {
           testParameterId: { in: allParameterIds },
+          isDeleted: false,
         },
       });
 

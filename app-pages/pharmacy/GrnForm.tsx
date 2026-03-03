@@ -9,8 +9,8 @@ import {
   Drug,
   DrugBillingCategory,
   DrugSupplier,
-  Status,
 } from "@/generated/prisma/client";
+import { Status } from "@/generated/prisma/enums";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";

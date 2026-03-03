@@ -28,6 +28,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (status) {
         and.push({ status: { equals: status } });
@@ -88,8 +89,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.roomId;
 
-      const room = await prisma.room.findUnique({
-        where: { id },
+      const room = await prisma.room.findFirst({
+        where: { id, isDeleted: false },
         select: {
           id: true,
           roomType: true,
@@ -124,7 +125,7 @@ export const createAPI = async (req: Request) => {
       return prisma.$transaction(async (tx) => {
         const { name, roomType, status, description } = data;
         const existingWard = await tx.room.findFirst({
-          where: { name: data.name },
+          where: { name: data.name, isDeleted: false },
         });
 
         if (existingWard) {
@@ -134,9 +135,10 @@ export const createAPI = async (req: Request) => {
           });
         }
 
-        const existingRoomType = await tx.roomType.findUnique({
+        const existingRoomType = await tx.roomType.findFirst({
           where: {
             id: roomType?.id,
+            isDeleted: false,
           },
           select: { id: true },
         });
@@ -181,8 +183,8 @@ export const updateAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const { description, name, roomType, status } = data;
-        const existingRoom = await tx.room.findUnique({
-          where: { id: data.roomId },
+        const existingRoom = await tx.room.findFirst({
+          where: { id: data.roomId, isDeleted: false },
           include: { roomType: true },
         });
 
@@ -198,6 +200,7 @@ export const updateAPI = async (
             where: {
               name: data.name,
               id: { not: data.roomId },
+              isDeleted: false,
             },
           });
 
@@ -209,9 +212,10 @@ export const updateAPI = async (
           }
         }
 
-        const existingRoomType = await tx.roomType.findUnique({
+        const existingRoomType = await tx.roomType.findFirst({
           where: {
             id: roomType?.id,
+            isDeleted: false,
           },
           select: { id: true },
         });
@@ -255,8 +259,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingRoom = await tx.room.findUnique({
-          where: { id: data.roomId },
+        const existingRoom = await tx.room.findFirst({
+          where: { id: data.roomId, isDeleted: false },
         });
 
         if (!existingRoom) {
@@ -266,8 +270,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.room.delete({
+        await tx.room.update({
           where: { id: data.roomId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({

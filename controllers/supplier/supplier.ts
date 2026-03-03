@@ -26,6 +26,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({ name: { contains: search } });
       }
+      and.push({ isDeleted: false });
 
       if (createdAtFrom || createdAtTo) {
         and.push({
@@ -71,8 +72,8 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const id = params.supplierId;
 
-      const details = await prisma.drugSupplier.findUnique({
-        where: { id },
+      const details = await prisma.drugSupplier.findFirst({
+        where: { id, isDeleted: false },
         include: {
           inventoryItems: { include: { drug: true } },
           purchaseOrders: { include: { items: { include: { drug: true } } } },
@@ -126,8 +127,8 @@ export const updateAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const { supplierId, ...rest } = data;
-        const existingSupplier = await tx.drugSupplier.findUnique({
-          where: { id: supplierId },
+        const existingSupplier = await tx.drugSupplier.findFirst({
+          where: { id: supplierId, isDeleted: false },
         });
 
         if (!existingSupplier) {
@@ -163,8 +164,8 @@ export const deleteAPI = async (
     onSuccess: async ({ params }) => {
       const data = params;
       return prisma.$transaction(async (tx) => {
-        const existingSupplier = await tx.drugSupplier.findUnique({
-          where: { id: data.supplierId },
+        const existingSupplier = await tx.drugSupplier.findFirst({
+          where: { id: data.supplierId, isDeleted: false },
         });
 
         if (!existingSupplier) {
@@ -174,8 +175,9 @@ export const deleteAPI = async (
           });
         }
 
-        await prisma.drugSupplier.delete({
+        await tx.drugSupplier.update({
           where: { id: data.supplierId },
+          data: { isDeleted: true },
         });
 
         return apiResponse({
