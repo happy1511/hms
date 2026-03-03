@@ -161,6 +161,7 @@ export const useInfiniteDrugList = (filters: FilterValues, limit: number) => {
           limit,
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
         },
       }),
 

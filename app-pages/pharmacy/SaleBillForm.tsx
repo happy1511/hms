@@ -8,6 +8,7 @@ import {
   DiscountType,
   PaymentCategory,
   PaymentMode,
+  Status,
 } from "@/generated/prisma/enums";
 import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
@@ -90,8 +91,25 @@ const getInitialValues = (data?: any): SaleBillFormValues => {
       discountValue: 0,
       isFree: false,
       createdAt: new Date(),
-      items: [],
-      transactions: [],
+      items: [
+        {
+          inventoryItem: null,
+          quantity: 1,
+          rate: 0,
+          discountType: DiscountType.VALUE,
+          discountValue: 0,
+          taxableAmount: 0,
+          gstAmount: 0,
+          total: 0,
+        },
+      ],
+      transactions: [
+        {
+          amount: 0,
+          mode: PaymentMode.CASH,
+          remarks: "",
+        },
+      ],
     };
   }
 
@@ -133,7 +151,7 @@ const SaleItemRow = ({
 }) => {
   const [inventorySearch, setInventorySearch] = useState("");
   const inventoryQuery = useInfiniteInventoryItems(
-    { name: inventorySearch } as FilterValues,
+    { name: inventorySearch, status: Status["active"] } as FilterValues,
     10,
   );
   const { control, setValue, getValues } = form;
@@ -535,7 +553,10 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
   const { mutateAsync: create, isPending: creating } = useCreateSaleBill();
   const { mutateAsync: update, isPending: updating } = useUpdateSaleBill();
   const params: { billId: string } = useParams();
-  const doctorQuery = useInfiniteDoctorList({ name: doctorSearch }, 10);
+  const doctorQuery = useInfiniteDoctorList(
+    { name: doctorSearch, status: Status["active"] },
+    10,
+  );
   const patientQuery = useInfinitePatientsList({ name: patientSearch }, 10);
 
   const form = useForm<SaleBillFormValues>({

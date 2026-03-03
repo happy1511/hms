@@ -38,7 +38,10 @@ const UpdateCreateForm = ({
   const [roomTypeSearchValue, setRoomTypeSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateRoom();
   const { mutateAsync: update, isPending: updating } = useUpdateRoom();
-  const floorQuery = useInfiniteRoomTypeList({ name: roomTypeSearchValue }, 10);
+  const floorQuery = useInfiniteRoomTypeList(
+    { name: roomTypeSearchValue, status: Status["active"] },
+    10,
+  );
 
   const form = useForm<roomValidatorType>({
     defaultValues: getInitialValues(data),

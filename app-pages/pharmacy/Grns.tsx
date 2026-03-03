@@ -3,6 +3,7 @@ import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import CustomButton from "@/components/common/CustomButton";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { GRNGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
@@ -10,11 +11,25 @@ import { useGrnList } from "@/hooks/query/pharmacyGrn";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
+
+const Buttons = ({ canCreate }: { canCreate: boolean }) => {
+  const router = useRouter();
+  return (
+    <>
+      {canCreate && (
+        <CustomButton onClick={() => router.push("/pharmacy/grn/new")}>
+          New GRN
+        </CustomButton>
+      )}
+    </>
+  );
+};
 
 const Grns = () => {
   const [page, setPage] = useState(1);
@@ -32,6 +47,11 @@ const Grns = () => {
     profile?.data,
     ModuleType.PHARMACY_GRN,
     ActionType.VIEW,
+  );
+  const canCreate = hasActionPermission(
+    profile?.data,
+    ModuleType.PHARMACY_GRN,
+    ActionType.CREATE,
   );
 
   const columns: ColumnDefWithClass<
@@ -136,7 +156,10 @@ const Grns = () => {
   ];
 
   return (
-    <CustomLayout title="GRNs">
+    <CustomLayout
+      title="GRNs"
+      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+    >
       {canView && (
         <>
           <CustomFilters<FilterValues>

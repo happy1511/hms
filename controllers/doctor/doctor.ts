@@ -89,12 +89,8 @@ export const getAPI = async (req: Request) => {
           take: limit,
           orderBy: { user: { createdAt: "desc" } },
           where,
-          select: {
-            userId: true,
+          include: {
             user: true,
-            availableDays: true,
-            licenseNumber: true,
-            doctorType: true,
           },
         }),
         prisma.doctor.count({ where }),
@@ -268,7 +264,9 @@ export const createAPI = async (req: Request) => {
         data: {
           password:
             password ||
-            `Ref@${String(loginId).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}`,
+            `Ref@${String(loginId)
+              .replace(/[^a-zA-Z0-9]/g, "")
+              .slice(0, 8)}`,
           title,
           name,
           loginId,

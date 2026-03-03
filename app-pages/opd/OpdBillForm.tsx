@@ -109,6 +109,7 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
       total: 0,
     },
     patient: {
+      title: data?.title ?? NameTitle["MR"],
       firstName: data?.firstName ?? "",
       middleName: data?.middleName ?? null,
       lastName: data?.lastName ?? "",
@@ -236,11 +237,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const editingIndex = billingItemForm.watch("index");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
-    { name: billingItemSearch },
+    { name: billingItemSearch, status: Status["active"] },
     10,
   );
 
-  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
+  const servicesQuery = useInfiniteServicesList(
+    { name: serviceSearch, status: Status["active"] },
+    10,
+  );
 
   const flatServices = useMemo(
     () =>
@@ -726,7 +730,10 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
 const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const [locationSearch, setLocationSearch] = useState("");
-  const locationQuery = useInfiniteLocationsList({ name: locationSearch }, 10);
+  const locationQuery = useInfiniteLocationsList(
+    { name: locationSearch, status: Status["active"] },
+    10,
+  );
 
   return (
     <CustomLayout
@@ -928,12 +935,14 @@ const OpdBillForm = () => {
     {
       doctorType: "consulting",
       name: consultantValue,
+      status: Status["active"],
     },
     10,
   );
   const referringDoctorQuery = useInfiniteDoctorList(
     {
       name: referringValue,
+      status: Status["active"],
     },
     10,
   );

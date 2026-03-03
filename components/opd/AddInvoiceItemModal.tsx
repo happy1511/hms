@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { Form } from "../ui/form";
 import CustomButton from "../common/CustomButton";
 import FormField from "../form-inputs/FormField";
-import { DiscountType } from "@/generated/prisma/enums";
+import { DiscountType, Status } from "@/generated/prisma/enums";
 import AddPaymentModal from "./AddPayment";
 import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 import { PaginatedResponse, ServiceDataType } from "@/lib/type";
@@ -63,11 +63,14 @@ const AddInvoiceItemModal = ({
   const discountType = billingItemForm.watch("discountType");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
-    { name: billingItemSearch },
+    { name: billingItemSearch, status: Status["active"] },
     10,
   );
 
-  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
+  const servicesQuery = useInfiniteServicesList(
+    { name: serviceSearch, status: Status["active"] },
+    10,
+  );
 
   const flatServices = useMemo(
     () =>

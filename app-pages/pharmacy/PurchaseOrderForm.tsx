@@ -5,7 +5,7 @@ import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
-import { DrugSupplier } from "@/generated/prisma/client";
+import { DrugSupplier, Status } from "@/generated/prisma/client";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
@@ -47,16 +47,34 @@ const getInitialValues = (
     supplier: data?.supplier ?? { id: undefined },
     orderDate: data?.orderDate ?? new Date(),
     remarks: data?.remarks ?? "",
-    items: data?.items ?? [],
+    items: data?.items ?? [
+      {
+        quantity: 1,
+        discountPercentage: 0,
+        rate: 0,
+        total: 0,
+        drug: {
+          id: undefined,
+          gstPercentage: 0,
+          cGstPercentage: 0,
+          sGstPercentage: 0,
+          iGstPercentage: 0,
+        },
+        category: { id: undefined },
+      },
+    ],
   };
 };
 
 const ServiceRow = ({ index, form }: ServiceRowProps) => {
   const [drugSearch, setDrugSearch] = useState("");
   const [billingCategorySearch, setBillingCategorySearch] = useState("");
-  const drugsQuery = useInfiniteDrugList({ name: drugSearch }, 10);
+  const drugsQuery = useInfiniteDrugList(
+    { name: drugSearch, status: Status["active"] },
+    10,
+  );
   const billingCategoryQuery = useInfiniteDrugBillingCategoryList(
-    { name: billingCategorySearch },
+    { name: billingCategorySearch, status: Status["active"] },
     10,
   );
 
@@ -336,7 +354,7 @@ const UpdateCreateForm = ({
   const { mutateAsync: create, isPending: creating } = useCreatePurchaseOrder();
   const { mutateAsync: update, isPending: updating } = useUpdatePurchaseOrder();
   const supplierQuery = useInfiniteDrugSupplierList(
-    { name: supplierSearchValue },
+    { name: supplierSearchValue, status: Status["active"] },
     10,
   );
 

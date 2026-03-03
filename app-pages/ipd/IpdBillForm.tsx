@@ -120,8 +120,9 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
       total: 0,
     },
     patient: {
-      firstName: data?.firstName ?? "",
+      title: data?.title ?? NameTitle["MR"],
       middleName: data?.middleName ?? null,
+      firstName: data?.firstName ?? "",
       lastName: data?.lastName ?? "",
       preferredName: data?.preferredName ?? "",
       dob: data?.dob ? new Date(data.dob) : new Date(),
@@ -247,11 +248,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const editingIndex = billingItemForm.watch("index");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
-    { name: billingItemSearch },
+    { name: billingItemSearch, status: Status["active"] },
     10,
   );
 
-  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
+  const servicesQuery = useInfiniteServicesList(
+    { name: serviceSearch, status: Status["active"] },
+    10,
+  );
 
   const flatServices = useMemo(
     () =>
@@ -736,7 +740,10 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 
 const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [locationSearch, setLocationSearch] = useState("");
-  const locationQuery = useInfiniteLocationsList({ name: locationSearch }, 10);
+  const locationQuery = useInfiniteLocationsList(
+    { name: locationSearch, status: Status["active"] },
+    10,
+  );
 
   return (
     <CustomLayout
@@ -939,6 +946,7 @@ const IpdBillForm = () => {
     {
       name: bedValue,
       nonOccupied: true,
+      status: Status["active"],
     },
     10,
   );
@@ -946,12 +954,14 @@ const IpdBillForm = () => {
     {
       doctorType: "consulting",
       name: consultantValue,
+      status: Status["active"],
     },
     10,
   );
   const referringDoctorQuery = useInfiniteDoctorList(
     {
       name: referringValue,
+      status: Status["active"],
     },
     10,
   );

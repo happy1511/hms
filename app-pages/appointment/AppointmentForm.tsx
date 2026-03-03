@@ -3,7 +3,11 @@ import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { AppointmentStatus, AppointmentType } from "@/generated/prisma/enums";
+import {
+  AppointmentStatus,
+  AppointmentType,
+  Status,
+} from "@/generated/prisma/enums";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import {
   appointmentValidator,
@@ -23,7 +27,11 @@ const AppointmentForm = () => {
   const { mutateAsync: createAppointment, isPending: creating } =
     useCreateAppointment();
   const doctorQuery = useInfiniteDoctorList(
-    { doctorType: "consulting", name: doctorSearchValue },
+    {
+      doctorType: "consulting",
+      name: doctorSearchValue,
+      status: Status["active"],
+    },
     10,
   );
 

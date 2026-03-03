@@ -27,7 +27,10 @@ import { useForm } from "react-hook-form";
 const CreateForm = () => {
   const [roomSearchValue, setRoomSearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateBed();
-  const roomQuery = useInfiniteRoomsList({ name: roomSearchValue }, 10);
+  const roomQuery = useInfiniteRoomsList(
+    { name: roomSearchValue, status: Status["active"] },
+    10,
+  );
 
   const form = useForm<BedValidatorType>({
     resolver: zodResolver(bedValidator),

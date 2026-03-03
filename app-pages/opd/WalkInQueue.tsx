@@ -190,7 +190,7 @@ const WalkInQueue = () => {
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
       valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).name,
+      labelKey: (i) => (i as Doctor).user.name,
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

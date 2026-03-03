@@ -61,20 +61,60 @@ export const createAPI = async (req: Request) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const { orderId, grnItems } = body;
-        const existingOrder = await tx.purchaseOrder.findUnique({
-          where: { id: orderId },
-          include: { items: true },
-        });
+        let resolvedOrderId = orderId;
+        let supplierId: number | undefined;
+        const purchaseItemIdByItemIndex = new Map<number, number>();
 
-        if (!existingOrder) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Order not found",
+        if (resolvedOrderId) {
+          const existingOrder = await tx.purchaseOrder.findUnique({
+            where: { id: resolvedOrderId },
+            include: { items: true },
           });
+
+          if (!existingOrder) {
+            return apiResponse({
+              status: RESPONSE_STATUS.NOT_FOUND,
+              message: "Order not found",
+            });
+          }
+
+          supplierId = existingOrder.supplierId;
+        } else {
+          if (!body.supplier?.id) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Supplier is required",
+            });
+          }
+
+          const createdOrder = await tx.purchaseOrder.create({
+            data: {
+              supplierId: body.supplier.id,
+              status: PurchaseOrderStatus.draft,
+            },
+          });
+
+          resolvedOrderId = createdOrder.id;
+          supplierId = body.supplier.id;
+
+          for (const [index, item] of grnItems.entries()) {
+            const purchaseItem = await tx.purchaseItem.create({
+              data: {
+                purchaseOrderId: createdOrder.id,
+                drugId: item.drug.id,
+                categoryId: item.category.id,
+                quantity: item.quantity,
+                discountPercentage: 0,
+                rate: item.purchasePrice,
+                total: item.purchasePrice * item.quantity,
+              },
+            });
+            purchaseItemIdByItemIndex.set(index, purchaseItem.id);
+          }
         }
 
         const existingGrn = await tx.gRN.findUnique({
-          where: { orderId },
+          where: { orderId: resolvedOrderId },
         });
         if (existingGrn) {
           return apiResponse({
@@ -85,15 +125,15 @@ export const createAPI = async (req: Request) => {
 
         const data = await tx.gRN.create({
           data: {
-            orderId,
+            orderId: resolvedOrderId,
           },
         });
 
-        for (const i of grnItems) {
+        for (const [index, i] of grnItems.entries()) {
           const existingInventory = await tx.inventoryItems.findFirst({
             where: {
               drugId: i.drug.id,
-              supplierId: existingOrder.supplierId,
+              supplierId: supplierId!,
               batchNo: i.batchNo,
             },
           });
@@ -128,16 +168,25 @@ export const createAPI = async (req: Request) => {
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
                 quantityInStock: i.quantity,
-                supplierId: existingOrder.supplierId,
+                supplierId: supplierId!,
               },
             });
             inventoryItemId = newInventory.id;
           }
 
+          const purchaseItemId = resolvedOrderId === orderId ? i.id : purchaseItemIdByItemIndex.get(index);
+
+          if (!purchaseItemId) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Purchase item not found for GRN entry",
+            });
+          }
+
           await tx.gRNItems.create({
             data: {
               grnId: data.id,
-              purchaseItemId: i.id,
+              purchaseItemId,
               inventoryItemId: inventoryItemId!,
             },
           });

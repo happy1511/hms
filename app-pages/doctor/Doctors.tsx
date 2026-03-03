@@ -231,7 +231,7 @@ const Doctors = () => {
       header: () => {
         return <button className="flex">Status</button>;
       },
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <StatusBadge status={row.original.user.status} />,
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },

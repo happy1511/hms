@@ -46,6 +46,7 @@ const CreateUpdateForm = ({
   const radiologyTests = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
+      status: Status["active"],
     },
     10,
   );

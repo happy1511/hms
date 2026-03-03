@@ -43,7 +43,7 @@ const UpdateCreateForm = ({
   const { mutateAsync: create, isPending: creating } = useCreateRoomType();
   const { mutateAsync: update, isPending: updating } = useUpdateRoomType();
   const floorQuery = useInfiniteDepartmentsList(
-    { name: departmentSearchValue },
+    { name: departmentSearchValue, status: Status["active"] },
     10,
   );
 

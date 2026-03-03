@@ -31,6 +31,7 @@ const Actions = ({
   createOpd: boolean;
   createIpd: boolean;
 }) => {
+  console.log(createIpd, "cs");
   return (
     <>
       {createOpd && (
@@ -95,7 +96,7 @@ const PatientSearch = () => {
 
   const canCreateIPD = hasActionPermission(
     profile?.data,
-    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
     ActionType.CREATE,
   );
 
@@ -145,7 +146,7 @@ const PatientSearch = () => {
     },
   ];
 
-  if (canCreateOPD && opdCreate) {
+  if ((!!canCreateOPD && !!opdCreate) || (!!canCreateIPD && !!ipdCreate)) {
     columns.push({
       accessorKey: "actions",
       header: ({ column }) => {

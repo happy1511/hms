@@ -17,6 +17,7 @@ export const getAPI = async (req: Request) => {
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
+      const status = query.status ?? "";
 
       const skip = (page - 1) * limit;
       const and: Prisma.LocationWhereInput[] = [];

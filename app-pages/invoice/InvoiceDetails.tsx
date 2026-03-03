@@ -17,7 +17,7 @@ import {
 
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
-import { DiscountType } from "@/generated/prisma/enums";
+import { DiscountType, Status } from "@/generated/prisma/enums";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import CustomButton from "@/components/common/CustomButton";
@@ -53,7 +53,10 @@ type ServiceRowProps = {
 const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
   const { control, watch, setValue, getValues } = form;
   const [serviceSearch, setServiceSearch] = useState("");
-  const servicesQuery = useInfiniteServicesList({ name: serviceSearch }, 10);
+  const servicesQuery = useInfiniteServicesList(
+    { name: serviceSearch, status: Status["active"] },
+    10,
+  );
 
   const rowPath = `${fieldName}.${index}` as Path<updateInvoiceValidatorType>;
 
