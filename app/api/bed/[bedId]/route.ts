@@ -26,7 +26,7 @@ export async function PUT(
     checkPermission(
       request,
       [{ module: ModuleType["BED_MASTER"], action: ActionType["UPDATE"] }],
-      () => updateAPI(request, { params: { bedId: Number(bedId) } }),
+      (req, user) => updateAPI(req, { params: { bedId: Number(bedId) } }, user),
     ),
   );
 }
@@ -40,7 +40,7 @@ export async function DELETE(
     checkPermission(
       request,
       [{ module: ModuleType["BED_MASTER"], action: ActionType["DELETE"] }],
-      () => deleteAPI(request, { params: { bedId: Number(bedId) } }),
+      (req, user) => deleteAPI(req, { params: { bedId: Number(bedId) } }, user),
     ),
   );
 }

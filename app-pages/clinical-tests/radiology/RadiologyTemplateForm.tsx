@@ -162,10 +162,17 @@ const RadiologyTemplateForm = () => {
   if (!profile) {
     return <div />;
   }
+
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.BED_MASTER,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
     ActionType.VIEW,
+  );
+
+  const canCreate = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
+    ActionType.CREATE,
   );
 
   if (fetchingTemplate) {
@@ -189,10 +196,14 @@ const RadiologyTemplateForm = () => {
       buttons={<Buttons canView={Boolean(canView)} />}
       title={templateId ? "Edit Template" : "Create Template"}
     >
-      {templateId && data ? (
-        <CreateUpdateForm data={data} />
+      {canCreate ? (
+        templateId && data ? (
+          <CreateUpdateForm data={data} />
+        ) : (
+          <CreateUpdateForm />
+        )
       ) : (
-        <CreateUpdateForm />
+        <></>
       )}
     </CustomLayout>
   );

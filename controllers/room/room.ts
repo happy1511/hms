@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   partialRoomValidator,
   roomValidator,
@@ -115,7 +115,7 @@ export const getDetailsAPI = async (
     },
   });
 };
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: roomValidator,
     req,
@@ -157,6 +157,8 @@ export const createAPI = async (req: Request) => {
             description,
             status,
             roomTypeId: existingRoomType.id,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -172,6 +174,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { roomId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialRoomValidator,
@@ -235,6 +238,7 @@ export const updateAPI = async (
             description,
             status,
             roomTypeId: roomType?.id,
+            updatedBy: user.id ,
           },
         });
 
@@ -251,6 +255,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { roomId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialRoomValidator,
@@ -272,7 +277,11 @@ export const deleteAPI = async (
 
         await tx.room.update({
           where: { id: data.roomId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -284,3 +293,4 @@ export const deleteAPI = async (
     },
   });
 };
+

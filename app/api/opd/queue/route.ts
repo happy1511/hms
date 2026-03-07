@@ -18,7 +18,7 @@ export async function DELETE(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["OPD_QUEUE"], action: ActionType["DELETE"] }],
-      () => deleteQueueAPI(request),
+      (req, user) => deleteQueueAPI(req, user),
     ),
   );
 }

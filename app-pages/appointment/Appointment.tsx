@@ -139,24 +139,14 @@ const Appointments = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.USER,
+    ModuleType.APPOINTMENT,
     ActionType.VIEW,
   );
 
   const canCreate = hasActionPermission(
     profile?.data,
-    ModuleType.USER,
+    ModuleType.APPOINTMENT,
     ActionType.CREATE,
-  );
-  const canUpdate = hasActionPermission(
-    profile?.data,
-    ModuleType.USER,
-    ActionType.UPDATE,
-  );
-  const canDelete = hasActionPermission(
-    profile?.data,
-    ModuleType.USER,
-    ActionType.DELETE,
   );
 
   const columns: ColumnDefWithClass<AppointmentWithPatient>[] = [
@@ -183,7 +173,7 @@ const Appointments = () => {
       },
       cell: ({ row }) => (
         <Link
-          href={canUpdate ? `/appointments/${row.original.id}` : "#"}
+          href="#"
           className="hover:underline"
         >
           {row.original.patient?.firstName +

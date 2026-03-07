@@ -4,6 +4,7 @@ import {
   NameTitle,
   PrismaClient,
 } from "@/generated/prisma/client";
+import { MODULE_ACTION_MATRIX } from "@/lib/permissionMatrix";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import data from "./india-locations.json";
 import "dotenv/config";
@@ -59,23 +60,64 @@ const createPermissions = async () => {
 
   const modules = await prisma.module.findMany();
   const actions = await prisma.action.findMany();
+  const moduleIdByName = new Map(modules.map((item) => [item.name, item.id]));
+  const actionIdByName = new Map(actions.map((item) => [item.name, item.id]));
+  const allowedPairs = new Set<string>();
 
-  for (const m of modules) {
-    for (const action of actions) {
+  for (const [moduleName, allowedActions] of Object.entries(
+    MODULE_ACTION_MATRIX,
+  ) as [ModuleType, ActionType[]][]) {
+    const moduleId = moduleIdByName.get(moduleName);
+
+    if (!moduleId) {
+      continue;
+    }
+
+    for (const actionName of allowedActions) {
+      const actionId = actionIdByName.get(actionName);
+
+      if (!actionId) {
+        continue;
+      }
+
+      allowedPairs.add(`${moduleId}:${actionId}`);
+
       await prisma.permission.upsert({
         where: {
           moduleId_actionId: {
-            moduleId: m.id,
-            actionId: action.id,
+            moduleId,
+            actionId,
           },
         },
         update: {},
         create: {
-          moduleId: m.id,
-          actionId: action.id,
+          moduleId,
+          actionId,
         },
       });
     }
+  }
+
+  const existingPermissions = await prisma.permission.findMany({
+    select: {
+      id: true,
+      moduleId: true,
+      actionId: true,
+    },
+  });
+
+  const stalePermissionIds = existingPermissions
+    .filter((permission) => !allowedPairs.has(`${permission.moduleId}:${permission.actionId}`))
+    .map((permission) => permission.id);
+
+  if (stalePermissionIds.length) {
+    await prisma.permission.deleteMany({
+      where: {
+        id: {
+          in: stalePermissionIds,
+        },
+      },
+    });
   }
 };
 
@@ -93,6 +135,7 @@ const createAdminUser = async () => {
       username: "admin",
       title: NameTitle["MR"],
       loginId: "admin",
+      contactNumber: "admin",
       password: "admin123",
       name: "Admin User",
     },

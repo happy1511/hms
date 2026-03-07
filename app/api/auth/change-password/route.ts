@@ -1,0 +1,7 @@
+import { changePassword } from "@/controllers/profile/profile";
+import { withErrorHandling } from "@/lib/errorHandler";
+import { NextRequest } from "next/server";
+
+export async function POST(request: NextRequest) {
+  return withErrorHandling(() => changePassword(request));
+}

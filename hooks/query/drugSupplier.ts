@@ -40,7 +40,12 @@ const getDrugSupplier = createRequest<
 
 const getDrugSuppliers = createRequest<
   PaginatedResponse<DrugSupplier>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(DRUG_SUPPLIER, "GET");
 
 export const useDrugSupplierList = (

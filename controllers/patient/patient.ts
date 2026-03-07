@@ -1,4 +1,4 @@
-import { ContactType, Prisma } from "@/generated/prisma/client";
+import { ContactType, Prisma, User } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -66,7 +66,7 @@ export const getAPI = async (req: Request) => {
         });
       }
 
-      const where: Prisma.DoctorWhereInput = and.length ? { AND: and } : {};
+      const where: Prisma.PatientWhereInput = and.length ? { AND: and } : {};
 
       const [items, total] = await prisma.$transaction([
         prisma.patient.findMany({
@@ -173,7 +173,9 @@ export const getDocumentsAPI = async (req: Request) => {
         });
       }
 
-      const where: Prisma.DoctorWhereInput = and.length ? { AND: and } : {};
+      const where: Prisma.PatientIdentificationWhereInput = and.length
+        ? { AND: and }
+        : {};
 
       const [items, total] = await prisma.$transaction([
         prisma.patientIdentification.findMany({
@@ -284,7 +286,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: patientValidator,
     req,
@@ -304,6 +306,8 @@ export const createAPI = async (req: Request) => {
       const patient = await prisma.patient.create({
         data: {
           ...rest,
+          createdBy: user.id ,
+          updatedBy: user.id ,
           contacts: {
             create: contacts,
           },
@@ -351,6 +355,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { patientId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialPatientValidator,
@@ -385,6 +390,7 @@ export const updateAPI = async (
         where: { id: data.patientId },
         data: {
           ...rest,
+          updatedBy: user.id ,
 
           addresses: addresses
             ? {
@@ -504,3 +510,4 @@ export const updateAPI = async (
     },
   });
 };
+

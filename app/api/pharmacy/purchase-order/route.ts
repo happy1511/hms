@@ -31,7 +31,7 @@ export async function POST(request: Request) {
           action: ActionType["CREATE"],
         },
       ],
-      createAPI,
+      (req, user) => createAPI(req, user),
     ),
   );
 }

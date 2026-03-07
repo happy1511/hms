@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["BED_MASTER"], action: ActionType["CREATE"] }],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

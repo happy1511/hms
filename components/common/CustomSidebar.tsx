@@ -42,6 +42,7 @@ import { usePathname } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
 import { ModuleType } from "@/generated/prisma/enums";
 import PatientSearchModal from "../patient/PatientSearchModal";
+import { OPDType } from "@/lib/type";
 
 interface SidebarItem {
   title: string;
@@ -91,7 +92,7 @@ const ipdItems = [
     title: "DISCHARGED PATIENTS",
     url: "/ipd/discharged",
     icon: UserCheck,
-    module: [ModuleType.IPD_BILL],
+    module: [ModuleType.DISCHARGE_PATIENT],
   },
   // { title: "MLC PATIENTS", url: "/ipd/mlc", icon: AlertTriangle },
   // { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
@@ -114,7 +115,7 @@ const pharmacyItems = [
     title: "INVENTORY",
     url: "/pharmacy/inventory",
     icon: Users,
-    module: [ModuleType.PHARMACY_GRN, ModuleType.PHARMACY_SALE_BILL],
+    module: ["PHARMACY_INVENTORY" as ModuleType],
   },
   {
     title: "PHARMACY SALE BILL",
@@ -129,13 +130,25 @@ const financeItems: SidebarItem[] = [
     title: "BILLING",
     url: "/finance/billing",
     icon: FileText,
-    module: [ModuleType.INVOICE],
+    module: ["FINANCE_BILLING" as ModuleType],
   },
   {
     title: "PAYMENTS",
     url: "/finance/payments",
     icon: DollarSign,
-    module: [ModuleType.INVOICE],
+    module: ["FINANCE_PAYMENTS" as ModuleType],
+  },
+  {
+    title: "INCOME",
+    url: "/finance/income",
+    icon: DollarSign,
+    module: [ModuleType.INCOME],
+  },
+  {
+    title: "EXPENSE",
+    url: "/finance/expense",
+    icon: DollarSign,
+    module: [ModuleType.EXPENSE],
   },
 ];
 
@@ -225,7 +238,7 @@ const labMasters: SidebarItem[] = [
     title: "RADIOLOGY TEMPLATES",
     url: "/clinical-tests/radiology-template/new",
     icon: TestTubes,
-    module: [ModuleType.RADIOLOGY_TEST_MASTER],
+    module: ["RADIOLOGY_TEMPLATE_MASTER" as ModuleType],
   },
   {
     title: "CLINICAL TESTS",
@@ -312,6 +325,12 @@ export function CustomSidebar() {
   const visibleOpd = opdItems.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
+  const visibleIpd = ipdItems.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
+  const visiblePharmacy = pharmacyItems.filter((item) =>
+    hasModulePermission(data.data, item.module),
+  );
   const visiblePathologyOrders = pathologyOrders.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
@@ -324,24 +343,29 @@ export function CustomSidebar() {
   const visibleFinance = financeItems.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
+  const canViewDashboard = hasModulePermission(data.data, [
+    ModuleType.DASHBOARD,
+  ]);
 
   return (
     <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-sidebar text-tiny!">
       <SidebarHeader className="p-0">
         {/* Dashboard Item */}
-        <Link href="/">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-1.5 h-auto font-semibold data-[active=true]:text-white hover:text-white transition-colors",
-              isActive("/")
-                ? "bg-primary text-primary-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent",
-            )}
-          >
-            <LayoutDashboard className="size-3" />
-            <span>DASHBOARD</span>
-          </div>
-        </Link>
+        {canViewDashboard && (
+          <Link href="/">
+            <div
+              className={cn(
+                "flex items-center gap-3 px-4 py-1.5 h-auto font-semibold data-[active=true]:text-white hover:text-white transition-colors",
+                isActive("/")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent",
+              )}
+            >
+              <LayoutDashboard className="size-3" />
+              <span>DASHBOARD</span>
+            </div>
+          </Link>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-0 bg-primary/10">
@@ -396,7 +420,7 @@ export function CustomSidebar() {
                     actions={(row) => (
                       <Link
                         className="text-secondary hover:underline text-tiny"
-                        href={`/patient/${row.id}`}
+                        href={`/invoice/${(row as OPDType).invoice.id}`}
                       >
                         Select
                       </Link>
@@ -428,7 +452,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {ipdItems.map((item) => (
+                  {visibleIpd.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
@@ -468,7 +492,7 @@ export function CustomSidebar() {
             <CollapsibleContent className="bg-background">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0">
-                  {pharmacyItems.map((item) => (
+                  {visiblePharmacy.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild

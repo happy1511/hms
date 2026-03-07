@@ -34,7 +34,12 @@ const getDrug = createRequest<ApiResponse<Drug>, undefined, { id: string }>(
 
 const getDrugs = createRequest<
   PaginatedResponse<Drug>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PHARMACY_DRUG, "GET");
 
 export const useDrugList = (

@@ -78,6 +78,12 @@ const PatientSearch = () => {
     setFilters(values);
   };
 
+  const handleClearFilters = () => {
+    form.reset({});
+    setPage(1);
+    setFilters({});
+  };
+
   if (!profile) {
     return <div />;
   }
@@ -199,6 +205,14 @@ const PatientSearch = () => {
                 Register New Patient
               </CustomButton>
               <CustomButton type="submit">Search</CustomButton>
+              <CustomButton
+                type="button"
+                variant="outline"
+                className="bg-white text-primary shadow-none"
+                onClick={handleClearFilters}
+              >
+                Clear Filters
+              </CustomButton>
             </div>
           </form>
         </Form>

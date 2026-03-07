@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       request,
       [
         {
-          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          module: ModuleType.RADIOLOGY_TEMPLATE_MASTER,
           action: ActionType["VIEW"],
         },
       ],
@@ -29,11 +29,11 @@ export async function POST(request: Request) {
       request,
       [
         {
-          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          module: "RADIOLOGY_TEMPLATE_MASTER" as ModuleType,
           action: ActionType["CREATE"],
         },
       ],
-      () => createTemplateAPI(request),
+      (req, user) => createTemplateAPI(req, user),
     ),
   );
 }
@@ -44,11 +44,11 @@ export async function PUT(request: Request) {
       request,
       [
         {
-          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          module: "RADIOLOGY_TEMPLATE_MASTER" as ModuleType,
           action: ActionType["UPDATE"],
         },
       ],
-      () => updateTemplateAPI(request),
+      (req, user) => updateTemplateAPI(req, user),
     ),
   );
 }
@@ -59,11 +59,11 @@ export async function DELETE(request: Request) {
       request,
       [
         {
-          module: ModuleType["RADIOLOGY_TEST_MASTER"],
+          module: "RADIOLOGY_TEMPLATE_MASTER" as ModuleType,
           action: ActionType["DELETE"],
         },
       ],
-      () => deleteTemplateAPI(request),
+      (req, user) => deleteTemplateAPI(req, user),
     ),
   );
 }

@@ -1,9 +1,18 @@
-import { LOGIN, LOGOUT, PROFILE } from "@/lib/apiDefinations";
+import {
+  CHANGE_PASSWORD,
+  LOGIN,
+  LOGOUT,
+  PROFILE,
+} from "@/lib/apiDefinations";
 import { ApiResponse, User } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import { AuthValidatorType } from "@/validators/api/auth/auth";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  ChangePasswordValidatorType,
+  ProfileUpdateValidatorType,
+} from "@/validators/api/auth/profile";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -11,6 +20,18 @@ import { toast } from "sonner";
 const login = createRequest<ApiResponse<null>>(LOGIN, "POST");
 const logout = createRequest<ApiResponse<null>>(LOGOUT, "POST");
 const profile = createRequest<ApiResponse<User>>(PROFILE, "POST");
+const updateProfile = createRequest<
+  ApiResponse<User>,
+  undefined,
+  undefined,
+  ProfileUpdateValidatorType
+>(PROFILE, "PUT");
+const changePassword = createRequest<
+  ApiResponse<null>,
+  undefined,
+  undefined,
+  ChangePasswordValidatorType
+>(CHANGE_PASSWORD, "POST");
 
 export const useLogin = () => {
   const router = useRouter();
@@ -52,5 +73,39 @@ export const useProfile = (enabled: boolean = true) => {
     queryKey: ["profile"],
     queryFn: () => profile({}),
     enabled: enabled,
+  });
+};
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    ProfileUpdateValidatorType
+  >({
+    mutationKey: ["update-profile"],
+    mutationFn: (data) => updateProfile({ body: data }),
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["doctors"] });
+    },
+    onError: showError,
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation<
+    ApiResponse<null>,
+    AxiosError<ApiResponse<null>>,
+    ChangePasswordValidatorType
+  >({
+    mutationKey: ["change-password"],
+    mutationFn: (data) => changePassword({ body: data }),
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+    },
+    onError: showError,
   });
 };

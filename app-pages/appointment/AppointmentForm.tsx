@@ -74,7 +74,7 @@ const AppointmentForm = () => {
                             form.setValue("patientId", Number(row.id));
                             form.setValue(
                               "patientName",
-                              `${row.firstName} ${row.lastName}`,
+                              `${row.patient.firstName} ${row.patient.lastName}`,
                             );
                             setOpen(false);
                           }}

@@ -13,7 +13,7 @@ export async function GET(
       request,
       [
         {
-          module: ModuleType["PATHOLOGY_TEST_MASTER"],
+          module: ModuleType.RADIOLOGY_TEMPLATE_MASTER,
           action: ActionType["VIEW"],
         },
       ],

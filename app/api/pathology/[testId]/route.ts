@@ -40,7 +40,7 @@ export async function PUT(
           action: ActionType["UPDATE"],
         },
       ],
-      () => updateAPI(request, { params: { testId: Number(testId) } }),
+      (req, user) => updateAPI(req, { params: { testId: Number(testId) } }, user),
     ),
   );
 }
@@ -59,7 +59,7 @@ export async function DELETE(
           action: ActionType["DELETE"],
         },
       ],
-      () => deleteAPI(request, { params: { testId: Number(testId) } }),
+      (req, user) => deleteAPI(req, { params: { testId: Number(testId) } }, user),
     ),
   );
 }

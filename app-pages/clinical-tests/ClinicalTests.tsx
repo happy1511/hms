@@ -17,20 +17,26 @@ const Buttons = () => {
     return <div />;
   }
 
-  const canCreate = hasActionPermission(
+  const canCreatePathology = hasActionPermission(
     profile?.data,
     ModuleType.PATHOLOGY_TEST_MASTER,
     ActionType.CREATE,
   );
+  const canCreateRadiology = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_TEST_MASTER,
+    ActionType.CREATE,
+  );
 
+  console.log(canCreatePathology, canCreateRadiology);
   return (
     <div className="flex gap-2">
-      {canCreate && (
+      {canCreatePathology && (
         <CreatePathologyTestModal
           trigger={<CustomButton>Add Pathology Test</CustomButton>}
         />
       )}
-      {canCreate && (
+      {canCreateRadiology && (
         <RadiologyTestForm
           trigger={<CustomButton>Add Radiology Test</CustomButton>}
         />
@@ -47,7 +53,7 @@ const ClinicalTests = () => {
     return <div />;
   }
 
-  const canViewPathologoy = hasActionPermission(
+  const canViewPathology = hasActionPermission(
     profile?.data,
     ModuleType.PATHOLOGY_TEST_MASTER,
     ActionType.VIEW,
@@ -59,7 +65,7 @@ const ClinicalTests = () => {
     ActionType.VIEW,
   );
 
-  if (canViewPathologoy) {
+  if (canViewPathology) {
     tabs.push({
       value: "pathology-tests",
       name: "Pathology Tests",

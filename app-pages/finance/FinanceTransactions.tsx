@@ -26,6 +26,7 @@ type TransactionRow = {
   invoiceId: number;
   billType: "OPD" | "IPD";
   billNumber: number;
+  permissionModule: ModuleType;
   patientName: string;
   createdAt: Date;
   mode: string;
@@ -45,6 +46,7 @@ const toTransactionRowsFromOpd = (item: OPDType): TransactionRow[] =>
     invoiceId: item.invoice.id,
     billType: "OPD",
     billNumber: item.id,
+    permissionModule: ModuleType.OPD_BILL,
     patientName: `${item.patient.firstName} ${item.patient.lastName}`,
     createdAt: txn.createdAt,
     mode: txn.mode,
@@ -59,6 +61,7 @@ const toTransactionRowsFromIpd = (item: IPDType): TransactionRow[] =>
     invoiceId: item.invoice.id,
     billType: "IPD",
     billNumber: item.id,
+    permissionModule: ModuleType.IPD_BILL,
     patientName: `${item.patient.firstName} ${item.patient.lastName}`,
     createdAt: txn.createdAt,
     mode: txn.mode,
@@ -77,8 +80,11 @@ const FinanceTransactions = () => {
     return <div />;
   }
 
-  const canView = hasActionPermission(profile.data, ModuleType.INVOICE, ActionType.VIEW);
-  const canPrint = hasActionPermission(profile.data, ModuleType.INVOICE, ActionType.PRINT);
+  const canView = hasActionPermission(
+    profile.data,
+    "FINANCE_PAYMENTS" as ModuleType,
+    ActionType.VIEW,
+  );
 
   const rows = useMemo(() => {
     const opdRows = (opdQuery.data?.data || []).flatMap(toTransactionRowsFromOpd);
@@ -149,40 +155,52 @@ const FinanceTransactions = () => {
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
-  ];
-
-  if (canPrint) {
-    columns.push({
+    {
       accessorKey: "action",
       header: "Actions",
-      cell: ({ row }) => (
-        <CustomActionDropdown
-          triggerLabel="Print"
-          groups={[
-            {
-              items: [
-                {
-                  label: "Receipt (This Transaction)",
-                  onClick: () =>
-                    window.open(
-                      `/invoice/transactions/${row.original.invoiceId}?transactionId=${row.original.transactionId}`,
-                      "_blank",
-                    ),
-                },
-                {
-                  label: "All Invoice Transactions",
-                  onClick: () =>
-                    window.open(`/invoice/transactions/${row.original.invoiceId}`, "_blank"),
-                },
-              ],
-            },
-          ]}
-        />
-      ),
+      cell: ({ row }) => {
+        const canPrint = hasActionPermission(
+          profile.data,
+          row.original.permissionModule,
+          ActionType.PRINT,
+        );
+
+        if (!canPrint) {
+          return null;
+        }
+
+        return (
+          <CustomActionDropdown
+            triggerLabel="Print"
+            groups={[
+              {
+                items: [
+                  {
+                    label: "Receipt",
+                    onClick: () =>
+                      window.open(
+                        `/invoice/transactions/${row.original.invoiceId}?transactionId=${row.original.transactionId}`,
+                        "_blank",
+                      ),
+                  },
+                  {
+                    label: "All Transactions",
+                    onClick: () =>
+                      window.open(
+                        `/invoice/transactions/${row.original.invoiceId}`,
+                        "_blank",
+                      ),
+                  },
+                ],
+              },
+            ]}
+          />
+        );
+      },
       headerClassName: "min-w-30 max-w-40",
       cellClassName: "min-w-30 max-w-40",
-    });
-  }
+    },
+  ];
 
   const isLoading = opdQuery.isLoading || ipdQuery.isLoading;
   const isError = opdQuery.isError || ipdQuery.isError;

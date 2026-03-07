@@ -40,7 +40,12 @@ const getDrugBillingCategory = createRequest<
 
 const getDrugCategories = createRequest<
   PaginatedResponse<DrugBillingCategory>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(DRUG_CATEGORY, "GET");
 
 export const useDrugBillingCategoryList = (

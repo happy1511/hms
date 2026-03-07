@@ -1,3 +1,4 @@
+import { endOfDay, format, startOfDay } from "date-fns";
 import { useState } from "react";
 import CustomButton from "../common/CustomButton";
 import CustomLayout from "../common/CustomLayout";
@@ -12,51 +13,92 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { Form } from "../ui/form";
-import { ColumnDefWithClass, FilterValues, PatientType } from "@/lib/type";
-import { usePatientsList } from "@/hooks/query/patient";
+import { Label } from "../ui/label";
+import {
+  ColumnDefWithClass,
+  FilterValues,
+  OPDType,
+  PatientDocumentType,
+} from "@/lib/type";
+import { useOpdList } from "@/hooks/query/opd";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import {
-  findPatientValidator,
-  FindPatientValidatorType,
-} from "@/validators/api/masters/patient";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { SortableHeader } from "../common/SortableHeader";
+import { useProfile } from "@/hooks/query/auth";
+import { hasActionPermission } from "@/lib/utils";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 
 interface Props {
   trigger: React.ReactNode;
   actions: (
-    row: PatientType,
+    row: OPDType | PatientDocumentType,
     setOpen: (open: boolean) => void,
   ) => React.ReactNode;
 }
 
 const PatientSearchModal = ({ trigger, actions }: Props) => {
   const [open, setOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({
+    createdAt: {
+      from: startOfDay(new Date()),
+      to: endOfDay(new Date()),
+    },
+  });
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
+  const { data: profile } = useProfile(false);
 
-  const { data, isLoading, isError, error } = usePatientsList(
-    filters,
-    page,
-    limit,
-  );
+  const { data, isLoading, isError, error } = useOpdList(filters, page, limit);
   const router = useRouter();
 
-  const form = useForm<FindPatientValidatorType>({
-    resolver: zodResolver(findPatientValidator),
+  const form = useForm<FilterValues>({
+    defaultValues: filters,
   });
 
-  const handleSubmit = (values: FindPatientValidatorType) => {
+  if (!profile) {
+    return <div />;
+  }
+
+  const handleSubmit = (values: FilterValues) => {
+    setPage(1);
     setFilters(values);
   };
 
-  const columns: ColumnDefWithClass<PatientType>[] = [
+  const handleClearFilters = () => {
+    const clearedFilters: FilterValues = {};
+    form.reset(clearedFilters);
+    setPage(1);
+    setFilters(clearedFilters);
+  };
+
+  const canCreate = hasActionPermission(
+    profile?.data,
+    ModuleType.PATIENT_MASTER,
+    ActionType.CREATE,
+  );
+
+  const canView =
+    hasActionPermission(
+      profile?.data,
+      ModuleType.OPD_BILL,
+      ActionType.CREATE,
+    ) ||
+    hasActionPermission(
+      profile?.data,
+      ModuleType.IPD_BILL,
+      ActionType.CREATE,
+    ) ||
+    hasActionPermission(
+      profile?.data,
+      ModuleType.PATIENT_MASTER,
+      ActionType.VIEW,
+    );
+
+  const columns: ColumnDefWithClass<OPDType>[] = [
     {
       accessorKey: "_id",
       header: ({ column }) => {
-        return <SortableHeader<PatientType> label="ID" column={column} />;
+        return <SortableHeader<OPDType> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -65,13 +107,13 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
     {
       accessorKey: "name",
       header: ({ column }) => {
-        return <SortableHeader<PatientType> label="Name" column={column} />;
+        return <SortableHeader<OPDType> label="Name" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
       cell: ({ row }) => (
         <span>
-          {row.original.firstName} {row.original.lastName}
+          {row.original.patient.firstName} {row.original.patient.lastName}
         </span>
       ),
     },
@@ -79,8 +121,18 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
     {
       accessorKey: "uhid",
       header: ({ column }) => {
-        return <SortableHeader<PatientType> label="UHID No" column={column} />;
+        return <SortableHeader<OPDType> label="UHID No" column={column} />;
       },
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+      cell: ({ row }) => row.original.patient.uhid,
+    },
+    {
+      accessorKey: "date",
+      header: ({ column }) => {
+        return <SortableHeader<OPDType> label="Date" column={column} />;
+      },
+      cell: ({ row }) => format(row.original.createdAt, "dd/MM/yyyy hh:mm a"),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -132,30 +184,56 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
                   control={form.control}
                   name="contactNo"
                 />
+                <div className="col-span-2 grid grid-cols-5 border border-black/15 rounded-[4px]">
+                  <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
+                    Date Range
+                  </Label>
+                  <div className="col-span-3">
+                    <FormField
+                      type="dateRange"
+                      control={form.control}
+                      name="createdAt"
+                      hideError
+                      className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
+                    />
+                  </div>
+                </div>
                 <div className="flex gap-2">
-                  <CustomButton onClick={() => router.push("/patient/new")}>
-                    Register New Patient
-                  </CustomButton>
+                  {canCreate && (
+                    <CustomButton onClick={() => router.push("/patient/new")}>
+                      Register New Patient
+                    </CustomButton>
+                  )}
                   <CustomButton type="submit">Search</CustomButton>
+                  <CustomButton
+                    type="button"
+                    variant="outline"
+                    className="bg-white text-primary shadow-none"
+                    onClick={handleClearFilters}
+                  >
+                    Clear Filters
+                  </CustomButton>
                 </div>
               </form>
             </Form>
-            <div className="col-span-12">
-              <CustomTable
-                columns={columns}
-                data={data?.data || []}
-                page={page}
-                total={data?.total}
-                enableSorting
-                handleChangePage={setPage}
-                isLoading={isLoading}
-                limit={limit}
-                handleChangeLimit={setLimit}
-                isError={isError}
-                error={error}
-                getRowId={(data) => String(data.id)}
-              />
-            </div>
+            {canView && (
+              <div className="col-span-12">
+                <CustomTable
+                  columns={columns}
+                  data={data?.data || []}
+                  page={page}
+                  total={data?.total}
+                  enableSorting
+                  handleChangePage={setPage}
+                  isLoading={isLoading}
+                  limit={limit}
+                  handleChangeLimit={setLimit}
+                  isError={isError}
+                  error={error}
+                  getRowId={(item) => String(item.id)}
+                />
+              </div>
+            )}
           </div>
         </CustomLayout>
       </DialogContent>

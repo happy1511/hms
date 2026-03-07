@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   partialRoomTypeValidator,
   roomTypeValidator,
@@ -116,7 +116,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: roomTypeValidator,
     req,
@@ -148,6 +148,8 @@ export const createAPI = async (req: Request) => {
             description,
             status,
             departmentId: existingDepartment.id,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -163,6 +165,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { typeId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialRoomTypeValidator,
@@ -226,6 +229,7 @@ export const updateAPI = async (
             description,
             departmentId: department?.id,
             status,
+            updatedBy: user.id ,
           },
         });
 
@@ -242,6 +246,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { typeId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialRoomTypeValidator,
@@ -263,7 +268,11 @@ export const deleteAPI = async (
 
         await tx.roomType.update({
           where: { id: data.typeId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -275,3 +284,4 @@ export const deleteAPI = async (
     },
   });
 };
+

@@ -41,8 +41,11 @@ const InventoryList = () => {
   }
 
   const canView = Boolean(
-    hasActionPermission(profile.data, ModuleType.PHARMACY_GRN, ActionType.VIEW) ||
-      hasActionPermission(profile.data, ModuleType.PHARMACY_SALE_BILL, ActionType.VIEW),
+    hasActionPermission(
+      profile.data,
+      ModuleType.PHARMACY_INVENTORY,
+      ActionType.VIEW,
+    ),
   );
 
   const columns: ColumnDefWithClass<InventoryData>[] = [

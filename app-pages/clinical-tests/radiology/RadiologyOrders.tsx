@@ -30,9 +30,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 const Actions = ({
+  canUpdate,
   data,
   canPrint,
 }: {
+  canUpdate: boolean;
   data: RadiologyOrderType;
   canPrint: boolean;
 }) => {
@@ -54,6 +56,7 @@ const Actions = ({
   const items = [];
 
   if (
+    canUpdate &&
     !data.isCancelled &&
     !data.isOutSourced &&
     data.status !== RadiologyOrderStatus["COMPLETED"]
@@ -65,7 +68,7 @@ const Actions = ({
     });
   }
 
-  if (data.isCancelled && !data.isOutSourced) {
+  if (canUpdate && data.isCancelled && !data.isOutSourced) {
     items.push({
       label: "Restore",
       onClick: () => handleCancel(false),
@@ -74,6 +77,7 @@ const Actions = ({
   }
 
   if (
+    canUpdate &&
     !data.isOutSourced &&
     !data.isCancelled &&
     data.status !== RadiologyOrderStatus["COMPLETED"]
@@ -85,7 +89,7 @@ const Actions = ({
     });
   }
 
-  if (data.isOutSourced) {
+  if (canUpdate && data.isOutSourced) {
     items.push({
       label: "Cancel OutSource",
       onClick: () => handleOutSource(false),
@@ -102,6 +106,7 @@ const Actions = ({
   }
 
   if (
+    canUpdate &&
     data.status !== RadiologyOrderStatus["COMPLETED"] &&
     !data.isCancelled &&
     !data.isOutSourced
@@ -204,6 +209,11 @@ const RadiologyOrders = ({
     ModuleType.RADIOLOGY_ORDER,
     ActionType.PRINT,
   );
+  const canUpdate = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_ORDER,
+    ActionType.UPDATE,
+  );
 
   const patientColumns: ColumnDefWithClass<RadiologyOrderByPatientsType>[] = [
     {
@@ -297,7 +307,11 @@ const RadiologyOrders = ({
       id: "actions",
       header: () => <p>Action</p>,
       cell: ({ row }) => (
-        <Actions canPrint={Boolean(canPrint)} data={row.original} />
+        <Actions
+          canPrint={Boolean(canPrint)}
+          canUpdate={Boolean(canUpdate)}
+          data={row.original}
+        />
       ),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
           action: ActionType["CREATE"],
         },
       ],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

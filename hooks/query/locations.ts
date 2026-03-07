@@ -35,7 +35,12 @@ const deleteLocation = createRequest<
 >(LOCATIONS, "DELETE");
 const getLocations = createRequest<
   PaginatedResponse<Location>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(LOCATIONS, "GET");
 
 export const useLocationsList = (

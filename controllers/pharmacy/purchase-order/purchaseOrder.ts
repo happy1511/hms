@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   partialPurchaseOrderValidator,
   purchaseOrderValidator,
@@ -103,7 +103,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: purchaseOrderValidator,
     req,
@@ -114,6 +114,8 @@ export const createAPI = async (req: Request) => {
           data: {
             ...rest,
             supplierId: supplier.id,
+            createdBy: user.id ,
+            updatedBy: user.id ,
             items: {
               create: items.map((i) => ({
                 categoryId: i.category.id,
@@ -139,6 +141,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { orderId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialPurchaseOrderValidator,
@@ -167,6 +170,7 @@ export const updateAPI = async (
             supplierId: body.supplier?.id,
             remarks: body.remarks,
             orderDate: body.orderDate,
+            updatedBy: user.id ,
           },
         });
 
@@ -201,6 +205,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { orderId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialPurchaseOrderValidator,
@@ -222,7 +227,11 @@ export const deleteAPI = async (
 
         await tx.purchaseOrder.update({
           where: { id: data.orderId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -234,3 +243,4 @@ export const deleteAPI = async (
     },
   });
 };
+

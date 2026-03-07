@@ -5,6 +5,7 @@ import {
   OPD_QUEUE,
   OPD_VITALS,
 } from "@/lib/apiDefinations";
+import { AddressType, ContactType } from "@/generated/prisma/enums";
 import {
   ApiResponse,
   FilterValues,
@@ -32,10 +33,39 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export type opdConsultationDetailsType = consultantFileType & {
-  patient?: { firstName?: string; lastName?: string };
+  patient?: {
+    id?: number;
+    firstName?: string;
+    lastName?: string;
+    uhid?: string;
+    gender?: string;
+    contacts?: { type: ContactType; value: string }[];
+    addresses?: {
+      type?: AddressType;
+      addressLineOne?: string | null;
+      addressLineTwo?: string | null;
+      addressLineThree?: string | null;
+      location?: {
+        city?: string | null;
+        state?: string | null;
+        country?: string | null;
+        postcode?: string | null;
+      } | null;
+    }[];
+  };
   consultantDoctorName?: string | null;
   referringDoctorName?: string | null;
   createdAt?: Date | string;
+  previousOpdHistory?: {
+    opdId: number;
+    createdAt: Date | string;
+    investigations: string[];
+  }[];
+};
+
+type UseCreateOpdOptions = {
+  navigateBackOnSuccess?: boolean;
+  onSuccess?: (data: ApiResponse<OPDType>) => void;
 };
 
 const createOpd = createRequest<ApiResponse<OPDType>>(OPD, "POST");
@@ -58,11 +88,21 @@ const getConsultation = createRequest<
 
 const getOPDs = createRequest<
   PaginatedResponse<OPDType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(OPD, "GET");
 const getOPDQueue = createRequest<
   PaginatedResponse<OPDType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(OPD_QUEUE, "GET");
 
 export const useOpdList = (
@@ -183,7 +223,7 @@ export const useGetConsultationFile = (id?: string) => {
   });
 };
 
-export const useCreateOpd = () => {
+export const useCreateOpd = (options?: UseCreateOpdOptions) => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
@@ -193,12 +233,18 @@ export const useCreateOpd = () => {
   >({
     mutationKey: ["create-opd"],
     mutationFn: (data) => createOpd({ body: data }),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success("OPD Created Successfully");
       queryClient.invalidateQueries({
         queryKey: ["billing-sections"],
       });
-      router.back();
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+      options?.onSuccess?.(response);
+      if (options?.navigateBackOnSuccess !== false) {
+        router.back();
+      }
     },
     onError: showError,
   });

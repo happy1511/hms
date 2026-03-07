@@ -7,10 +7,7 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [
-        { module: ModuleType.PHARMACY_SALE_BILL, action: ActionType.VIEW },
-        { module: ModuleType.PHARMACY_GRN, action: ActionType.VIEW },
-      ],
+      [{ module: ModuleType.PHARMACY_INVENTORY, action: ActionType.VIEW }],
       getAPI,
     ),
   );

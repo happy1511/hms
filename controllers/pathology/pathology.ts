@@ -5,7 +5,6 @@ import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   PathologyOrderStatus,
-  PathologyTest,
   Prisma,
   ReferenceRangeSex,
   ServiceApplicableOn,
@@ -76,7 +75,7 @@ export const getAPI = async (req: Request) => {
         ? { AND: and }
         : {};
 
-      let selectedItems: PathologyTest[] = [];
+      let selectedItems: any[] = [];
       if (defaultSelectedIds && defaultSelectedIds.length > 0) {
         selectedItems = await prisma.pathologyTest.findMany({
           where: {
@@ -87,6 +86,9 @@ export const getAPI = async (req: Request) => {
             id: true,
             isDeleted: true,
             name: true,
+            createdBy: true,
+            updatedBy: true,
+            deletedBy: true,
             alias: true,
             container: true,
             sampleType: true,
@@ -118,6 +120,9 @@ export const getAPI = async (req: Request) => {
             id: true,
             isDeleted: true,
             name: true,
+            createdBy: true,
+            updatedBy: true,
+            deletedBy: true,
             alias: true,
             container: true,
             sampleType: true,
@@ -611,7 +616,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: pathologyTestValidator,
     req,
@@ -638,6 +643,8 @@ export const createAPI = async (req: Request) => {
             container: body.container,
             sampleType: body.sampleType,
             footerNotes: body.footerNotes,
+            createdBy: user.id ,
+            updatedBy: user.id ,
 
             /** ---------------- HEADERS WITH PARAMETERS ---------------- */
             testHeaders: {
@@ -761,6 +768,8 @@ export const createAPI = async (req: Request) => {
             price: body.price,
             applicableOn: ServiceApplicableOn["BOTH"],
             status: body.status,
+            createdBy: user.id ,
+            updatedBy: user.id ,
             pathologyTests: {
               create: {
                 testId: createdTest.id,
@@ -1331,6 +1340,7 @@ export const deleteOptionAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { testId: number } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialPathologyTestValidator,
@@ -1362,6 +1372,7 @@ export const updateAPI = async (
             container: body.container,
             sampleType: body.sampleType,
             footerNotes: body.footerNotes,
+            updatedBy: user.id ,
           },
         });
 
@@ -1516,6 +1527,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { testId: number } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialPathologyTestValidator,
@@ -1537,7 +1549,11 @@ export const deleteAPI = async (
 
         await tx.pathologyTest.update({
           where: { id: data.testId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -1686,3 +1702,4 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
     },
   });
 };
+

@@ -99,18 +99,18 @@ const RadiologyTemplates = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.RADIOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
     ActionType.VIEW,
   );
 
   const canUpdate = hasActionPermission(
     profile?.data,
-    ModuleType.RADIOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
     ActionType.UPDATE,
   );
   const canDelete = hasActionPermission(
     profile?.data,
-    ModuleType.RADIOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
     ActionType.DELETE,
   );
 

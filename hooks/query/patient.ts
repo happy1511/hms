@@ -40,12 +40,22 @@ const getPatient = createRequest<
 >((p) => `${PATIENT}/${p.id}`, "GET");
 const getPatientDocuments = createRequest<
   PaginatedResponse<PatientDocumentType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PATIENT_DOCUMENTS, "GET");
 
 const getPatients = createRequest<
   PaginatedResponse<PatientType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PATIENT, "GET");
 
 export const usePatientsList = (
@@ -171,7 +181,10 @@ export const useDeletePatient = () => {
   });
 };
 
-export const useInfinitePatientsList = (filters: FilterValues, limit: number) => {
+export const useInfinitePatientsList = (
+  filters: FilterValues,
+  limit: number,
+) => {
   return useInfiniteQuery<
     PaginatedResponse<PatientType>,
     AxiosError<ApiResponse<null>>,
@@ -190,7 +203,10 @@ export const useInfinitePatientsList = (filters: FilterValues, limit: number) =>
         },
       }),
     getNextPageParam: (lastPage, allPages) => {
-      const totalFetched = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
       return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,

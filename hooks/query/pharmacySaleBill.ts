@@ -23,7 +23,9 @@ type SaleBillPayload = DrugBillGetPayload<{
     patient: true;
     doctor: { include: { user: true } };
     invoice: {
-      include: { transactions: { include: { receivedBy: { select: { name: true } } } } };
+      include: {
+        transactions: { include: { receivedBy: { select: { name: true } } } };
+      };
     };
     saleItems: {
       include: {
@@ -49,10 +51,11 @@ const updateSaleBill = createRequest<
   { id: string }
 >((p) => `${PHARMACY_SALE_BILL}/${p.id}`, "PUT");
 
-const deleteSaleBill = createRequest<ApiResponse<null>, undefined, { id: string }>(
-  (p) => `${PHARMACY_SALE_BILL}/${p.id}`,
-  "DELETE",
-);
+const deleteSaleBill = createRequest<
+  ApiResponse<null>,
+  undefined,
+  { id: string }
+>((p) => `${PHARMACY_SALE_BILL}/${p.id}`, "DELETE");
 
 const getSaleBill = createRequest<
   ApiResponse<SaleBillPayload>,
@@ -62,7 +65,11 @@ const getSaleBill = createRequest<
 
 const getSaleBills = createRequest<
   PaginatedResponse<SaleBillPayload>,
-  { limit: number; search?: string; createdAt?: string }
+  {
+    name?: string;
+    limit: number;
+    createdAt?: string | { from?: Date; to?: Date };
+  }
 >(PHARMACY_SALE_BILL, "GET");
 
 export const useSaleBillList = (
@@ -89,7 +96,10 @@ export const useSaleBillList = (
   });
 };
 
-export const useInfiniteSaleBillList = (filters: FilterValues, limit: number) => {
+export const useInfiniteSaleBillList = (
+  filters: FilterValues,
+  limit: number,
+) => {
   return useInfiniteQuery<
     PaginatedResponse<SaleBillPayload>,
     AxiosError<ApiResponse<null>>,
@@ -107,7 +117,10 @@ export const useInfiniteSaleBillList = (filters: FilterValues, limit: number) =>
         },
       }),
     getNextPageParam: (lastPage, allPages) => {
-      const totalFetched = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
       return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,

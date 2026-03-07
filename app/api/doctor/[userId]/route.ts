@@ -30,7 +30,7 @@ export async function PUT(
     checkPermission(
       request,
       [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["UPDATE"] }],
-      () => updateAPI(request, { params: p }),
+      (req, user) => updateAPI(req, { params: p }, user),
     ),
   );
 }
@@ -44,7 +44,7 @@ export async function DELETE(
     checkPermission(
       request,
       [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["DELETE"] }],
-      () => deleteAPI(request, { params: p }),
+      (req, user) => deleteAPI(req, { params: p }, user),
     ),
   );
 }

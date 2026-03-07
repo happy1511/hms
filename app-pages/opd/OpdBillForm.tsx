@@ -9,6 +9,13 @@ import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BillingSection, Location } from "@/generated/prisma/client";
 import {
   AddressType,
@@ -49,7 +56,7 @@ import { opdValidator, opdValidatorType } from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   useFieldArray,
@@ -927,8 +934,29 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 const OpdBillForm = () => {
   const [consultantValue, setConsultantValue] = useState("");
   const [referringValue, setReferringValue] = useState("");
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
+  const [pendingSubmission, setPendingSubmission] =
+    useState<opdValidatorType | null>(null);
+  const [postCreatePrintOpen, setPostCreatePrintOpen] = useState(false);
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<number | null>(null);
+  const [createdOpdId, setCreatedOpdId] = useState<number | null>(null);
 
-  const { mutateAsync, isPending } = useCreateOpd();
+  const router = useRouter();
+  const { mutateAsync, isPending } = useCreateOpd({
+    navigateBackOnSuccess: false,
+    onSuccess: (response) => {
+      const invoiceId = Number((response.data as any)?.id || 0);
+      const opdId = Number((response.data as any)?.opd?.id || 0);
+
+      if (invoiceId) {
+        setCreatedInvoiceId(invoiceId);
+      }
+      if (opdId) {
+        setCreatedOpdId(opdId);
+      }
+      setPostCreatePrintOpen(true);
+    },
+  });
   const params: { patientId: string } = useParams();
   const { data: patient, isLoading } = useGetPatient(params?.patientId);
   const consultingDoctorQuery = useInfiniteDoctorList(
@@ -953,7 +981,15 @@ const OpdBillForm = () => {
   });
 
   const onSubmit = (values: opdValidatorType) => {
-    mutateAsync(values);
+    setPendingSubmission(values);
+    setConfirmCreateOpen(true);
+  };
+
+  const handleConfirmedCreate = async () => {
+    if (!pendingSubmission) return;
+    await mutateAsync(pendingSubmission);
+    setConfirmCreateOpen(false);
+    setPendingSubmission(null);
   };
   console.log(form.formState.errors);
   useEffect(() => {
@@ -1065,6 +1101,92 @@ const OpdBillForm = () => {
           Submit
         </CustomButton>
       </form>
+      <CustomAlert
+        open={confirmCreateOpen}
+        onOpenChange={setConfirmCreateOpen}
+        triggerButton={<div />}
+        title="Create OPD?"
+        description="Do you want to create this OPD now?"
+        cancelText="Cancel"
+        confirmText="Create"
+        iconType="confirm"
+        confirmVariant="default"
+        pending={isPending}
+        handleConfirm={handleConfirmedCreate}
+      />
+      <Dialog
+        open={postCreatePrintOpen}
+        onOpenChange={(open) => {
+          setPostCreatePrintOpen(open);
+          if (!open) {
+            router.push("/opd/patients");
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg border-secondary border-4 bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-sm text-black/70">
+              OPD Created Successfully
+            </DialogTitle>
+            <DialogDescription>
+              Print invoice or consultation paper before closing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end">
+            <CustomButton
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (createdInvoiceId) {
+                  window.open(`/invoice/print/${createdInvoiceId}`, "_blank");
+                }
+              }}
+              disabled={!createdInvoiceId}
+            >
+              Print Invoice
+            </CustomButton>
+            <CustomButton
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (createdInvoiceId) {
+                  window.open(
+                    `/invoice/transactions/${createdInvoiceId}`,
+                    "_blank",
+                  );
+                }
+              }}
+              disabled={!createdInvoiceId}
+            >
+              Print Transaction Receipt
+            </CustomButton>
+            <CustomButton
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (createdOpdId) {
+                  window.open(
+                    `/opd/consultation-print/${createdOpdId}`,
+                    "_blank",
+                  );
+                }
+              }}
+              disabled={!createdOpdId}
+            >
+              Print Consult Page
+            </CustomButton>
+            <CustomButton
+              type="button"
+              onClick={() => {
+                setPostCreatePrintOpen(false);
+                router.push("/opd/patients");
+              }}
+            >
+              Done
+            </CustomButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 };

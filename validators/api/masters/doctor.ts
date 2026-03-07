@@ -3,7 +3,6 @@ import { z } from "zod";
 import { userValidator } from "./user";
 
 const optionalText = z.string().optional().or(z.literal(""));
-const optionalEmail = z.string().email("Invalid email address").optional().or(z.literal(""));
 const optionalPhone = z
   .string()
   .regex(/^\d{10}$/, "Phone Number must be exactly 10 digits")
@@ -11,21 +10,15 @@ const optionalPhone = z
   .or(z.literal(""));
 
 const doctorBaseValidator = userValidator.extend({
-  loginId: z.string().optional().or(z.literal("")),
-  name: z.string().min(1, "Name is required"),
   password: z.string().min(6).optional().or(z.literal("")),
   status: z.enum(Status).optional().default(Status.active),
   permissions: userValidator.shape.permissions.optional().default([]),
   title: z.enum(NameTitle).default(NameTitle["DR"]).optional(),
   licenseNumber: optionalText,
   specialization: optionalText,
-  qualifications: optionalText,
   yearsExperience: z.number().min(0, "Experience must be greater than zero").optional(),
-  department: optionalText,
   designation: optionalText,
   doctorType: z.enum(DoctorType),
-  email: optionalEmail,
-  phoneNumber: optionalPhone,
   emergencyContact: optionalPhone,
   availableDays: z
     .array(z.object({ day: z.enum(Days), available: z.boolean() }))
@@ -84,10 +77,10 @@ const doctorValidator = doctorBaseValidator.superRefine((data, ctx) => {
       });
     }
 
-    if (!data.phoneNumber || !data.phoneNumber.trim()) {
+    if (!data.contactNumber || !data.contactNumber.trim()) {
       ctx.addIssue({
-        path: ["phoneNumber"],
-        message: "Phone number is required for consulting doctors",
+        path: ["contactNumber"],
+        message: "Contact number is required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }

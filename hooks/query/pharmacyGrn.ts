@@ -29,7 +29,12 @@ const getGrns = createRequest<
       };
     }>
   >,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PHARMACY_GRN, "GET");
 
 export const useGrnList = (

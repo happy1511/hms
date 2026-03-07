@@ -17,7 +17,7 @@ import {
 
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
-import { DiscountType, Status } from "@/generated/prisma/enums";
+import { ActionType, DiscountType, ModuleType, Status } from "@/generated/prisma/enums";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import CustomButton from "@/components/common/CustomButton";
@@ -32,6 +32,8 @@ import {
   updateInvoiceValidatorType,
 } from "@/validators/api/invoice/invoice";
 import { useInvoiceDetails, useUpdateInvoice } from "@/hooks/query/invoice";
+import { useProfile } from "@/hooks/query/auth";
+import { hasActionPermission } from "@/lib/utils";
 
 const getSumOfBillingItem = (item: InvoiceBillingItem) => {
   return item.invoiceBillingItems.reduce((sum, item) => sum + item.total, 0);
@@ -335,6 +337,7 @@ const InvoiceDetails = () => {
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
   });
+  const { data: profile } = useProfile(false);
   const { mutateAsync, isPending } = useUpdateInvoice();
   const router = useRouter();
 
@@ -391,10 +394,38 @@ const InvoiceDetails = () => {
 
   if (!data) return <div />;
 
+  const permissionModule = data.opd
+    ? ModuleType.OPD_BILL
+    : data.ipd
+      ? ModuleType.IPD_BILL
+      : undefined;
+
+  const canViewInvoice =
+    profile && permissionModule
+      ? hasActionPermission(profile.data, permissionModule, ActionType.VIEW)
+      : false;
+  const canUpdateInvoice =
+    profile && permissionModule
+      ? hasActionPermission(profile.data, permissionModule, ActionType.UPDATE)
+      : false;
+  const canPrintInvoice =
+    profile && permissionModule
+      ? hasActionPermission(profile.data, permissionModule, ActionType.PRINT)
+      : false;
+
+  if (!canViewInvoice) {
+    return <div />;
+  }
+
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full">
+        <form
+          onSubmit={
+            canUpdateInvoice ? form.handleSubmit(onSubmit) : (event) => event.preventDefault()
+          }
+          className="h-full"
+        >
           <div className="w-full border flex items-center justify-between px-2 py-2 bg-white">
             <div className="flex gap-2">
               <CustomActionDropdown
@@ -406,25 +437,33 @@ const InvoiceDetails = () => {
                         label: "Transaction History",
                         onClick: () => setTransactionsOpen(true),
                       },
-                      {
-                        label: "Add Transaction",
-                        onClick: () => setPaymentModalOpen(true),
-                      },
+                      ...(canUpdateInvoice
+                        ? [
+                            {
+                              label: "Add Transaction",
+                              onClick: () => setPaymentModalOpen(true),
+                            },
+                          ]
+                        : []),
                     ],
                   },
                 ]}
                 align="start"
                 triggerLabel="Payment"
               />
-              <CustomButton disabled={isPending} type="submit">
-                Save Invoice
-              </CustomButton>
-              <CustomButton
-                type="button"
-                onClick={() => setPreviewInvoiceOpen(true)}
-              >
-                Preview Invoice
-              </CustomButton>
+              {canUpdateInvoice && (
+                <CustomButton disabled={isPending} type="submit">
+                  Save Invoice
+                </CustomButton>
+              )}
+              {canPrintInvoice && (
+                <CustomButton
+                  type="button"
+                  onClick={() => setPreviewInvoiceOpen(true)}
+                >
+                  Preview Invoice
+                </CustomButton>
+              )}
               <CustomButton
                 type="button"
                 onClick={() => router.push("/opd/patients")}
@@ -506,6 +545,13 @@ const InvoiceDetails = () => {
         onOpenChange={setTransactionsOpen}
         patientName={`${data.opd?.patient.firstName} ${data.opd?.patient.lastName}`}
         data={data.transactions || []}
+        printModule={
+          data.opd
+            ? ModuleType.OPD_BILL
+            : data.ipd
+              ? ModuleType.IPD_BILL
+              : undefined
+        }
         trigger={<div />}
       />
       <AddPaymentModal
@@ -514,12 +560,14 @@ const InvoiceDetails = () => {
         billId={data.id}
         trigger={<div />}
       />
-      <ViewInvoiceModal
-        invoiceId={data.id}
-        open={previewInvoiceOpen}
-        onOpenChange={setPreviewInvoiceOpen}
-        trigger={<div />}
-      />
+      {canPrintInvoice && (
+        <ViewInvoiceModal
+          invoiceId={data.id}
+          open={previewInvoiceOpen}
+          onOpenChange={setPreviewInvoiceOpen}
+          trigger={<div />}
+        />
+      )}
     </>
   );
 };

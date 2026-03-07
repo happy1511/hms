@@ -3,8 +3,16 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
+import PermissionsSection from "@/components/user/PermissionsSection";
+import UserProfileFields from "@/components/user/UserProfileFields";
 import { Form } from "@/components/ui/form";
-import { Days, DoctorType, NameTitle, Status } from "@/generated/prisma/enums";
+import {
+  Days,
+  DoctorType,
+  Gender,
+  NameTitle,
+  Status,
+} from "@/generated/prisma/enums";
 import {
   useCreateDoctor,
   useGetDoctor,
@@ -27,33 +35,78 @@ const getInitialValues = (
 ): DoctorValidatorType => {
   if (data) {
     return {
-      ...data,
       title: data.user.title,
-      name: data.user.name,
+      firstName: data.user.firstName,
+      middleName: data.user.middleName || "",
+      lastName: data.user.lastName,
+      preferredName: data.user.preferredName,
+      gender: data.user.gender,
+      dob: data.user.dob ? new Date(data.user.dob) : undefined,
+      maritalStatus: data.user.maritalStatus || undefined,
+      address: data.user.address || "",
+      city: data.user.city || "",
+      country: data.user.country || "",
+      state: data.user.state || "",
+      postcode: data.user.postcode || "",
+      contactNumber: data.user.contactNumber,
+      email: data.user.email || data.email || "",
+      identityType: data.user.identityType || undefined,
+      identityNumber: data.user.identityNumber || "",
+      education: data.user.education || "",
+      qualifications: data.user.qualifications || data.qualifications || "",
+      department: data.user.department || data.department || "",
       password: data.user.password,
       status: data.user.status,
+      licenseNumber: data.licenseNumber || "",
+      doctorType: data.doctorType,
+      specialization: data.specialization || "",
+      yearsExperience: data.yearsExperience || 0,
+      designation: data.designation || "",
+      emergencyContact: data.emergencyContact || "",
+      consultationStartingTime: data.consultationStartingTime || "",
+      consultationEndingTime: data.consultationEndingTime || "",
+      availableDays: (data.availableDays || []) as DoctorValidatorType["availableDays"],
       permissions: data.user.permissions,
     };
-  } else {
-    return {
-      name: "",
-      password: "",
-      title: NameTitle["DR"],
-      status: Status["active"],
-      licenseNumber: "",
-      doctorType: DoctorType["consulting"],
-      email: "",
-      phoneNumber: "",
-      qualifications: "",
-      specialization: "",
-      yearsExperience: 0,
-      availableDays: Object.values(Days).flatMap((d) => ({
-        available: false,
-        day: d,
-      })),
-      permissions,
-    };
   }
+
+  return {
+    title: NameTitle["DR"],
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    preferredName: "",
+    gender: Gender["Other"],
+    dob: undefined,
+    maritalStatus: undefined,
+    address: "",
+    city: "",
+    country: "",
+    state: "",
+    postcode: "",
+    contactNumber: "",
+    email: "",
+    identityType: undefined,
+    identityNumber: "",
+    education: "",
+    qualifications: "",
+    department: "",
+    password: "",
+    status: Status["active"],
+    licenseNumber: "",
+    doctorType: DoctorType["consulting"],
+    specialization: "",
+    yearsExperience: 0,
+    designation: "",
+    emergencyContact: "",
+    consultationStartingTime: "",
+    consultationEndingTime: "",
+    availableDays: Object.values(Days).map((day) => ({
+      available: false,
+      day,
+    })),
+    permissions,
+  };
 };
 
 const UpdateCreateForm = ({
@@ -68,12 +121,12 @@ const UpdateCreateForm = ({
 
   const form = useForm<DoctorValidatorType>({
     defaultValues: getInitialValues(permissions, data),
-    resolver: zodResolver(doctorValidator),
+    resolver: zodResolver(doctorValidator) as any,
   });
   const selectedDoctorType = form.watch("doctorType");
   const isConsulting = selectedDoctorType === DoctorType.consulting;
 
-  const onSubmit = (values: DoctorValidatorType) => {
+  const onSubmit = (values: any) => {
     if (data) {
       update({ userId: Number(data.userId), ...values });
     } else {
@@ -83,14 +136,11 @@ const UpdateCreateForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit as any)}>
         <div className="grid grid-cols-2 gap-x-2">
-          <FormField<DoctorValidatorType>
-            label="Name"
-            type="text"
-            name="name"
-            control={form.control}
-            required
+          <UserProfileFields
+            control={form.control as any}
+            contactNumberReadOnly={Boolean(data)}
           />
           <FormField<DoctorValidatorType>
             label="License Number"
@@ -107,13 +157,6 @@ const UpdateCreateForm = ({
             required={isConsulting}
           />
           <FormField<DoctorValidatorType>
-            label="Qualification"
-            type="text"
-            name="qualifications"
-            control={form.control}
-            required={isConsulting}
-          />
-          <FormField<DoctorValidatorType>
             label="Experience (years)"
             type="number"
             name="yearsExperience"
@@ -124,18 +167,12 @@ const UpdateCreateForm = ({
             label="Doctor Type"
             type="select"
             name="doctorType"
-            options={Object.values(DoctorType).flatMap((d) => ({
+            options={Object.values(DoctorType).map((d) => ({
               value: d,
               label: d,
             }))}
             control={form.control}
             required
-          />
-          <FormField<DoctorValidatorType>
-            label="Department"
-            type="text"
-            name="department"
-            control={form.control}
           />
           <FormField<DoctorValidatorType>
             label="Designation"
@@ -158,20 +195,6 @@ const UpdateCreateForm = ({
             required={isConsulting}
           />
           <FormField<DoctorValidatorType>
-            label="Email"
-            type="email"
-            name="email"
-            control={form.control}
-            required={isConsulting}
-          />
-          <FormField<DoctorValidatorType>
-            label="Phone Number"
-            type="text"
-            name="phoneNumber"
-            control={form.control}
-            required={isConsulting}
-          />
-          <FormField<DoctorValidatorType>
             label="Emergency Contact No"
             type="text"
             name="emergencyContact"
@@ -180,7 +203,7 @@ const UpdateCreateForm = ({
           />
           <FormField<DoctorValidatorType>
             label="Password"
-            type="text"
+            type="password"
             name="password"
             control={form.control}
             required={isConsulting}
@@ -207,22 +230,10 @@ const UpdateCreateForm = ({
               ))}
             </div>
           </div>
-          {permissions?.map(({ module, actions }, moduleIndex) => (
-            <div key={module.id} className="col-span-2 gap-1">
-              <h3 className="text-tiny">{module.name}</h3>
-              <div className="flex items-center gap-2">
-                {actions.map((action, actionIndex) => (
-                  <FormField
-                    type="checkbox"
-                    key={action.id}
-                    control={form.control}
-                    name={`permissions.${moduleIndex}.actions.${actionIndex}.assigned`}
-                    label={action.name}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+          <PermissionsSection
+            control={form.control}
+            permissions={permissions as any}
+          />
         </div>
         <CustomButton disabled={creating || updating} type="submit">
           Submit

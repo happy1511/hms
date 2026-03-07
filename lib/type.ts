@@ -6,6 +6,9 @@
 import {
   ActionType,
   DoctorType,
+  Gender,
+  IdentityType,
+  MaritalStatus,
   ModuleType,
   NameTitle,
   PathologyOrderStatus,
@@ -238,7 +241,7 @@ export interface FilterValues {
   name?: string;
   status?: string;
   nonOccupied?: boolean;
-  createdAt?: string;
+  createdAt?: string | { from?: Date; to?: Date };
   uhid?: string;
   contactNo?: string;
   doctorType?: DoctorType;
@@ -378,6 +381,25 @@ export interface User {
   name: string;
   title: NameTitle;
   loginId: string;
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+  preferredName: string;
+  gender: Gender;
+  dob?: string | Date | null;
+  maritalStatus?: MaritalStatus | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  contactNumber: string;
+  email?: string | null;
+  identityType?: IdentityType | null;
+  identityNumber?: string | null;
+  education?: string | null;
+  qualifications?: string | null;
+  department?: string | null;
   password: string;
   userName: string;
   status: Status;
@@ -391,25 +413,42 @@ export interface Doctor extends Pick<
   | "permissions"
   | "status"
   | "loginId"
+  | "title"
   | "createdAt"
   | "updatedAt"
   | "name"
+  | "firstName"
+  | "middleName"
+  | "lastName"
+  | "preferredName"
+  | "gender"
+  | "dob"
+  | "maritalStatus"
+  | "address"
+  | "city"
+  | "country"
+  | "state"
+  | "postcode"
+  | "contactNumber"
+  | "email"
+  | "identityType"
+  | "identityNumber"
+  | "education"
+  | "qualifications"
+  | "department"
   | "password"
 > {
   user: User;
   userId: string;
   licenseNumber: string;
   specialization: string;
-  qualifications: string;
   yearsExperience: number;
-  department: string;
   designation: string;
   doctorType: DoctorType;
-  email: string;
-  phoneNumber: string;
   emergencyContact: string;
   consultationStartingTime: string;
   consultationEndingTime: string;
+  availableDays?: { day: string; available: boolean }[];
 }
 
 type PatientAddress = Prisma.PatientAddressGetPayload<{
@@ -1124,4 +1163,5 @@ export interface DashboardType {
     name: string;
     total: number;
   }[];
+  expense: number;
 }

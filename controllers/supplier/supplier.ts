@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   partialSupplierValidator,
   supplierValidator,
@@ -96,13 +96,19 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: supplierValidator,
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
-        const data = await tx.drugSupplier.create({ data: body });
+        const data = await tx.drugSupplier.create({
+          data: {
+            ...body,
+            createdBy: user.id ,
+            updatedBy: user.id ,
+          },
+        });
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Supplier Created Successfully",
@@ -116,6 +122,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { supplierId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialSupplierValidator,
@@ -140,7 +147,10 @@ export const updateAPI = async (
 
         const updatedSupplier = await tx.drugSupplier.update({
           where: { id: supplierId },
-          data: rest,
+          data: {
+            ...rest,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -156,6 +166,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { supplierId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialSupplierValidator,
@@ -177,7 +188,11 @@ export const deleteAPI = async (
 
         await tx.drugSupplier.update({
           where: { id: data.supplierId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -189,3 +204,4 @@ export const deleteAPI = async (
     },
   });
 };
+

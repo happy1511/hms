@@ -11,7 +11,7 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["OPD_BILL"], action: ActionType["VIEW"] }],
+      [{ module: ModuleType.CONSULTATION_FILE, action: ActionType["VIEW"] }],
       (req, user) =>
         getConsultationAPI(req, { params: { opdId: Number(opdId) } }, user),
     ),

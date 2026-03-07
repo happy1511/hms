@@ -19,7 +19,12 @@ const createAppointment = createRequest<ApiResponse<AppointmentWithPatient>>(
 
 const getAppointments = createRequest<
   PaginatedResponse<AppointmentWithPatient>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(APPOINTMENTS, "GET");
 
 export const useAppointmentsList = (

@@ -3,8 +3,10 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import FormField from "@/components/form-inputs/FormField";
+import PermissionsSection from "@/components/user/PermissionsSection";
+import UserProfileFields from "@/components/user/UserProfileFields";
 import { Form } from "@/components/ui/form";
-import { NameTitle, Status } from "@/generated/prisma/enums";
+import { Gender, NameTitle, Status } from "@/generated/prisma/enums";
 import { usePermissionsList } from "@/hooks/query/permission";
 import { useCreateUser, useGetUser, useUpdateUser } from "@/hooks/query/user";
 import { User } from "@/lib/type";
@@ -23,23 +25,57 @@ const getInitialValues = (
 ): UserValidatorType => {
   if (data) {
     return {
-      name: data.name,
-      password: data.password,
       title: data.title,
+      firstName: data.firstName,
+      middleName: data.middleName || "",
+      lastName: data.lastName,
+      preferredName: data.preferredName,
+      gender: data.gender,
+      dob: data.dob ? new Date(data.dob) : undefined,
+      maritalStatus: data.maritalStatus || undefined,
+      address: data.address || "",
+      city: data.city || "",
+      country: data.country || "",
+      state: data.state || "",
+      postcode: data.postcode || "",
+      contactNumber: data.contactNumber,
+      email: data.email || "",
+      identityType: data.identityType || undefined,
+      identityNumber: data.identityNumber || "",
+      education: data.education || "",
+      qualifications: data.qualifications || "",
+      department: data.department || "",
+      password: data.password,
       status: data.status,
-      loginId: data.loginId,
-      permissions,
-    };
-  } else {
-    return {
-      name: "",
-      loginId: "",
-      password: "",
-      title: NameTitle["MR"],
-      status: Status["active"],
       permissions,
     };
   }
+
+  return {
+    title: NameTitle["MR"],
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    preferredName: "",
+    gender: Gender["Other"],
+    dob: undefined,
+    maritalStatus: undefined,
+    address: "",
+    city: "",
+    country: "",
+    state: "",
+    postcode: "",
+    contactNumber: "",
+    email: "",
+    identityType: undefined,
+    identityNumber: "",
+    education: "",
+    qualifications: "",
+    department: "",
+    password: "",
+    status: Status["active"],
+    permissions,
+  };
 };
 
 const UpdateCreateForm = ({
@@ -54,7 +90,7 @@ const UpdateCreateForm = ({
 
   const form = useForm<UserValidatorType>({
     defaultValues: getInitialValues(permissions, data),
-    resolver: zodResolver(userValidator),
+    resolver: zodResolver(userValidator) as any,
   });
 
   const onSubmit = (values: UserValidatorType) => {
@@ -67,37 +103,15 @@ const UpdateCreateForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit as any)}>
         <div className="grid grid-cols-2 gap-x-2">
-          <FormField<UserValidatorType>
-            label="Title"
-            type="select"
-            name="title"
-            control={form.control}
-            options={Object.keys(NameTitle).map((t) => ({
-              value: t,
-              label: t,
-            }))}
-            required
-          />
-          <FormField<UserValidatorType>
-            label="Name"
-            type="text"
-            name="name"
-            control={form.control}
-            required
-          />
-          <FormField<UserValidatorType>
-            label="Access Code (Phone)"
-            type="text"
-            name="loginId"
-            control={form.control}
-            required
-            readOnly={Boolean(data)}
+          <UserProfileFields
+            control={form.control as any}
+            contactNumberReadOnly={Boolean(data)}
           />
           <FormField<UserValidatorType>
             label="Password"
-            type="text"
+            type="password"
             name="password"
             control={form.control}
             required
@@ -110,22 +124,10 @@ const UpdateCreateForm = ({
             control={form.control}
             required
           />
-          {permissions?.map(({ module, actions }, moduleIndex) => (
-            <div key={module.id} className="col-span-2 gap-1">
-              <h3 className="text-tiny">{module.name}</h3>
-              <div className="flex items-center gap-2">
-                {actions.map((action, actionIndex) => (
-                  <FormField
-                    type="checkbox"
-                    key={action.id}
-                    control={form.control}
-                    name={`permissions.${moduleIndex}.actions.${actionIndex}.assigned`}
-                    label={action.name}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+          <PermissionsSection
+            control={form.control}
+            permissions={permissions as any}
+          />
         </div>
         <CustomButton disabled={creating || updating} type="submit">
           Submit

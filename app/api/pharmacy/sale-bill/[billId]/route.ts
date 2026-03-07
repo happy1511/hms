@@ -44,7 +44,7 @@ export async function DELETE(
     checkPermission(
       request,
       [{ module: ModuleType.PHARMACY_SALE_BILL, action: ActionType.DELETE }],
-      (req) => deleteAPI(req, { params: p }),
+      (req, user) => deleteAPI(req, { params: p }, user),
     ),
   );
 }

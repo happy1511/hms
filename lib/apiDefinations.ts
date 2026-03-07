@@ -4,6 +4,7 @@
 export const LOGIN = "/auth/login";
 export const LOGOUT = "/auth/logout";
 export const PROFILE = "/auth/profile";
+export const CHANGE_PASSWORD = "/auth/change-password";
 
 // ----------------------------------
 // ---PERMISSIONS ENDPOINTS----------
@@ -143,3 +144,5 @@ export const IPD_DISCHARGE = "/ipd/discharge-patient";
 export const INVOICE_TRANSACTION = "/invoice/transaction";
 export const INVOICE = "/invoice";
 export const INVOICE_BILLING_ITEM = "/invoice/billing-item";
+export const INCOME = "/income";
+export const EXPENSE = "/expense";

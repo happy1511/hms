@@ -32,19 +32,21 @@ const deleteBed = createRequest<ApiResponse<null>, undefined, { id: string }>(
 const getBed = createRequest<
   ApiResponse<BedGetPayload<{ include: { room: true } }>>,
   undefined,
-  { id: string }
+  { id: string; createdAt?: string | { from?: Date; to?: Date } }
 >((p) => `${BEDS}/${p.id}`, "GET");
 
 const getBeds = createRequest<
   PaginatedResponse<
     BedGetPayload<{
-      include: { room: { include: { roomType: { include: { department: true } } } } };
+      include: {
+        room: { include: { roomType: { include: { department: true } } } };
+      };
     }>
   >,
   {
     limit: number;
     name?: string;
-    createdAt?: string;
+    createdAt?: string | { from?: Date; to?: Date };
     status?: string;
     roomId?: string;
     roomTypeId?: string;
@@ -82,14 +84,18 @@ export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
   return useInfiniteQuery<
     PaginatedResponse<
       BedGetPayload<{
-        include: { room: { include: { roomType: { include: { department: true } } } } };
+        include: {
+          room: { include: { roomType: { include: { department: true } } } };
+        };
       }>
     >,
     AxiosError<ApiResponse<null>>,
     InfiniteData<
       PaginatedResponse<
         BedGetPayload<{
-          include: { room: { include: { roomType: { include: { department: true } } } } };
+          include: {
+            room: { include: { roomType: { include: { department: true } } } };
+          };
         }>
       >
     >,

@@ -16,12 +16,22 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+type UseCreateIpdOptions = {
+  navigateBackOnSuccess?: boolean;
+  onSuccess?: (data: ApiResponse<IPDType>) => void;
+};
+
 const createIpd = createRequest<ApiResponse<IPDType>>(IPD, "POST");
 const dischargeIpd = createRequest<ApiResponse<IPDType>>(IPD_DISCHARGE, "PUT");
 
 const getIPDs = createRequest<
   PaginatedResponse<IPDType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(IPD, "GET");
 
 export const useIpdList = (
@@ -59,7 +69,7 @@ export const useIpdList = (
   });
 };
 
-export const useCreateIpd = () => {
+export const useCreateIpd = (options?: UseCreateIpdOptions) => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
@@ -69,12 +79,15 @@ export const useCreateIpd = () => {
   >({
     mutationKey: ["create-ipd"],
     mutationFn: (data) => createIpd({ body: data }),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success("IPD Created Successfully");
       queryClient.invalidateQueries({
         queryKey: ["ipds"],
       });
-      router.back();
+      options?.onSuccess?.(response);
+      if (options?.navigateBackOnSuccess !== false) {
+        router.back();
+      }
     },
     onError: showError,
   });

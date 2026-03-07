@@ -10,6 +10,8 @@ export async function GET(request: Request) {
       [
         { module: ModuleType["DOCTOR_MASTER"], action: ActionType["VIEW"] },
         { module: ModuleType["APPOINTMENT"], action: ActionType["CREATE"] },
+        { module: ModuleType["APPOINTMENT"], action: ActionType["UPDATE"] },
+        { module: ModuleType["APPOINTMENT"], action: ActionType["VIEW"] },
         { module: ModuleType["OPD_BILL"], action: ActionType["CREATE"] },
         { module: ModuleType["OPD_BILL"], action: ActionType["UPDATE"] },
         { module: ModuleType["OPD_BILL"], action: ActionType["VIEW"] },
@@ -19,6 +21,14 @@ export async function GET(request: Request) {
         {
           module: ModuleType["PHARMACY_SALE_BILL"],
           action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["VIEW"],
         },
       ],
       () => getAPI(request),
@@ -31,7 +41,7 @@ export async function POST(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["DOCTOR_MASTER"], action: ActionType["CREATE"] }],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   locationValidator,
   partialLocationValidator,
@@ -67,14 +67,18 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: locationValidator,
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const location = await tx.location.create({
-          data: body,
+          data: {
+            ...body,
+            createdBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -87,7 +91,7 @@ export const createAPI = async (req: Request) => {
   });
 };
 
-export const updateAPI = async (req: Request) => {
+export const updateAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialLocationValidator,
     req,
@@ -110,6 +114,7 @@ export const updateAPI = async (req: Request) => {
           where: { id: data.id },
           data: {
             ...body,
+            updatedBy: user.id ,
           },
         });
 
@@ -123,7 +128,7 @@ export const updateAPI = async (req: Request) => {
   });
 };
 
-export const deleteAPI = async (req: Request) => {
+export const deleteAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialLocationValidator,
     req,
@@ -143,7 +148,11 @@ export const deleteAPI = async (req: Request) => {
 
         await tx.location.update({
           where: { id: data.id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -155,3 +164,4 @@ export const deleteAPI = async (req: Request) => {
     },
   });
 };
+

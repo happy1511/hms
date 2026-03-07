@@ -1,4 +1,5 @@
-import { useForm, FieldValues, Path } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, FieldValues, Path, DefaultValues } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
 import { FormInput } from "../form-inputs/FormInput";
@@ -8,24 +9,41 @@ import { FormDateRangePicker } from "../form-inputs/FormDateRange";
 import { Label } from "../ui/label";
 import CustomButton from "./CustomButton";
 import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
+import { cn } from "@/lib/utils";
 
 interface CustomFiltersProps<T extends FieldValues> {
   filters: FilterConfig<T>[];
   onSubmit: (values: T) => void;
+  defaultValues?: DefaultValues<T>;
+  className?: string;
+  filtersContainerClassName?: string;
+  actionsContainerClassName?: string;
 }
 
 const CustomFilters = <T extends FieldValues>({
   filters,
   onSubmit,
+  defaultValues,
+  className,
+  filtersContainerClassName,
+  actionsContainerClassName,
 }: CustomFiltersProps<T>) => {
   const form = useForm<T>({
     mode: "onSubmit",
+    defaultValues,
   });
 
-  const handleReset = () => {
-    const defaultValues = {} as T;
-    form.reset(defaultValues);
-    onSubmit(defaultValues);
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
+
+  const handleReset = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const clearedValues = {} as DefaultValues<T>;
+    form.reset(clearedValues);
+    onSubmit(clearedValues as T);
   };
 
   const renderFilter = (filter: FilterConfig<T>) => {
@@ -154,15 +172,20 @@ const CustomFilters = <T extends FieldValues>({
       <form
         onReset={handleReset}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="mb-3"
+        className={cn("mb-3", className)}
       >
-        <div className="grid gap-2 grid-cols-3 mb-2">
+        <div
+          className={cn(
+            "grid gap-2 grid-cols-3 mb-2",
+            filtersContainerClassName,
+          )}
+        >
           {filters.map((filter) => (
             <div key={String(filter.valueKey)}>{renderFilter(filter)}</div>
           ))}
         </div>
 
-        <div className="w-fit">
+        <div className={cn("w-fit", actionsContainerClassName)}>
           <div className="grid grid-cols-2 space-x-2">
             <CustomButton type="submit">Apply Filters</CustomButton>
 
@@ -171,7 +194,7 @@ const CustomFilters = <T extends FieldValues>({
               variant="outline"
               className="bg-white text-primary shadow-none"
             >
-              Reset Filters
+              Clear Filters
             </CustomButton>
           </div>
         </div>

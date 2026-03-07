@@ -294,6 +294,8 @@ export const createAPI = async (req: Request, user: User) => {
                   })),
             },
             createdAt: body.createdAt,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -303,6 +305,8 @@ export const createAPI = async (req: Request, user: User) => {
             patientId: body.patientId,
             doctorId: body.doctorId,
             invoiceId: invoice.id,
+            createdBy: user.id ,
+            updatedBy: user.id ,
             saleItems: {
               create: preparedItems,
             },
@@ -322,6 +326,7 @@ export const createAPI = async (req: Request, user: User) => {
               quantityInStock: {
                 decrement: quantity,
               },
+              updatedBy: user.id ,
             },
           });
         }
@@ -527,6 +532,7 @@ export const updateAPI = async (
             isFree,
             isPaid: !isFree && transactions.length > 0,
             billingType,
+            updatedBy: user.id ,
           },
         });
 
@@ -540,6 +546,7 @@ export const updateAPI = async (
             name: body.name ?? existingBill.name,
             patientId: body.patientId,
             doctorId: body.doctorId,
+            updatedBy: user.id ,
             saleItems: {
               create: preparedItems,
             },
@@ -553,7 +560,10 @@ export const updateAPI = async (
 
           await tx.inventoryItems.update({
             where: { id: inventoryId },
-            data: { quantityInStock: nextQty },
+            data: {
+              quantityInStock: nextQty,
+              updatedBy: user.id ,
+            },
           });
         }
 
@@ -586,6 +596,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { billId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialSaleBillValidator,
@@ -619,18 +630,27 @@ export const deleteAPI = async (
               quantityInStock: {
                 increment: quantity,
               },
+              updatedBy: user.id ,
             },
           });
         }
 
         await tx.invoice.update({
           where: { id: existingBill.invoiceId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         await tx.drugBill.update({
           where: { id: existingBill.id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -642,3 +662,4 @@ export const deleteAPI = async (
     },
   });
 };
+

@@ -40,7 +40,12 @@ const getDoctor = createRequest<ApiResponse<Doctor>, undefined, { id: string }>(
 
 const getDoctors = createRequest<
   PaginatedResponse<Doctor>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(DOCTORS, "GET");
 
 export const useDoctorsList = (

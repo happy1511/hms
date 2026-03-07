@@ -1,4 +1,8 @@
-import { Prisma, PurchaseOrderStatus } from "@/generated/prisma/client";
+import {
+  Prisma,
+  PurchaseOrderStatus,
+  User,
+} from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -55,7 +59,7 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: grnValidator,
     req,
@@ -92,6 +96,8 @@ export const createAPI = async (req: Request) => {
             data: {
               supplierId: body.supplier.id,
               status: PurchaseOrderStatus.draft,
+              createdBy: user.id ,
+              updatedBy: user.id ,
             },
           });
 
@@ -127,6 +133,8 @@ export const createAPI = async (req: Request) => {
         const data = await tx.gRN.create({
           data: {
             orderId: resolvedOrderId,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -154,6 +162,7 @@ export const createAPI = async (req: Request) => {
                 mrp: i.mrp,
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
+                updatedBy: user.id ,
               },
             });
             inventoryItemId = updatedInventory.id;
@@ -170,6 +179,8 @@ export const createAPI = async (req: Request) => {
                 wholeSalePrice: i.wholeSalePrice,
                 quantityInStock: i.quantity,
                 supplierId: supplierId!,
+                createdBy: user.id ,
+                updatedBy: user.id ,
               },
             });
             inventoryItemId = newInventory.id;
@@ -198,6 +209,7 @@ export const createAPI = async (req: Request) => {
           data: {
             grnId: data.id,
             status: PurchaseOrderStatus.received,
+            updatedBy: user.id ,
           },
         });
 
@@ -210,3 +222,4 @@ export const createAPI = async (req: Request) => {
     },
   });
 };
+

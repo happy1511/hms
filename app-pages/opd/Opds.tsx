@@ -1,5 +1,8 @@
 "use client";
-import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import CustomActionDropdown, {
+  DropdownItem,
+} from "@/components/common/CustomActionDropdown";
+import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
@@ -24,7 +27,7 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { format } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -43,11 +46,72 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   );
 };
 
-const Actions = ({ data }: { data: OPDType }) => {
+const Actions = ({
+  canPrint,
+  canUpdate,
+  data,
+}: {
+  canPrint: boolean;
+  canUpdate: boolean;
+  data: OPDType;
+}) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const [addVitalsModal, setAddVitalsModal] = useState(false);
+  const [confirmNewOpdOpen, setConfirmNewOpdOpen] = useState(false);
+  const [confirmAddToIpdOpen, setConfirmAddToIpdOpen] = useState(false);
   const router = useRouter();
+  const invoiceItems: DropdownItem[] = [
+    {
+      label: "View Invoice",
+      onClick: () => router.push(`/invoice/${data.invoice.id}`),
+    },
+  ];
+
+  if (canUpdate) {
+    invoiceItems.unshift({
+      label: "Add Invoice Item",
+      onClick: () => setAddInvoiceItemModal(true),
+    });
+  }
+
+  if (canPrint) {
+    invoiceItems.push({
+      label: "Print Invoice",
+      onClick: () => setViewInvoiceModal(true),
+    });
+  }
+
+  const opdItems: DropdownItem[] = [
+    {
+      label: "View Consultation File",
+      onClick: () => router.push(`/opd/consultation/${data.id}`),
+    },
+  ];
+
+  if (canUpdate) {
+    opdItems.unshift(
+      {
+        label: "Create New OPD",
+        onClick: () => setConfirmNewOpdOpen(true),
+      },
+      {
+        label: "Add to IPD",
+        onClick: () => setConfirmAddToIpdOpen(true),
+      },
+      {
+        label: "Vitals",
+        onClick: () => setAddVitalsModal(true),
+      },
+    );
+  }
+
+  if (canPrint) {
+    opdItems.push({
+      label: "Print Consult Page",
+      onClick: () => window.open(`/opd/consultation-print/${data.id}`, "_blank"),
+    });
+  }
 
   return (
     <>
@@ -55,44 +119,14 @@ const Actions = ({ data }: { data: OPDType }) => {
         triggerLabel="Actions"
         groups={[
           {
-            items: [
-              {
-                label: "Add Invoice Item",
-                onClick: () => setAddInvoiceItemModal(true),
-              },
-              {
-                label: "View Invoice",
-                onClick: () => router.push(`/invoice/${data.invoice.id}`),
-              },
-              {
-                label: "Print Invoice",
-                onClick: () => setViewInvoiceModal(true),
-              },
-            ],
+            items: invoiceItems,
             label: "Invoice",
           },
           {
-            items: [
-              {
-                label: "Create New OPD",
-                onClick: () => router.push(`/opd/bill/${data.patient.id}`),
-              },
-              {
-                label: "Add to IPD",
-                onClick: () => router.push(`/ipd/bill/${data.patient.id}`),
-              },
-              {
-                label: "Vitals",
-                onClick: () => setAddVitalsModal(true),
-              },
-              {
-                label: "View Consultation File",
-                onClick: () => router.push(`/opd/consultation/${data.id}`),
-              },
-            ],
+            items: opdItems,
             label: "OPD",
           },
-        ]}
+        ].filter((group) => group.items.length > 0)}
       />
       <AddInvoiceItemModal
         billId={data.invoice.id}
@@ -115,6 +149,30 @@ const Actions = ({ data }: { data: OPDType }) => {
         onOpenChange={setViewInvoiceModal}
         trigger={<div />}
       />
+      <CustomAlert
+        open={confirmNewOpdOpen}
+        onOpenChange={setConfirmNewOpdOpen}
+        triggerButton={<div />}
+        title="Create New OPD?"
+        description="Do you want to create a new OPD for this patient?"
+        cancelText="Cancel"
+        confirmText="Continue"
+        iconType="confirm"
+        confirmVariant="default"
+        handleConfirm={() => router.push(`/opd/bill/${data.patient.id}`)}
+      />
+      <CustomAlert
+        open={confirmAddToIpdOpen}
+        onOpenChange={setConfirmAddToIpdOpen}
+        triggerButton={<div />}
+        title="Create IPD?"
+        description="Do you want to convert this patient to IPD?"
+        cancelText="Cancel"
+        confirmText="Continue"
+        iconType="confirm"
+        confirmVariant="default"
+        handleConfirm={() => router.push(`/ipd/bill/${data.patient.id}`)}
+      />
     </>
   );
 };
@@ -122,7 +180,12 @@ const Actions = ({ data }: { data: OPDType }) => {
 const OPDs = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<FilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({
+    createdAt: {
+      from: startOfDay(new Date()),
+      to: endOfDay(new Date()),
+    },
+  });
   const [consultantValue, setConsultantValue] = useState("");
 
   const consultantQuery = useInfiniteDoctorList(
@@ -149,6 +212,16 @@ const OPDs = () => {
     profile?.data,
     ModuleType.OPD_BILL,
     ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile?.data,
+    ModuleType.OPD_BILL,
+    ActionType.UPDATE,
+  );
+  const canPrint = hasActionPermission(
+    profile?.data,
+    ModuleType.OPD_BILL,
+    ActionType.PRINT,
   );
 
   const columns: ColumnDefWithClass<OPDType>[] = [
@@ -284,6 +357,7 @@ const OPDs = () => {
             billId={row.original.id}
             patientName={`${row.original.patient.firstName} ${row.original.patient.lastName}`}
             data={row.original.invoice.transactions || []}
+            printModule={ModuleType.OPD_BILL}
             trigger={
               <div className="text-blue-400 hover:underline cursor-pointer">
                 Details
@@ -296,7 +370,13 @@ const OPDs = () => {
     {
       accessorKey: "action",
       header: "Actions",
-      cell: ({ row }) => <Actions data={row.original} />,
+      cell: ({ row }) => (
+        <Actions
+          canPrint={Boolean(canPrint)}
+          canUpdate={Boolean(canUpdate)}
+          data={row.original}
+        />
+      ),
     },
   ];
 
@@ -325,6 +405,8 @@ const OPDs = () => {
         <>
           <CustomFilters<FilterValues>
             filters={neededFilters}
+            defaultValues={filters}
+            filtersContainerClassName="grid-cols-2"
             onSubmit={setFilters}
           />
           <CustomTable

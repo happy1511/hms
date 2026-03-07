@@ -128,6 +128,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             total: rest.total,
             isFree: rest.isFree,
             isPaid: !rest.isFree && rest.total === 0 ? false : true,
+            updatedBy: user.id,
           },
         });
 
@@ -174,6 +175,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
                 discountType: item.discountType,
                 discountValue: item.discountValue,
                 total: item.total,
+                updatedBy: user.id,
               },
             });
           } else {
@@ -188,6 +190,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
                 discountType: item.discountType,
                 discountValue: item.discountValue,
                 total: item.total,
+                createdBy: user.id,
+                updatedBy: user.id,
               },
             });
           }
@@ -260,6 +264,8 @@ export const addItemAPI = async (req: Request, user: User) => {
             discountType: body.discountType,
             discountValue: body.discountValue,
             total: body.total,
+            createdBy: user.id,
+            updatedBy: user.id,
             createdAt: body.createdAt,
             invoiceId: body.id,
           },
@@ -284,6 +290,7 @@ export const addItemAPI = async (req: Request, user: User) => {
           data: {
             rate: subTotal,
             total: invoiceTotal,
+            updatedBy: user.id,
           },
         });
 
@@ -369,6 +376,7 @@ export const addTransactionAPI = async (req: Request, user: User) => {
         const updatedInvoice = await tx.invoice.update({
           where: { id: body.id },
           data: {
+            updatedBy: user.id,
             transactions: {
               create: [
                 {

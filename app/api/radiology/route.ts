@@ -40,7 +40,7 @@ export async function POST(request: Request) {
           action: ActionType["CREATE"],
         },
       ],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }
@@ -55,7 +55,7 @@ export async function DELETE(request: Request) {
           action: ActionType["DELETE"],
         },
       ],
-      () => deleteAPI(request),
+      (req, user) => deleteAPI(req, user),
     ),
   );
 }

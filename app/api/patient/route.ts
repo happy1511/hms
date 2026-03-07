@@ -16,6 +16,50 @@ export async function GET(request: Request) {
           module: ModuleType["OPD_BILL"],
           action: ActionType["CREATE"],
         },
+        {
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["APPOINTMENT"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["APPOINTMENT"],
+          action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["APPOINTMENT"],
+          action: ActionType["UPDATE"],
+        },
       ],
       () => getAPI(request),
     ),
@@ -32,7 +76,7 @@ export async function POST(request: Request) {
           action: ActionType["CREATE"],
         },
       ],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

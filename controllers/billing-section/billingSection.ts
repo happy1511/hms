@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   billingSectionValidator,
   partialBillingSectionValidator,
@@ -111,7 +111,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: billingSectionValidator,
     req,
@@ -137,6 +137,8 @@ export const createAPI = async (req: Request) => {
             name,
             description,
             status,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -153,6 +155,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { sectionId: number } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialBillingSectionValidator,
@@ -182,6 +185,7 @@ export const updateAPI = async (
             name,
             description,
             status,
+            updatedBy: user.id ,
           },
         });
 
@@ -198,6 +202,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { sectionId: number } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialBillingSectionValidator,
@@ -219,7 +224,11 @@ export const deleteAPI = async (
 
         await tx.billingSection.update({
           where: { id: data.sectionId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -231,3 +240,4 @@ export const deleteAPI = async (
     },
   });
 };
+

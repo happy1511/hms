@@ -98,18 +98,18 @@ const RadiologyTests = () => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.VIEW,
   );
 
   const canUpdate = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.UPDATE,
   );
   const canDelete = hasActionPermission(
     profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
+    ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.DELETE,
   );
 

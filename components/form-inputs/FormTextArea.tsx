@@ -12,6 +12,7 @@ import { useId } from "react";
 import { FieldValues, useWatch } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
 import { FormTextareaProps } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function FormTextarea<T extends FieldValues>({
   name,
@@ -23,6 +24,7 @@ export function FormTextarea<T extends FieldValues>({
   rows = 4,
   showCount = false,
   maxChar,
+  hideError,
 }: FormTextareaProps<T>) {
   const id = useId();
   const value = useWatch({ control, name }) ?? "";
@@ -35,7 +37,9 @@ export function FormTextarea<T extends FieldValues>({
       control={control}
       name={name}
       render={({ field, fieldState }) => (
-        <FormItem className="gap-1 relative pb-6 text-primary">
+        <FormItem
+          className={cn("text-primary relative", hideError ? "" : "pb-4 gap-1")}
+        >
           {label && (
             <FormLabel className="text-tiny gap-0 font-semibold font-quicksand">
               {label}
@@ -71,7 +75,9 @@ export function FormTextarea<T extends FieldValues>({
             </div>
           )}
 
-          <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
+          {!hideError && (
+            <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
+          )}
         </FormItem>
       )}
     />

@@ -27,7 +27,12 @@ const getUser = createRequest<ApiResponse<User>, undefined, { id: string }>(
 
 const getUsers = createRequest<
   PaginatedResponse<User>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(USERS, "GET");
 
 export const useUsersList = (
@@ -106,8 +111,11 @@ export const useUpdateUser = () => {
     mutationKey: ["update-user"],
     mutationFn: (data) =>
       updateUser({ body: data, urlHelpers: { id: data.id.toString() } }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success("User Updated Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["get-users", variables.id],
+      });
       queryClient.invalidateQueries({
         queryKey: ["users"],
       });

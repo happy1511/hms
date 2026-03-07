@@ -40,7 +40,12 @@ const getDepartment = createRequest<
 
 const getDepartments = createRequest<
   PaginatedResponse<Department>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(DEPARTMENTS, "GET");
 
 export const useDepartmentsList = (

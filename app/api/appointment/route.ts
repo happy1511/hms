@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["APPOINTMENT"], action: ActionType["CREATE"] }],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

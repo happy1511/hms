@@ -1,5 +1,8 @@
 "use client";
-import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import CustomActionDropdown, {
+  DropdownGroup,
+  DropdownItem,
+} from "@/components/common/CustomActionDropdown";
 import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
@@ -44,7 +47,17 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   );
 };
 
-const Actions = ({ data }: { data: IPDType }) => {
+const Actions = ({
+  canCreateDischarge,
+  canPrint,
+  canUpdate,
+  data,
+}: {
+  canCreateDischarge: boolean;
+  canPrint: boolean;
+  canUpdate: boolean;
+  data: IPDType;
+}) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [addPaymentModal, setAddPaymentModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
@@ -53,32 +66,41 @@ const Actions = ({ data }: { data: IPDType }) => {
   const { mutateAsync: dischargeIpd, isPending: dischargePending } =
     useDischargeIpd();
   const router = useRouter();
-
-  const actionsGroups = [
+  const invoiceItems: DropdownItem[] = [
     {
-      items: [
-        {
-          label: "Add Invoice Item",
-          onClick: () => setAddInvoiceItemModal(true),
-        },
-        {
-          label: "View Invoice",
-          onClick: () => router.push(`/invoice/${data.invoice.id}`),
-        },
-        {
-          label: "Add Payment",
-          onClick: () => setAddPaymentModal(true),
-        },
-        {
-          label: "Print Invoice",
-          onClick: () => setViewInvoiceModal(true),
-        },
-      ],
+      label: "View Invoice",
+      onClick: () => router.push(`/invoice/${data.invoice.id}`),
+    },
+  ];
+
+  if (canUpdate) {
+    invoiceItems.unshift(
+      {
+        label: "Add Invoice Item",
+        onClick: () => setAddInvoiceItemModal(true),
+      },
+      {
+        label: "Add Payment",
+        onClick: () => setAddPaymentModal(true),
+      },
+    );
+  }
+
+  if (canPrint) {
+    invoiceItems.push({
+      label: "Print Invoice",
+      onClick: () => setViewInvoiceModal(true),
+    });
+  }
+
+  const actionsGroups: DropdownGroup[] = [
+    {
+      items: invoiceItems,
       label: "Invoice",
     },
   ];
 
-  if (!data.isDischarged) {
+  if (!data.isDischarged && canCreateDischarge) {
     actionsGroups.push({
       items: [
         {
@@ -161,13 +183,28 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
 
   const canView = hasActionPermission(
     profile?.data,
-    ModuleType.IPD_BILL,
+    discharged ? ("DISCHARGE_PATIENT" as ModuleType) : ModuleType.IPD_BILL,
     ActionType.VIEW,
   );
 
   const canCreate = hasActionPermission(
     profile?.data,
     ModuleType.IPD_BILL,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile?.data,
+    ModuleType.IPD_BILL,
+    ActionType.UPDATE,
+  );
+  const canPrint = hasActionPermission(
+    profile?.data,
+    ModuleType.IPD_BILL,
+    ActionType.PRINT,
+  );
+  const canCreateDischarge = hasActionPermission(
+    profile?.data,
+    ModuleType.DISCHARGE_PATIENT,
     ActionType.CREATE,
   );
 
@@ -299,6 +336,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
             billId={row.original.id}
             patientName={`${row.original.patient.firstName} ${row.original.patient.lastName}`}
             data={row.original.invoice.transactions || []}
+            printModule={ModuleType.IPD_BILL}
             trigger={
               <div className="text-blue-400 hover:underline cursor-pointer">
                 Details
@@ -311,7 +349,14 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
     {
       accessorKey: "action",
       header: "Actions",
-      cell: ({ row }) => <Actions data={row.original} />,
+      cell: ({ row }) => (
+        <Actions
+          canCreateDischarge={Boolean(canCreateDischarge)}
+          canPrint={Boolean(canPrint)}
+          canUpdate={Boolean(canUpdate)}
+          data={row.original}
+        />
+      ),
     },
   ];
 

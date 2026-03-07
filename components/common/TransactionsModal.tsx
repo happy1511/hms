@@ -20,6 +20,7 @@ interface Props {
   data: Transaction[];
   patientName: string;
   billId: number;
+  printModule?: ModuleType;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
@@ -30,6 +31,7 @@ const TransactionsModal = ({
   data,
   open,
   onOpenChange,
+  printModule,
   trigger,
   patientName,
 }: Props) => {
@@ -39,11 +41,9 @@ const TransactionsModal = ({
     return <div />;
   }
 
-  const canPrint = hasActionPermission(
-    profile?.data,
-    ModuleType.INVOICE,
-    ActionType.PRINT,
-  );
+  const canPrint = printModule
+    ? hasActionPermission(profile?.data, printModule, ActionType.PRINT)
+    : false;
 
   const columns: ColumnDefWithClass<Transaction>[] = [
     {

@@ -2,11 +2,23 @@ import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
+import { paginationValidator } from "@/validators/api/common/pagination";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
+    querySchema: paginationValidator,
     req,
-    onSuccess: async () => {
+    onSuccess: async ({ query }) => {
+      const createdAtFrom = query["createdAt[from]"] ?? "";
+      const createdAtTo = query["createdAt[to]"] ?? "";
+      const createdAtFilter =
+        createdAtFrom || createdAtTo
+          ? {
+              ...(createdAtFrom && { gte: createdAtFrom }),
+              ...(createdAtTo && { lte: createdAtTo }),
+            }
+          : undefined;
+
       const [
         opdPatients,
         ipdPatients,
@@ -16,9 +28,19 @@ export const getAPI = async (req: Request) => {
         ipdCollection,
         transactionsByPaymentMode,
         sectionWiseBilling,
+        expenseTotal,
       ] = await prisma.$transaction([
-        prisma.opd.count(),
-        prisma.ipd.count({ where: { isDischarged: false } }),
+        prisma.opd.count({
+          where: {
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
+          },
+        }),
+        prisma.ipd.count({
+          where: {
+            isDischarged: false,
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
+          },
+        }),
         prisma.invoice.aggregate({
           _sum: { total: true },
           where: {
@@ -26,6 +48,7 @@ export const getAPI = async (req: Request) => {
             opd: {
               isNot: null,
             },
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
           },
         }),
         prisma.invoice.aggregate({
@@ -35,11 +58,13 @@ export const getAPI = async (req: Request) => {
             ipd: {
               isNot: null,
             },
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
           },
         }),
         prisma.transaction.aggregate({
           _sum: { amount: true },
           where: {
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
             invoice: {
               isDeleted: false,
               opd: { isNot: null },
@@ -49,6 +74,7 @@ export const getAPI = async (req: Request) => {
         prisma.transaction.aggregate({
           _sum: { amount: true },
           where: {
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
             invoice: {
               isDeleted: false,
               ipd: { isNot: null },
@@ -57,6 +83,12 @@ export const getAPI = async (req: Request) => {
         }),
         prisma.transaction.groupBy({
           by: ["mode"],
+          where: {
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
+            invoice: {
+              isDeleted: false,
+            },
+          },
           orderBy: {
             mode: "asc",
           },
@@ -70,8 +102,21 @@ export const getAPI = async (req: Request) => {
             id: true,
             name: true,
             invoiceBillingItems: {
+              where: {
+                invoice: {
+                  isDeleted: false,
+                  ...(createdAtFilter && { createdAt: createdAtFilter }),
+                },
+              },
               select: { total: true },
             },
+          },
+        }),
+        prisma.expense.aggregate({
+          _sum: { amount: true },
+          where: {
+            isDeleted: false,
+            ...(createdAtFilter && { dateTime: createdAtFilter }),
           },
         }),
       ]);
@@ -101,6 +146,7 @@ export const getAPI = async (req: Request) => {
               0,
             ),
           })),
+          expense: expenseTotal?._sum?.amount || 0,
         },
       });
     },

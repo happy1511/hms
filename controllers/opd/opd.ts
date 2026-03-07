@@ -245,10 +245,43 @@ export const getConsultationAPI = async (
           select: {
             id: true,
             createdAt: true,
+            patientId: true,
             patient: {
               select: {
+                id: true,
+                uhid: true,
                 firstName: true,
                 lastName: true,
+                gender: true,
+                contacts: {
+                  where: {
+                    type: {
+                      in: [ContactType.PHONE, ContactType.MOBILE],
+                    },
+                  },
+                  select: {
+                    type: true,
+                    value: true,
+                  },
+                },
+                addresses: {
+                  where: {
+                    type: AddressType.HOME,
+                  },
+                  select: {
+                    addressLineOne: true,
+                    addressLineTwo: true,
+                    addressLineThree: true,
+                    location: {
+                      select: {
+                        city: true,
+                        state: true,
+                        country: true,
+                        postcode: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             consultantDoctor: {
@@ -301,6 +334,38 @@ export const getConsultationAPI = async (
           },
         });
 
+        const previousOpds = consultation?.patientId
+          ? await tx.opd.findMany({
+              where: {
+                patientId: consultation.patientId,
+                id: { not: opdId },
+              },
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                createdAt: true,
+                advisedPathologyTests: {
+                  select: {
+                    test: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+                advisedRadiologyTests: {
+                  select: {
+                    test: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          : [];
+
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "Consultations Fetched Successfully",
@@ -322,6 +387,16 @@ export const getConsultationAPI = async (
             consultantDoctorName: consultation?.consultantDoctor?.user?.name,
             referringDoctorName: consultation?.referringDoctor?.user?.name,
             createdAt: consultation?.createdAt,
+            previousOpdHistory: previousOpds.map((opd) => ({
+              opdId: opd.id,
+              createdAt: opd.createdAt,
+              investigations: Array.from(
+                new Set([
+                  ...opd.advisedPathologyTests.map((item) => item.test.name),
+                  ...opd.advisedRadiologyTests.map((item) => item.test.name),
+                ]),
+              ),
+            })),
           },
         });
       });
@@ -536,6 +611,8 @@ export const createAPI = async (req: Request, user: User) => {
         const invoice = await tx.invoice.create({
           data: {
             ...rest,
+            createdBy: user.id,
+            updatedBy: user.id,
             billingItems: {
               create:
                 billingItems?.map((item) => ({
@@ -546,6 +623,8 @@ export const createAPI = async (req: Request, user: User) => {
                   discountType: item.discountType,
                   discountValue: item.discountValue,
                   total: item.total,
+                  createdBy: user.id,
+                  updatedBy: user.id,
                   createdAt: createdAt,
                 })) || [],
             },
@@ -565,6 +644,8 @@ export const createAPI = async (req: Request, user: User) => {
                 remarks: body.remarks,
                 consultantDoctorId: body.consultantDoctor.userId,
                 referringDoctorId: body.referredDoctor?.userId,
+                createdBy: user.id,
+                updatedBy: user.id,
                 createdAt: createdAt,
               },
             },
@@ -833,7 +914,7 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
   });
 };
 
-export const deleteQueueAPI = async (req: Request) => {
+export const deleteQueueAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialOpdValidator,
     req,
@@ -856,6 +937,7 @@ export const deleteQueueAPI = async (req: Request) => {
           where: { id: body.opdId },
           data: {
             isInQueue: false,
+            updatedBy: user.id,
           },
         });
 

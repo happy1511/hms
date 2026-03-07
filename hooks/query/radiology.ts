@@ -76,11 +76,21 @@ const deleteRadiologyTemplate = createRequest<ApiResponse<null>>(
 
 const getRadiologyTests = createRequest<
   PaginatedResponse<RadiologyTest>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(RADIOLOGY, "GET");
 const getRadiologyTemplates = createRequest<
   PaginatedResponse<RadiologyTemplate>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(RADIOLOGY_TEMPLATE, "GET");
 const getRadiologyTemplateDetails = createRequest<
   ApiResponse<
@@ -95,7 +105,12 @@ const getRadiologyOrderTemplate = createRequest<
 >(RADIOLOGY_ORDER_TEMPLATE, "GET");
 const getRadiologyOrders = createRequest<
   PaginatedResponse<RadiologyOrderByPatientsType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(RADIOLOGY_ORDERS, "GET");
 const getCompletedRadiologyOrdersWithResults = createRequest<
   ApiResponse<RadiologyTestOrderWithResults[]>,

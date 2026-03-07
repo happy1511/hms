@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 import {
   drugBillingCategoryValidator,
   partialDrugBillingCategoryValidator,
@@ -95,13 +95,19 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: drugBillingCategoryValidator,
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
-        const data = await tx.drugBillingCategory.create({ data: body });
+        const data = await tx.drugBillingCategory.create({
+          data: {
+            ...body,
+            createdBy: user.id ,
+            updatedBy: user.id ,
+          },
+        });
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Category Created Successfully",
@@ -115,6 +121,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { categoryId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialDrugBillingCategoryValidator,
@@ -139,7 +146,10 @@ export const updateAPI = async (
 
         const updatedCategory = await tx.drugBillingCategory.update({
           where: { id: categoryId },
-          data: rest,
+          data: {
+            ...rest,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -155,6 +165,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { categoryId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialDrugBillingCategoryValidator,
@@ -176,7 +187,11 @@ export const deleteAPI = async (
 
         await tx.drugBillingCategory.update({
           where: { id: data.categoryId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -188,3 +203,4 @@ export const deleteAPI = async (
     },
   });
 };
+

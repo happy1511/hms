@@ -10,13 +10,18 @@ import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { hasActionPermission } from "@/lib/utils";
 import { useParams } from "next/navigation";
+import OpdConsultationHistory from "./OpdConsultationHistory";
 
 const OpdConsultation = () => {
   const { opdId }: { opdId?: string } = useParams();
   const { data: profile } = useProfile(false);
 
   const canPrint = profile
-    ? hasActionPermission(profile.data, ModuleType.OPD_BILL, ActionType.PRINT)
+    ? hasActionPermission(
+        profile.data,
+        "CONSULTATION_FILE" as ModuleType,
+        ActionType.PRINT,
+      )
     : false;
 
   const tabs = [
@@ -34,6 +39,11 @@ const OpdConsultation = () => {
       value: "radiology-tests",
       name: "Radiology Tests",
       content: <AdvisedRadiologyTestResults />,
+    },
+    {
+      value: "previous-history",
+      name: "Previous History",
+      content: <OpdConsultationHistory />,
     },
   ];
 

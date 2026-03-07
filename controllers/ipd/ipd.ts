@@ -329,6 +329,8 @@ export const createAPI = async (req: Request, user: User) => {
         const invoice = await tx.invoice.create({
           data: {
             ...rest,
+            createdBy: user.id,
+            updatedBy: user.id,
             billingItems: {
               create:
                 billingItems?.map((item) => ({
@@ -339,6 +341,8 @@ export const createAPI = async (req: Request, user: User) => {
                   discountType: item.discountType,
                   discountValue: item.discountValue,
                   total: item.total,
+                  createdBy: user.id,
+                  updatedBy: user.id,
                   createdAt: createdAt,
                 })) || [],
             },
@@ -360,6 +364,8 @@ export const createAPI = async (req: Request, user: User) => {
                 remarks: body.remarks,
                 consultantDoctorId: body.consultantDoctor.userId,
                 referringDoctorId: body.referredDoctor?.userId,
+                createdBy: user.id,
+                updatedBy: user.id,
                 createdAt: createdAt,
               },
             },
@@ -441,7 +447,7 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
 
         await tx.ipd.update({
           where: { id: body.ipdId },
-          data: { isDischarged: true },
+          data: { isDischarged: true, updatedBy: user.id },
         });
 
         return apiResponse({

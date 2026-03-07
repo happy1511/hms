@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["LOCATION_MASTER"], action: ActionType["CREATE"] }],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }
@@ -33,7 +33,7 @@ export async function PUT(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["LOCATION_MASTER"], action: ActionType["CREATE"] }],
-      () => updateAPI(request),
+      (req, user) => updateAPI(req, user),
     ),
   );
 }
@@ -43,7 +43,7 @@ export async function DELETE(request: Request) {
     checkPermission(
       request,
       [{ module: ModuleType["LOCATION_MASTER"], action: ActionType["CREATE"] }],
-      () => deleteAPI(request),
+      (req, user) => deleteAPI(req, user),
     ),
   );
 }

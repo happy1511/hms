@@ -67,7 +67,11 @@ const getPurchaseOrders = createRequest<
       };
     }>
   >,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    name?: string;
+    limit: number;
+    createdAt?: string | { from?: Date; to?: Date };
+  }
 >(PHARMACY_PURCHASE_ORDER, "GET");
 
 export const usePurchaseOrderList = (

@@ -7,7 +7,7 @@ export async function PUT(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["IPD_BILL"], action: ActionType["UPDATE"] }],
+      [{ module: ModuleType.DISCHARGE_PATIENT, action: ActionType["CREATE"] }],
       dischargePatientAPI,
     ),
   );

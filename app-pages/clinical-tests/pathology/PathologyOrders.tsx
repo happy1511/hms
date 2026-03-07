@@ -30,9 +30,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 const Actions = ({
+  canUpdate,
   data,
   canPrint,
 }: {
+  canUpdate: boolean;
   data: PathologyOrderType;
   canPrint: boolean;
 }) => {
@@ -60,6 +62,7 @@ const Actions = ({
   const items = [];
 
   if (
+    canUpdate &&
     !data.isCancelled &&
     !data.isOutSourced &&
     data.status !== PathologyOrderStatus["COMPLETED"]
@@ -71,7 +74,7 @@ const Actions = ({
     });
   }
 
-  if (data.isCancelled && !data.isOutSourced) {
+  if (canUpdate && data.isCancelled && !data.isOutSourced) {
     items.push({
       label: "Restore",
       onClick: () => handleCancel(false),
@@ -80,6 +83,7 @@ const Actions = ({
   }
 
   if (
+    canUpdate &&
     !data.isOutSourced &&
     !data.isCancelled &&
     data.status !== PathologyOrderStatus["COMPLETED"]
@@ -91,7 +95,7 @@ const Actions = ({
     });
   }
 
-  if (data.isOutSourced) {
+  if (canUpdate && data.isOutSourced) {
     items.push({
       label: "Cancel OutSource",
       onClick: () => handleOutSource(false),
@@ -108,6 +112,7 @@ const Actions = ({
   }
 
   if (
+    canUpdate &&
     data.status === PathologyOrderStatus["SAMPLE_PENDING"] &&
     !data.isCancelled &&
     !data.isOutSourced
@@ -120,6 +125,7 @@ const Actions = ({
   }
 
   if (
+    canUpdate &&
     data.status !== PathologyOrderStatus["COMPLETED"] &&
     !data.isCancelled &&
     !data.isOutSourced
@@ -226,16 +232,11 @@ const PathologyOrders = ({
     ModuleType.PATHOLOGY_ORDER,
     ActionType.PRINT,
   );
-  // const canUpdate = hasActionPermission(
-  //   profile?.data,
-  //   ModuleType.PATHOLOGY_TEST_MASTER,
-  //   ActionType.UPDATE,
-  // );
-  // const canDelete = hasActionPermission(
-  //   profile?.data,
-  //   ModuleType.PATHOLOGY_TEST_MASTER,
-  //   ActionType.DELETE,
-  // );
+  const canUpdate = hasActionPermission(
+    profile?.data,
+    ModuleType.PATHOLOGY_ORDER,
+    ActionType.UPDATE,
+  );
 
   const patientColumns: ColumnDefWithClass<PathologyOrderByPatientsType>[] = [
     {
@@ -329,7 +330,11 @@ const PathologyOrders = ({
       id: "actions",
       header: () => <p>Action</p>,
       cell: ({ row }) => (
-        <Actions canPrint={Boolean(canPrint)} data={row.original} />
+        <Actions
+          canPrint={Boolean(canPrint)}
+          canUpdate={Boolean(canUpdate)}
+          data={row.original}
+        />
       ),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",

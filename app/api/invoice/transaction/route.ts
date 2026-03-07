@@ -7,7 +7,11 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["INVOICE"], action: ActionType["UPDATE"] }],
+      [
+        { module: ModuleType.OPD_BILL, action: ActionType.UPDATE },
+        { module: ModuleType.IPD_BILL, action: ActionType.UPDATE },
+        { module: ModuleType.PHARMACY_SALE_BILL, action: ActionType.UPDATE },
+      ],
       addTransactionAPI,
     ),
   );

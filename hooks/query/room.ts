@@ -36,7 +36,12 @@ const getRoom = createRequest<
 
 const getRooms = createRequest<
   PaginatedResponse<RoomGetPayload<{ include: { roomType: true } }>>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(ROOMS, "GET");
 
 export const useRoomsList = (

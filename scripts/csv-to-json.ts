@@ -21,6 +21,11 @@ fs.createReadStream(filePath)
         country: "India",
         postcode: postcode.toString().trim(),
         isDeleted: false,
+        createdBy: null,
+        updatedBy: null,
+        deletedBy: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     }
   })

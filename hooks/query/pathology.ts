@@ -130,7 +130,12 @@ const getPathologyTest = createRequest<
 
 const getPathologyTests = createRequest<
   PaginatedResponse<PathologyTestDataType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PATHOLOGY, "GET");
 const getPathologyOrderParameters = createRequest<
   ApiResponse<PathologyTestResultType>,
@@ -138,7 +143,12 @@ const getPathologyOrderParameters = createRequest<
 >(PATHOLOGY_ORDER_PARAMETERS, "GET");
 const getPathologyOrders = createRequest<
   PaginatedResponse<PathologyOrderByPatientsType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(PATHOLOGY_ORDERS, "GET");
 const getCompletedPathologyOrdersWithResults = createRequest<
   ApiResponse<PathologyTestOrderWithResults[]>,

@@ -44,7 +44,12 @@ const getServiceSection = createRequest<
 
 const getServices = createRequest<
   PaginatedResponse<ServiceDataType>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(SERVICES, "GET");
 
 export const useServicesList = (

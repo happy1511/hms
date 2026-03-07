@@ -13,16 +13,36 @@ export async function GET(request: Request) {
           action: ActionType["VIEW"],
         },
         {
-          module: ModuleType["BILLING_SECTION_MASTER"],
+          module: ModuleType["OPD_BILL"],
           action: ActionType["CREATE"],
         },
         {
-          module: ModuleType["BILLING_SECTION_MASTER"],
+          module: ModuleType["OPD_BILL"],
           action: ActionType["UPDATE"],
         },
         {
           module: ModuleType["OPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
           action: ActionType["CREATE"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["PHARMACY_SALE_BILL"],
+          action: ActionType["VIEW"],
         },
       ],
       () => getAPI(request),
@@ -40,7 +60,7 @@ export async function POST(request: Request) {
           action: ActionType["CREATE"],
         },
       ],
-      () => createAPI(request),
+      (req, user) => createAPI(req, user),
     ),
   );
 }

@@ -40,7 +40,12 @@ const getBillingSection = createRequest<
 
 const getBillingSections = createRequest<
   PaginatedResponse<BillingSection>,
-  { limit: number; name?: string; createdAt?: string; status?: string }
+  {
+    limit: number;
+    name?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+    status?: string;
+  }
 >(BILLING_SECTIONS, "GET");
 
 export const useBillingSectionsList = (

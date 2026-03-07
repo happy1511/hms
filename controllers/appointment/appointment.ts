@@ -3,7 +3,12 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { AppointmentStatus, Doctor, Prisma } from "@/generated/prisma/client";
+import {
+  AppointmentStatus,
+  Doctor,
+  Prisma,
+  User,
+} from "@/generated/prisma/client";
 import {
   appointmentValidator,
   partialAppointmentValidator,
@@ -89,7 +94,7 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: appointmentValidator,
     req,
@@ -140,6 +145,8 @@ export const createAPI = async (req: Request) => {
             ...rest,
             patientId: existingPatient.id,
             doctorId: existingDoctor.userId,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -156,6 +163,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { appointmentId: number } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialAppointmentValidator,
@@ -197,6 +205,7 @@ export const updateAPI = async (
           data: {
             ...rest,
             ...(existingDoctor && { doctorId: existingDoctor.userId }),
+            updatedBy: user.id ,
           },
         });
 
@@ -209,3 +218,4 @@ export const updateAPI = async (
     },
   });
 };
+

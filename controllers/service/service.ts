@@ -3,7 +3,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Prisma, ServiceApplicableOn } from "@/generated/prisma/client";
+import { Prisma, ServiceApplicableOn, User } from "@/generated/prisma/client";
 import {
   partialServiceValidator,
   serviceValidator,
@@ -154,7 +154,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: serviceValidator,
     req,
@@ -240,6 +240,8 @@ export const createAPI = async (req: Request) => {
                 testId: test.id,
               })),
             },
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -256,6 +258,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { serviceId: number } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialServiceValidator,
@@ -347,6 +350,7 @@ export const updateAPI = async (
                 testId: test.id,
               })),
             },
+            updatedBy: user.id ,
           },
         });
 
@@ -363,6 +367,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { serviceId: number } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialServiceValidator,
@@ -384,7 +389,11 @@ export const deleteAPI = async (
 
         await tx.service.update({
           where: { id: data.serviceId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -396,3 +405,4 @@ export const deleteAPI = async (
     },
   });
 };
+

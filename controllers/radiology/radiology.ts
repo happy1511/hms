@@ -92,7 +92,7 @@ export const getAPI = async (req: Request) => {
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: radiologyTestValidator,
     req,
@@ -116,6 +116,8 @@ export const createAPI = async (req: Request) => {
             price: body.price,
             status: body.status,
             section: body.section,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -126,6 +128,8 @@ export const createAPI = async (req: Request) => {
             price: body.price,
             applicableOn: ServiceApplicableOn["BOTH"],
             status: body.status,
+            createdBy: user.id ,
+            updatedBy: user.id ,
             radiologyTests: {
               create: {
                 testId: createdTest.id,
@@ -144,7 +148,7 @@ export const createAPI = async (req: Request) => {
   });
 };
 
-export const deleteAPI = async (req: Request) => {
+export const deleteAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialRadiologyTestValidator,
     req,
@@ -164,7 +168,11 @@ export const deleteAPI = async (req: Request) => {
 
         await tx.radiologyTest.update({
           where: { id: data.testId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -282,7 +290,7 @@ export const getTemplateDetailsAPI = async (
   });
 };
 
-export const createTemplateAPI = async (req: Request) => {
+export const createTemplateAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: radiologyTemplateValidator,
     req,
@@ -322,6 +330,8 @@ export const createTemplateAPI = async (req: Request) => {
             section: body.section,
             status: body.status,
             content: body.content,
+            createdBy: user.id ,
+            updatedBy: user.id ,
             radiologyTests: {
               connect: (body.radiologyTests?.map((i) => i.id) ?? []).map(
                 (id) => ({ id }),
@@ -343,7 +353,7 @@ export const createTemplateAPI = async (req: Request) => {
   });
 };
 
-export const deleteTemplateAPI = async (req: Request) => {
+export const deleteTemplateAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialRadiologyTemplateValidator,
     req,
@@ -363,7 +373,11 @@ export const deleteTemplateAPI = async (req: Request) => {
 
         await tx.radiologyTemplate.update({
           where: { id: data.templateId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -376,7 +390,7 @@ export const deleteTemplateAPI = async (req: Request) => {
   });
 };
 
-export const updateTemplateAPI = async (req: Request) => {
+export const updateTemplateAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialRadiologyTemplateValidator,
     req,
@@ -437,6 +451,7 @@ export const updateTemplateAPI = async (req: Request) => {
             section: data.section,
             status: data.status,
             content: data.content,
+            updatedBy: user.id ,
 
             // 🔑 this replaces previous relations completely
             radiologyTests: {
@@ -863,3 +878,4 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
     },
   });
 };
+

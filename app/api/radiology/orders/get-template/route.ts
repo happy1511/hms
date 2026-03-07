@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       [
         {
           module: ModuleType["RADIOLOGY_ORDER"],
-          action: ActionType["VIEW"],
+          action: ActionType["UPDATE"],
         },
       ],
       getOrderDetailsAPI,

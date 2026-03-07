@@ -7,7 +7,7 @@ import {
   departmentValidator,
   partialDepartmentValidator,
 } from "@/validators/api/masters/department";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, User } from "@/generated/prisma/client";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -95,7 +95,7 @@ export const getDetailsAPI = async (
   });
 };
 
-export const createAPI = async (req: Request) => {
+export const createAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: departmentValidator,
     req,
@@ -121,6 +121,8 @@ export const createAPI = async (req: Request) => {
             name,
             description,
             status,
+            createdBy: user.id ,
+            updatedBy: user.id ,
           },
         });
 
@@ -137,6 +139,7 @@ export const createAPI = async (req: Request) => {
 export const updateAPI = async (
   req: Request,
   { params }: { params: { departmentId: string } },
+  user: User,
 ) => {
   return validateRequest({
     bodySchema: partialDepartmentValidator,
@@ -184,6 +187,7 @@ export const updateAPI = async (
             name,
             description,
             status,
+            updatedBy: user.id ,
           },
         });
 
@@ -200,6 +204,7 @@ export const updateAPI = async (
 export const deleteAPI = async (
   req: Request,
   { params }: { params: { departmentId: string } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialDepartmentValidator,
@@ -221,7 +226,11 @@ export const deleteAPI = async (
 
         await tx.department.update({
           where: { id: data.departmentId },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id ,
+            updatedBy: user.id ,
+          },
         });
 
         return apiResponse({
@@ -233,3 +242,4 @@ export const deleteAPI = async (
     },
   });
 };
+

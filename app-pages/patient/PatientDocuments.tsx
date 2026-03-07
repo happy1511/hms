@@ -12,7 +12,6 @@ import {
   FilterConfig,
   FilterValues,
   PatientDocumentType,
-  PatientType,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
@@ -54,12 +53,12 @@ const PatientDocuments = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<
-    FilterValues & { patient?: PatientType }
+    FilterValues & { patient?: PatientDocumentType }
   >({});
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isError, error } = usePatientDocumentsList(
-    { ...filters, uhid: filters.patient?.uhid },
+    { ...filters, uhid: filters?.uhid },
     page,
     limit,
   );
@@ -83,11 +82,6 @@ const PatientDocuments = () => {
     profile?.data,
     ModuleType.PATIENT_MASTER,
     ActionType.UPDATE,
-  );
-  const canDelete = hasActionPermission(
-    profile?.data,
-    ModuleType.PATIENT_MASTER,
-    ActionType.DELETE,
   );
 
   const columns: ColumnDefWithClass<PatientDocumentType>[] = [
@@ -208,16 +202,17 @@ const PatientDocuments = () => {
             <PatientSearchModal
               trigger={
                 <CustomButton className="bg-secondary flex justify-start">
-                  {filters.patient
-                    ? `${filters.patient.firstName} ${filters.patient.lastName}`
-                    : "Search Patient"}
+                  {filters.patient ? `${filters.name}` : "Search Patient"}
                 </CustomButton>
               }
               actions={(row, setOpen) => {
                 return (
                   <CustomButton
                     onClick={() => {
-                      setFilters((prev) => ({ ...prev, patient: row }));
+                      setFilters((prev) => ({
+                        ...prev,
+                        patient: row as PatientDocumentType,
+                      }));
                       setOpen(false);
                     }}
                   >

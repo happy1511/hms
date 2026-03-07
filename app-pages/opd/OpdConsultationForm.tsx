@@ -312,13 +312,13 @@ const Advice = ({ form }: { form: UseFormReturn<consultantFileType> }) => {
           control={form.control}
           label="Diagnosis"
           name="diagnosis"
-          type="text"
+          type="textarea"
         />
         <FormField
           control={form.control}
           label="Chronic Illness"
           name="chronicIllness"
-          type="text"
+          type="textarea"
         />
 
         <FormInfiniteSelect<
@@ -427,27 +427,42 @@ const VitalsComplaintAndHistoryNotes = ({
         />
       </CustomLayout>
       <CustomLayout title="Complaints and History/Notes">
-        <FormField control={form.control} name="notes" type="richText" />
+        <FormField
+          control={form.control}
+          name="notes"
+          label="Notes"
+          type="textarea"
+        />
       </CustomLayout>
       <div className="col-span-2">
         <FormField
           control={form.control}
           name="generalExaminations"
           label="General Examinations"
-          type="text"
+          type="textarea"
         />
         <FormField
           control={form.control}
           name="systemicExaminations"
           label="Systemic Examinations"
-          type="text"
+          type="textarea"
         />
       </div>
     </div>
   );
 };
 
-const ConsultationForm = ({ data }: { data?: consultantFileType }) => {
+const ConsultationForm = ({
+  data,
+}: {
+  data?: consultantFileType & {
+    previousOpdHistory?: {
+      opdId: number;
+      createdAt: string | Date;
+      investigations: string[];
+    }[];
+  };
+}) => {
   const params: { opdId: string } = useParams();
   const { mutateAsync, isPending } = useUpdateOpdConsultation();
 

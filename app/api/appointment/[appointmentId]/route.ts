@@ -12,10 +12,10 @@ export async function PUT(
     checkPermission(
       request,
       [{ module: ModuleType["APPOINTMENT"], action: ActionType["UPDATE"] }],
-      () =>
-        updateAPI(request, {
+      (req, user) =>
+        updateAPI(req, {
           params: { appointmentId: Number(appointmentId) },
-        }),
+        }, user),
     ),
   );
 }

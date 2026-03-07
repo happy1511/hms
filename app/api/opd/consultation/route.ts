@@ -7,7 +7,7 @@ export async function PUT(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["OPD_BILL"], action: ActionType["UPDATE"] }],
+      [{ module: ModuleType.CONSULTATION_FILE, action: ActionType["UPDATE"] }],
       (req, user) => updateConsultationAPI(req, user),
     ),
   );
