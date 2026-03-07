@@ -1,156 +1,156 @@
 /*
   Warnings:
 
-  - You are about to drop the column `createdBy` on the `drug` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `drug` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `drug` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `drugbillingcategory` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `drugbillingcategory` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `drugbillingcategory` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `drugsaleitem` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `drugsaleitem` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `drugsaleitem` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `drugsupplier` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `drugsupplier` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `drugsupplier` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `expense` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `expense` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `expense` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `grn` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `grn` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `grn` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `income` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `income` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `income` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `invoice` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `invoice` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `invoice` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `invoicebillingitem` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `invoicebillingitem` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `invoicebillingitem` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `ipd` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `ipd` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `ipd` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `opd` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `opd` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `opd` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `pathologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `pathologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `pathologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `pathologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `pathologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `pathologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `patientidentification` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `patientidentification` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `patientidentification` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `radiologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `radiologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `radiologytestresult` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `radiologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `radiologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `radiologytestservice` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `room` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `room` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `room` table. All the data in the column will be lost.
-  - You are about to drop the column `createdBy` on the `user` table. All the data in the column will be lost.
-  - You are about to drop the column `deletedBy` on the `user` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedBy` on the `user` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Drug` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Drug` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Drug` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `DrugBillingCategory` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `DrugBillingCategory` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `DrugBillingCategory` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `DrugSaleItem` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `DrugSaleItem` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `DrugSaleItem` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `DrugSupplier` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `DrugSupplier` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `DrugSupplier` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Expense` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Expense` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Expense` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `GRN` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `GRN` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `GRN` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Income` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Income` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Income` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Invoice` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Invoice` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Invoice` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `InvoiceBillingItem` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `InvoiceBillingItem` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `InvoiceBillingItem` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Ipd` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Ipd` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Ipd` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Opd` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Opd` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Opd` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `PathologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `PathologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `PathologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `PathologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `PathologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `PathologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `PatientIdentification` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `PatientIdentification` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `PatientIdentification` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `RadiologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `RadiologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `RadiologyTestResult` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `RadiologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `RadiologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `RadiologyTestService` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `Room` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `Room` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `Room` table. All the data in the column will be lost.
+  - You are about to drop the column `createdBy` on the `User` table. All the data in the column will be lost.
+  - You are about to drop the column `deletedBy` on the `User` table. All the data in the column will be lost.
+  - You are about to drop the column `updatedBy` on the `User` table. All the data in the column will be lost.
 
 */
 -- AlterTable
-ALTER TABLE `drug` DROP COLUMN `createdBy`,
+ALTER TABLE `Drug` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `drugbillingcategory` DROP COLUMN `createdBy`,
+ALTER TABLE `DrugBillingCategory` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `drugsaleitem` DROP COLUMN `createdBy`,
+ALTER TABLE `DrugSaleItem` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `drugsupplier` DROP COLUMN `createdBy`,
+ALTER TABLE `DrugSupplier` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `expense` DROP COLUMN `createdBy`,
+ALTER TABLE `Expense` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `grn` DROP COLUMN `createdBy`,
+ALTER TABLE `GRN` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `income` DROP COLUMN `createdBy`,
+ALTER TABLE `Income` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `invoice` DROP COLUMN `createdBy`,
+ALTER TABLE `Invoice` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `invoicebillingitem` DROP COLUMN `createdBy`,
+ALTER TABLE `InvoiceBillingItem` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `ipd` DROP COLUMN `createdBy`,
+ALTER TABLE `Ipd` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `opd` DROP COLUMN `createdBy`,
+ALTER TABLE `Opd` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `pathologytestresult` DROP COLUMN `createdBy`,
+ALTER TABLE `PathologyTestResult` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `pathologytestservice` DROP COLUMN `createdBy`,
+ALTER TABLE `PathologyTestService` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `patientidentification` DROP COLUMN `createdBy`,
+ALTER TABLE `PatientIdentification` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `radiologytestresult` DROP COLUMN `createdBy`,
+ALTER TABLE `RadiologyTestResult` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `radiologytestservice` DROP COLUMN `createdBy`,
+ALTER TABLE `RadiologyTestService` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `referencerange` DROP COLUMN `createdBy`,
+ALTER TABLE `ReferenceRange` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `room` DROP COLUMN `createdBy`,
+ALTER TABLE `Room` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;
 
 -- AlterTable
-ALTER TABLE `user` DROP COLUMN `createdBy`,
+ALTER TABLE `User` DROP COLUMN `createdBy`,
     DROP COLUMN `deletedBy`,
     DROP COLUMN `updatedBy`;

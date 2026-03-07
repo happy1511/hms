@@ -18,7 +18,7 @@ ALTER TABLE `User`
   ADD COLUMN `identityNumber` VARCHAR(191) NULL,
   ADD COLUMN `education` VARCHAR(191) NULL,
   ADD COLUMN `qualifications` VARCHAR(191) NULL,
-  ADD COLUMN `department` VARCHAR(191) NULL;
+  ADD COLUMN `Department` VARCHAR(191) NULL;
 
 UPDATE `User`
 SET

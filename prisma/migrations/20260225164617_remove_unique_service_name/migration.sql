@@ -1,7 +1,7 @@
 /*
   Warnings:
 
-  - You are about to drop the column `opdId` on the `invoice` table. All the data in the column will be lost.
+  - You are about to drop the column `opdId` on the `Invoice` table. All the data in the column will be lost.
 
 */
 -- DropIndex

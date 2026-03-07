@@ -5,124 +5,124 @@
 
 */
 -- AlterTable
-ALTER TABLE `appointment` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Appointment` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `bed` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Bed` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `billingsection` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `BillingSection` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `department` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Department` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `doctor` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Doctor` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `drug` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Drug` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `drugbill` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `DrugBill` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `drugbillingcategory` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `DrugBillingCategory` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `drugsupplier` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `DrugSupplier` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `grn` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `GRN` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `inventoryitems` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `InventoryItems` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `location` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ALTER TABLE `Location` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
-    ADD COLUMN `updatedAt` DATETIME(3) NOT NULL,
+    ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `pathologytest` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `PathologyTest` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `pathologytestheader` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `PathologyTestHeader` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `pathologytestparameter` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `PathologyTestParameter` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `patient` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Patient` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `purchaseorder` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `PurchaseOrder` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `radiologytemplate` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `RadiologyTemplate` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `radiologytest` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `RadiologyTest` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `referencerange` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `ReferenceRange` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `room` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Room` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `roomtype` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `RoomType` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `service` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Service` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `User` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 

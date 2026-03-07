@@ -74,7 +74,7 @@ CREATE TABLE `Doctor` (
     `specialization` VARCHAR(191) NOT NULL,
     `qualifications` VARCHAR(191) NOT NULL,
     `yearsExperience` INTEGER NOT NULL,
-    `department` VARCHAR(191) NULL,
+    `Department` VARCHAR(191) NULL,
     `designation` VARCHAR(191) NULL,
     `doctorType` ENUM('referring', 'consulting') NOT NULL,
     `email` VARCHAR(191) NOT NULL,

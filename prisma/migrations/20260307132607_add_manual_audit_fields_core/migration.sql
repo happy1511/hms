@@ -1,29 +1,29 @@
 -- AlterTable
-ALTER TABLE `expense` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Expense` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `income` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Income` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `invoice` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Invoice` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `invoicebillingitem` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `InvoiceBillingItem` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `ipd` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Ipd` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `opd` ADD COLUMN `createdBy` INTEGER NULL,
+ALTER TABLE `Opd` ADD COLUMN `createdBy` INTEGER NULL,
     ADD COLUMN `deletedBy` INTEGER NULL,
     ADD COLUMN `updatedBy` INTEGER NULL;

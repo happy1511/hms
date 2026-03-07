@@ -1,14 +1,14 @@
 /*
   Warnings:
 
-  - You are about to drop the column `lowerDay` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `lowerMonth` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `lowerYear` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `upperDay` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `upperMonth` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to drop the column `upperYear` on the `referencerange` table. All the data in the column will be lost.
-  - You are about to alter the column `lowerRange` on the `referencerange` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
-  - You are about to alter the column `upperRange` on the `referencerange` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
+  - You are about to drop the column `lowerDay` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `lowerMonth` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `lowerYear` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `upperDay` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `upperMonth` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to drop the column `upperYear` on the `ReferenceRange` table. All the data in the column will be lost.
+  - You are about to alter the column `lowerRange` on the `ReferenceRange` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
+  - You are about to alter the column `upperRange` on the `ReferenceRange` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Int`.
 
 */
 -- AlterTable
