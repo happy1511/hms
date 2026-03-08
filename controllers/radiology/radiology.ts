@@ -116,8 +116,8 @@ export const createAPI = async (req: Request, user: User) => {
             price: body.price,
             status: body.status,
             section: body.section,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -128,8 +128,8 @@ export const createAPI = async (req: Request, user: User) => {
             price: body.price,
             applicableOn: ServiceApplicableOn["BOTH"],
             status: body.status,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
             radiologyTests: {
               create: {
                 testId: createdTest.id,
@@ -170,8 +170,8 @@ export const deleteAPI = async (req: Request, user: User) => {
           where: { id: data.testId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -330,8 +330,8 @@ export const createTemplateAPI = async (req: Request, user: User) => {
             section: body.section,
             status: body.status,
             content: body.content,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
             radiologyTests: {
               connect: (body.radiologyTests?.map((i) => i.id) ?? []).map(
                 (id) => ({ id }),
@@ -375,8 +375,8 @@ export const deleteTemplateAPI = async (req: Request, user: User) => {
           where: { id: data.templateId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -451,7 +451,7 @@ export const updateTemplateAPI = async (req: Request, user: User) => {
             section: data.section,
             status: data.status,
             content: data.content,
-            updatedBy: user.id ,
+            updatedBy: user.id,
 
             // 🔑 this replaces previous relations completely
             radiologyTests: {
@@ -862,14 +862,6 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
         },
       });
 
-      if (!orders || orders.length === 0) {
-        return apiResponse({
-          status: RESPONSE_STATUS.NOT_FOUND,
-          message: "No completed radiology orders found for this OPD",
-          data: [],
-        });
-      }
-
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Completed Radiology Orders with Results Fetched Successfully",
@@ -878,4 +870,3 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
     },
   });
 };
-

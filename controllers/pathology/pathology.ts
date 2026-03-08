@@ -1646,15 +1646,6 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
         },
       });
 
-      if (!orders || orders.length === 0) {
-        return apiResponse({
-          status: RESPONSE_STATUS.NOT_FOUND,
-          message: "No completed pathology orders found for this OPD",
-          data: [],
-        });
-      }
-
-      // Get all unique parameter IDs to batch fetch reference ranges
       const allParameterIds = [
         ...new Set(
           orders.flatMap((order) =>
