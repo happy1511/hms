@@ -647,7 +647,6 @@ model Doctor {
 
   @@index([createdBy])
   @@index([updatedBy])
-
   @@index([userId])
 }
 
@@ -853,28 +852,31 @@ model Room {
 }
 
 model Bed {
-  id         Int      @id @default(autoincrement())
-  roomId     Int
-  patientId  Int?
-  bedNumber  String
-  name       String?
-  status     Status   @default(active)
-  createdBy  Int?
-  updatedBy  Int?
-  deletedBy  Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  isOccupied Boolean  @default(false)
-  isDeleted  Boolean  @default(false)
+  id           Int      @id @default(autoincrement())
+  roomId       Int
+  patientId    Int?
+  currentIpdId Int?     @unique
+  bedNumber    String
+  name         String?
+  status       Status   @default(active)
+  createdBy    Int?
+  updatedBy    Int?
+  deletedBy    Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isOccupied   Boolean  @default(false)
+  isDeleted    Boolean  @default(false)
 
   patient       Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
   room          Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  currentIpd    Ipd?     @relation("CurrentIpd", fields: [currentIpdId], references: [id], onDelete: SetNull)
   createdByUser User?    @relation("BedCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User?    @relation("BedUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?    @relation("BedDeletedBy", fields: [deletedBy], references: [id])
-  ipds          Ipd[]
+  ipds          Ipd[]    @relation("BedToIpd")
 
   @@index([roomId])
+  @@index([currentIpdId])
 }
 
 // -------------------- Appointment Management --------------------
@@ -1549,7 +1551,8 @@ model Ipd {
   createdByUser       User?                @relation("IpdCreatedBy", fields: [createdBy], references: [id])
   updatedByUser       User?                @relation("IpdUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser       User?                @relation("IpdDeletedBy", fields: [deletedBy], references: [id])
-  bed                 Bed                  @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  bed                 Bed                  @relation("BedToIpd", fields: [bedId], references: [id], onDelete: Cascade)
+  currentBedLink      Bed?                 @relation("CurrentIpd")
   consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
   referringDoctor     Doctor?              @relation("ReferringDoctorIpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)

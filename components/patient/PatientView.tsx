@@ -17,14 +17,6 @@ import { useProfile } from "@/hooks/query/auth";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { hasActionPermission } from "@/lib/utils";
 
-type Primitive = string | number | boolean;
-type RenderableValue =
-  | Primitive
-  | Primitive[]
-  | Date
-  | Record<string, unknown>
-  | unknown[];
-
 export interface DataViewField<T> {
   key: keyof T;
   label: string;
@@ -55,10 +47,6 @@ export function PatientViewModal({
     ModuleType.PATIENT_MASTER,
     ActionType.UPDATE,
   );
-
-  //   const handleCopy = async (key: keyof T, value: RenderableValue) => {
-  //     await navigator.clipboard.writeText();
-  //   };
 
   const handleEdit = () => {
     router.push(`/patient/${data.id}`);

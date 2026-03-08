@@ -53,7 +53,11 @@ export const getAPI = async (req: Request) => {
             { bedNumber: { contains: search } },
             { room: { name: { contains: search } } },
             { room: { roomType: { name: { contains: search } } } },
-            { room: { roomType: { department: { name: { contains: search } } } } },
+            {
+              room: {
+                roomType: { department: { name: { contains: search } } },
+              },
+            },
           ],
         });
       }
@@ -111,6 +115,61 @@ export const getAPI = async (req: Request) => {
       });
     },
   });
+};
+
+export const getAvailabilityAPI = async (req: Request) => {
+  try {
+    const roomTypes = await prisma.room.findMany({
+      where: { isDeleted: false },
+      select: {
+        id: true,
+        name: true,
+        beds: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            bedNumber: true,
+            name: true,
+            isOccupied: true,
+            currentIpdId: true,
+            currentIpd: {
+              select: {
+                createdAt: true,
+                patient: {
+                  select: {
+                    uhid: true,
+                    firstName: true,
+                    middleName: true,
+                    lastName: true,
+                    dob: true,
+                    maritalStatus: true,
+                    contacts: true,
+                    relations: true,
+                    addresses: true,
+                    emergencyContacts: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { bedNumber: "asc" },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return apiResponse({
+      status: RESPONSE_STATUS.SUCCESS,
+      message: "Bed Availability Fetched Successfully",
+      data: roomTypes,
+    });
+  } catch (error) {
+    console.error("Error fetching bed availability:", error);
+    return apiResponse({
+      status: RESPONSE_STATUS.INTERNAL_SERVER_ERROR,
+      message: "Failed to fetch bed availability",
+    });
+  }
 };
 
 export const getDetailsAPI = async (
@@ -192,8 +251,8 @@ export const createAPI = async (req: Request, user: User) => {
               data: {
                 bedNumber,
                 roomId: room.id,
-                createdBy: user.id ,
-                updatedBy: user.id ,
+                createdBy: user.id,
+                updatedBy: user.id,
               },
             });
           }),
@@ -269,7 +328,7 @@ export const updateAPI = async (
             roomId: room?.id,
             bedNumber: newBedNumber,
             status,
-            updatedBy: user.id ,
+            updatedBy: user.id,
           },
         });
 
@@ -310,8 +369,8 @@ export const deleteAPI = async (
           where: { id: data.bedId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -324,4 +383,3 @@ export const deleteAPI = async (
     },
   });
 };
-

@@ -79,6 +79,7 @@ export const ROOMS = "/room";
 // ---------BED ENDPOINTS--------
 // ----------------------------------
 export const BEDS = "/bed";
+export const BEDS_AVAILABILITY = "/bed/availability";
 
 // ----------------------------------
 // ---------APPOINTMENT ENDPOINTS--------

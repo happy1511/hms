@@ -1,7 +1,12 @@
 import { Bed } from "@/generated/prisma/client";
 import { BedGetPayload } from "@/generated/prisma/models";
-import { BEDS } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import { BEDS, BEDS_AVAILABILITY } from "@/lib/apiDefinations";
+import {
+  ApiResponse,
+  BedAvailability,
+  FilterValues,
+  PaginatedResponse,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
@@ -34,6 +39,11 @@ const getBed = createRequest<
   undefined,
   { id: string; createdAt?: string | { from?: Date; to?: Date } }
 >((p) => `${BEDS}/${p.id}`, "GET");
+
+const getBedAvailability = createRequest<ApiResponse<BedAvailability[]>>(
+  BEDS_AVAILABILITY,
+  "GET",
+);
 
 const getBeds = createRequest<
   PaginatedResponse<
@@ -210,5 +220,15 @@ export const useDeleteBed = () => {
       });
     },
     onError: showError,
+  });
+};
+
+export const useBedAvailability = () => {
+  return useQuery<BedAvailability[], AxiosError<ApiResponse<null>>>({
+    queryKey: ["bed-availability"],
+    queryFn: async () => {
+      const response = await getBedAvailability({});
+      return response.data;
+    },
   });
 };

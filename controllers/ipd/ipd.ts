@@ -197,9 +197,11 @@ export const createAPI = async (req: Request, user: User) => {
             const contactsToUpsert = (patient?.contacts ?? [])
               .filter(
                 (c) =>
-                  [ContactType.PHONE, ContactType.MOBILE, ContactType.EMAIL].includes(
-                    c.type,
-                  ) && Boolean(c.value?.trim()),
+                  [
+                    ContactType.PHONE,
+                    ContactType.MOBILE,
+                    ContactType.EMAIL,
+                  ].includes(c.type) && Boolean(c.value?.trim()),
               )
               .map((c) => ({
                 type: c.type,
@@ -370,12 +372,12 @@ export const createAPI = async (req: Request, user: User) => {
               },
             },
           },
-          include: { opd: true },
+          include: { ipd: true },
         });
 
         await tx.bed.update({
           where: { id: bed.id },
-          data: { isOccupied: true, patientId: patientId },
+          data: { isOccupied: true, currentIpdId: invoice.ipd?.id },
         });
 
         const pathologyServices = await tx.pathologyTestService.findMany({
@@ -387,8 +389,8 @@ export const createAPI = async (req: Request, user: User) => {
         if (pathologyServices?.length) {
           await tx.pathologyTestOrder.createMany({
             data: pathologyServices.map((service) => ({
-              opdId: invoice.opd!.id,
-              patientId: invoice.opd!.patientId,
+              ipdId: invoice.ipd!.id,
+              patientId: invoice.ipd!.patientId,
               testId: service.testId,
             })),
           });
@@ -403,8 +405,8 @@ export const createAPI = async (req: Request, user: User) => {
         if (radiologyServices?.length) {
           await tx.radiologyTestOrder.createMany({
             data: radiologyServices.map((service) => ({
-              opdId: invoice.opd!.id,
-              patientId: invoice.opd!.patientId,
+              ipdId: invoice.ipd!.id,
+              patientId: invoice.ipd!.patientId,
               testId: service.testId,
             })),
           });

@@ -1165,3 +1165,74 @@ export interface DashboardType {
   }[];
   expense: number;
 }
+
+// ----------------------------------
+// BED AVAILABILITY TYPES
+// ----------------------------------
+export type BedAvailability = Prisma.RoomGetPayload<{
+  where: { isDeleted: false };
+  select: {
+    id: true;
+    name: true;
+    beds: {
+      where: { isDeleted: false };
+      select: {
+        id: true;
+        bedNumber: true;
+        name: true;
+        isOccupied: true;
+        currentIpdId: true;
+        currentIpd: {
+          select: {
+            createdAt: true;
+            patient: {
+              select: {
+                uhid: true;
+                firstName: true;
+                middleName: true;
+                lastName: true;
+                dob: true;
+                maritalStatus: true;
+                contacts: true;
+                relations: true;
+                addresses: true;
+                emergencyContacts: true;
+              };
+            };
+          };
+        };
+      };
+      orderBy: { bedNumber: "asc" };
+    };
+  };
+  orderBy: { name: "asc" };
+}>;
+
+export type AvailableBed = Prisma.BedGetPayload<{
+  select: {
+    id: true;
+    bedNumber: true;
+    name: true;
+    isOccupied: true;
+    currentIpdId: true;
+    currentIpd: {
+      select: {
+        createdAt: true;
+        patient: {
+          select: {
+            uhid: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+            dob: true;
+            maritalStatus: true;
+            contacts: true;
+            relations: true;
+            addresses: true;
+            emergencyContacts: true;
+          };
+        };
+      };
+    };
+  };
+}>;

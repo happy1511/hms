@@ -42,6 +42,7 @@ import { usePathname } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
 import { ModuleType } from "@/generated/prisma/enums";
 import PatientSearchModal from "../patient/PatientSearchModal";
+import BedAvailabilityModal from "../bed/BedAvailabilityModal";
 import { OPDType } from "@/lib/type";
 
 interface SidebarItem {
@@ -466,6 +467,11 @@ export function CustomSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  {hasModulePermission(data.data, [ModuleType.BED_MASTER]) && (
+                    <SidebarMenuItem>
+                      <BedAvailabilityModal />
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
