@@ -640,6 +640,11 @@ model Doctor {
   consultingIpd Ipd[]                @relation("ConsultantDoctorIpds")
   referringIpd  Ipd[]                @relation("ReferringDoctorIpds")
   drugBills     DrugBill[]
+
+  @@index([createdBy])
+  @@index([updatedBy])
+
+  @@index([userId])
 }
 
 model DoctorAvailableDay {
@@ -649,6 +654,7 @@ model DoctorAvailableDay {
   day      Days
 
   @@unique([doctorId, day])
+  @@index([doctorId])
 }
 
 model PatientContact {
@@ -660,6 +666,7 @@ model PatientContact {
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([type, patientId])
+  @@index([patientId])
 }
 
 model emergencyContact {
@@ -671,6 +678,8 @@ model emergencyContact {
 
   patientId Int
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
 }
 
 model PatientNotes {
@@ -680,6 +689,8 @@ model PatientNotes {
 
   patientId Int
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
 }
 
 model PatientRelations {
@@ -692,6 +703,7 @@ model PatientRelations {
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, name, type])
+  @@index([patientId])
 }
 
 model PatientAddress {
@@ -706,6 +718,8 @@ model PatientAddress {
   patient          Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([type, patientId])
+  @@index([patientId])
+  @@index([locationId])
 }
 
 model PatientIdentification {
@@ -721,6 +735,7 @@ model PatientIdentification {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([type, patientId])
+  @@index([patientId])
 }
 
 model Patient {
@@ -763,6 +778,7 @@ model Patient {
 
   @@index([createdAt])
   @@index([createdBy])
+  @@index([uhid])
 }
 
 // -------------------- Facility Management --------------------
@@ -803,6 +819,8 @@ model RoomType {
   deletedByUser User?      @relation("RoomTypeDeletedBy", fields: [deletedBy], references: [id])
 
   rooms Room[]
+
+  @@index([departmentId])
 }
 
 model Room {
@@ -826,6 +844,8 @@ model Room {
 
   beds Bed[]
   ipds Ipd[]
+
+  @@index([roomTypeId])
 }
 
 model Bed {
@@ -849,6 +869,8 @@ model Bed {
   updatedByUser User?    @relation("BedUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?    @relation("BedDeletedBy", fields: [deletedBy], references: [id])
   ipds          Ipd[]
+
+  @@index([roomId])
 }
 
 // -------------------- Appointment Management --------------------
@@ -874,6 +896,8 @@ model Appointment {
 
   @@index([patientId])
   @@index([appointmentDate])
+  @@index([doctorId])
+  @@index([status])
 }
 
 // -------------------- Pathology Lab Test Management --------------------
@@ -946,6 +970,8 @@ model PathologyTestParameter {
   deletedByUser        User?                 @relation("PathologyTestParameterDeletedBy", fields: [deletedBy], references: [id])
   parameterOptions     ParameterOptions[]
   pathologyTestResults PathologyTestResult[]
+
+  @@index([testId])
 }
 
 model ParameterOptions {
@@ -954,6 +980,8 @@ model ParameterOptions {
   testParameter   PathologyTestParameter @relation(fields: [testParameterId], references: [id], onDelete: Cascade)
   value           String
   isDeleted       Boolean                @default(false)
+
+  @@index([testParameterId])
 }
 
 model Income {
@@ -1025,6 +1053,8 @@ model ReferenceRange {
   createdByUser User? @relation("ReferenceRangeCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("ReferenceRangeUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("ReferenceRangeDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([testParameterId])
 }
 
 // -------------------- Pathology Lab Order Management --------------------
@@ -1061,9 +1091,13 @@ model PathologyTestOrder {
   ipd                Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 
   @@index([opdId])
+  @@index([ipdId])
   @@index([patientId])
+  @@index([testId])
   @@index([status])
   @@index([createdAt])
+  @@index([verifiedById])
+  @@index([resultEnteredById])
 }
 
 model PathologyTestResult {
@@ -1081,6 +1115,10 @@ model PathologyTestResult {
 
   order     PathologyTestOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   parameter PathologyTestParameter @relation(fields: [parameterId], references: [id])
+
+  @@index([orderId])
+  @@index([parameterId])
+  @@index([optionId])
 }
 
 // -------------------- Radiology Lab Order Management --------------------
@@ -1118,8 +1156,12 @@ model RadiologyTestOrder {
 
   @@index([opdId])
   @@index([patientId])
+  @@index([testId])
   @@index([status])
   @@index([createdAt])
+  @@index([ipdId])
+  @@index([verifiedById])
+  @@index([resultEnteredById])
 }
 
 model RadiologyTestResult {
@@ -1135,6 +1177,9 @@ model RadiologyTestResult {
 
   order    RadiologyTestOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   template RadiologyTemplate  @relation(fields: [templateId], references: [id])
+
+  @@index([orderId])
+  @@index([templateId])
 }
 
 // -------------------- Radiology Test Management --------------------
@@ -1238,6 +1283,8 @@ model PathologyTestService {
   updatedAt DateTime @updatedAt
 
   @@unique([testId, serviceId])
+  @@index([testId])
+  @@index([serviceId])
 }
 
 model RadiologyTestService {
@@ -1252,6 +1299,8 @@ model RadiologyTestService {
   updatedAt DateTime @updatedAt
 
   @@unique([testId, serviceId])
+  @@index([testId])
+  @@index([serviceId])
 }
 
 // -------------------- Transactions Management --------------------
@@ -1269,6 +1318,8 @@ model Transaction {
   receivedBy User     @relation(fields: [receivedById], references: [id])
   invoice    Invoice? @relation(fields: [invoiceId], references: [id])
   invoiceId  Int?
+
+  @@index([invoiceId])
 }
 
 model InvoiceBillingItem {
@@ -1298,6 +1349,10 @@ model InvoiceBillingItem {
   deletedByUser   User?                @relation("InvoiceBillingItemDeletedBy", fields: [deletedBy], references: [id])
   pathologyOrders PathologyTestOrder[] @relation("InvoiceBillingItemPathologyOrders")
   radiologyOrders RadiologyTestOrder[] @relation("InvoiceBillingItemRadiologyOrders")
+
+  @@index([invoiceId])
+  @@index([billingSectionId])
+  @@index([serviceId])
 }
 
 model Invoice {
@@ -1327,6 +1382,10 @@ model Invoice {
   createdByUser User? @relation("InvoiceCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("InvoiceUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("InvoiceDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([createdAt])
+  @@index([createdBy])
+  @@index([isPaid])
 }
 
 // -------------------- OPD File Management --------------------
@@ -1384,6 +1443,8 @@ model AdvisedPathologyTests {
   opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
 
   @@unique([opdId, testId])
+  @@index([consultationId])
+  @@index([testId])
 }
 
 model AdvisedRadiologyTests {
@@ -1397,6 +1458,8 @@ model AdvisedRadiologyTests {
   opd          Opd             @relation(fields: [opdId], references: [id], onDelete: Cascade)
 
   @@unique([opdId, testId])
+  @@index([consultationId])
+  @@index([testId])
 }
 
 model OpdConsultation {
@@ -1451,6 +1514,9 @@ model Opd {
   radiologyTestOrders   RadiologyTestOrder[]
 
   @@index([patientId])
+  @@index([consultantDoctorId])
+  @@index([referringDoctorId])
+  @@index([invoiceId])
   @@index([isInQueue])
   @@index([createdAt])
 }
@@ -1490,6 +1556,10 @@ model Ipd {
   roomId              Int?
 
   @@index([patientId])
+  @@index([consultantDoctorId])
+  @@index([referringDoctorId])
+  @@index([bedId])
+  @@index([invoiceId])
   @@index([isDischarged])
   @@index([createdAt])
 }
@@ -1514,6 +1584,10 @@ model DrugBill {
   updatedByUser User?          @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?          @relation("DrugBillDeletedBy", fields: [deletedBy], references: [id])
   saleItems     DrugSaleItem[]
+
+  @@index([invoiceId])
+  @@index([patientId])
+  @@index([doctorId])
 }
 
 model DrugBillingCategory {
@@ -1606,6 +1680,10 @@ model InventoryItems {
   deletedByUser User?          @relation("InventoryItemDeletedBy", fields: [deletedBy], references: [id])
   grnItems      GRNItems[]
   saleItems     DrugSaleItem[]
+
+  @@index([drugId])
+  @@index([supplierId])
+  @@index([expiryDate])
 }
 
 model DrugSaleItem {
