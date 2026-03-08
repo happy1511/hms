@@ -59,7 +59,7 @@ export function FormInput<T extends FieldValues>({
                   disabled={disabled}
                   id={id}
                   type={showPassword ? "text" : type}
-                  className={`rounded-sm selection:text-white bg-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
+                  className={`rounded-sm selection:text-white h-6 bg-white selection:bg-gray-500 focus-visible:border-accent-blue text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
                     fieldState.invalid
                       ? "border-destructive focus-visible:border-destructive"
                       : ""

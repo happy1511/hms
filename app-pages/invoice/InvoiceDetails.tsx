@@ -1,67 +1,289 @@
 "use client";
 
-import { Form } from "@/components/ui/form";
-import { useInfiniteServicesList } from "@/hooks/query/service";
-import { InvoiceBillingItem } from "@/lib/type";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderIcon, PlusIcon, Trash2, User } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import {
-  ArrayPath,
-  Path,
-  useFieldArray,
-  useForm,
-  UseFormReturn,
-} from "react-hook-form";
-
+import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import CustomButton from "@/components/common/CustomButton";
+import TransactionsModal from "@/components/common/TransactionsModal";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
+import AddPaymentModal from "@/components/opd/AddPayment";
+import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Form } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ActionType,
   DiscountType,
   ModuleType,
   Status,
 } from "@/generated/prisma/enums";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import CustomButton from "@/components/common/CustomButton";
+import { useProfile } from "@/hooks/query/auth";
+import { useInvoiceDetails, useUpdateInvoice } from "@/hooks/query/invoice";
+import { useInfiniteServicesList } from "@/hooks/query/service";
+import { InvoiceBillingItem } from "@/lib/type";
+import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import CustomActionDropdown from "@/components/common/CustomActionDropdown";
-import TransactionsModal from "@/components/common/TransactionsModal";
-import AddPaymentModal from "@/components/opd/AddPayment";
-import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import {
+  ChevronDown,
+  ChevronUp,
+  FilePenLine,
+  LoaderIcon,
+  Plus,
+  User,
+} from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrayPath,
+  Path,
+  useFieldArray,
+  useForm,
+  useWatch,
+  UseFormReturn,
+} from "react-hook-form";
+import { toast } from "sonner";
 import {
   billingItemValidatorType,
   updateInvoiceValidator,
   updateInvoiceValidatorType,
 } from "@/validators/api/invoice/invoice";
-import { useInvoiceDetails, useUpdateInvoice } from "@/hooks/query/invoice";
-import { useProfile } from "@/hooks/query/auth";
-import { hasActionPermission } from "@/lib/utils";
 
-const getSumOfBillingItem = (item: InvoiceBillingItem) => {
-  return item.invoiceBillingItems.reduce((sum, item) => sum + item.total, 0);
+type BillingItemSnapshot = {
+  itemId?: number;
+  billingSectionId?: number;
+  serviceId?: number;
+  quantity: number;
+  rate: number;
+  discountType: DiscountType;
+  discountValue: number;
+  total: number;
 };
 
-type Props = {
+const roundAmount = (value: number) => Number(value.toFixed(2));
+
+const formatCurrency = (value: number) =>
+  `Rs. ${roundAmount(value).toFixed(2)}`;
+
+const getDiscountAmount = (
+  amount: number,
+  discountType: DiscountType,
+  discountValue: number,
+) => {
+  return discountType === DiscountType.PERCENTAGE
+    ? (amount * discountValue) / 100
+    : discountValue;
+};
+
+const getBillingItemLiveTotal = (
+  item:
+    | Partial<billingItemValidatorType>
+    | {
+        total?: unknown;
+        quantity?: unknown;
+        rate?: unknown;
+        discountType?: unknown;
+        discountValue?: unknown;
+      }
+    | null
+    | undefined,
+) => {
+  const quantity = Number(item?.quantity || 0);
+  const rate = Number(item?.rate || 0);
+  const gross = quantity * rate;
+
+  if (gross > 0 || quantity > 0 || rate > 0) {
+    const discount = getDiscountAmount(
+      gross,
+      (item?.discountType as DiscountType) || DiscountType.VALUE,
+      Number(item?.discountValue || 0),
+    );
+
+    return roundAmount(Math.max(gross - discount, 0));
+  }
+
+  return roundAmount(Number(item?.total || 0));
+};
+
+const getBillingItemSnapshot = (
+  item?: Partial<billingItemValidatorType> | null,
+): BillingItemSnapshot => ({
+  itemId: item?.itemId ? Number(item.itemId) : undefined,
+  billingSectionId: item?.billingSection?.id
+    ? Number(item.billingSection.id)
+    : undefined,
+  serviceId: item?.service?.id ? Number(item.service.id) : undefined,
+  quantity: Number(item?.quantity || 0),
+  rate: Number(item?.rate || 0),
+  discountType: (item?.discountType || DiscountType.VALUE) as DiscountType,
+  discountValue: Number(item?.discountValue || 0),
+  total: Number(item?.total || 0),
+});
+
+const hasBillingItemChanged = (
+  currentItem: Partial<billingItemValidatorType> | null | undefined,
+  initialItem?: BillingItemSnapshot,
+) => {
+  if (!initialItem || !currentItem?.itemId) {
+    return false;
+  }
+
+  const currentSnapshot = getBillingItemSnapshot(currentItem);
+
+  return (
+    initialItem.billingSectionId !== currentSnapshot.billingSectionId ||
+    initialItem.serviceId !== currentSnapshot.serviceId ||
+    initialItem.quantity !== currentSnapshot.quantity ||
+    initialItem.rate !== currentSnapshot.rate ||
+    initialItem.discountType !== currentSnapshot.discountType ||
+    initialItem.discountValue !== currentSnapshot.discountValue ||
+    initialItem.total !== currentSnapshot.total
+  );
+};
+
+const getSectionTotal = ({
+  items,
+  discountType,
+  discountValue,
+}: {
+  items: Array<{
+    total?: unknown;
+    quantity?: unknown;
+    rate?: unknown;
+    discountType?: unknown;
+    discountValue?: unknown;
+  }>;
+  discountType: DiscountType;
+  discountValue: number;
+}) => {
+  const sectionSubtotal = items.reduce((sum, item) => {
+    return sum + getBillingItemLiveTotal(item);
+  }, 0);
+  const discount = getDiscountAmount(
+    sectionSubtotal,
+    discountType,
+    Number(discountValue || 0),
+  );
+
+  return Math.max(sectionSubtotal - discount, 0);
+};
+
+const getSectionAmounts = ({
+  items,
+  discountType,
+  discountValue,
+}: {
+  items: Array<{
+    total?: unknown;
+    quantity?: unknown;
+    rate?: unknown;
+    discountType?: unknown;
+    discountValue?: unknown;
+  }>;
+  discountType: DiscountType;
+  discountValue: number;
+}) => {
+  const subtotal = roundAmount(
+    items.reduce((sum, item) => sum + getBillingItemLiveTotal(item), 0),
+  );
+  const discount = roundAmount(
+    Math.min(
+      getDiscountAmount(subtotal, discountType, Number(discountValue || 0)),
+      subtotal,
+    ),
+  );
+  const total = roundAmount(Math.max(subtotal - discount, 0));
+
+  return { subtotal, discount, total };
+};
+
+const getInvoiceAmounts = ({
+  billingSections,
+  discountType,
+  discountValue,
+  isFree,
+  transactions,
+}: {
+  billingSections: updateInvoiceValidatorType["billingSections"];
+  discountType: DiscountType;
+  discountValue: number;
+  isFree: boolean;
+  transactions?: updateInvoiceValidatorType["transactions"];
+}) => {
+  const subtotal = roundAmount(
+    (billingSections || []).reduce((sum, section) => {
+      const sectionAmounts = getSectionAmounts({
+        items: (section?.billingItems || []) as Array<{
+          total?: unknown;
+          quantity?: unknown;
+          rate?: unknown;
+          discountType?: unknown;
+          discountValue?: unknown;
+        }>,
+        discountType: (section?.discountType ||
+          DiscountType.VALUE) as DiscountType,
+        discountValue: Number(section?.discountValue || 0),
+      });
+
+      return sum + sectionAmounts.total;
+    }, 0),
+  );
+
+  const invoiceDiscount = roundAmount(
+    Math.min(
+      getDiscountAmount(subtotal, discountType, Number(discountValue || 0)),
+      subtotal,
+    ),
+  );
+  const total = isFree
+    ? 0
+    : roundAmount(Math.max(subtotal - invoiceDiscount, 0));
+  const paid = roundAmount(
+    (transactions || []).reduce(
+      (sum, transaction) => sum + Number(transaction?.amount || 0),
+      0,
+    ),
+  );
+  const due = roundAmount(Math.max(total - paid, 0));
+
+  return { subtotal, invoiceDiscount, total, paid, due };
+};
+
+type TableProps = {
   form: UseFormReturn<updateInvoiceValidatorType>;
   selectedIndex: number;
   data: InvoiceBillingItem;
+  initialItemsMap: Map<number, BillingItemSnapshot>;
+  canUpdateInvoice: boolean;
 };
 
 type ServiceRowProps = {
   index: number;
   form: UseFormReturn<updateInvoiceValidatorType>;
   fieldName: Path<updateInvoiceValidatorType>;
-  remove: (index: number) => void;
+  initialItemsMap: Map<number, BillingItemSnapshot>;
 };
 
-const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
+const ServiceRow = ({
+  index,
+  form,
+  fieldName,
+  initialItemsMap,
+}: ServiceRowProps) => {
   const { control, watch, setValue, getValues } = form;
+  const [reasonOpen, setReasonOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
+  const previousServiceIdRef = useRef<number | null>(null);
   const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, status: Status["active"] },
+    { name: serviceSearch, status: Status.active },
     10,
   );
 
@@ -84,52 +306,69 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
     `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
   const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
+  const itemId = watch(`${rowPath}.itemId` as Path<updateInvoiceValidatorType>);
+  const updateReason = watch(
+    `${rowPath}.updateReason` as Path<updateInvoiceValidatorType>,
+  );
 
   const flatServices = useMemo(
     () =>
-      servicesQuery.data?.pages.flatMap((p) =>
-        p.data.map((s) => ({
-          id: s.id,
-          name: s.name,
-          price: s.price,
-          maxDiscount: s.maxDiscount,
+      servicesQuery.data?.pages.flatMap((page) =>
+        page.data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          maxDiscount: item.maxDiscount,
         })),
       ) || [],
     [servicesQuery.data],
   );
 
   useEffect(() => {
+    const selectedServiceId = Number(service?.id || 0);
+
+    if (!selectedServiceId) return;
+
     const existingService = flatServices.find(
-      (s) => s.id === Number(service?.id),
+      (item) => item.id === selectedServiceId,
     );
-
     if (!existingService) return;
+    if (previousServiceIdRef.current === selectedServiceId) return;
 
-    setValue(
-      `${rowPath}.rate` as Path<updateInvoiceValidatorType>,
-      existingService.price,
-    );
-    setValue(`${rowPath}.quantity` as Path<updateInvoiceValidatorType>, 1);
-    setValue(
-      `${rowPath}.discountType` as Path<updateInvoiceValidatorType>,
-      DiscountType.VALUE,
-    );
-    setValue(`${rowPath}.discountValue` as Path<updateInvoiceValidatorType>, 0);
+    previousServiceIdRef.current = selectedServiceId;
+
+    const currentServiceId = initialItemsMap.get(Number(itemId))?.serviceId;
+    const shouldResetRow = !itemId || currentServiceId !== selectedServiceId;
+
+    if (shouldResetRow) {
+      setValue(
+        `${rowPath}.rate` as Path<updateInvoiceValidatorType>,
+        existingService.price,
+      );
+      setValue(`${rowPath}.quantity` as Path<updateInvoiceValidatorType>, 1);
+      setValue(
+        `${rowPath}.discountType` as Path<updateInvoiceValidatorType>,
+        DiscountType.VALUE,
+      );
+      setValue(
+        `${rowPath}.discountValue` as Path<updateInvoiceValidatorType>,
+        0,
+      );
+    }
+
     setValue(
       `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
       existingService.maxDiscount ?? 0,
     );
-  }, [service, flatServices]);
+  }, [service, flatServices, itemId, initialItemsMap, rowPath, setValue]);
 
   useEffect(() => {
-    const gross = Number(quantity) * Number(rate);
-
+    const gross = Number(quantity) * Number(rate || 0);
     const discount =
-      discountType === "PERCENTAGE"
+      discountType === DiscountType.PERCENTAGE
         ? (gross * Number(discountValue)) / 100
         : Number(discountValue);
-
-    const newTotal = gross - discount;
+    const newTotal = Math.max(roundAmount(gross - discount), 0);
 
     if (
       getValues(`${rowPath}.total` as Path<updateInvoiceValidatorType>) !==
@@ -140,41 +379,105 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
         newTotal,
       );
     }
-  }, [quantity, rate, discountType, discountValue]);
+  }, [
+    quantity,
+    rate,
+    discountType,
+    discountValue,
+    getValues,
+    rowPath,
+    setValue,
+  ]);
 
   const gross = Number(quantity) * Number(rate);
   const maxAllowed =
-    discountType === "PERCENTAGE"
+    discountType === DiscountType.PERCENTAGE
       ? (gross * (Number(maxDiscount) || 0)) / 100
-      : maxDiscount || 0;
-
+      : Number(maxDiscount || 0);
   const isInvalidDiscount = Number(discountValue) > Number(maxAllowed);
+  const initialItem = initialItemsMap.get(Number(itemId));
+  const isUpdatedRow = hasBillingItemChanged(
+    getValues(
+      rowPath as Path<updateInvoiceValidatorType>,
+    ) as billingItemValidatorType,
+    initialItem,
+  );
+  const hasUpdateReason = Boolean(String(updateReason ?? "").trim());
 
   return (
     <tr className="border-t align-top">
       <td>
         <div className="px-2 py-1">{index + 1}</div>
       </td>
-
-      {/* SERVICE */}
       <td>
-        <div className="px-2 py-1">
-          <FormInfiniteSelect
-            control={control}
-            name={`${rowPath}.service` as Path<updateInvoiceValidatorType>}
-            query={servicesQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.id)}
-            labelKey={(i) => i.name}
-            search={serviceSearch}
-            onSearchChange={setServiceSearch}
-            placeholder="Service"
-            hideError
-          />
+        {isUpdatedRow && (
+          <Button
+            type="button"
+            variant={hasUpdateReason ? "outline" : "destructive"}
+            className="aspect-square bg-transparent border-none text-destructive hover:text-white"
+            onClick={() => setReasonOpen(true)}
+          >
+            <FilePenLine className="size-3" />
+          </Button>
+        )}
+
+        <Dialog open={reasonOpen} onOpenChange={setReasonOpen}>
+          <DialogContent className="max-w-lg! border-secondary border-4 bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-sm text-black/60">
+                Update Reason
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Add the reason for updating this invoice row.
+              </p>
+              <Textarea
+                value={String(updateReason ?? "")}
+                onChange={(event) =>
+                  setValue(
+                    `${rowPath}.updateReason` as Path<updateInvoiceValidatorType>,
+                    event.target.value,
+                    { shouldDirty: true, shouldValidate: true },
+                  )
+                }
+                placeholder="Enter update reason"
+                rows={5}
+              />
+            </div>
+            <DialogFooter>
+              <CustomButton type="button" onClick={() => setReasonOpen(false)}>
+                Save Reason
+              </CustomButton>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </td>
+      <td>
+        <div className="px-2 py-1 space-y-1">
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <FormInfiniteSelect
+                control={control}
+                name={`${rowPath}.service` as Path<updateInvoiceValidatorType>}
+                query={servicesQuery}
+                getItems={(page) => page?.data}
+                valueKey={(item) => String(item.id)}
+                labelKey={(item) => item.name}
+                search={serviceSearch}
+                onSearchChange={setServiceSearch}
+                placeholder="Service"
+                hideError
+              />
+            </div>
+          </div>
+          {isUpdatedRow && !hasUpdateReason && (
+            <p className="text-xs text-red-500">
+              Reason is required for updates
+            </p>
+          )}
         </div>
       </td>
-
-      {/* QTY */}
       <td>
         <div className="px-2 py-1">
           <FormField
@@ -185,8 +488,6 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
           />
         </div>
       </td>
-
-      {/* RATE */}
       <td>
         <div className="px-2 py-1">
           <FormField
@@ -197,24 +498,17 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
           />
         </div>
       </td>
-
-      {/* DISC TYPE */}
       <td>
         <div className="px-2 py-1">
           <FormField
             type="select"
             name={`${rowPath}.discountType` as Path<updateInvoiceValidatorType>}
             control={control}
-            options={Object.keys(DiscountType).map((t) => ({
-              label: t,
-              value: t,
-            }))}
+            options={getDiscountTypeOptions()}
             hideError
           />
         </div>
       </td>
-
-      {/* DISC VALUE */}
       <td>
         <div className="px-2 py-1">
           <FormField
@@ -232,69 +526,96 @@ const ServiceRow = ({ index, form, fieldName, remove }: ServiceRowProps) => {
           </p>
         )}
       </td>
-
-      {/* TOTAL */}
       <td className="font-semibold w-30">
-        <div className="px-2 py-1 text-center">₹ {Number(total)}</div>
-      </td>
-
-      {/* REMOVE */}
-      <td className="w-10">
-        <div className="px-2 py-1">
-          <button type="button" onClick={() => remove(index)}>
-            <Trash2 className="size-2 text-destructive" />
-          </button>
+        <div className="px-2 py-1 text-center">
+          Rs. {Number(total).toFixed(2)}
         </div>
       </td>
     </tr>
   );
 };
 
-const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
+const InvoiceBillingTable = ({
+  form,
+  selectedIndex,
+  data,
+  initialItemsMap,
+  canUpdateInvoice,
+}: TableProps) => {
   const { control } = form;
-
+  const sectionPath =
+    `billingSections.${selectedIndex}` as Path<updateInvoiceValidatorType>;
   const fieldName =
     `billingSections.${selectedIndex}.billingItems` as ArrayPath<updateInvoiceValidatorType>;
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
-    name: fieldName as ArrayPath<updateInvoiceValidatorType>,
+    name: fieldName,
+  });
+  const watchedBillingItems = useWatch({
+    control,
+    name: fieldName,
+  });
+  const watchedSectionDiscountType = useWatch({
+    control,
+    name: `${sectionPath}.discountType` as Path<updateInvoiceValidatorType>,
+  });
+  const watchedSectionDiscountValue = useWatch({
+    control,
+    name: `${sectionPath}.discountValue` as Path<updateInvoiceValidatorType>,
+  });
+  const sectionAmounts = getSectionAmounts({
+    items: (watchedBillingItems || []) as Array<{
+      total?: unknown;
+      quantity?: unknown;
+      rate?: unknown;
+      discountType?: unknown;
+      discountValue?: unknown;
+    }>,
+    discountType: (watchedSectionDiscountType ||
+      DiscountType.VALUE) as DiscountType,
+    discountValue: Number(watchedSectionDiscountValue || 0),
   });
 
-  if (selectedIndex === null) {
-    return <div className="p-4 text-muted">Select billing section</div>;
-  }
-
   return (
-    <div className="space-y-3 p-2 h-full flex flex-col">
-      {/* Add Row */}
+    <div className="flex h-full flex-col bg-white">
       <div className="flex w-full justify-between items-center">
-        <p className="text-sm font-medium capitalize">{data.name}</p>
-        <button
-          className="flex gap-1 items-center  text-tiny"
-          type="button"
-          onClick={() =>
-            append({
-              quantity: 1,
-              discountType: "VALUE",
-              discountValue: 0,
-              total: 0,
-              billingSection: { id: data.id, name: data.name },
-              createdAt: new Date(),
-            } as billingItemValidatorType)
-          }
-        >
-          <PlusIcon className="size-2 text-black" /> <p>Add New Item</p>
-        </button>
+        <div className="px-3 py-3">
+          <p className="text-sm font-medium capitalize">{data.name}</p>
+          <p className="text-xs text-muted-foreground">
+            Manage item-wise charges and section-level discount here.
+          </p>
+        </div>
+        <div className="px-3">
+          {canUpdateInvoice && (
+            <CustomButton
+              type="button"
+              onClick={() =>
+                append({
+                  quantity: 1,
+                  discountType: DiscountType.VALUE,
+                  discountValue: 0,
+                  total: 0,
+                  billingSection: { id: data.id, name: data.name },
+                  createdAt: new Date(),
+                } as billingItemValidatorType)
+              }
+            >
+              <Plus className="size-3" />
+              <p>Add New Item</p>
+            </CustomButton>
+          )}
+        </div>
       </div>
 
-      <div className="w-full overflow-auto flex-1">
+      <div className="w-full flex-1 overflow-auto px-3 pb-3">
         <table className="w-full border text-tiny">
           <thead className="bg-muted">
             <tr>
               <th>
                 <div className="px-2 py-1">#</div>
               </th>
+              <th></th>
               <th className="w-62.5">
                 <div className="px-2 py-1">Service</div>
               </th>
@@ -313,10 +634,8 @@ const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
               <th>
                 <div className="px-2 py-1">Total</div>
               </th>
-              <th></th>
             </tr>
           </thead>
-
           <tbody>
             {fields.map((field, index) => (
               <ServiceRow
@@ -324,11 +643,53 @@ const InvoiceBillingTable = ({ form, selectedIndex, data }: Props) => {
                 index={index}
                 form={form}
                 fieldName={fieldName}
-                remove={remove}
+                initialItemsMap={initialItemsMap}
               />
             ))}
           </tbody>
         </table>
+
+        <div className="border-t border-border bg-white mt-2">
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 grid grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-[140px_120px]">
+              <FormField
+                control={control}
+                hideError
+                name={
+                  `${sectionPath}.discountType` as Path<updateInvoiceValidatorType>
+                }
+                options={getDiscountTypeOptions()}
+                type="select"
+              />
+              <FormField
+                control={control}
+                hideError
+                name={
+                  `${sectionPath}.discountValue` as Path<updateInvoiceValidatorType>
+                }
+                type="number"
+              />
+            </div>
+            <div className="grid rounded-md border border-secondary/20 bg-secondary/5 p-2 text-tiny">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-tiny">
+                  Section Subtotal
+                </span>
+                <span className="font-medium text-tiny">
+                  {formatCurrency(sectionAmounts.subtotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-tiny">
+                  After Discount
+                </span>
+                <span className="font-semibold text-tiny">
+                  {formatCurrency(sectionAmounts.total)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -338,6 +699,7 @@ const InvoiceDetails = () => {
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [previewInvoiceOpen, setPreviewInvoiceOpen] = useState(false);
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const { invoiceId }: { invoiceId: string } = useParams();
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
@@ -350,11 +712,149 @@ const InvoiceDetails = () => {
     resolver: zodResolver(updateInvoiceValidator),
   });
 
+  const watchedSections = useWatch({
+    control: form.control,
+    name: "billingSections",
+  });
+  const watchedDiscountType = useWatch({
+    control: form.control,
+    name: "discountType",
+  });
+  const watchedDiscountValue = useWatch({
+    control: form.control,
+    name: "discountValue",
+  });
+  const watchedIsFree = useWatch({
+    control: form.control,
+    name: "isFree",
+  });
+  const watchedTransactions = useWatch({
+    control: form.control,
+    name: "transactions",
+  });
+
+  const invoiceAmounts = useMemo(
+    () =>
+      getInvoiceAmounts({
+        billingSections: watchedSections,
+        discountType: (watchedDiscountType ||
+          DiscountType.VALUE) as DiscountType,
+        discountValue: Number(watchedDiscountValue || 0),
+        isFree: Boolean(watchedIsFree),
+        transactions: watchedTransactions,
+      }),
+    [
+      watchedDiscountType,
+      watchedDiscountValue,
+      watchedIsFree,
+      watchedSections,
+      watchedTransactions,
+    ],
+  );
+  const isFormInitialized =
+    !!data &&
+    watchedDiscountType !== undefined &&
+    watchedDiscountValue !== undefined &&
+    watchedIsFree !== undefined &&
+    (watchedSections?.length ?? 0) === data.sections.length;
+
+  const liveSections = useMemo(
+    () =>
+      data?.sections.map((section, index) => {
+        const watchedSection = watchedSections?.[index];
+        const liveItems =
+          watchedSection?.billingItems || section.invoiceBillingItems;
+        const liveDiscountType =
+          (watchedSection?.discountType as DiscountType) ||
+          section.discountType ||
+          DiscountType.VALUE;
+        const liveDiscountValue = Number(
+          watchedSection?.discountValue ?? section.discountValue ?? 0,
+        );
+
+        return {
+          ...section,
+          liveItemCount: liveItems.length,
+          liveTotal: roundAmount(
+            getSectionTotal({
+              items: liveItems as Array<{
+                total?: unknown;
+                quantity?: unknown;
+                rate?: unknown;
+                discountType?: unknown;
+                discountValue?: unknown;
+              }>,
+              discountType: liveDiscountType,
+              discountValue: liveDiscountValue,
+            }),
+          ),
+        };
+      }) || [],
+    [data?.sections, watchedSections],
+  );
+
+  const initialItemsMap = useMemo(
+    () =>
+      new Map(
+        (data?.sections || []).flatMap((section) =>
+          section.invoiceBillingItems.map((item) => [
+            item.id,
+            {
+              itemId: item.id,
+              billingSectionId: section.id,
+              serviceId: item.service.id,
+              quantity: item.quantity,
+              rate: item.rate,
+              discountType: item.discountType,
+              discountValue: item.discountValue,
+              total: item.total,
+            } satisfies BillingItemSnapshot,
+          ]),
+        ),
+      ),
+    [data],
+  );
+
+  const updatedRowsMissingReasons = useMemo(
+    () =>
+      watchedSections?.flatMap((section, sectionIndex) =>
+        (section?.billingItems || []).flatMap((item, itemIndex) => {
+          if (
+            !hasBillingItemChanged(
+              item,
+              initialItemsMap.get(Number(item?.itemId)),
+            )
+          ) {
+            return [];
+          }
+
+          if (String(item.updateReason ?? "").trim()) {
+            return [];
+          }
+
+          return [{ sectionIndex, itemIndex }];
+        }),
+      ) || [],
+    [initialItemsMap, watchedSections],
+  );
+
   const onSubmit = (values: updateInvoiceValidatorType) => {
+    if (updatedRowsMissingReasons.length) {
+      updatedRowsMissingReasons.forEach(({ sectionIndex, itemIndex }) => {
+        form.setError(
+          `billingSections.${sectionIndex}.billingItems.${itemIndex}.updateReason`,
+          {
+            type: "required",
+            message: "Update reason is required",
+          },
+        );
+      });
+      toast.error("Add a reason for each updated invoice row before saving");
+      return;
+    }
+
     mutateAsync(values);
   };
-
-  console.log(form.formState.errors, form.getValues());
 
   useEffect(() => {
     if (!data) return;
@@ -362,6 +862,9 @@ const InvoiceDetails = () => {
     form.reset({
       billingSections: data.sections.map((section) => ({
         id: section.id,
+        invoiceBillingSectionId: section.invoiceBillingSectionId ?? undefined,
+        discountType: section.discountType ?? DiscountType.VALUE,
+        discountValue: section.discountValue ?? 0,
         billingItems: section.invoiceBillingItems.map((item) => ({
           quantity: item.quantity,
           total: item.total,
@@ -372,9 +875,11 @@ const InvoiceDetails = () => {
             maxDiscount: item.service.maxDiscount ?? 0,
           },
           rate: item.rate,
-          billingSection: section,
-          createdAt: new Date(),
-          itemId: item?.id,
+          billingSection: { id: section.id, name: section.name },
+          createdAt: new Date(item.createdAt),
+          itemId: item.id,
+          updateReason:
+            (item as { updateReason?: string | null }).updateReason ?? null,
         })),
       })),
       transactions: data.transactions,
@@ -382,12 +887,17 @@ const InvoiceDetails = () => {
       discountType: data.discountType,
       discountValue: data.discountValue,
       billingType: data.billingType,
-      isFree: false,
+      isFree: data.isFree,
       total: data.total,
       isPaid: data.isPaid,
       id: data.id,
     });
-  }, [data]);
+  }, [data, form]);
+
+  useEffect(() => {
+    form.setValue("rate", invoiceAmounts.subtotal);
+    form.setValue("total", invoiceAmounts.total);
+  }, [form, invoiceAmounts.subtotal, invoiceAmounts.total]);
 
   if (isLoading) {
     return (
@@ -397,10 +907,15 @@ const InvoiceDetails = () => {
     );
   }
 
-  if (!data) return <div />;
-  console.log(profile, "profile");
+  if (!data || !profile) return <div />;
 
-  if (!profile) return <div />;
+  if (!isFormInitialized) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoaderIcon className="animate-spin size-4" />
+      </div>
+    );
+  }
 
   const permissionModule = data.opd
     ? ModuleType.OPD_BILL
@@ -410,18 +925,21 @@ const InvoiceDetails = () => {
 
   if (!permissionModule) return <div />;
 
-  const canViewInvoice =
-    profile && permissionModule
-      ? hasActionPermission(profile.data, permissionModule, ActionType.VIEW)
-      : false;
-  const canUpdateInvoice =
-    profile && permissionModule
-      ? hasActionPermission(profile.data, permissionModule, ActionType.UPDATE)
-      : false;
-  const canPrintInvoice =
-    profile && permissionModule
-      ? hasActionPermission(profile.data, permissionModule, ActionType.PRINT)
-      : false;
+  const canViewInvoice = hasActionPermission(
+    profile.data,
+    permissionModule,
+    ActionType.VIEW,
+  );
+  const canUpdateInvoice = hasActionPermission(
+    profile.data,
+    permissionModule,
+    ActionType.UPDATE,
+  );
+  const canPrintInvoice = hasActionPermission(
+    profile.data,
+    permissionModule,
+    ActionType.PRINT,
+  );
 
   if (!canViewInvoice) {
     return <div />;
@@ -464,7 +982,10 @@ const InvoiceDetails = () => {
                 triggerLabel="Payment"
               />
               {canUpdateInvoice && (
-                <CustomButton disabled={isPending} type="submit">
+                <CustomButton
+                  disabled={isPending || updatedRowsMissingReasons.length > 0}
+                  type="submit"
+                >
                   Save Invoice
                 </CustomButton>
               )}
@@ -489,11 +1010,9 @@ const InvoiceDetails = () => {
                 <User className="fill-black size-2" />
                 {data.opd?.patient.firstName} {data.opd?.patient.lastName}
               </Badge>
-
               <Badge className="text-tiny! h-4 min-w-4 px-1 rounded-none bg-secondary text-white">
                 Invoice Number :{data.id}
               </Badge>
-
               <Badge
                 variant="secondary"
                 className="text-tiny! h-4 min-w-4 px-1 rounded-none bg-secondary text-white"
@@ -502,37 +1021,39 @@ const InvoiceDetails = () => {
               </Badge>
             </div>
           </div>
+
           <Tabs
             defaultValue={String(data.sections[0]?.id)}
-            className="flex h-full overflow-hidden bg-white"
+            className="flex h-[calc(100%-52px)] overflow-hidden bg-white"
             orientation="vertical"
           >
             <div className="h-full border-r">
               <TabsList className="flex flex-col w-56 rounded-none p-0 items-stretch justify-start overflow-x-hidden overflow-y-auto">
-                {data.sections.map((item) => (
-                  <TabsTrigger
-                    key={item.id}
-                    value={String(item.id)}
-                    className="flex w-full m-0 border-none items-start justify-between text-left rounded-none border-b px-3 py-2 text-tiny font-bold uppercase bg-white data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none whitespace-normal h-auto"
-                  >
-                    <div className="flex w-full flex-col gap-0.5 text-left">
-                      <span className="text-tiny font-bold">{item.name}</span>
-                      <span className="text-tiny opacity-80">
-                        ₹ {getSumOfBillingItem(item).toFixed(2)}
-                      </span>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-tiny! h-4 min-w-4 px-1 rounded-full ml-1 shrink-0 bg-background text-black"
+                {liveSections.map((item) => {
+                  return (
+                    <TabsTrigger
+                      key={item.id}
+                      value={String(item.id)}
+                      className="flex w-full m-0 border-none items-start justify-between text-left rounded-none border-b px-3 py-2 text-tiny font-bold uppercase bg-white data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none whitespace-normal h-auto"
                     >
-                      {item.invoiceBillingItems?.length}
-                    </Badge>
-                  </TabsTrigger>
-                ))}
+                      <div className="flex w-full flex-col gap-0.5 text-left">
+                        <span className="text-tiny font-bold">{item.name}</span>
+                        <span className="text-tiny opacity-80">
+                          {formatCurrency(item.liveTotal)}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-tiny! h-4 min-w-4 px-1 rounded-full ml-1 shrink-0 bg-background text-black"
+                      >
+                        {item.liveItemCount}
+                      </Badge>
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
             </div>
 
-            {/* TAB CONTENT */}
             <div className="flex-1 overflow-hidden">
               {data.sections.map((item, index) => (
                 <TabsContent
@@ -544,13 +1065,105 @@ const InvoiceDetails = () => {
                     form={form}
                     data={item}
                     selectedIndex={index}
+                    initialItemsMap={initialItemsMap}
+                    canUpdateInvoice={Boolean(canUpdateInvoice)}
                   />
                 </TabsContent>
               ))}
             </div>
           </Tabs>
+          {canUpdateInvoice && updatedRowsMissingReasons.length > 0 && (
+            <div className="border-t bg-white px-3 py-2 text-xs text-red-500">
+              Add a reason for each updated row before saving the invoice.
+            </div>
+          )}
+          <div className="fixed right-4 bottom-4 z-40 w-[min(360px,calc(100vw-2rem))]">
+            <div className="overflow-hidden rounded-xl border border-secondary/20 bg-white shadow-2xl">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between bg-secondary px-4 py-3 text-left text-white"
+                onClick={() => setSummaryCollapsed((value) => !value)}
+              >
+                <div>
+                  <p className="text-tiny uppercase tracking-[0.2em] text-white/70">
+                    Invoice Summary
+                  </p>
+                  <p className="text-tiny font-semibold">
+                    {formatCurrency(invoiceAmounts.total)}
+                  </p>
+                </div>
+                {summaryCollapsed ? (
+                  <ChevronUp className="size-4" />
+                ) : (
+                  <ChevronDown className="size-4" />
+                )}
+              </button>
+
+              {!summaryCollapsed && (
+                <div className="grid gap-3 p-4 text-tiny">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                    <span className="text-muted-foreground">Discount</span>
+                    <div className="grid grid-cols-[72px_92px] gap-2">
+                      <FormField
+                        type="select"
+                        name={
+                          "discountType" as Path<updateInvoiceValidatorType>
+                        }
+                        control={form.control}
+                        options={getDiscountTypeOptions()}
+                        hideError
+                      />
+                      <FormField
+                        type="number"
+                        name={
+                          "discountValue" as Path<updateInvoiceValidatorType>
+                        }
+                        control={form.control}
+                        hideError
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      Invoice Subtotal
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(invoiceAmounts.subtotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      Discount Amount
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(invoiceAmounts.invoiceDiscount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Paid</span>
+                    <span className="font-medium">
+                      {formatCurrency(invoiceAmounts.paid)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-t pt-3">
+                    <span className="font-semibold">Total</span>
+                    <span className="text-base font-semibold">
+                      {formatCurrency(invoiceAmounts.total)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                    <span className="font-semibold">Due</span>
+                    <span className="text-base font-semibold text-destructive">
+                      {formatCurrency(invoiceAmounts.due)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </form>
       </Form>
+
       <TransactionsModal
         billId={data.id}
         open={transactionsOpen}

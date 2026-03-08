@@ -215,7 +215,7 @@ const BedAvailabilityModal = () => {
           >
             <div>
               <Bed />
-              <span>Bed Availability</span>
+              <span>BED AVAILABILITY</span>
             </div>
           </SidebarMenuButton>
         </SidebarMenuItem>

@@ -1,6 +1,7 @@
 import {
   AddressType,
   ContactType,
+  DiscountType,
   IdentityType,
   Patient,
   Prisma,
@@ -606,26 +607,20 @@ export const createAPI = async (req: Request, user: User) => {
 
         const { billingItems, createdAt, transactions, ...rest } = body.invoice;
 
+        const groupedBillingItems = new Map<number, typeof billingItems>();
+
+        billingItems?.forEach((item) => {
+          const existingSectionItems =
+            groupedBillingItems.get(item.billingSection.id) || [];
+          existingSectionItems.push(item);
+          groupedBillingItems.set(item.billingSection.id, existingSectionItems);
+        });
+
         const invoice = await tx.invoice.create({
           data: {
             ...rest,
             createdBy: user.id,
             updatedBy: user.id,
-            billingItems: {
-              create:
-                billingItems?.map((item) => ({
-                  billingSectionId: item.billingSection.id,
-                  serviceId: item.service.id,
-                  quantity: item.quantity,
-                  rate: item.rate,
-                  discountType: item.discountType,
-                  discountValue: item.discountValue,
-                  total: item.total,
-                  createdBy: user.id,
-                  updatedBy: user.id,
-                  createdAt: createdAt,
-                })) || [],
-            },
             transactions: {
               create:
                 transactions?.map((transaction) => ({
@@ -650,6 +645,41 @@ export const createAPI = async (req: Request, user: User) => {
           },
           include: { opd: true },
         });
+
+        for (const [billingSectionId, sectionItems] of groupedBillingItems) {
+          const invoiceBillingSection = await tx.invoiceBillingSection.create({
+            data: {
+              invoiceId: invoice.id,
+              billingSectionId,
+              discountType: DiscountType.VALUE,
+              discountValue: 0,
+              createdBy: user.id,
+              updatedBy: user.id,
+              createdAt,
+            },
+          });
+
+          if (!sectionItems.length) {
+            continue;
+          }
+
+          await tx.invoiceBillingItem.createMany({
+            data: sectionItems.map((item) => ({
+              invoiceId: invoice.id,
+              invoiceBillingSectionId: invoiceBillingSection.id,
+              billingSectionId: item.billingSection.id,
+              serviceId: item.service.id,
+              quantity: item.quantity,
+              rate: item.rate,
+              discountType: item.discountType,
+              discountValue: item.discountValue,
+              total: item.total,
+              createdBy: user.id,
+              updatedBy: user.id,
+              createdAt,
+            })),
+          });
+        }
 
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {

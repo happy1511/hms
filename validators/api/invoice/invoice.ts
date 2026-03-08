@@ -19,6 +19,7 @@ const billingItemValidator = z.object({
   discountType: z.enum(DiscountType).default(DiscountType.VALUE),
   discountValue: z.coerce.number().default(0),
   total: z.coerce.number(),
+  updateReason: z.string().trim().max(1000).nullable().optional(),
   createdAt: z.coerce.date().default(new Date()),
 });
 
@@ -56,6 +57,9 @@ const updateInvoiceValidator = z.object({
     .array(
       z.object({
         id: z.coerce.number(),
+        invoiceBillingSectionId: z.coerce.number().optional(),
+        discountType: z.enum(DiscountType).default(DiscountType.VALUE),
+        discountValue: z.coerce.number().default(0),
         billingItems: z.array(billingItemValidator),
       }),
     )

@@ -1,4 +1,9 @@
-import { AddressType, ContactType, User } from "@/generated/prisma/client";
+import {
+  AddressType,
+  ContactType,
+  DiscountType,
+  User,
+} from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -14,6 +19,88 @@ type InvoiceTx = Omit<
   typeof prisma,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
 >;
+
+const hasBillingItemChanged = (
+  existingItem: {
+    billingSectionId: number;
+    serviceId: number;
+    quantity: number;
+    rate: number;
+    discountType: string;
+    discountValue: number;
+    total: number;
+  },
+  incomingItem: {
+    billingSection: { id: number };
+    service: { id: number };
+    quantity: number;
+    rate: number;
+    discountType: string;
+    discountValue: number;
+    total: number;
+  },
+) => {
+  return (
+    existingItem.billingSectionId !== incomingItem.billingSection.id ||
+    existingItem.serviceId !== incomingItem.service.id ||
+    existingItem.quantity !== incomingItem.quantity ||
+    existingItem.rate !== incomingItem.rate ||
+    existingItem.discountType !== incomingItem.discountType ||
+    existingItem.discountValue !== incomingItem.discountValue ||
+    existingItem.total !== incomingItem.total
+  );
+};
+
+const getDiscountAmount = (
+  amount: number,
+  discountType: DiscountType,
+  discountValue: number,
+) => {
+  return discountType === DiscountType.PERCENTAGE
+    ? (amount * discountValue) / 100
+    : discountValue;
+};
+
+const getInvoiceTotalsFromSections = ({
+  billingSections,
+  invoiceDiscountType,
+  invoiceDiscountValue,
+  isFree,
+}: {
+  billingSections: Array<{
+    discountType: DiscountType;
+    discountValue: number;
+    billingItems: Array<{ total: number }>;
+  }>;
+  invoiceDiscountType: DiscountType;
+  invoiceDiscountValue: number;
+  isFree: boolean;
+}) => {
+  const rate = billingSections.reduce((invoiceSum, section) => {
+    const sectionSubtotal = section.billingItems.reduce(
+      (sum, item) => sum + item.total,
+      0,
+    );
+    const sectionDiscount = getDiscountAmount(
+      sectionSubtotal,
+      section.discountType,
+      section.discountValue,
+    );
+
+    return invoiceSum + Math.max(sectionSubtotal - sectionDiscount, 0);
+  }, 0);
+
+  const invoiceDiscount = getDiscountAmount(
+    rate,
+    invoiceDiscountType,
+    invoiceDiscountValue,
+  );
+
+  return {
+    rate,
+    total: isFree ? 0 : Math.max(rate - invoiceDiscount, 0),
+  };
+};
 
 const cancelOrdersForBillingItems = async (
   tx: InvoiceTx,
@@ -128,6 +215,16 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
       const existingInvoice = await prisma.invoice.findFirst({
         where: { id, isDeleted: false },
         include: {
+          billingSections: {
+            include: {
+              billingSection: true,
+              items: {
+                include: {
+                  service: true,
+                },
+              },
+            },
+          },
           transactions: { include: { receivedBy: { select: { name: true } } } },
           opd: {
             include: {
@@ -179,22 +276,36 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
         });
       }
 
-      const invoiceBillingItems = await prisma.billingSection.findMany({
+      const billingSections = await prisma.billingSection.findMany({
         where: { isDeleted: false },
-        include: {
-          invoiceBillingItems: {
-            where: { invoiceId: id },
-            include: {
-              service: true,
-            },
-          },
-        },
       });
+
+      const invoiceSectionByBillingSectionId = new Map(
+        existingInvoice.billingSections.map((section) => [
+          section.billingSectionId,
+          section,
+        ]),
+      );
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "invoice Fetched Successfully",
-        data: { sections: invoiceBillingItems, ...existingInvoice },
+        data: {
+          ...existingInvoice,
+          sections: billingSections.map((section) => {
+            const invoiceSection = invoiceSectionByBillingSectionId.get(
+              section.id,
+            );
+
+            return {
+              ...section,
+              invoiceBillingSectionId: invoiceSection?.id ?? null,
+              discountType: invoiceSection?.discountType ?? DiscountType.VALUE,
+              discountValue: invoiceSection?.discountValue ?? 0,
+              invoiceBillingItems: invoiceSection?.items ?? [],
+            };
+          }),
+        },
       });
     },
   });
@@ -212,7 +323,11 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           where: { id, isDeleted: false },
           include: {
             transactions: true,
-            billingItems: true,
+            billingSections: {
+              include: {
+                items: true,
+              },
+            },
             opd: true,
             ipd: true,
           },
@@ -229,24 +344,17 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         /* 1️⃣ UPDATE OPD MAIN INVOICE */
         /* ------------------------------------------------------- */
 
-        const updatedOpd = await tx.invoice.update({
-          where: { id },
-          data: {
-            rate: rest.rate,
-            discountType: rest.discountType,
-            discountValue: rest.discountValue,
-            total: rest.total,
-            isFree: rest.isFree,
-            isPaid: !rest.isFree && rest.total === 0 ? false : true,
-            updatedBy: user.id,
-          },
-        });
-
         /* ------------------------------------------------------- */
         /* 2️⃣ HANDLE BILLING ITEMS (CREATE / UPDATE / DELETE) */
         /* ------------------------------------------------------- */
 
-        const existingItems = existingInvoice.billingItems;
+        const existingItems = existingInvoice.billingSections.flatMap((section) =>
+          section.items.map((item) => ({
+            ...item,
+            invoiceBillingSectionId: section.id,
+            updateReason: (item as { updateReason?: string | null }).updateReason,
+          })),
+        );
 
         // Flatten incoming billing items
         const incomingItems =
@@ -257,22 +365,14 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           .map((i) => i.itemId)
           .filter((id): id is number => !!id);
 
-        // DELETE removed items
         const toDelete = existingItems.filter(
           (item) => !incomingIds.includes(item.id),
         );
 
         if (toDelete.length) {
-          await cancelOrdersForBillingItems(
-            tx,
-            toDelete.map((item) => item.id),
-            user.id,
-          );
-
-          await tx.invoiceBillingItem.deleteMany({
-            where: {
-              id: { in: toDelete.map((d) => d.id) },
-            },
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Deleting invoice rows is not allowed",
           });
         }
 
@@ -281,26 +381,88 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         const opdId = existingInvoice.opd?.id;
         const ipdId = existingInvoice.ipd?.id;
 
+        const existingSectionsByBillingSectionId = new Map(
+          existingInvoice.billingSections.map((section) => [
+            section.billingSectionId,
+            section,
+          ]),
+        );
         const existingItemsById = new Map(
           existingItems.map((item) => [item.id, item]),
         );
+        const resolvedInvoiceSectionIds = new Map<number, number>();
+
+        for (const section of billingSections || []) {
+          const existingSection = existingSectionsByBillingSectionId.get(section.id);
+          const shouldPersistSection =
+            section.billingItems.length > 0 || Number(section.discountValue || 0) > 0;
+
+          if (existingSection) {
+            await tx.invoiceBillingSection.update({
+              where: { id: existingSection.id },
+              data: {
+                discountType: section.discountType,
+                discountValue: section.discountValue,
+                updatedBy: user.id,
+              },
+            });
+            resolvedInvoiceSectionIds.set(section.id, existingSection.id);
+            continue;
+          }
+
+          if (!shouldPersistSection) {
+            continue;
+          }
+
+          const createdSection = await tx.invoiceBillingSection.create({
+            data: {
+              invoiceId: existingInvoice.id,
+              billingSectionId: section.id,
+              discountType: section.discountType,
+              discountValue: section.discountValue,
+              createdBy: user.id,
+              updatedBy: user.id,
+            },
+          });
+
+          resolvedInvoiceSectionIds.set(section.id, createdSection.id);
+        }
 
         for (const item of incomingItems) {
           if (item.itemId) {
             const previousItem = existingItemsById.get(item.itemId);
+            const itemChanged =
+              previousItem && hasBillingItemChanged(previousItem, item);
+            const updateReason =
+              (typeof item.updateReason === "string"
+                ? item.updateReason.trim()
+                : "") || null;
+
+            if (itemChanged && !updateReason) {
+              return apiResponse({
+                status: RESPONSE_STATUS.BAD_REQUEST,
+                message: "Update reason is required for edited invoice rows",
+              });
+            }
 
             await tx.invoiceBillingItem.update({
               where: { id: item.itemId },
               data: {
                 billingSectionId: item.billingSection.id,
+                invoiceBillingSectionId:
+                  resolvedInvoiceSectionIds.get(item.billingSection.id) ??
+                  previousItem?.invoiceBillingSectionId,
                 serviceId: item.service.id,
                 quantity: item.quantity,
                 rate: item.rate,
                 discountType: item.discountType,
                 discountValue: item.discountValue,
                 total: item.total,
+                updateReason: itemChanged
+                  ? updateReason
+                  : previousItem?.updateReason ?? null,
                 updatedBy: user.id,
-              },
+              } as any,
             });
 
             if (previousItem && previousItem.serviceId !== item.service.id) {
@@ -326,6 +488,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             data: {
               invoiceId: existingInvoice.id,
               billingSectionId: item.billingSection.id,
+              invoiceBillingSectionId:
+                resolvedInvoiceSectionIds.get(item.billingSection.id)!,
               serviceId: item.service.id,
               quantity: item.quantity,
               rate: item.rate,
@@ -353,6 +517,33 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         /* ------------------------------------------------------- */
         /* 3️⃣ HANDLE TRANSACTIONS (REPLACE STRATEGY) */
         /* ------------------------------------------------------- */
+
+        const totals = getInvoiceTotalsFromSections({
+          billingSections:
+            billingSections?.map((section) => ({
+              discountType: section.discountType,
+              discountValue: Number(section.discountValue || 0),
+              billingItems: section.billingItems.map((item) => ({
+                total: Number(item.total || 0),
+              })),
+            })) || [],
+          invoiceDiscountType: rest.discountType,
+          invoiceDiscountValue: Number(rest.discountValue || 0),
+          isFree: rest.isFree,
+        });
+
+        const updatedOpd = await tx.invoice.update({
+          where: { id },
+          data: {
+            rate: totals.rate,
+            discountType: rest.discountType,
+            discountValue: rest.discountValue,
+            total: totals.total,
+            isFree: rest.isFree,
+            isPaid: !rest.isFree && totals.total === 0 ? false : true,
+            updatedBy: user.id,
+          },
+        });
 
         // Delete all old transactions
         await tx.transaction.deleteMany({
@@ -409,15 +600,37 @@ export const addItemAPI = async (req: Request, user: User) => {
             });
           }
 
+          let invoiceBillingSection = await tx.invoiceBillingSection.findFirst({
+            where: {
+              invoiceId: body.id,
+              billingSectionId: body.billingSection.id,
+            },
+          });
+
+          if (!invoiceBillingSection) {
+            invoiceBillingSection = await tx.invoiceBillingSection.create({
+              data: {
+                invoiceId: body.id,
+                billingSectionId: body.billingSection.id,
+                discountType: DiscountType.VALUE,
+                discountValue: 0,
+                createdBy: user.id,
+                updatedBy: user.id,
+              },
+            });
+          }
+
           const createdItem = await tx.invoiceBillingItem.create({
             data: {
               billingSectionId: body.billingSection.id,
+              invoiceBillingSectionId: invoiceBillingSection.id,
               serviceId: body.service.id,
               quantity: body.quantity,
               rate: body.rate,
               discountType: body.discountType,
               discountValue: body.discountValue,
               total: body.total,
+              updateReason: body.updateReason ?? null,
               createdBy: user.id,
               updatedBy: user.id,
               createdAt: body.createdAt,
@@ -425,25 +638,33 @@ export const addItemAPI = async (req: Request, user: User) => {
             },
           });
 
-          const subtotalResult = await tx.invoiceBillingItem.aggregate({
+          const invoiceSections = await tx.invoiceBillingSection.findMany({
             where: { invoiceId: body.id },
-            _sum: { total: true },
+            include: {
+              items: {
+                select: {
+                  total: true,
+                },
+              },
+            },
           });
 
-          const subTotal = subtotalResult._sum.total ?? 0;
-          const invoiceDiscount =
-            existingInvoice.discountType === "PERCENTAGE"
-              ? (subTotal * existingInvoice.discountValue) / 100
-              : existingInvoice.discountValue;
-          const invoiceTotal = existingInvoice.isFree
-            ? 0
-            : Math.max(subTotal - invoiceDiscount, 0);
+          const totals = getInvoiceTotalsFromSections({
+            billingSections: invoiceSections.map((section) => ({
+              discountType: section.discountType,
+              discountValue: section.discountValue,
+              billingItems: section.items,
+            })),
+            invoiceDiscountType: existingInvoice.discountType,
+            invoiceDiscountValue: existingInvoice.discountValue,
+            isFree: existingInvoice.isFree,
+          });
 
           const updatedInvoice = await tx.invoice.update({
             where: { id: body.id },
             data: {
-              rate: subTotal,
-              total: invoiceTotal,
+              rate: totals.rate,
+              total: totals.total,
               updatedBy: user.id,
             },
           });

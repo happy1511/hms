@@ -5,6 +5,7 @@
 
 import {
   ActionType,
+  DiscountType,
   DoctorType,
   Gender,
   IdentityType,
@@ -739,15 +740,16 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
 }>;
 
 export type BillingSections = Prisma.BillingSectionGetPayload<{
-  include: {
-    transactions: { include: { receivedBy: { select: { name: true } } } };
-    invoiceBillingItems: {
-      include: {
-        service: true;
-      };
+}> & {
+  invoiceBillingSectionId?: number | null;
+  discountType: DiscountType;
+  discountValue: number;
+  invoiceBillingItems: Prisma.InvoiceBillingItemGetPayload<{
+    include: {
+      service: true;
     };
-  };
-}>;
+  }>[];
+};
 
 export type InvoiceGroupedBySection = InvoiceType & {
   sections: BillingSections[];

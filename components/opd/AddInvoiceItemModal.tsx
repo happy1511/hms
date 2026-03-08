@@ -19,6 +19,7 @@ import { DiscountType, Status } from "@/generated/prisma/enums";
 import AddPaymentModal from "./AddPayment";
 import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 import { PaginatedResponse, ServiceDataType } from "@/lib/type";
+import { getDiscountTypeOptions } from "@/lib/utils";
 import { BillingSection } from "@/generated/prisma/client";
 import { useCreateInvoiceBillingItem } from "@/hooks/query/invoice";
 import {
@@ -229,10 +230,7 @@ const AddInvoiceItemModal = ({
                     label="Discount Type"
                     name="discountType"
                     type="select"
-                    options={Object.values(DiscountType).map((d) => ({
-                      value: d,
-                      label: d,
-                    }))}
+                    options={getDiscountTypeOptions()}
                     required
                   />
                   <FormField

@@ -25,6 +25,7 @@ import {
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
+import { getDiscountTypeOptions } from "@/lib/utils";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -359,10 +360,7 @@ const SaleItemRow = ({
         <div className="px-2 py-1">
           <FormField
             type="select"
-            options={Object.values(DiscountType).map((d) => ({
-              value: d,
-              label: d,
-            }))}
+            options={getDiscountTypeOptions()}
             name={`${rowPath}.discountType` as Path<SaleBillFormValues>}
             control={control}
             hideError
@@ -747,10 +745,7 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
           <FormField<SaleBillFormValues>
             label="Invoice Discount Type"
             type="select"
-            options={Object.values(DiscountType).map((d) => ({
-              value: d,
-              label: d,
-            }))}
+            options={getDiscountTypeOptions()}
             name="discountType"
             control={form.control}
           />

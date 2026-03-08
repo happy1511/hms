@@ -1,4 +1,8 @@
-import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  DiscountType,
+  ModuleType,
+} from "@/generated/prisma/enums";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ApiResponse, User } from "./type";
@@ -64,6 +68,17 @@ export const showError = (error: AxiosError<ApiResponse<null>>) => {
   toast.error(
     error.response?.data.message || error.message || "Something went wrong",
   );
+};
+
+export const getDiscountTypeLabel = (discountType: DiscountType) => {
+  return discountType === DiscountType.PERCENTAGE ? "%" : "Rs";
+};
+
+export const getDiscountTypeOptions = () => {
+  return Object.values(DiscountType).map((discountType) => ({
+    value: discountType,
+    label: getDiscountTypeLabel(discountType),
+  }));
 };
 
 export function getAgeFromDOB(dob: Date | string) {

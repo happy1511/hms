@@ -45,6 +45,7 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
+import { getDiscountTypeOptions } from "@/lib/utils";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -532,10 +533,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             label="Discount Type"
             name="discountType"
             type="select"
-            options={Object.values(DiscountType).map((d) => ({
-              value: d,
-              label: d,
-            }))}
+            options={getDiscountTypeOptions()}
             required
           />
           <FormField
