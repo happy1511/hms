@@ -451,6 +451,8 @@ model Permission {
   userPermissions UserPermission[]
 
   @@unique([moduleId, actionId])
+  @@index([moduleId])
+  @@index([actionId])
 }
 
 model UserPermission {
@@ -461,6 +463,8 @@ model UserPermission {
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([permissionId, userId])
+  @@index([userId])
+  @@index([permissionId])
 }
 
 // -------------------- User Management --------------------
