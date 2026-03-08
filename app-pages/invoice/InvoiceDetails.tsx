@@ -17,7 +17,12 @@ import {
 
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
-import { ActionType, DiscountType, ModuleType, Status } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  DiscountType,
+  ModuleType,
+  Status,
+} from "@/generated/prisma/enums";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import CustomButton from "@/components/common/CustomButton";
@@ -393,12 +398,17 @@ const InvoiceDetails = () => {
   }
 
   if (!data) return <div />;
+  console.log(profile, "profile");
+
+  if (!profile) return <div />;
 
   const permissionModule = data.opd
     ? ModuleType.OPD_BILL
     : data.ipd
       ? ModuleType.IPD_BILL
       : undefined;
+
+  if (!permissionModule) return <div />;
 
   const canViewInvoice =
     profile && permissionModule
@@ -422,7 +432,9 @@ const InvoiceDetails = () => {
       <Form {...form}>
         <form
           onSubmit={
-            canUpdateInvoice ? form.handleSubmit(onSubmit) : (event) => event.preventDefault()
+            canUpdateInvoice
+              ? form.handleSubmit(onSubmit)
+              : (event) => event.preventDefault()
           }
           className="h-full"
         >

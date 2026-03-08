@@ -307,7 +307,7 @@ export function CustomSidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
-  const { data } = useProfile();
+  const { data } = useProfile(false);
 
   if (!data) {
     return <div />;

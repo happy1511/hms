@@ -14,7 +14,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const CustomHeader = () => {
-  const { data: profile } = useProfile(false);
+  const { data: profile } = useProfile();
   const { mutateAsync, isPending } = useLogout();
   const user = profile?.data;
   const displayName =
