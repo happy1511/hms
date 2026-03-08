@@ -96,7 +96,9 @@ const CompletedRadiologyResults = ({
                   </h4>
                   <div
                     dangerouslySetInnerHTML={{
-                      __html: selectedOrder.test.template.content,
+                      __html:
+                        selectedOrder.results?.[0].value ||
+                        selectedOrder.test.template.content,
                     }}
                     className="text-sm text-gray-600 whitespace-pre-wrap font-mono"
                   ></div>
