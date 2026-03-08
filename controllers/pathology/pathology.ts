@@ -310,49 +310,50 @@ export const getOrderDetailsAPI = async (req: Request) => {
     onSuccess: async ({ query }) => {
       const { orderId } = query;
 
-      const order = await prisma.pathologyTestOrder.findFirst({
-        where: { id: orderId, test: { isDeleted: false } },
-        include: {
-          patient: true,
-        },
-      });
-
-      if (!order) {
-        return apiResponse({
-          status: RESPONSE_STATUS.NOT_FOUND,
-          message: "Pathology Order Not Found",
+      const result = await prisma.$transaction(async (tx) => {
+        // Fetch order with patient data first
+        const order = await tx.pathologyTestOrder.findFirst({
+          where: { id: orderId, test: { isDeleted: false } },
+          include: {
+            patient: true,
+          },
         });
-      }
 
-      const gender =
-        order.patient.gender === "Female"
-          ? ReferenceRangeSex["FEMALE"]
-          : ReferenceRangeSex["MALE"];
+        if (!order) {
+          return null;
+        }
 
-      const ageInDays = differenceInDays(new Date(), order.patient.dob);
+        const gender =
+          order.patient.gender === "Female"
+            ? ReferenceRangeSex["FEMALE"]
+            : ReferenceRangeSex["MALE"];
 
-      const data = await prisma.pathologyTestOrder.findFirst({
-        where: { id: orderId, test: { isDeleted: false } },
-        include: {
-          patient: true,
-          test: {
-            include: {
-              testHeaders: {
-                include: {
-                  testParameters: {
-                    include: {
-                      parameterOptions: true,
-                      pathologyTestResults: true,
-                      referenceRanges: {
-                        where: {
-                          OR: [
-                            { applicableGender: gender },
-                            { applicableGender: ReferenceRangeSex.Both },
-                          ],
-                          AND: [
-                            { lowerAgeInDays: { lte: ageInDays } },
-                            { upperAgeInDays: { gte: ageInDays } },
-                          ],
+        const ageInDays = differenceInDays(new Date(), order.patient.dob);
+
+        // Now fetch full test data with proper reference ranges
+        const data = await tx.pathologyTestOrder.findFirst({
+          where: { id: orderId, test: { isDeleted: false } },
+          include: {
+            patient: true,
+            test: {
+              include: {
+                testHeaders: {
+                  include: {
+                    testParameters: {
+                      include: {
+                        parameterOptions: true,
+                        pathologyTestResults: true,
+                        referenceRanges: {
+                          where: {
+                            OR: [
+                              { applicableGender: gender },
+                              { applicableGender: ReferenceRangeSex.Both },
+                            ],
+                            AND: [
+                              { lowerAgeInDays: { lte: ageInDays } },
+                              { upperAgeInDays: { gte: ageInDays } },
+                            ],
+                          },
                         },
                       },
                     },
@@ -361,13 +362,22 @@ export const getOrderDetailsAPI = async (req: Request) => {
               },
             },
           },
-        },
+        });
+
+        return { data, order };
       });
+
+      if (!result) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "Pathology Order Not Found",
+        });
+      }
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Pathology Order Parameters Fetched Successfully",
-        data: { ...data, order },
+        data: { ...result.data, order: result.order },
       });
     },
   });
@@ -643,8 +653,8 @@ export const createAPI = async (req: Request, user: User) => {
             container: body.container,
             sampleType: body.sampleType,
             footerNotes: body.footerNotes,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
 
             /** ---------------- HEADERS WITH PARAMETERS ---------------- */
             testHeaders: {
@@ -768,8 +778,8 @@ export const createAPI = async (req: Request, user: User) => {
             price: body.price,
             applicableOn: ServiceApplicableOn["BOTH"],
             status: body.status,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
             pathologyTests: {
               create: {
                 testId: createdTest.id,
@@ -1372,7 +1382,7 @@ export const updateAPI = async (
             container: body.container,
             sampleType: body.sampleType,
             footerNotes: body.footerNotes,
-            updatedBy: user.id ,
+            updatedBy: user.id,
           },
         });
 
@@ -1551,8 +1561,8 @@ export const deleteAPI = async (
           where: { id: data.testId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -1702,4 +1712,3 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
     },
   });
 };
-

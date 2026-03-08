@@ -229,17 +229,6 @@ export const getConsultationAPI = async (
       const { opdId } = params;
 
       return prisma.$transaction(async (tx) => {
-        const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
-        });
-
-        if (!existingOpd) {
-          return apiResponse({
-            status: RESPONSE_STATUS.NOT_FOUND,
-            message: "Opd not found",
-          });
-        }
-
         const consultation = await tx.opd.findUnique({
           where: { id: opdId },
           select: {
@@ -333,6 +322,13 @@ export const getConsultationAPI = async (
             },
           },
         });
+
+        if (!consultation) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
 
         const previousOpds = consultation?.patientId
           ? await tx.opd.findMany({
@@ -479,9 +475,11 @@ export const createAPI = async (req: Request, user: User) => {
             const contactsToUpsert = (patient?.contacts ?? [])
               .filter(
                 (c) =>
-                  [ContactType.PHONE, ContactType.MOBILE, ContactType.EMAIL].includes(
-                    c.type,
-                  ) && Boolean(c.value?.trim()),
+                  [
+                    ContactType.PHONE,
+                    ContactType.MOBILE,
+                    ContactType.EMAIL,
+                  ].includes(c.type) && Boolean(c.value?.trim()),
               )
               .map((c) => ({
                 type: c.type,

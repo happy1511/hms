@@ -605,6 +605,9 @@ model User {
   createdDrugBills           DrugBill[]               @relation("DrugBillCreatedBy")
   updatedDrugBills           DrugBill[]               @relation("DrugBillUpdatedBy")
   deletedDrugBills           DrugBill[]               @relation("DrugBillDeletedBy")
+
+  @@index([isDeleted])
+  @@index([createdAt])
 }
 
 model Doctor {
@@ -757,6 +760,9 @@ model Patient {
   radiologyTestOrders RadiologyTestOrder[]
   beds                Bed[]
   drugBills           DrugBill[]
+
+  @@index([createdAt])
+  @@index([createdBy])
 }
 
 // -------------------- Facility Management --------------------
@@ -865,6 +871,9 @@ model Appointment {
   createdByUser User? @relation("AppointmentCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("AppointmentUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("AppointmentDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([patientId])
+  @@index([appointmentDate])
 }
 
 // -------------------- Pathology Lab Test Management --------------------
@@ -1020,11 +1029,12 @@ model ReferenceRange {
 
 // -------------------- Pathology Lab Order Management --------------------
 model PathologyTestOrder {
-  id        Int  @id @default(autoincrement())
-  opdId     Int?
-  ipdId     Int?
-  patientId Int
-  testId    Int
+  id                   Int  @id @default(autoincrement())
+  opdId                Int?
+  ipdId                Int?
+  patientId            Int
+  testId               Int
+  invoiceBillingItemId Int?
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1038,16 +1048,22 @@ model PathologyTestOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verifiedBy      User?                 @relation("verifiedPathology", fields: [verifiedById], references: [id])
-  resultEnteredBy User?                 @relation("resultEnteredPathology", fields: [resultEnteredById], references: [id])
-  sampleTakenBy   User?                 @relation("sampleTakenPathology", fields: [sampleTakenById], references: [id])
-  cancelledByUser User?                 @relation("cancelledTakenPathology", fields: [cancelledById], references: [id])
-  patient         Patient               @relation(fields: [patientId], references: [id])
-  test            PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
-  status          PathologyOrderStatus  @default(SAMPLE_PENDING)
-  results         PathologyTestResult[]
-  opd             Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
-  ipd             Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  verifiedBy         User?                 @relation("verifiedPathology", fields: [verifiedById], references: [id])
+  resultEnteredBy    User?                 @relation("resultEnteredPathology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy      User?                 @relation("sampleTakenPathology", fields: [sampleTakenById], references: [id])
+  cancelledByUser    User?                 @relation("cancelledTakenPathology", fields: [cancelledById], references: [id])
+  patient            Patient               @relation(fields: [patientId], references: [id])
+  test               PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  invoiceBillingItem InvoiceBillingItem?   @relation("InvoiceBillingItemPathologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
+  status             PathologyOrderStatus  @default(SAMPLE_PENDING)
+  results            PathologyTestResult[]
+  opd                Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd                Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+
+  @@index([opdId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model PathologyTestResult {
@@ -1069,11 +1085,12 @@ model PathologyTestResult {
 
 // -------------------- Radiology Lab Order Management --------------------
 model RadiologyTestOrder {
-  id        Int  @id @default(autoincrement())
-  opdId     Int?
-  ipdId     Int?
-  patientId Int
-  testId    Int
+  id                   Int  @id @default(autoincrement())
+  opdId                Int?
+  ipdId                Int?
+  patientId            Int
+  testId               Int
+  invoiceBillingItemId Int?
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1087,16 +1104,22 @@ model RadiologyTestOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verifiedBy      User?                 @relation("verifiedRadiology", fields: [verifiedById], references: [id])
-  resultEnteredBy User?                 @relation("resultEnteredRadiology", fields: [resultEnteredById], references: [id])
-  sampleTakenBy   User?                 @relation("sampleTakenRadiology", fields: [sampleTakenById], references: [id])
-  cancelledByUser User?                 @relation("cancelledTakenRadiology", fields: [cancelledById], references: [id])
-  patient         Patient               @relation(fields: [patientId], references: [id])
-  test            RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
-  status          RadiologyOrderStatus  @default(RESULT_PENDING)
-  results         RadiologyTestResult[]
-  opd             Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
-  ipd             Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  verifiedBy         User?                 @relation("verifiedRadiology", fields: [verifiedById], references: [id])
+  resultEnteredBy    User?                 @relation("resultEnteredRadiology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy      User?                 @relation("sampleTakenRadiology", fields: [sampleTakenById], references: [id])
+  cancelledByUser    User?                 @relation("cancelledTakenRadiology", fields: [cancelledById], references: [id])
+  patient            Patient               @relation(fields: [patientId], references: [id])
+  test               RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  invoiceBillingItem InvoiceBillingItem?   @relation("InvoiceBillingItemRadiologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
+  status             RadiologyOrderStatus  @default(RESULT_PENDING)
+  results            RadiologyTestResult[]
+  opd                Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd                Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+
+  @@index([opdId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model RadiologyTestResult {
@@ -1266,13 +1289,15 @@ model InvoiceBillingItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  billingSection BillingSection @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
-  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  invoice        Invoice?       @relation(fields: [invoiceId], references: [id])
-  invoiceId      Int?
-  createdByUser  User?          @relation("InvoiceBillingItemCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser  User?          @relation("InvoiceBillingItemUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser  User?          @relation("InvoiceBillingItemDeletedBy", fields: [deletedBy], references: [id])
+  billingSection  BillingSection       @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  service         Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  invoice         Invoice?             @relation(fields: [invoiceId], references: [id])
+  invoiceId       Int?
+  createdByUser   User?                @relation("InvoiceBillingItemCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser   User?                @relation("InvoiceBillingItemUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser   User?                @relation("InvoiceBillingItemDeletedBy", fields: [deletedBy], references: [id])
+  pathologyOrders PathologyTestOrder[] @relation("InvoiceBillingItemPathologyOrders")
+  radiologyOrders RadiologyTestOrder[] @relation("InvoiceBillingItemRadiologyOrders")
 }
 
 model Invoice {
@@ -1424,6 +1449,10 @@ model Opd {
   prescribedDrugs       PrescribedDrugs[]
   pathologyTestOrders   PathologyTestOrder[]
   radiologyTestOrders   RadiologyTestOrder[]
+
+  @@index([patientId])
+  @@index([isInQueue])
+  @@index([createdAt])
 }
 
 // -------------------- Ipd Management --------------------
@@ -1459,6 +1488,10 @@ model Ipd {
   radiologyTestOrders RadiologyTestOrder[]
   room                Room?                @relation(fields: [roomId], references: [id])
   roomId              Int?
+
+  @@index([patientId])
+  @@index([isDischarged])
+  @@index([createdAt])
 }
 
 // -------------------- Drug Management --------------------

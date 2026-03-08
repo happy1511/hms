@@ -10,6 +10,114 @@ import {
   updateInvoiceValidator,
 } from "@/validators/api/invoice/invoice";
 
+type InvoiceTx = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
+const cancelOrdersForBillingItems = async (
+  tx: InvoiceTx,
+  billingItemIds: number[],
+  userId: number,
+) => {
+  if (!billingItemIds.length) {
+    return;
+  }
+
+  await Promise.all([
+    tx.pathologyTestOrder.updateMany({
+      where: {
+        invoiceBillingItemId: { in: billingItemIds },
+        isCancelled: false,
+      },
+      data: {
+        isCancelled: true,
+        cancelledById: userId,
+      },
+    }),
+    tx.radiologyTestOrder.updateMany({
+      where: {
+        invoiceBillingItemId: { in: billingItemIds },
+        isCancelled: false,
+      },
+      data: {
+        isCancelled: true,
+        cancelledById: userId,
+      },
+    }),
+  ]);
+};
+
+const createOrdersForBillingItem = async (
+  tx: InvoiceTx,
+  {
+    billingItemId,
+    serviceId,
+    patientId,
+    opdId,
+    ipdId,
+  }: {
+    billingItemId: number;
+    serviceId: number;
+    patientId: number | null | undefined;
+    opdId: number | null | undefined;
+    ipdId: number | null | undefined;
+  },
+) => {
+  const [pathologyServices, radiologyServices] = await Promise.all([
+    tx.pathologyTestService.findMany({
+      where: {
+        serviceId,
+        test: { isDeleted: false },
+      },
+      select: { testId: true },
+    }),
+    tx.radiologyTestService.findMany({
+      where: {
+        serviceId,
+        test: { isDeleted: false },
+      },
+      select: { testId: true },
+    }),
+  ]);
+
+  const needsOrderContext =
+    pathologyServices.length > 0 || radiologyServices.length > 0;
+
+  if (needsOrderContext && (!patientId || (!opdId && !ipdId))) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: "Patient Or Admission Context Not Found",
+    });
+  }
+
+  if (pathologyServices.length) {
+    await tx.pathologyTestOrder.createMany({
+      data: pathologyServices.map((service) => ({
+        opdId,
+        ipdId,
+        patientId: patientId!,
+        testId: service.testId,
+        invoiceBillingItemId: billingItemId,
+      })),
+    });
+  }
+
+  if (radiologyServices.length) {
+    await tx.radiologyTestOrder.createMany({
+      data: radiologyServices.map((service) => ({
+        opdId,
+        ipdId,
+        patientId: patientId!,
+        testId: service.testId,
+        invoiceBillingItemId: billingItemId,
+      })),
+    });
+  }
+
+  return null;
+};
+
 export const getInvoiceDetailsAPI = async (req: Request) => {
   return validateRequest({
     querySchema: partialInvoiceValidator,
@@ -105,6 +213,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           include: {
             transactions: true,
             billingItems: true,
+            opd: true,
+            ipd: true,
           },
         });
 
@@ -147,13 +257,18 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           .map((i) => i.itemId)
           .filter((id): id is number => !!id);
 
-        console.log(incomingIds, incomingItems, existingInvoice, existingItems);
         // DELETE removed items
         const toDelete = existingItems.filter(
           (item) => !incomingIds.includes(item.id),
         );
 
         if (toDelete.length) {
+          await cancelOrdersForBillingItems(
+            tx,
+            toDelete.map((item) => item.id),
+            user.id,
+          );
+
           await tx.invoiceBillingItem.deleteMany({
             where: {
               id: { in: toDelete.map((d) => d.id) },
@@ -161,10 +276,19 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           });
         }
 
-        // UPSERT incoming items
+        const patientId =
+          existingInvoice.opd?.patientId ?? existingInvoice.ipd?.patientId;
+        const opdId = existingInvoice.opd?.id;
+        const ipdId = existingInvoice.ipd?.id;
+
+        const existingItemsById = new Map(
+          existingItems.map((item) => [item.id, item]),
+        );
+
         for (const item of incomingItems) {
           if (item.itemId) {
-            // UPDATE
+            const previousItem = existingItemsById.get(item.itemId);
+
             await tx.invoiceBillingItem.update({
               where: { id: item.itemId },
               data: {
@@ -178,22 +302,51 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
                 updatedBy: user.id,
               },
             });
-          } else {
-            // CREATE
-            await tx.invoiceBillingItem.create({
-              data: {
-                invoiceId: existingInvoice.id,
-                billingSectionId: item.billingSection.id,
+
+            if (previousItem && previousItem.serviceId !== item.service.id) {
+              await cancelOrdersForBillingItems(tx, [item.itemId], user.id);
+
+              const orderError = await createOrdersForBillingItem(tx, {
+                billingItemId: item.itemId,
                 serviceId: item.service.id,
-                quantity: item.quantity,
-                rate: item.rate,
-                discountType: item.discountType,
-                discountValue: item.discountValue,
-                total: item.total,
-                createdBy: user.id,
-                updatedBy: user.id,
-              },
-            });
+                patientId,
+                opdId,
+                ipdId,
+              });
+
+              if (orderError) {
+                return orderError;
+              }
+            }
+
+            continue;
+          }
+
+          const createdItem = await tx.invoiceBillingItem.create({
+            data: {
+              invoiceId: existingInvoice.id,
+              billingSectionId: item.billingSection.id,
+              serviceId: item.service.id,
+              quantity: item.quantity,
+              rate: item.rate,
+              discountType: item.discountType,
+              discountValue: item.discountValue,
+              total: item.total,
+              createdBy: user.id,
+              updatedBy: user.id,
+            },
+          });
+
+          const orderError = await createOrdersForBillingItem(tx, {
+            billingItemId: createdItem.id,
+            serviceId: item.service.id,
+            patientId,
+            opdId,
+            ipdId,
+          });
+
+          if (orderError) {
+            return orderError;
           }
         }
 
@@ -239,118 +392,90 @@ export const addItemAPI = async (req: Request, user: User) => {
     req,
     user,
     onSuccess: async ({ body }) => {
-      return prisma.$transaction(async (tx) => {
-        const existingInvoice = await tx.invoice.findFirst({
-          where: { id: body.id, isDeleted: false },
-          include: {
-            opd: true,
-            ipd: true,
-          },
-        });
-
-        if (!existingInvoice) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Invoice Not Found",
+      return prisma.$transaction(
+        async (tx) => {
+          const existingInvoice = await tx.invoice.findFirst({
+            where: { id: body.id, isDeleted: false },
+            include: {
+              opd: true,
+              ipd: true,
+            },
           });
-        }
 
-        await tx.invoiceBillingItem.create({
-          data: {
-            billingSectionId: body.billingSection.id,
+          if (!existingInvoice) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Invoice Not Found",
+            });
+          }
+
+          const createdItem = await tx.invoiceBillingItem.create({
+            data: {
+              billingSectionId: body.billingSection.id,
+              serviceId: body.service.id,
+              quantity: body.quantity,
+              rate: body.rate,
+              discountType: body.discountType,
+              discountValue: body.discountValue,
+              total: body.total,
+              createdBy: user.id,
+              updatedBy: user.id,
+              createdAt: body.createdAt,
+              invoiceId: body.id,
+            },
+          });
+
+          const subtotalResult = await tx.invoiceBillingItem.aggregate({
+            where: { invoiceId: body.id },
+            _sum: { total: true },
+          });
+
+          const subTotal = subtotalResult._sum.total ?? 0;
+          const invoiceDiscount =
+            existingInvoice.discountType === "PERCENTAGE"
+              ? (subTotal * existingInvoice.discountValue) / 100
+              : existingInvoice.discountValue;
+          const invoiceTotal = existingInvoice.isFree
+            ? 0
+            : Math.max(subTotal - invoiceDiscount, 0);
+
+          const updatedInvoice = await tx.invoice.update({
+            where: { id: body.id },
+            data: {
+              rate: subTotal,
+              total: invoiceTotal,
+              updatedBy: user.id,
+            },
+          });
+
+          const patientId =
+            existingInvoice.opd?.patientId ?? existingInvoice.ipd?.patientId;
+          const opdId = existingInvoice.opd?.id;
+          const ipdId = existingInvoice.ipd?.id;
+
+          const orderError = await createOrdersForBillingItem(tx, {
+            billingItemId: createdItem.id,
             serviceId: body.service.id,
-            quantity: body.quantity,
-            rate: body.rate,
-            discountType: body.discountType,
-            discountValue: body.discountValue,
-            total: body.total,
-            createdBy: user.id,
-            updatedBy: user.id,
-            createdAt: body.createdAt,
-            invoiceId: body.id,
-          },
-        });
+            patientId,
+            opdId,
+            ipdId,
+          });
 
-        const subtotalResult = await tx.invoiceBillingItem.aggregate({
-          where: { invoiceId: body.id },
-          _sum: { total: true },
-        });
+          if (orderError) {
+            return orderError;
+          }
 
-        const subTotal = subtotalResult._sum.total ?? 0;
-        const invoiceDiscount =
-          existingInvoice.discountType === "PERCENTAGE"
-            ? (subTotal * existingInvoice.discountValue) / 100
-            : existingInvoice.discountValue;
-        const invoiceTotal = existingInvoice.isFree
-          ? 0
-          : Math.max(subTotal - invoiceDiscount, 0);
-
-        const updatedInvoice = await tx.invoice.update({
-          where: { id: body.id },
-          data: {
-            rate: subTotal,
-            total: invoiceTotal,
-            updatedBy: user.id,
-          },
-        });
-
-        const pathologyServices = await tx.pathologyTestService.findMany({
-          where: {
-            serviceId: { equals: body.service.id },
-            test: { isDeleted: false },
-          },
-        });
-
-        const radiologyServices = await tx.radiologyTestService.findMany({
-          where: {
-            serviceId: { equals: body.service.id },
-            test: { isDeleted: false },
-          },
-        });
-
-        const needsOrderContext =
-          pathologyServices.length > 0 || radiologyServices.length > 0;
-
-        const patientId =
-          existingInvoice.opd?.patientId ?? existingInvoice.ipd?.patientId;
-        const opdId = existingInvoice.opd?.id;
-        const ipdId = existingInvoice.ipd?.id;
-
-        if (needsOrderContext && (!patientId || (!opdId && !ipdId))) {
           return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Patient Or Admission Context Not Found",
+            status: RESPONSE_STATUS.CREATED,
+            message: "Invoice Created Successfully",
+            data: updatedInvoice,
           });
-        }
-
-        if (pathologyServices.length) {
-          await tx.pathologyTestOrder.createMany({
-            data: pathologyServices.map((service) => ({
-              opdId,
-              ipdId,
-              patientId: patientId!,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        if (radiologyServices.length) {
-          await tx.radiologyTestOrder.createMany({
-            data: radiologyServices.map((service) => ({
-              opdId,
-              ipdId,
-              patientId: patientId!,
-              testId: service.testId,
-            })),
-          });
-        }
-
-        return apiResponse({
-          status: RESPONSE_STATUS.CREATED,
-          message: "Invoice Created Successfully",
-          data: updatedInvoice,
-        });
-      });
+        },
+        {
+          maxWait: 10000,
+          timeout: 20000,
+        },
+      );
     },
   });
 };
