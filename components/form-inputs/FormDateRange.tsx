@@ -21,6 +21,67 @@ import { cn } from "@/lib/utils";
 import { FormDateRangePickerProps } from "@/lib/type";
 import { DateRange } from "react-day-picker";
 
+import {
+  startOfToday,
+  endOfToday,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+} from "date-fns";
+import { isSameDay } from "date-fns";
+
+const isSameRange = (a?: DateRange, b?: DateRange) => {
+  if (!a?.from || !a?.to || !b?.from || !b?.to) return false;
+
+  return isSameDay(a.from, b.from) && isSameDay(a.to, b.to);
+};
+
+export const DATE_PRESETS: { label: string; range: DateRange }[] = [
+  {
+    label: "Today",
+    range: {
+      from: startOfToday(),
+      to: endOfToday(),
+    },
+  },
+  {
+    label: "Yesterday",
+    range: {
+      from: subDays(startOfToday(), 1),
+      to: subDays(endOfToday(), 1),
+    },
+  },
+  {
+    label: "Last 7 Days",
+    range: {
+      from: subDays(startOfToday(), 6),
+      to: endOfToday(),
+    },
+  },
+  {
+    label: "Last 30 Days",
+    range: {
+      from: subDays(startOfToday(), 29),
+      to: endOfToday(),
+    },
+  },
+  {
+    label: "This Month",
+    range: {
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    },
+  },
+  {
+    label: "Last Month",
+    range: {
+      from: startOfMonth(subMonths(new Date(), 1)),
+      to: endOfMonth(subMonths(new Date(), 1)),
+    },
+  },
+];
+
 export function FormDateRangePicker<T extends FieldValues>({
   name,
   control,
@@ -78,22 +139,52 @@ export function FormDateRangePicker<T extends FieldValues>({
                 </Button>
               </PopoverTrigger>
 
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 flex" align="start">
+                {/* Presets */}
+                <div className="flex flex-col border-r p-2 gap-1 w-[150px]">
+                  {DATE_PRESETS.map((preset) => {
+                    const active = isSameRange(value, preset.range);
+
+                    return (
+                      <Button
+                        key={preset.label}
+                        variant={active ? "secondary" : "ghost"}
+                        size="sm"
+                        className="justify-start text-tiny h-auto py-1"
+                        onClick={() => field.onChange(preset.range)}
+                      >
+                        {preset.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                {/* Calendar */}
                 <Calendar
                   mode="range"
                   selected={value}
                   onSelect={field.onChange}
                   defaultMonth={value?.from}
                   numberOfMonths={numberOfMonths}
-                  // disabled={(date) =>
-                  //   (minDate && date < minDate) || (maxDate && date > maxDate)
-                  // }
+                  disabled={(date: Date) =>
+                    (date > endOfToday() ||
+                      (minDate && date < minDate) ||
+                      (maxDate && date > maxDate)) as boolean
+                  }
                   initialFocus
+                  className="[--cell-size:--spacing(6)]"
+                  classNames={{
+                    day_button: "text-tiny",
+                    month_grid: "text-tiny",
+                    caption_label: "text-tiny",
+                    weekday:
+                      "text-muted-foreground rounded-md flex-1 font-normal select-none text-tiny",
+                  }}
                 />
               </PopoverContent>
             </Popover>
 
-            {!hideError && <FormMessage className="absolute bottom-[-18px]" />}
+            {!hideError && <FormMessage className="absolute -bottom-4.5" />}
           </FormItem>
         );
       }}

@@ -1,10 +1,9 @@
 "use client";
 
-import InvoiceExport from "@/components/common/InvoiceExport";
+import InvoicePrintLayout from "@/components/common/InvoicePrintLayout";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
 import { OPDType } from "@/lib/type";
 import { format } from "date-fns";
-import { BlobProvider } from "@react-pdf/renderer";
 import { LoaderIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
@@ -31,9 +30,7 @@ const ViewInvoiceModal = ({
   const router = useRouter();
   const [includePaymentHistory, setIncludePaymentHistory] = useState(false);
   const [includeRemarks, setIncludeRemarks] = useState(false);
-  const effectiveInvoiceId = invoiceId ?? opd?.invoice?.id;
-
-  if (!effectiveInvoiceId) return null;
+  const effectiveInvoiceId = invoiceId ?? opd?.invoice?.id ?? 0;
 
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: effectiveInvoiceId,
@@ -123,6 +120,8 @@ const ViewInvoiceModal = ({
     };
   }, [data]);
 
+  if (!effectiveInvoiceId) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -136,10 +135,10 @@ const ViewInvoiceModal = ({
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-[98vw]! border-secondary border-4 bg-white h-[95dvh] flex flex-col p-4">
-        <div className="text-sm font-medium">Invoice</div>
+      <DialogContent className="max-w-[98vw]! border-secondary border-4 bg-white h-[95dvh] flex flex-col p-4 print:max-w-none print:h-auto print:border-0 print:p-0 print:shadow-none">
+        <div className="text-sm font-medium print:hidden">Invoice</div>
 
-        <div className="flex items-center gap-4 text-xs mt-1">
+        <div className="mt-1 flex items-center gap-4 text-xs print:hidden">
           <label className="flex items-center gap-2">
             <Checkbox
               checked={includePaymentHistory}
@@ -163,41 +162,21 @@ const ViewInvoiceModal = ({
           </label>
         </div>
 
-        <div className="flex-1 overflow-hidden border mt-3">
+        <div className="mt-3 flex-1 overflow-auto border bg-[#e8e8e8] print:mt-0 print:overflow-visible print:border-0 print:bg-white">
           {isLoading || !previewData ? (
             <div className="h-full w-full flex items-center justify-center">
               <LoaderIcon className="size-4 animate-spin" />
             </div>
           ) : (
-            <BlobProvider
-              key={`${effectiveInvoiceId}-${includePaymentHistory}-${includeRemarks}`}
-              document={
-                <InvoiceExport
-                  {...previewData}
-                  showViewer={false}
-                  includePaymentHistory={includePaymentHistory}
-                  includeRemarks={includeRemarks}
-                />
-              }
-            >
-              {({ url, loading }) =>
-                loading ? (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <LoaderIcon className="size-4 animate-spin" />
-                  </div>
-                ) : (
-                  <iframe
-                    title="Invoice Preview"
-                    src={url || undefined}
-                    className="h-full w-full"
-                  />
-                )
-              }
-            </BlobProvider>
+            <InvoicePrintLayout
+              {...previewData}
+              includePaymentHistory={includePaymentHistory}
+              includeRemarks={includeRemarks}
+            />
           )}
         </div>
 
-        <div className="flex justify-center gap-2 mt-3">
+        <div className="mt-3 flex justify-center gap-2 print:hidden">
           <CustomButton
             type="button"
             onClick={() => router.push(`/invoice/${effectiveInvoiceId}`)}
@@ -211,6 +190,12 @@ const ViewInvoiceModal = ({
             }
           >
             Print Payment Receipt
+          </CustomButton>
+          <CustomButton
+            type="button"
+            onClick={() => window.open(`/invoice/print/${effectiveInvoiceId}`, "_blank")}
+          >
+            Print Detailed Invoice
           </CustomButton>
 
           <CustomButton

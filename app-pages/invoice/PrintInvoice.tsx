@@ -1,6 +1,7 @@
 "use client";
 
-import InvoiceExport from "@/components/common/InvoiceExport";
+import InvoicePrintLayout from "@/components/common/InvoicePrintLayout";
+import CustomButton from "@/components/common/CustomButton";
 import { Prisma } from "@/generated/prisma/client";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
 import { BillingSections } from "@/lib/type";
@@ -116,54 +117,34 @@ const PrintInvoice = () => {
   const opdOrIpdNumber = data.opd?.id || data.ipd?.id;
 
   return (
-    <div className="flex gap-6 h-full w-full">
-      {/* LEFT SIDE - SECTION SELECTOR */}
-      {/* <div className="w-64 border rounded-lg p-4 space-y-3">
-        <h3 className="font-semibold text-sm">Select Sections</h3>
-
-        {data.sections.map((section: any) => (
-          <div key={section.id} className="flex items-center space-x-2">
-            <Checkbox
-              checked={selectedSections.includes(section.id)}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  setSelectedSections((prev) => [...prev, section.id]);
-                } else {
-                  setSelectedSections((prev) =>
-                    prev.filter((id) => id !== section.id)
-                  );
-                }
-              }}
-            />
-            <Label>{section.name}</Label>
-          </div>
-        ))}
-      </div> */}
-
-      {/* RIGHT SIDE - INVOICE */}
-      <div className="flex-1">
-        <InvoiceExport
-          discount={invoiceDiscountAmount || 0}
-          paid={paidAmount}
-          billingItems={billingItems}
-          customer={{
-            name: `${patient?.firstName} ${patient?.lastName}`,
-            uhid: patient?.uhid || "",
-            age: patientAge,
-            gender: patientGender,
-            relation: patientRelation,
-            address: patient?.addresses?.[0] ? formatPatientAddress(patient) : "",
-            phone: patient?.contacts?.[0]?.value || "",
-          }}
-          invoice={{
-            number: `INV-${data.id}`,
-            date: format(new Date(data.createdAt), "dd/MM/yyyy hh:mm a"),
-            opdNumber: opdOrIpdNumber ? String(opdOrIpdNumber) : "",
-            consultant: consultantName,
-            referredBy: referredByName,
-          }}
-        />
+    <div className="min-h-screen bg-[#e8e8e8]">
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-2 border-b bg-white px-4 py-3 print:hidden">
+        <CustomButton type="button" onClick={() => window.print()}>
+          Print Detailed Invoice
+        </CustomButton>
       </div>
+      <InvoicePrintLayout
+        customer={{
+          name: `${patient?.firstName} ${patient?.lastName}`,
+          uhid: patient?.uhid || "",
+          age: patientAge,
+          gender: patientGender,
+          relation: patientRelation,
+          address: patient?.addresses?.[0] ? formatPatientAddress(patient) : "",
+          phone: patient?.contacts?.[0]?.value || "",
+        }}
+        invoice={{
+          number: `INV-${data.id}`,
+          date: format(new Date(data.createdAt), "dd/MM/yyyy hh:mm a"),
+          opdNumber: opdOrIpdNumber ? String(opdOrIpdNumber) : "",
+          consultant: consultantName,
+          referredBy: referredByName,
+          status: data.isPaid ? "Paid" : "Pending",
+        }}
+        discount={invoiceDiscountAmount || 0}
+        paid={paidAmount}
+        billingItems={billingItems}
+      />
     </div>
   );
 };

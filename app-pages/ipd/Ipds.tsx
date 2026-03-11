@@ -28,7 +28,7 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { format } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -160,7 +160,12 @@ const Actions = ({
 const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<FilterValues>({});
+  const [filters, setFilters] = useState<FilterValues>({
+    createdAt: {
+      from: startOfDay(new Date()),
+      to: endOfDay(new Date()),
+    },
+  });
   const [consultantValue, setConsultantValue] = useState("");
 
   const consultantQuery = useInfiniteDoctorList(
@@ -385,7 +390,9 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
         <>
           <CustomFilters<FilterValues>
             filters={neededFilters}
+            defaultValues={filters}
             onSubmit={setFilters}
+            filtersContainerClassName="grid-cols-2"
           />
           <CustomTable
             columns={columns}
