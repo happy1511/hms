@@ -1,10 +1,10 @@
 /*
   Warnings:
 
-  - You are about to drop the column `city` on the `patientaddress` table. All the data in the column will be lost.
-  - You are about to drop the column `country` on the `patientaddress` table. All the data in the column will be lost.
-  - You are about to drop the column `postalCode` on the `patientaddress` table. All the data in the column will be lost.
-  - You are about to drop the column `state` on the `patientaddress` table. All the data in the column will be lost.
+  - You are about to drop the column `city` on the `PatientAddress` table. All the data in the column will be lost.
+  - You are about to drop the column `country` on the `PatientAddress` table. All the data in the column will be lost.
+  - You are about to drop the column `postalCode` on the `PatientAddress` table. All the data in the column will be lost.
+  - You are about to drop the column `state` on the `PatientAddress` table. All the data in the column will be lost.
 
 */
 -- AlterTable
