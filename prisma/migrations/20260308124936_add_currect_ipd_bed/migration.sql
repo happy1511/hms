@@ -279,7 +279,7 @@ ALTER TABLE `Room` RENAME INDEX `Room_roomTypeId_fkey` TO `Room_roomTypeId_idx`;
 ALTER TABLE `RoomType` RENAME INDEX `RoomType_departmentId_fkey` TO `RoomType_departmentId_idx`;
 
 -- RenameIndex
-ALTER TABLE `transaction` RENAME INDEX `Transaction_invoiceId_fkey` TO `Transaction_invoiceId_idx`;
+ALTER TABLE `Transaction` RENAME INDEX `Transaction_invoiceId_fkey` TO `Transaction_invoiceId_idx`;
 
 -- RenameIndex
 ALTER TABLE `UserPermission` RENAME INDEX `UserPermission_userId_fkey` TO `UserPermission_userId_idx`;
