@@ -131,6 +131,7 @@ export const RADIOLOGY_COMPLETED_ORDERS_WITH_RESULTS =
 export const OPD = "/opd";
 export const OPD_QUEUE = "/opd/queue";
 export const OPD_CONSULTATION = "/opd/consultation";
+export const OPD_DOCTORS = "/opd/doctors";
 export const OPD_VITALS = "/opd/vitals";
 
 // ----------------------------------

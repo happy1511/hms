@@ -55,7 +55,7 @@ export function FormTextarea<T extends FieldValues>({
               placeholder={placeholder}
               rows={rows}
               maxLength={maxChar}
-              className={`rounded-sm selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
+              className={`selection:text-white selection:bg-gray-500 focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
                 fieldState.invalid
                   ? "border-destructive focus-visible:border-destructive"
                   : ""

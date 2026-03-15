@@ -108,7 +108,7 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
       placeholder={placeholder}
       classNamePrefix="react-select"
       classNames={{
-        control: () => clsx("w-full rounded-none!", className),
+        control: () => clsx("w-full rounded!", className),
         valueContainer: () => "h-6 text-tiny",
         input: () => "m-0!",
         option: () => "text-tiny! py-1!",

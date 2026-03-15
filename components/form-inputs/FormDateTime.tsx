@@ -96,7 +96,7 @@ export function FormDateTime<T extends FieldValues>({
                     id={id}
                     variant="outline"
                     disabled={disabled}
-                    className={`rounded-sm selection:text-white selection:bg-gray-500 bg-white focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 py-1 px-3 flex justify-start ${
+                    className={`selection:text-white selection:bg-gray-500 bg-white focus-visible:border-accent-blue h-auto text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border [&_svg:not([class*='size-'])]:size-3 py-1 px-3 flex justify-start ${
                       fieldState.invalid
                         ? "border-destructive focus-visible:border-destructive"
                         : ""

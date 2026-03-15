@@ -51,7 +51,7 @@ export function FormMultiSelect<T extends FieldValues>({
               placeholder={placeholder}
               options={options as { label: string; value: string }[]}
               className={clsx(
-                "rounded-sm h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
+                "h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
                 className,
               )}
               emptyIndicator={

@@ -11,6 +11,8 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddVitalsModal from "@/components/opd/AddVitalsModal";
+import ChangeOpdDoctorModal from "@/components/opd/ChangeOpdDoctorModal";
+import PrintConsultationModal from "@/components/opd/PrintConsultationModal";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
@@ -50,10 +52,12 @@ const Actions = ({
   canPrint,
   canUpdate,
   data,
+  onPrintConsultPage,
 }: {
   canPrint: boolean;
   canUpdate: boolean;
   data: OPDType;
+  onPrintConsultPage: (opd: OPDType) => void;
 }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
@@ -64,7 +68,7 @@ const Actions = ({
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
-      onClick: () => router.push(`/invoice/${data.invoice.id}`),
+      onClick: () => setViewInvoiceModal(true),
     },
   ];
 
@@ -109,7 +113,7 @@ const Actions = ({
   if (canPrint) {
     opdItems.push({
       label: "Print Consult Page",
-      onClick: () => window.open(`/opd/consultation-print/${data.id}`, "_blank"),
+      onClick: () => onPrintConsultPage(data),
     });
   }
 
@@ -187,6 +191,13 @@ const OPDs = () => {
     },
   });
   const [consultantValue, setConsultantValue] = useState("");
+  const [printConsultOpen, setPrintConsultOpen] = useState(false);
+  const [printConsultOpd, setPrintConsultOpd] = useState<OPDType | null>(null);
+  const [changeDoctorOpen, setChangeDoctorOpen] = useState(false);
+  const [changeDoctorMode, setChangeDoctorMode] = useState<
+    "consultant" | "referring"
+  >("consultant");
+  const [changeDoctorOpd, setChangeDoctorOpd] = useState<OPDType | null>(null);
 
   const consultantQuery = useInfiniteDoctorList(
     {
@@ -283,8 +294,22 @@ const OPDs = () => {
         return <SortableHeader<OPDType> label="Consultant" column={column} />;
       },
       cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          {row.original.consultantDoctor.user.name}
+        <div>
+          <div className="flex items-center text-tiny gap-2">
+            {row.original.consultantDoctor.user.name}
+          </div>
+          {canUpdate && (
+            <div
+              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+              onClick={() => {
+                setChangeDoctorOpd(row.original);
+                setChangeDoctorMode("consultant");
+                setChangeDoctorOpen(true);
+              }}
+            >
+              Change
+            </div>
+          )}
         </div>
       ),
     },
@@ -294,10 +319,24 @@ const OPDs = () => {
         return <SortableHeader<OPDType> label="	Referred By" column={column} />;
       },
       cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          {row.original.referringDoctor
-            ? row.original.referringDoctor.user.name
-            : "-- none --"}
+        <div>
+          <div className="flex items-center text-tiny gap-2">
+            {row.original.referringDoctor
+              ? row.original.referringDoctor.user.name
+              : "-- none --"}
+          </div>
+          {canUpdate && (
+            <div
+              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+              onClick={() => {
+                setChangeDoctorOpd(row.original);
+                setChangeDoctorMode("referring");
+                setChangeDoctorOpen(true);
+              }}
+            >
+              Change
+            </div>
+          )}
         </div>
       ),
     },
@@ -375,6 +414,10 @@ const OPDs = () => {
           canPrint={Boolean(canPrint)}
           canUpdate={Boolean(canUpdate)}
           data={row.original}
+          onPrintConsultPage={(opd) => {
+            setPrintConsultOpd(opd);
+            setPrintConsultOpen(true);
+          }}
         />
       ),
     },
@@ -422,6 +465,26 @@ const OPDs = () => {
             isError={isError}
             error={error}
             getRowId={(row) => String(row.id)}
+          />
+          <PrintConsultationModal
+            open={printConsultOpen}
+            onOpenChange={(open) => {
+              setPrintConsultOpen(open);
+              if (!open) setPrintConsultOpd(null);
+            }}
+            opdId={printConsultOpd?.id ?? null}
+            currentConsultantName={
+              printConsultOpd?.consultantDoctor?.user?.name ?? null
+            }
+          />
+          <ChangeOpdDoctorModal
+            open={changeDoctorOpen}
+            onOpenChange={(open) => {
+              setChangeDoctorOpen(open);
+              if (!open) setChangeDoctorOpd(null);
+            }}
+            opd={changeDoctorOpd}
+            mode={changeDoctorMode}
           />
         </>
       )}

@@ -334,7 +334,33 @@ export const getOrderDetailsAPI = async (req: Request) => {
         const data = await tx.pathologyTestOrder.findFirst({
           where: { id: orderId, test: { isDeleted: false } },
           include: {
-            patient: true,
+            opd: {
+              include: {
+                consultantDoctor: {
+                  include: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  include: { user: { select: { name: true } } },
+                },
+              },
+            },
+            ipd: {
+              include: {
+                consultantDoctor: {
+                  include: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  include: { user: { select: { name: true } } },
+                },
+              },
+            },
+            patient: {
+              include: {
+                relations: true,
+                addresses: { include: { location: true } },
+                contacts: true,
+              },
+            },
             test: {
               include: {
                 testHeaders: {
@@ -350,8 +376,18 @@ export const getOrderDetailsAPI = async (req: Request) => {
                               { applicableGender: ReferenceRangeSex.Both },
                             ],
                             AND: [
-                              { lowerAgeInDays: { lte: ageInDays } },
-                              { upperAgeInDays: { gte: ageInDays } },
+                              {
+                                OR: [
+                                  { lowerAgeInDays: { lte: ageInDays } },
+                                  { lowerAgeInDays: 0 },
+                                ],
+                              },
+                              {
+                                OR: [
+                                  { upperAgeInDays: { gte: ageInDays } },
+                                  { upperAgeInDays: 0 },
+                                ],
+                              },
                             ],
                           },
                         },
@@ -601,6 +637,7 @@ export const getDetailsAPI = async (
                   lowerAgeInDays: true,
                   upperAgeInDays: true,
                   upperRange: true,
+                  lowerRange: true,
                   unit: true,
                   applicableGender: true,
                 },
@@ -1433,7 +1470,7 @@ export const updateAPI = async (
 
               if (param.referenceRanges?.length) {
                 await tx.referenceRange.createMany({
-                  data: param.referenceRanges.map((range) => ({
+                  data: param.referenceRanges?.map((range) => ({
                     testParameterId: createdParam.id,
                     applicableGender: range.applicableGender,
                     lowerAgeDay: range.lowerAgeDay,

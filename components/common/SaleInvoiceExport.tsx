@@ -1,11 +1,7 @@
-import {
-  Document,
-  Page,
-  PDFViewer,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+"use client";
+
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface SaleInvoiceLine {
   name: string;
@@ -28,7 +24,6 @@ interface SaleInvoiceExportProps {
   lines: SaleInvoiceLine[];
   invoiceDiscount: number;
   invoiceTotal: number;
-  showViewer?: boolean;
   includePaymentHistory?: boolean;
   includeRemarks?: boolean;
   transactions?: {
@@ -38,11 +33,12 @@ interface SaleInvoiceExportProps {
     receivedBy?: string;
     amount: number;
   }[];
+  className?: string;
 }
 
-/* -------------------- DOCUMENT -------------------- */
+const money = (value: number) => value.toFixed(2);
 
-const SaleInvoiceDocument = ({
+const SaleInvoiceExport = ({
   billNo,
   billDate,
   patientName,
@@ -53,6 +49,7 @@ const SaleInvoiceDocument = ({
   includePaymentHistory = false,
   includeRemarks = false,
   transactions = [],
+  className = "",
 }: SaleInvoiceExportProps) => {
   const taxableSubTotal = lines.reduce((sum, l) => sum + l.taxableAmount, 0);
   const gstTotal = lines.reduce((sum, l) => sum + l.gstAmount, 0);
@@ -61,158 +58,186 @@ const SaleInvoiceDocument = ({
   const iGstTotal = lines.reduce((sum, l) => sum + l.iGstAmount, 0);
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.frame}>
-          {/* TITLE */}
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>PHARMACY SALE INVOICE</Text>
-          </View>
+    <div
+      className={cn(
+        "w-full bg-white text-[11px] text-black",
+        "print:bg-white print:text-black",
+        className,
+      )}
+    >
+      <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        {/* Header */}
+        <div className="border border-black">
+          <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
+            <p className="font-semibold">PHARMACY SALE INVOICE</p>
+          </div>
+          <InfoRow
+            label1="Bill No"
+            value1={billNo}
+            label2="Date"
+            value2={billDate}
+          />
+          <InfoRow
+            label1="Patient"
+            value1={patientName}
+            label2="Doctor"
+            value2={doctorName || "-"}
+          />
+        </div>
 
-          {/* INFO TABLE */}
-          <View style={styles.infoTable}>
-            <InfoRow
-              label1="Bill No"
-              value1={billNo}
-              label2="Date"
-              value2={billDate}
-            />
-            <InfoRow
-              label1="Patient"
-              value1={patientName}
-              label2="Doctor"
-              value2={doctorName || "-"}
-            />
-          </View>
+        {/* Items table */}
+        <div className="overflow-hidden border border-black">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-[#dedede]">
+                <Cell as="th" className="w-[20%] text-left">
+                  Drug
+                </Cell>
+                <Cell as="th" className="w-[8%] text-right">
+                  Batch
+                </Cell>
+                <Cell as="th" className="w-[8%] text-right">
+                  Qty
+                </Cell>
+                <Cell as="th" className="w-[8%] text-right">
+                  Rate
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  Taxable
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  CGST
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  SGST
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  IGST
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  GST
+                </Cell>
+                <Cell as="th" className="w-[9%] text-right">
+                  Total
+                </Cell>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((line, index) => (
+                <tr key={index}>
+                  <Cell className="text-left">{line.name}</Cell>
+                  <Cell className="text-right">{line.batchNo}</Cell>
+                  <Cell className="text-right">{line.qty}</Cell>
+                  <Cell className="text-right">{money(line.rate)}</Cell>
+                  <Cell className="text-right">{money(line.taxableAmount)}</Cell>
+                  <Cell className="text-right">{money(line.cGstAmount)}</Cell>
+                  <Cell className="text-right">{money(line.sGstAmount)}</Cell>
+                  <Cell className="text-right">{money(line.iGstAmount)}</Cell>
+                  <Cell className="text-right">{money(line.gstAmount)}</Cell>
+                  <Cell className="text-right">{money(line.total)}</Cell>
+                </tr>
+              ))}
+              <tr>
+                <Cell colSpan={9} className="text-right font-semibold">
+                  Taxable Subtotal
+                </Cell>
+                <Cell className="text-right font-semibold">
+                  {money(taxableSubTotal)}
+                </Cell>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          {/* ITEMS TABLE */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.cellDrug}>Drug</Text>
-              <Text style={styles.cellSmall}>Batch</Text>
-              <Text style={styles.cellSmall}>Qty</Text>
-              <Text style={styles.cellSmall}>Rate</Text>
-              <Text style={styles.cellTiny}>Taxable</Text>
-              <Text style={styles.cellTiny}>CGST</Text>
-              <Text style={styles.cellTiny}>SGST</Text>
-              <Text style={styles.cellTiny}>IGST</Text>
-              <Text style={styles.cellTiny}>GST</Text>
-              <Text style={styles.cellTiny}>Total</Text>
-            </View>
-
-            {lines.map((line, index) => (
-              <View key={index} style={styles.itemRow}>
-                <Text style={styles.cellDrug}>{line.name}</Text>
-                <Text style={styles.cellSmall}>{line.batchNo}</Text>
-                <Text style={styles.cellSmall}>{line.qty}</Text>
-                <Text style={styles.cellSmall}>{line.rate.toFixed(2)}</Text>
-                <Text style={styles.cellTiny}>
-                  {line.taxableAmount.toFixed(2)}
-                </Text>
-                <Text style={styles.cellTiny}>
-                  {line.cGstAmount.toFixed(2)}
-                </Text>
-                <Text style={styles.cellTiny}>
-                  {line.sGstAmount.toFixed(2)}
-                </Text>
-                <Text style={styles.cellTiny}>
-                  {line.iGstAmount.toFixed(2)}
-                </Text>
-                <Text style={styles.cellTiny}>{line.gstAmount.toFixed(2)}</Text>
-                <Text style={styles.cellTiny}>{line.total.toFixed(2)}</Text>
-              </View>
-            ))}
-
-            {/* SUBTOTAL */}
-            <View style={styles.subTotalRow}>
-              <Text style={styles.subTotalLabel}>Taxable Subtotal</Text>
-              <Text style={styles.subTotalValue}>
-                {taxableSubTotal.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-
-          {/* PAYMENT HISTORY */}
-          {includePaymentHistory && (
-            <View style={styles.sectionBlock}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.txnDate}>Date</Text>
-                <Text style={styles.txnMode}>Mode</Text>
-                {includeRemarks && (
-                  <Text style={styles.txnRemarks}>Remarks</Text>
+        {/* Payment history */}
+        {includePaymentHistory && (
+          <div className="overflow-hidden border border-black">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-[#dedede]">
+                  <Cell as="th" className="w-[22%] text-left">
+                    Date
+                  </Cell>
+                  <Cell as="th" className="w-[15%] text-left">
+                    Mode
+                  </Cell>
+                  {includeRemarks && (
+                    <Cell as="th" className="w-[33%] text-left">
+                      Remarks
+                    </Cell>
+                  )}
+                  <Cell as="th" className="w-[18%] text-left">
+                    Received By
+                  </Cell>
+                  <Cell as="th" className="w-[12%] text-right">
+                    Amount
+                  </Cell>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.length ? (
+                  transactions.map((txn, index) => (
+                    <tr key={index}>
+                      <Cell className="text-left">{txn.date}</Cell>
+                      <Cell className="text-left">{txn.mode}</Cell>
+                      {includeRemarks && (
+                        <Cell className="text-left">
+                          {txn.remarks || "-"}
+                        </Cell>
+                      )}
+                      <Cell className="text-left">
+                        {txn.receivedBy || "-"}
+                      </Cell>
+                      <Cell className="text-right">
+                        {money(txn.amount)}
+                      </Cell>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <Cell
+                      colSpan={includeRemarks ? 5 : 4}
+                      className="text-center"
+                    >
+                      No payment transactions found
+                    </Cell>
+                  </tr>
                 )}
-                <Text style={styles.txnBy}>Received By</Text>
-                <Text style={styles.txnAmount}>Amount</Text>
-              </View>
+              </tbody>
+            </table>
+          </div>
+        )}
 
-              {transactions.length > 0 ? (
-                transactions.map((txn, index) => (
-                  <View key={index} style={styles.itemRow}>
-                    <Text style={styles.txnDate}>{txn.date}</Text>
-                    <Text style={styles.txnMode}>{txn.mode}</Text>
-                    {includeRemarks && (
-                      <Text style={styles.txnRemarks}>
-                        {txn.remarks || "-"}
-                      </Text>
-                    )}
-                    <Text style={styles.txnBy}>{txn.receivedBy || "-"}</Text>
-                    <Text style={styles.txnAmount}>
-                      {txn.amount.toFixed(2)}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.itemRow}>
-                  <Text style={styles.txnEmpty}>
-                    No payment transactions found
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* SUMMARY TABLE */}
-          <View style={styles.summaryTable}>
-            <SummaryRow
-              leftLabel="GST Total"
-              leftValue={gstTotal.toFixed(2)}
-              rightLabel="Invoice Discount"
-              rightValue={invoiceDiscount.toFixed(2)}
-            />
-            <SummaryRow
-              leftLabel="CGST Total"
-              leftValue={cGstTotal.toFixed(2)}
-              rightLabel="SGST Total"
-              rightValue={sGstTotal.toFixed(2)}
-            />
-            <SummaryRow
-              leftLabel="IGST Total"
-              leftValue={iGstTotal.toFixed(2)}
-              rightLabel="Grand Total"
-              rightValue={invoiceTotal.toFixed(2)}
-            />
-          </View>
-        </View>
-      </Page>
-    </Document>
+        {/* Summary */}
+        <div className="ml-auto w-full max-w-xl overflow-hidden border border-black">
+          <table className="w-full border-collapse">
+            <tbody>
+              <SummaryRow
+                leftLabel="GST Total"
+                leftValue={money(gstTotal)}
+                rightLabel="Invoice Discount"
+                rightValue={money(invoiceDiscount)}
+              />
+              <SummaryRow
+                leftLabel="CGST Total"
+                leftValue={money(cGstTotal)}
+                rightLabel="SGST Total"
+                rightValue={money(sGstTotal)}
+              />
+              <SummaryRow
+                leftLabel="IGST Total"
+                leftValue={money(iGstTotal)}
+                rightLabel="Grand Total"
+                rightValue={money(invoiceTotal)}
+                isLast
+              />
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
-
-/* -------------------- EXPORT WRAPPER -------------------- */
-
-const SaleInvoiceExport = (props: SaleInvoiceExportProps) => {
-  if (props.showViewer === false) {
-    return <SaleInvoiceDocument {...props} />;
-  }
-
-  return (
-    <PDFViewer className="w-full h-full">
-      <SaleInvoiceDocument {...props} />
-    </PDFViewer>
-  );
-};
-
-/* -------------------- REUSABLE ROWS -------------------- */
 
 const InfoRow = ({
   label1,
@@ -225,12 +250,20 @@ const InfoRow = ({
   label2: string;
   value2: string;
 }) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label1}:</Text>
-    <Text style={styles.infoValue}>{value1}</Text>
-    <Text style={styles.infoLabel}>{label2}:</Text>
-    <Text style={styles.infoValue}>{value2}</Text>
-  </View>
+  <table className="w-full border-collapse">
+    <tbody>
+      <tr>
+        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
+          {label1}:
+        </Cell>
+        <Cell className="w-[33%] text-left">{value1}</Cell>
+        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
+          {label2}:
+        </Cell>
+        <Cell className="w-[33%] text-left">{value2}</Cell>
+      </tr>
+    </tbody>
+  </table>
 );
 
 const SummaryRow = ({
@@ -238,156 +271,49 @@ const SummaryRow = ({
   leftValue,
   rightLabel,
   rightValue,
+  isLast = false,
 }: {
   leftLabel: string;
   leftValue: string;
   rightLabel: string;
   rightValue: string;
+  isLast?: boolean;
 }) => (
-  <View style={styles.summaryRow}>
-    <Text style={styles.summaryLabel}>{leftLabel}:</Text>
-    <Text style={styles.summaryValue}>{leftValue}</Text>
-    <Text style={styles.summaryLabel}>{rightLabel}:</Text>
-    <Text style={styles.summaryValue}>{rightValue}</Text>
-  </View>
+  <tr className={isLast ? "" : "border-b border-black"}>
+    <Cell className="w-[31%] bg-[#dedede] font-semibold text-left">
+      {leftLabel}
+    </Cell>
+    <Cell className="w-[19%] text-right">{leftValue}</Cell>
+    <Cell className="w-[31%] bg-[#dedede] font-semibold text-left">
+      {rightLabel}
+    </Cell>
+    <Cell className="w-[19%] text-right">{rightValue}</Cell>
+  </tr>
 );
 
-/* -------------------- STYLES -------------------- */
-
-const styles = StyleSheet.create({
-  page: { backgroundColor: "#ffffff", fontFamily: "Helvetica", fontSize: 9 },
-  frame: { margin: 14, padding: 8 },
-
-  titleRow: {
-    borderWidth: 1,
-    borderColor: "#111",
-    alignItems: "center",
-    paddingVertical: 4,
-    marginBottom: 6,
-  },
-  title: { fontFamily: "Helvetica-Bold", fontSize: 11 },
-
-  infoTable: { borderWidth: 1, borderColor: "#111", marginBottom: 8 },
-
-  infoRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-  },
-  infoLabel: {
-    width: "17%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 4,
-    fontFamily: "Helvetica-Bold",
-  },
-  infoValue: {
-    width: "33%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 4,
-  },
-
-  sectionBlock: { marginBottom: 6, borderWidth: 1, borderColor: "#111" },
-
-  sectionTitleRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    backgroundColor: "#f2f2f2",
-  },
-
-  itemRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-  },
-
-  cellDrug: {
-    width: "20%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-  },
-  cellSmall: {
-    width: "8%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-    textAlign: "right",
-  },
-  cellTiny: {
-    width: "9%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-    textAlign: "right",
-  },
-
-  subTotalRow: { flexDirection: "row" },
-  subTotalLabel: {
-    width: "91%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    textAlign: "right",
-    padding: 4,
-    fontFamily: "Helvetica-Bold",
-  },
-  subTotalValue: {
-    width: "9%",
-    textAlign: "right",
-    padding: 4,
-    fontFamily: "Helvetica-Bold",
-  },
-
-  summaryTable: {
-    marginTop: 6,
-    marginLeft: "40%",
-    borderWidth: 1,
-    borderColor: "#111",
-  },
-
-  summaryRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-  },
-  summaryLabel: {
-    width: "31%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 4,
-    fontFamily: "Helvetica-Bold",
-  },
-  summaryValue: {
-    width: "19%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 4,
-    textAlign: "right",
-  },
-
-  txnDate: {
-    width: "22%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-  },
-  txnMode: {
-    width: "15%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-  },
-  txnRemarks: {
-    width: "33%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    padding: 3,
-  },
-  txnBy: { width: "18%", borderRightWidth: 1, borderColor: "#111", padding: 3 },
-  txnAmount: { width: "12%", padding: 3, textAlign: "right" },
-  txnEmpty: { width: "100%", textAlign: "center", padding: 4 },
-});
+const Cell = ({
+  children,
+  className = "",
+  as = "td",
+  colSpan,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: "td" | "th";
+  colSpan?: number;
+}) => {
+  const Component = as;
+  return (
+    <Component
+      colSpan={colSpan}
+      className={cn(
+        "border border-black px-2 py-1 align-middle font-normal",
+        className,
+      )}
+    >
+      {children}
+    </Component>
+  );
+};
 
 export default SaleInvoiceExport;

@@ -158,7 +158,11 @@ export const useDeleteDoctor = () => {
   });
 };
 
-export const useInfiniteDoctorList = (filters: FilterValues, limit: number) => {
+export const useInfiniteDoctorList = (
+  filters: FilterValues,
+  limit: number,
+  enabled: boolean = true,
+) => {
   return useInfiniteQuery<
     PaginatedResponse<Doctor>,
     AxiosError<ApiResponse<null>>,
@@ -166,6 +170,7 @@ export const useInfiniteDoctorList = (filters: FilterValues, limit: number) => {
     [string, FilterValues, number]
   >({
     queryKey: ["doctors", filters, limit],
+    enabled,
 
     queryFn: ({ pageParam = 1 }) =>
       getDoctors({

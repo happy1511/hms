@@ -386,7 +386,6 @@ const ReferenceRangeForm = ({
     useUpdateReferenceRange(testId);
 
   const form = useForm<AddReferenceRangeToParameterValidatorType>({
-    defaultValues: { parameterId: data.id },
     resolver: zodResolver(addReferenceRangeToParameterValidator),
   });
 
@@ -405,7 +404,15 @@ const ReferenceRangeForm = ({
       upperAgeMonth: upperRange.months,
       upperAgeYear: upperRange.years,
     });
-  }, [editingRange]);
+  }, [editingRange, form]);
+
+  useEffect(() => {
+    if (data) {
+      form.reset({
+        parameterId: data.id,
+      });
+    }
+  }, [data, form]);
 
   const handleSubmit = async (
     values: AddReferenceRangeToParameterValidatorType,
@@ -566,34 +573,70 @@ const ReferenceRanges = ({
     {
       accessorKey: "lowerDay",
       header: "Lower Day",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.upperAgeInDays || 0).days
+          : "-";
+      },
     },
     {
       accessorKey: "upperDay",
       header: "Upper Day",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.upperAgeInDays || 0).days
+          : "-";
+      },
     },
     {
       accessorKey: "lowerMonth",
       header: "Lower Month",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.lowerAgeInDays || 0).months
+          : "-";
+      },
     },
     {
       accessorKey: "upperMonth",
       header: "Upper Month",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.upperAgeInDays || 0).months
+          : "-";
+      },
     },
     {
       accessorKey: "lowerYear",
       header: "Lower Year",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.lowerAgeInDays || 0).years
+          : "-";
+      },
     },
     {
       accessorKey: "upperYear",
       header: "Upper Year",
+      cell: ({ row }) => {
+        return row.original.upperAgeInDays
+          ? fromDays(row.original.upperAgeInDays || 0).years
+          : "-";
+      },
     },
     {
       accessorKey: "lowerRange",
       header: "Lower Range",
+      cell: ({ row }) => {
+        return row.original.lowerRange;
+      },
     },
     {
       accessorKey: "upperRange",
       header: "Upper Range",
+      cell: ({ row }) => {
+        return row.original.upperRange;
+      },
     },
 
     {

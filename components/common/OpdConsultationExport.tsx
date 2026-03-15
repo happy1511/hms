@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  Document,
-  Page,
-  PDFViewer,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import { cn } from "@/lib/utils";
+import PrintToolbar from "./PrintToolbar";
+import { useState } from "react";
 
 type PrescribedDrugLine = {
   name?: string;
@@ -107,7 +102,8 @@ const stripHtmlToText = (value?: unknown) => {
   return normalized || "--";
 };
 
-const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
+const OpdConsultationExport = ({ data }: { data: ConsultationExportData }) => {
+  const [fontSize, setFontSize] = useState<number>(10);
   const patientName = [data.patient?.firstName, data.patient?.lastName]
     .filter(Boolean)
     .join(" ");
@@ -133,15 +129,23 @@ const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
       .join(", ");
   })();
 
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.frame}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>OPD CONSULTATION</Text>
-          </View>
+  const drugs =
+    data.prescription?.drugs?.length && data.prescription.drugs.length > 0
+      ? data.prescription.drugs
+      : [{ name: "--", frequency: "--", days: "--", remarks: "--" }];
 
-          <View style={styles.infoTable}>
+  return (
+    <>
+      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      <div
+        style={{ fontSize }}
+        className="w-full bg-white text-black print:bg-white"
+      >
+        <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+          <header className="border border-black">
+            <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
+              <p className="font-semibold">OPD CONSULTATION</p>
+            </div>
             <InfoRow
               label1="UHID"
               value1={valueOrDash(data.patient?.uhid)}
@@ -166,19 +170,11 @@ const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
               label2="Referred By"
               value2={valueOrDash(data.referringDoctorName)}
             />
-            <InfoRow
-              label1="Address"
-              value1={valueOrDash(address)}
-              label2=""
-              value2=""
-            />
-          </View>
+            <InfoRow label1="Address" value1={valueOrDash(address)} />
+          </header>
 
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Vitals</Text>
-            </View>
-            <View style={styles.rowWrap}>
+          <Section title="Vitals">
+            <div className="grid grid-cols-4">
               <KV label="Height" value={data.vitals?.height} />
               <KV label="Weight" value={data.vitals?.weight} />
               <KV
@@ -190,24 +186,24 @@ const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
               <KV label="RR" value={data.vitals?.rr} />
               <KV label="SpO2" value={data.vitals?.spo2} />
               <KV label="Temp" value={data.vitals?.temp} />
-            </View>
-          </View>
+            </div>
+          </Section>
 
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Clinical Notes</Text>
-            </View>
+          <Section title="Clinical Notes">
             <BodyRow label="Notes" value={data.notes} />
-            <BodyRow label="General Examination" value={data.generalExaminations} />
-            <BodyRow label="Systemic Examination" value={data.systemicExaminations} />
+            <BodyRow
+              label="General Examination"
+              value={data.generalExaminations}
+            />
+            <BodyRow
+              label="Systemic Examination"
+              value={data.systemicExaminations}
+            />
             <BodyRow label="Diagnosis" value={data.diagnosis} />
             <BodyRow label="Chronic Illness" value={data.chronicIllness} />
-          </View>
+          </Section>
 
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Advised Tests</Text>
-            </View>
+          <Section title="Advised Tests">
             <BodyRow
               label="Pathology"
               value={listToText(data.advisedPathologyTests)}
@@ -216,35 +212,46 @@ const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
               label="Radiology"
               value={listToText(data.advisedRadiologyTests)}
             />
-          </View>
+          </Section>
 
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Prescription</Text>
-            </View>
-            <View style={styles.tableHeader}>
-              <Text style={styles.drugCol}>Drug</Text>
-              <Text style={styles.smallCol}>Frequency</Text>
-              <Text style={styles.smallCol}>Days</Text>
-              <Text style={styles.remarkCol}>Remarks</Text>
-            </View>
-            {(data.prescription?.drugs?.length
-              ? data.prescription.drugs
-              : [{ name: "--", frequency: "--", days: "--", remarks: "--" }]
-            ).map((drug, index) => (
-              <View key={`drug-${index}`} style={styles.tableRow}>
-                <Text style={styles.drugCol}>{valueOrDash(drug.name)}</Text>
-                <Text style={styles.smallCol}>{valueOrDash(drug.frequency)}</Text>
-                <Text style={styles.smallCol}>{valueOrDash(drug.days)}</Text>
-                <Text style={styles.remarkCol}>{valueOrDash(drug.remarks)}</Text>
-              </View>
-            ))}
-          </View>
+          <Section title="Prescription">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-[#f2f2f2]">
+                  <Cell as="th" className="w-[38%] text-left">
+                    Drug
+                  </Cell>
+                  <Cell as="th" className="w-[16%] text-center">
+                    Frequency
+                  </Cell>
+                  <Cell as="th" className="w-[16%] text-center">
+                    Days
+                  </Cell>
+                  <Cell as="th" className="w-[30%] text-left">
+                    Remarks
+                  </Cell>
+                </tr>
+              </thead>
+              <tbody>
+                {drugs.map((drug, index) => (
+                  <tr key={`drug-${index}`}>
+                    <Cell className="text-left">{valueOrDash(drug.name)}</Cell>
+                    <Cell className="text-center">
+                      {valueOrDash(drug.frequency)}
+                    </Cell>
+                    <Cell className="text-center">
+                      {valueOrDash(drug.days)}
+                    </Cell>
+                    <Cell className="text-left">
+                      {valueOrDash(drug.remarks)}
+                    </Cell>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
 
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Follow Up</Text>
-            </View>
+          <Section title="Follow Up">
             <BodyRow
               label="After Days"
               value={valueOrDash(data.prescription?.followUpAfterDays)}
@@ -261,12 +268,27 @@ const ConsultationDocument = ({ data }: { data: ConsultationExportData }) => {
               label="Other Advice"
               value={stripHtmlToText(data.prescription?.otherAdvice)}
             />
-          </View>
-        </View>
-      </Page>
-    </Document>
+          </Section>
+        </div>
+      </div>
+    </>
   );
 };
+
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="border border-black">
+    <div className="border-b border-black bg-[#f2f2f2] px-3 py-2 font-semibold">
+      {title}
+    </div>
+    <div className="p-0">{children}</div>
+  </section>
+);
 
 const InfoRow = ({
   label1,
@@ -276,152 +298,63 @@ const InfoRow = ({
 }: {
   label1: string;
   value1: string;
-  label2: string;
-  value2: string;
+  label2?: string;
+  value2?: string;
 }) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label1 ? `${label1}:` : ""}</Text>
-    <Text style={styles.infoValue}>{value1}</Text>
-    <Text style={styles.infoLabel}>{label2 ? `${label2}:` : ""}</Text>
-    <Text style={styles.infoValue}>{value2}</Text>
-  </View>
+  <table className="w-full border-collapse border-t border-black">
+    <tbody>
+      <tr>
+        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
+          {label1 ? `${label1}:` : ""}
+        </Cell>
+        <Cell className="w-[33%] text-left">{value1}</Cell>
+        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
+          {label2 ? `${label2}:` : ""}
+        </Cell>
+        <Cell className="w-[33%] text-left">{value2}</Cell>
+      </tr>
+    </tbody>
+  </table>
 );
 
 const KV = ({ label, value }: { label: string; value?: unknown }) => (
-  <View style={styles.kvItem}>
-    <Text style={styles.kvLabel}>{label}:</Text>
-    <Text style={styles.kvValue}>{valueOrDash(value)}</Text>
-  </View>
+  <div className="flex min-h-[38px] items-center justify-between border-b border-r border-black px-2 py-1 last:border-r-0">
+    <span className="font-semibold">{label}:</span>
+    <span>{valueOrDash(value)}</span>
+  </div>
 );
 
 const BodyRow = ({ label, value }: { label: string; value?: unknown }) => (
-  <View style={styles.bodyRow}>
-    <Text style={styles.bodyLabel}>{label}:</Text>
-    <Text style={styles.bodyValue}>{stripHtmlToText(value)}</Text>
-  </View>
+  <div className="flex min-h-[40px] border-b border-black">
+    <div className="flex w-[26%] items-center border-r border-black bg-[#f9f9f9] px-3 py-2 font-semibold">
+      {label}:
+    </div>
+    <div className="flex-1 items-center px-3 py-2">
+      {stripHtmlToText(value)}
+    </div>
+  </div>
 );
 
-const OpdConsultationExport = ({ data }: { data: ConsultationExportData }) => {
+const Cell = ({
+  children,
+  className = "",
+  as = "td",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: "td" | "th";
+}) => {
+  const Component = as;
   return (
-    <PDFViewer className="w-full h-full">
-      <ConsultationDocument data={data} />
-    </PDFViewer>
+    <Component
+      className={cn(
+        "border border-black px-2 py-1 align-middle font-normal",
+        className,
+      )}
+    >
+      {children}
+    </Component>
   );
 };
-
-const styles = StyleSheet.create({
-  page: { backgroundColor: "#ffffff", fontFamily: "Helvetica", fontSize: 9 },
-  frame: { margin: 14, padding: 8 },
-  titleRow: {
-    borderWidth: 1,
-    borderColor: "#111",
-    alignItems: "center",
-    paddingVertical: 2,
-    marginBottom: 4,
-  },
-  title: { fontFamily: "Helvetica-Bold", fontSize: 10 },
-  infoTable: { borderWidth: 1, borderColor: "#111", marginBottom: 8 },
-  infoRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    minHeight: 10,
-    alignItems: "stretch",
-  },
-  infoLabel: {
-    width: "17%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    paddingHorizontal: 4,
-    fontFamily: "Helvetica-Bold",
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-  infoValue: {
-    width: "33%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-  },
-  sectionBlock: { marginBottom: 6, borderWidth: 1, borderColor: "#111" },
-  sectionTitleRow: {
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    backgroundColor: "#f2f2f2",
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-  },
-  sectionTitle: { fontFamily: "Helvetica-Bold" },
-  rowWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  kvItem: {
-    width: "25%",
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    minHeight: 20,
-  },
-  kvLabel: { fontFamily: "Helvetica-Bold" },
-  kvValue: { marginTop: 1 },
-  bodyRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    minHeight: 16,
-    alignItems: "stretch",
-  },
-  bodyLabel: {
-    width: "26%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    fontFamily: "Helvetica-Bold",
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-  },
-  bodyValue: {
-    width: "74%",
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    backgroundColor: "#f8f8f8",
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-  },
-  drugCol: {
-    width: "38%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-  },
-  smallCol: {
-    width: "16%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-    textAlign: "center",
-  },
-  remarkCol: {
-    width: "30%",
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-  },
-});
 
 export default OpdConsultationExport;

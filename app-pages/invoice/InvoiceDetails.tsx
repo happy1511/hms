@@ -7,6 +7,9 @@ import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect"
 import FormField from "@/components/form-inputs/FormField";
 import AddPaymentModal from "@/components/opd/AddPayment";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import DaywiseDateModal from "@/components/opd/DaywiseDateModal";
+import InvoicePreviewModal from "@/components/opd/InvoicePreviewModal";
+import SectionPickerModal from "@/components/opd/SectionPickerModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +52,7 @@ import {
   useForm,
   useWatch,
   UseFormReturn,
+  Controller,
 } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -305,6 +309,9 @@ const ServiceRow = ({
   const maxDiscount = watch(
     `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
+  const createdAt = watch(
+    `${rowPath}.createdAt` as Path<updateInvoiceValidatorType>,
+  );
   const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
   const itemId = watch(`${rowPath}.itemId` as Path<updateInvoiceValidatorType>);
   const updateReason = watch(
@@ -480,6 +487,37 @@ const ServiceRow = ({
       </td>
       <td>
         <div className="px-2 py-1">
+          <Controller
+            control={control}
+            name={`${rowPath}.createdAt` as Path<updateInvoiceValidatorType>}
+            render={({ field }) => {
+              const value = field.value
+                ? (() => {
+                    const d = new Date(field.value as any);
+                    return Number.isNaN(d.getTime())
+                      ? ""
+                      : d.toISOString().slice(0, 10);
+                  })()
+                : "";
+              return (
+                <input
+                  type="date"
+                  className="w-full rounded border px-2 py-1 text-xs"
+                  value={value}
+                  onChange={(e) =>
+                    field.onChange(
+                      e.target.value ? new Date(e.target.value) : null,
+                    )
+                  }
+                  onBlur={field.onBlur}
+                />
+              );
+            }}
+          />
+        </div>
+      </td>
+      <td>
+        <div className="px-2 py-1">
           <FormField
             type="number"
             name={`${rowPath}.quantity` as Path<updateInvoiceValidatorType>}
@@ -619,6 +657,9 @@ const InvoiceBillingTable = ({
               <th className="w-62.5">
                 <div className="px-2 py-1">Service</div>
               </th>
+              <th className="w-28">
+                <div className="px-2 py-1">Date</div>
+              </th>
               <th>
                 <div className="px-2 py-1">Qty</div>
               </th>
@@ -699,7 +740,21 @@ const InvoiceDetails = () => {
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [previewInvoiceOpen, setPreviewInvoiceOpen] = useState(false);
+  const [dayWiseModalOpen, setDayWiseModalOpen] = useState(false);
+  const [dayWiseDate, setDayWiseDate] = useState<string>(() =>
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [printPreviewSrc, setPrintPreviewSrc] = useState<string | null>(null);
+  const [printPreviewOpen, setPrintPreviewOpen] = useState<boolean>(false);
+  const [previewMode, setPreviewMode] = useState<
+    "summary" | "details" | "dayWise" | "compact" | null
+  >(null);
+  const [previewDate, setPreviewDate] = useState<string | null>(null);
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[] | null>(
+    null,
+  );
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const { invoiceId }: { invoiceId: string } = useParams();
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
@@ -981,6 +1036,52 @@ const InvoiceDetails = () => {
                 align="start"
                 triggerLabel="Payment"
               />
+              {canPrintInvoice && (
+                <CustomActionDropdown
+                  triggerLabel="Print"
+                  align="start"
+                  groups={[
+                    {
+                      label: "Invoice",
+                      items: [
+                        {
+                          label: "Summary",
+                          onClick: () => {
+                            setPreviewMode("summary");
+                            setPrintPreviewOpen(true);
+                          },
+                        },
+                        {
+                          label: "Detailed Invoice",
+                          onClick: () => {
+                            setPreviewMode("details");
+                            setPrintPreviewOpen(true);
+                          },
+                        },
+                        {
+                          label: "Day Wise",
+                          onClick: () => setDayWiseModalOpen(true),
+                        },
+                        {
+                          label: "Invoice Sections",
+                          onClick: () => setSectionPickerOpen(true),
+                        },
+                        {
+                          label: "Payment Receipts",
+                          onClick: () => setTransactionsOpen(true),
+                        },
+                        {
+                          label: "Invoice Compact",
+                          onClick: () => {
+                            setPreviewMode("compact");
+                            setPrintPreviewOpen(true);
+                          },
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              )}
               {canUpdateInvoice && (
                 <CustomButton
                   disabled={isPending || updatedRowsMissingReasons.length > 0}
@@ -1164,6 +1265,18 @@ const InvoiceDetails = () => {
         </form>
       </Form>
 
+      <DaywiseDateModal
+        open={dayWiseModalOpen}
+        onOpenChange={setDayWiseModalOpen}
+        defaultDate={dayWiseDate}
+        onConfirm={(date) => {
+          setDayWiseDate(date);
+          setPreviewDate(date);
+          setPreviewMode("dayWise");
+          setPrintPreviewOpen(true);
+        }}
+      />
+
       <TransactionsModal
         billId={data.id}
         open={transactionsOpen}
@@ -1184,6 +1297,61 @@ const InvoiceDetails = () => {
         onOpenChange={setPaymentModalOpen}
         billId={data.id}
         trigger={<div />}
+      />
+      <InvoicePreviewModal
+        open={printPreviewOpen && previewMode !== null}
+        onOpenChange={(open) => {
+          setPrintPreviewOpen(open);
+          if (!open) {
+            setPrintPreviewSrc(null);
+            setPreviewMode(null);
+            setPreviewDate(null);
+          }
+        }}
+        data={data}
+        mode={previewMode || "details"}
+        targetDay={
+          previewDate || new Date(data.createdAt).toISOString().slice(0, 10)
+        }
+        sectionIds={
+          selectedSectionIds ? new Set(selectedSectionIds) : undefined
+        }
+        printUrl={
+          previewMode === "summary"
+            ? `/invoice/summary/${data.id}`
+            : previewMode === "details"
+              ? `/invoice/print/${data.id}${
+                  selectedSectionIds && selectedSectionIds.length
+                    ? `?sectionIds=${selectedSectionIds.join(",")}`
+                    : ""
+                }`
+              : previewMode === "compact"
+                ? `/invoice/compact/${data.id}${
+                    selectedSectionIds && selectedSectionIds.length
+                      ? `?sectionIds=${selectedSectionIds.join(",")}`
+                      : ""
+                  }`
+                : previewMode === "dayWise"
+                  ? `/invoice/daywise/${data.id}?date=${
+                      previewDate ||
+                      new Date(data.createdAt).toISOString().slice(0, 10)
+                    }${
+                      selectedSectionIds && selectedSectionIds.length
+                        ? `&sectionIds=${selectedSectionIds.join(",")}`
+                        : ""
+                    }`
+                  : printPreviewSrc
+        }
+      />
+      <SectionPickerModal
+        open={sectionPickerOpen}
+        onOpenChange={setSectionPickerOpen}
+        sections={data.sections}
+        onConfirm={(ids) => {
+          setSelectedSectionIds(ids);
+          setPreviewMode("details");
+          setPrintPreviewOpen(true);
+        }}
       />
       {canPrintInvoice && (
         <ViewInvoiceModal

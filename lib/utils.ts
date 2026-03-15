@@ -1,11 +1,12 @@
-import {
-  ActionType,
-  DiscountType,
-  ModuleType,
-} from "@/generated/prisma/enums";
+import { ActionType, DiscountType, ModuleType } from "@/generated/prisma/enums";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { ApiResponse, User } from "./type";
+import {
+  ApiResponse,
+  InvoiceGroupedBySection,
+  InvoiceItem,
+  User,
+} from "./type";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import {
@@ -138,3 +139,26 @@ export const fromDays = (totalDays: number) => {
     days,
   };
 };
+
+export const amount = (value: number) => value.toFixed(2);
+export const lineGross = (item: Pick<InvoiceItem, "qty" | "price">) =>
+  item.qty * item.price;
+export const lineNet = (
+  item: Pick<InvoiceItem, "discount" | "qty" | "price">,
+) => Math.max(lineGross(item) - (item.discount || 0), 0);
+
+export const filterSections = (
+  data: InvoiceGroupedBySection,
+  sectionIds: Set<string> | null,
+) =>
+  sectionIds
+    ? {
+        ...data,
+        sections: data.sections.filter((section: any, idx: number) => {
+          const sectionId = String(
+            section?.invoiceBillingSectionId ?? section?.id ?? idx,
+          );
+          return sectionIds.has(sectionId);
+        }),
+      }
+    : data;

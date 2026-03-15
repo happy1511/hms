@@ -178,7 +178,7 @@ export function FormDateRangePicker<T extends FieldValues>({
                     month_grid: "text-tiny",
                     caption_label: "text-tiny",
                     weekday:
-                      "text-muted-foreground rounded-md flex-1 font-normal select-none text-tiny",
+                      "text-muted-foreground flex-1 font-normal select-none text-tiny",
                   }}
                 />
               </PopoverContent>

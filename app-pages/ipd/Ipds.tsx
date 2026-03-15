@@ -69,7 +69,7 @@ const Actions = ({
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
-      onClick: () => router.push(`/invoice/${data.invoice.id}`),
+      onClick: () => setViewInvoiceModal(true),
     },
   ];
 

@@ -5,7 +5,6 @@ import CustomButton from "@/components/common/CustomButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useGetSaleBill } from "@/hooks/query/pharmacySaleBill";
-import { BlobProvider } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { LoaderIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -96,33 +95,19 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
           </label>
         </div>
 
-        <div className="flex-1 overflow-hidden border mt-3">
+        <div className="flex-1 overflow-hidden border mt-3 bg-white">
           {isLoading || !previewData ? (
             <div className="h-full w-full flex items-center justify-center">
               <LoaderIcon className="size-4 animate-spin" />
             </div>
           ) : (
-            <BlobProvider
-              key={`${billId}-${includePaymentHistory}-${includeRemarks}`}
-              document={
-                <SaleInvoiceExport
-                  {...previewData}
-                  showViewer={false}
-                  includePaymentHistory={includePaymentHistory}
-                  includeRemarks={includeRemarks}
-                />
-              }
-            >
-              {({ url, loading }) =>
-                loading ? (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <LoaderIcon className="size-4 animate-spin" />
-                  </div>
-                ) : (
-                  <iframe title="Sale Invoice Preview" src={url || undefined} className="h-full w-full" />
-                )
-              }
-            </BlobProvider>
+            <div className="h-full w-full overflow-auto bg-white print:overflow-visible">
+              <SaleInvoiceExport
+                {...previewData}
+                includePaymentHistory={includePaymentHistory}
+                includeRemarks={includeRemarks}
+              />
+            </div>
           )}
         </div>
 

@@ -2,6 +2,7 @@ import {
   BILLING_SECTIONS,
   OPD,
   OPD_CONSULTATION,
+  OPD_DOCTORS,
   OPD_QUEUE,
   OPD_VITALS,
 } from "@/lib/apiDefinations";
@@ -17,6 +18,7 @@ import { createRequest } from "@/services/apiRequest";
 import { PartialBillingSectionValidatorType } from "@/validators/api/masters/billingSection";
 import {
   consultantFileType,
+  opdDoctorUpdateValidatorType,
   opdValidatorType,
   partialOpdValidatorType,
   vitalValidatorType,
@@ -74,6 +76,7 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
   OPD_CONSULTATION,
   "PUT",
 );
+const updateOpdDoctors = createRequest<ApiResponse<unknown>>(OPD_DOCTORS, "PUT");
 const deleteBillingSection = createRequest<
   ApiResponse<null>,
   undefined,
@@ -82,7 +85,7 @@ const deleteBillingSection = createRequest<
 const deleteOpdQueue = createRequest<ApiResponse<null>>(OPD_QUEUE, "DELETE");
 const getConsultation = createRequest<
   ApiResponse<opdConsultationDetailsType>,
-  undefined,
+  { doctorId?: string },
   { id: string }
 >((p) => `${OPD_CONSULTATION}/${p.id}`, "GET");
 
@@ -204,19 +207,20 @@ export const useInfiniteBillingSectionsList = (
   });
 };
 
-export const useGetConsultationFile = (id?: string) => {
+export const useGetConsultationFile = (id?: string, doctorId?: string) => {
   return useQuery<
     ApiResponse<opdConsultationDetailsType>,
     AxiosError<ApiResponse<null>>,
     opdConsultationDetailsType,
-    [string, string | undefined]
+    [string, string | undefined, string | undefined]
   >({
-    queryKey: ["get-opd-consultation", id],
+    queryKey: ["get-opd-consultation", id, doctorId],
     queryFn: () =>
       getConsultation({
         urlHelpers: {
           id: id as string,
         },
+        params: doctorId ? { doctorId } : undefined,
       }),
     select: (data) => data.data,
     enabled: !!id,
@@ -290,6 +294,32 @@ export const useUpdateOpdConsultation = () => {
       toast.success("Consultations Updated Successfully");
       queryClient.invalidateQueries({
         queryKey: ["opds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateOpdDoctors = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    opdDoctorUpdateValidatorType
+  >({
+    mutationKey: ["update-opd-doctors"],
+    mutationFn: (data) =>
+      updateOpdDoctors({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("OPD doctors updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["opd-queue"],
       });
     },
     onError: showError,

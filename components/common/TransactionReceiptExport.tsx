@@ -1,4 +1,7 @@
-import { Document, Page, PDFViewer, StyleSheet, Text, View } from "@react-pdf/renderer";
+"use client";
+
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface TransactionItem {
   id?: number;
@@ -25,53 +28,93 @@ interface ReceiptProps {
     srn?: string;
   };
   transactions: TransactionItem[];
+  className?: string;
+  fontSize?: number;
 }
 
-const money = (value: number) => `Rs. ${value.toFixed(2)}`;
+const formatMoney = (value: number) => `Rs. ${value.toFixed(2)}`;
 
-const TransactionReceiptExport = (data: ReceiptProps) => {
+const TransactionReceiptExport = ({
+  customer,
+  receipt,
+  transactions,
+  className = "",
+  fontSize = 10,
+}: ReceiptProps) => {
   return (
-    <PDFViewer className="w-full h-full">
-      <Document>
-        <Page size="A4" style={styles.page}>
-          <View style={styles.frame}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>PAYMENT RECEIPT</Text>
-            </View>
+    <div
+      className={cn(
+        "w-full bg-white text-black",
+        "print:bg-white print:text-black",
+        className,
+      )}
+      style={{ fontSize }}
+    >
+      <div className="mx-auto max-w-3xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        <header>
+          <div className="flex items-center border-t border-x justify-center border-b border-black bg-[#dedede] px-3 py-2">
+            <p className="font-semibold">PAYMENT RECEIPT</p>
+          </div>
+          <InfoRow
+            label1="Patient Name"
+            value1={customer.name || "-"}
+            label2="UHID"
+            value2={customer.uhid || "-"}
+          />
+          <InfoRow
+            label1="Age / Gender"
+            value1={customer.genderAge || "-"}
+            label2="Mobile No."
+            value2={customer.phone || "-"}
+          />
+          <InfoRow label1="Address" value1={customer.address || "-"} />
+        </header>
 
-            <View style={styles.infoTable}>
-              <InfoRow label1="Patient Name" value1={data.customer.name || "-"} label2="UHID" value2={data.customer.uhid || "-"} />
-              <InfoRow label1="Age / Gender" value1={data.customer.genderAge || "-"} label2="Mobile No." value2={data.customer.phone || "-"} />
-              <InfoRow label1="Address" value1={data.customer.address || "-"} label2="" value2="" />
-            </View>
+        <div className="grid gap-4 print:break-after-auto">
+          {transactions.map((txn, index) => (
+            <section key={txn.id ?? index} className="bg-white">
+              <div className="flex items-center justify-between border-t border-x border-black bg-[#dedede] px-3 py-2 font-semibold">
+                <span>PAYMENT CREDITED TO ORGANISATION</span>
+                <span>
+                  Receipt No.:{" "}
+                  {transactions.length > 1
+                    ? `${receipt.number}-${index + 1}`
+                    : receipt.number}
+                </span>
+              </div>
 
-            <View style={styles.bannerRow}>
-              <Text style={styles.bannerText}>PAYMENT CREDITED TO ORGANISATION</Text>
-            </View>
-
-            {data.transactions.map((txn, index) => (
-              <View key={`${txn.id ?? index}`} style={styles.receiptTable}>
-                <KeyValueRow label="SRN" value={data.receipt.srn || "-"} />
-                <KeyValueRow label="INVOICE NO." value={data.receipt.invoiceNo || "-"} />
-                <KeyValueRow
-                  label="RECEIPT NO."
-                  value={
-                    data.transactions.length > 1
-                      ? `${data.receipt.number}-${index + 1}`
-                      : data.receipt.number
-                  }
-                />
-                <KeyValueRow label="PAYMENT ON" value={txn.date || data.receipt.date} />
-                <KeyValueRow label="RECEIVED BY" value={txn.receivedBy || "-"} />
-                <KeyValueRow label="PAYMENT AMOUNT" value={money(txn.amount)} />
-                <KeyValueRow label="PAYMENT MODE" value={txn.mode || "-"} />
-                <KeyValueRow label="REMARKS" value={txn.remarks || "-"} />
-              </View>
-            ))}
-          </View>
-        </Page>
-      </Document>
-    </PDFViewer>
+              <table className="w-full border-collapse">
+                <tbody>
+                  <KeyValueRow label="SRN" value={receipt.srn || "-"} />
+                  <KeyValueRow
+                    label="INVOICE NO."
+                    value={receipt.invoiceNo || "-"}
+                  />
+                  <KeyValueRow
+                    label="PAYMENT ON"
+                    value={txn.date || receipt.date}
+                  />
+                  <KeyValueRow
+                    label="RECEIVED BY"
+                    value={txn.receivedBy || "-"}
+                  />
+                  <KeyValueRow
+                    label="PAYMENT AMOUNT"
+                    value={formatMoney(txn.amount)}
+                  />
+                  <KeyValueRow label="PAYMENT MODE" value={txn.mode || "-"} />
+                  <KeyValueRow
+                    label="REMARKS"
+                    value={txn.remarks || "-"}
+                    isLast
+                  />
+                </tbody>
+              </table>
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -83,97 +126,73 @@ const InfoRow = ({
 }: {
   label1: string;
   value1: string;
-  label2: string;
-  value2: string;
+  label2?: string;
+  value2?: string;
 }) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label1 ? `${label1}:` : ""}</Text>
-    <Text style={styles.infoValue}>{value1}</Text>
-    <Text style={styles.infoLabel}>{label2 ? `${label2}:` : ""}</Text>
-    <Text style={styles.infoValue}>{value2}</Text>
-  </View>
+  <table className="w-full border-collapse border-t border-black text-left">
+    <tbody>
+      <tr>
+        <Cell className="w-[18%] bg-[#dedede] font-semibold">
+          {label1 ? `${label1}:` : ""}
+        </Cell>
+        <Cell className="w-[32%]">{value1}</Cell>
+        {label2 !== undefined && (
+          <>
+            <Cell className="w-[18%] bg-[#dedede] font-semibold">
+              {label2 ? `${label2}:` : ""}
+            </Cell>
+            <Cell className="w-[32%]">{value2}</Cell>
+          </>
+        )}
+        {label2 === undefined && (
+          <>
+            <Cell className="w-[18%] bg-[#dedede]" />
+            <Cell className="w-[32%]" />
+          </>
+        )}
+      </tr>
+    </tbody>
+  </table>
 );
 
-const KeyValueRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.kvRow}>
-    <Text style={styles.kvLabel}>{label}:</Text>
-    <Text style={styles.kvValue}>{value}</Text>
-  </View>
+const KeyValueRow = ({
+  label,
+  value,
+  isLast = false,
+}: {
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) => (
+  <tr className={isLast ? "" : "border-b border-black"}>
+    <Cell as="th" className="w-[38%] bg-[#f5f5f5] text-left font-semibold">
+      {label}:
+    </Cell>
+    <Cell className="w-[62%] text-left">{value}</Cell>
+  </tr>
 );
 
-const styles = StyleSheet.create({
-  page: { backgroundColor: "#ffffff", fontFamily: "Helvetica", fontSize: 9 },
-  frame: { margin: 14, padding: 8 },
-  titleRow: {
-    borderWidth: 1,
-    borderColor: "#111",
-    alignItems: "center",
-    paddingVertical: 2,
-    marginBottom: 4,
-  },
-  title: { fontFamily: "Helvetica-Bold", fontSize: 10 },
-  infoTable: { borderWidth: 1, borderColor: "#111", marginBottom: 6 },
-  infoRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    minHeight: 10,
-    alignItems: "stretch",
-  },
-  infoLabel: {
-    width: "19%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    paddingHorizontal: 4,
-    fontFamily: "Helvetica-Bold",
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-  infoValue: {
-    width: "31%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-  },
-  bannerRow: {
-    borderWidth: 1,
-    borderColor: "#111",
-    marginBottom: 6,
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    display: "flex",
-    justifyContent: "center",
-  },
-  bannerText: { textDecoration: "underline" },
-  receiptTable: { borderWidth: 1, borderColor: "#111", marginBottom: 6 },
-  kvRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#111",
-    minHeight: 10,
-    alignItems: "stretch",
-  },
-  kvLabel: {
-    width: "50%",
-    borderRightWidth: 1,
-    borderColor: "#111",
-    paddingHorizontal: 4,
-    fontFamily: "Helvetica-Bold",
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-  kvValue: {
-    width: "50%",
-    paddingHorizontal: 4,
-    display: "flex",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-});
+const Cell = ({
+  children,
+  className = "",
+  as = "td",
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  as?: "td" | "th";
+}) => {
+  const Component = as;
+  return (
+    <Component
+      className={cn(
+        "border border-black px-2 py-1 align-middle",
+        "font-normal",
+        className,
+      )}
+    >
+      {children}
+    </Component>
+  );
+};
 
 export default TransactionReceiptExport;

@@ -348,12 +348,14 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         /* 2️⃣ HANDLE BILLING ITEMS (CREATE / UPDATE / DELETE) */
         /* ------------------------------------------------------- */
 
-        const existingItems = existingInvoice.billingSections.flatMap((section) =>
-          section.items.map((item) => ({
-            ...item,
-            invoiceBillingSectionId: section.id,
-            updateReason: (item as { updateReason?: string | null }).updateReason,
-          })),
+        const existingItems = existingInvoice.billingSections.flatMap(
+          (section) =>
+            section.items.map((item) => ({
+              ...item,
+              invoiceBillingSectionId: section.id,
+              updateReason: (item as { updateReason?: string | null })
+                .updateReason,
+            })),
         );
 
         // Flatten incoming billing items
@@ -393,9 +395,12 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         const resolvedInvoiceSectionIds = new Map<number, number>();
 
         for (const section of billingSections || []) {
-          const existingSection = existingSectionsByBillingSectionId.get(section.id);
+          const existingSection = existingSectionsByBillingSectionId.get(
+            section.id,
+          );
           const shouldPersistSection =
-            section.billingItems.length > 0 || Number(section.discountValue || 0) > 0;
+            section.billingItems.length > 0 ||
+            Number(section.discountValue || 0) > 0;
 
           if (existingSection) {
             await tx.invoiceBillingSection.update({
@@ -460,8 +465,9 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
                 total: item.total,
                 updateReason: itemChanged
                   ? updateReason
-                  : previousItem?.updateReason ?? null,
+                  : (previousItem?.updateReason ?? null),
                 updatedBy: user.id,
+                createdAt: item.createdAt,
               } as any,
             });
 
@@ -488,8 +494,9 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             data: {
               invoiceId: existingInvoice.id,
               billingSectionId: item.billingSection.id,
-              invoiceBillingSectionId:
-                resolvedInvoiceSectionIds.get(item.billingSection.id)!,
+              invoiceBillingSectionId: resolvedInvoiceSectionIds.get(
+                item.billingSection.id,
+              )!,
               serviceId: item.service.id,
               quantity: item.quantity,
               rate: item.rate,

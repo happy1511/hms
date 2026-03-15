@@ -15,6 +15,7 @@ import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   consultationFileValidator,
   opdValidator,
+  opdDoctorUpdateValidator,
   partialOpdValidator,
   vitalsValidator,
 } from "@/validators/api/opd/opd";
@@ -222,6 +223,13 @@ export const getConsultationAPI = async (
   { params }: { params: { opdId: number } },
   user: User,
 ) => {
+  const url = new URL(req.url);
+  const doctorIdParam = url.searchParams.get("doctorId");
+  const doctorId = doctorIdParam ? Number(doctorIdParam) : null;
+  const overrideConsultantDoctorId = Number.isFinite(doctorId)
+    ? (doctorId as number)
+    : null;
+
   return validateRequest({
     paramsSchema: partialOpdValidator,
     params,
@@ -331,6 +339,13 @@ export const getConsultationAPI = async (
           });
         }
 
+        const overrideConsultantDoctor = overrideConsultantDoctorId
+          ? await tx.doctor.findUnique({
+              where: { userId: overrideConsultantDoctorId },
+              select: { user: { select: { name: true } } },
+            })
+          : null;
+
         const previousOpds = consultation?.patientId
           ? await tx.opd.findMany({
               where: {
@@ -381,7 +396,9 @@ export const getConsultationAPI = async (
               opdId: consultation?.id,
             },
             patient: consultation?.patient,
-            consultantDoctorName: consultation?.consultantDoctor?.user?.name,
+            consultantDoctorName:
+              overrideConsultantDoctor?.user?.name ??
+              consultation?.consultantDoctor?.user?.name,
             referringDoctorName: consultation?.referringDoctor?.user?.name,
             createdAt: consultation?.createdAt,
             previousOpdHistory: previousOpds.map((opd) => ({
@@ -757,6 +774,86 @@ export const updateVitalsAPI = async (req: Request, user: User) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Vitals Updated Successfully",
           data: updatedVitals,
+        });
+      });
+    },
+  });
+};
+
+export const updateOpdDoctorsAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: opdDoctorUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { opdId, consultantDoctor, referredDoctor } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+          select: { id: true },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        if (consultantDoctor?.userId) {
+          const exists = await tx.doctor.findUnique({
+            where: { userId: consultantDoctor.userId },
+            select: { userId: true },
+          });
+          if (!exists) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Consultant doctor not found",
+            });
+          }
+        }
+
+        if (referredDoctor?.userId) {
+          const exists = await tx.doctor.findUnique({
+            where: { userId: referredDoctor.userId },
+            select: { userId: true },
+          });
+          if (!exists) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Referring doctor not found",
+            });
+          }
+        }
+
+        const updated = await tx.opd.update({
+          where: { id: opdId },
+          data: {
+            ...(consultantDoctor?.userId
+              ? { consultantDoctorId: consultantDoctor.userId }
+              : {}),
+            ...(referredDoctor === null
+              ? { referringDoctorId: null }
+              : referredDoctor?.userId
+                ? { referringDoctorId: referredDoctor.userId }
+                : {}),
+            updatedBy: user.id,
+          },
+          select: {
+            id: true,
+            consultantDoctor: {
+              select: { user: { select: { id: true, name: true } } },
+            },
+            referringDoctor: {
+              select: { user: { select: { id: true, name: true } } },
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "OPD doctors updated successfully",
+          data: updated,
         });
       });
     },

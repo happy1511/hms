@@ -50,7 +50,7 @@
 
 :root {
   --text-tiny: 11px;
-  --radius: 0rem;
+  --radius: 0.3rem;
 
   /* Backgrounds */
   --background: #edeff2;

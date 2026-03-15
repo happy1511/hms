@@ -388,7 +388,10 @@ export const useCreateReferenceRange = (testId: number) => {
 
                 return {
                   ...param,
-                  referenceRanges: [...param.referenceRanges, newRange],
+                  referenceRanges: [
+                    ...(param?.referenceRanges || []),
+                    newRange,
+                  ],
                 };
               }),
             },
@@ -502,7 +505,7 @@ export const useUpdateReferenceRange = (testId: number) => {
 
                 return {
                   ...param,
-                  referenceRanges: param.referenceRanges.map((range) =>
+                  referenceRanges: param.referenceRanges?.map((range) =>
                     range.id === updatedRange.id ? updatedRange : range,
                   ),
                 };
@@ -821,7 +824,7 @@ export const useDeleteReferenceRange = (
 
                 return {
                   ...param,
-                  referenceRanges: param.referenceRanges.filter(
+                  referenceRanges: param.referenceRanges?.filter(
                     (range) => range.id !== referenceRangeId,
                   ),
                 };
@@ -875,5 +878,21 @@ export const useDeleteOption = (testId: number, parameterId: number) => {
       );
     },
     onError: showError,
+  });
+};
+
+export const usePathologyOrderParameters = (orderId?: number) => {
+  return useQuery<
+    ApiResponse<PathologyTestResultType>,
+    AxiosError<ApiResponse<null>>,
+    ApiResponse<PathologyTestResultType>,
+    [string, number | undefined]
+  >({
+    queryKey: ["pathology-order-parameters", orderId],
+    queryFn: () =>
+      getPathologyOrderParameters({
+        params: { orderId: String(orderId) },
+      }),
+    enabled: !!orderId,
   });
 };

@@ -33,7 +33,7 @@ const CustomButton = ({
       type={type}
       className={cn(
         "py-1 px-2 cursor-pointer bg-primary text-white h-auto text-tiny!",
-        className
+        className,
       )}
       onClick={onClick}
     >

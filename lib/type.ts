@@ -740,6 +740,7 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
 }>;
 
 export type BillingSections = Prisma.BillingSectionGetPayload<{
+  include: { createdByUser: true };
 }> & {
   invoiceBillingSectionId?: number | null;
   discountType: DiscountType;
@@ -883,7 +884,33 @@ export type PathologyOrderType = Prisma.PathologyTestOrderGetPayload<{
 
 export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
   include: {
-    patient: true;
+    opd: {
+      include: {
+        consultantDoctor: {
+          include: { user: { select: { name: true } } };
+        };
+        referringDoctor: {
+          include: { user: { select: { name: true } } };
+        };
+      };
+    };
+    ipd: {
+      include: {
+        consultantDoctor: {
+          include: { user: { select: { name: true } } };
+        };
+        referringDoctor: {
+          include: { user: { select: { name: true } } };
+        };
+      };
+    };
+    patient: {
+      include: {
+        relations: true;
+        addresses: { include: { location: true } };
+        contacts: true;
+      };
+    };
     test: {
       include: {
         testHeaders: {
@@ -891,6 +918,7 @@ export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
             testParameters: {
               include: {
                 parameterOptions: true;
+                pathologyTestResults: true;
                 referenceRanges: true;
               };
             };
@@ -1238,3 +1266,35 @@ export type AvailableBed = Prisma.BedGetPayload<{
     };
   };
 }>;
+
+export type InvoiceItem = {
+  description: string;
+  qty: number;
+  price: number;
+  discount: number;
+  discountLabel?: string;
+  date?: string;
+};
+
+export type sectionsWithTotals = {
+  total: number;
+  subtotal: number;
+  discount: number;
+  name: string;
+  items: InvoiceItem[];
+  sectionDiscount?: number;
+}[];
+
+export type BillingItem = {
+  name: string;
+  items: InvoiceItem[];
+  sectionDiscount?: number;
+};
+
+export type Transaction = {
+  date: string;
+  mode: string;
+  amount: number;
+  remarks?: string;
+  receivedBy?: string;
+};

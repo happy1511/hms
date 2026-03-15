@@ -63,7 +63,7 @@ export function FormSelect<T extends FieldValues>({
             >
               <SelectTrigger
                 className={clsx(
-                  "rounded-sm h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
+                  "h-6! focus:border-accent-blue text-tiny [&_svg]:size-3 capitalize w-full shadow-none",
                   className,
                 )}
               >

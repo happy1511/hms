@@ -118,6 +118,25 @@ const consultationFileValidator = consultationValidator.extend({
   opdId: z.coerce.number(),
 });
 
+// -------------------- Opd Doctor Update --------------------
+const opdDoctorUpdateValidator = z
+  .object({
+    opdId: z.coerce.number(),
+    consultantDoctor: z.object({ userId: z.coerce.number() }).optional(),
+    referredDoctor: z
+      .object({ userId: z.coerce.number() })
+      .optional()
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.consultantDoctor && !data.referredDoctor) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one doctor change is required",
+      });
+    }
+  });
+
 // -------------------- Opd Bill --------------------
 type opdValidatorType = z.input<typeof opdValidator>;
 type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
@@ -126,6 +145,7 @@ type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
 type vitalValidatorType = z.input<typeof vitalsValidator>;
 type consultantFileType = z.input<typeof consultationFileValidator>;
 type prescribedDrugType = z.input<typeof prescribedDrugValidator>;
+type opdDoctorUpdateValidatorType = z.input<typeof opdDoctorUpdateValidator>;
 
 export {
   opdValidator,
@@ -133,6 +153,7 @@ export {
   vitalsValidator,
   consultationFileValidator,
   prescribedDrugValidator,
+  opdDoctorUpdateValidator,
 };
 export type {
   opdValidatorType,
@@ -140,4 +161,5 @@ export type {
   vitalValidatorType,
   consultantFileType,
   prescribedDrugType,
+  opdDoctorUpdateValidatorType,
 };

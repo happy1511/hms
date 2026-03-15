@@ -3,11 +3,13 @@
 import OpdConsultationExport from "@/components/common/OpdConsultationExport";
 import { useGetConsultationFile } from "@/hooks/query/opd";
 import { LoaderIcon } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 const PrintOpdConsultation = () => {
   const { opdId }: { opdId: string } = useParams();
-  const { data, isLoading } = useGetConsultationFile(opdId);
+  const searchParams = useSearchParams();
+  const doctorId = searchParams.get("doctorId") || undefined;
+  const { data, isLoading } = useGetConsultationFile(opdId, doctorId);
 
   if (isLoading) {
     return (
