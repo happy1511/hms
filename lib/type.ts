@@ -638,6 +638,11 @@ export type OPDType = Prisma.OpdGetPayload<{
 export type IPDType = Prisma.IpdGetPayload<{
   include: {
     invoice: { include: { transactions: true } };
+    bed: {
+      include: {
+        room: { include: { roomType: { include: { department: true } } } };
+      };
+    };
     consultantDoctor: {
       select: {
         user: {

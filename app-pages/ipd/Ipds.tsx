@@ -9,7 +9,10 @@ import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
-import TransactionsModal from "@/components/common/TransactionsModal";
+import ChangeIpdBillingTypeModal from "@/components/ipd/ChangeIpdBillingTypeModal";
+import ChangeIpdDateTimeModal from "@/components/ipd/ChangeIpdDateTimeModal";
+import ChangeIpdDoctorModal from "@/components/ipd/ChangeIpdDoctorModal";
+import ReallocateIpdBedModal from "@/components/ipd/ReallocateIpdBedModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
@@ -17,7 +20,11 @@ import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useDischargeIpd, useIpdList } from "@/hooks/query/ipd";
+import {
+  useCancelDischargeIpd,
+  useDischargeIpd,
+  useIpdList,
+} from "@/hooks/query/ipd";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -49,23 +56,31 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 
 const Actions = ({
   canCreateDischarge,
+  canCancelDischarge,
   canPrint,
   canUpdate,
   data,
+  onChangeDoctor,
 }: {
   canCreateDischarge: boolean;
+  canCancelDischarge: boolean;
   canPrint: boolean;
   canUpdate: boolean;
   data: IPDType;
+  onChangeDoctor: (mode: "consultant" | "referring", ipd: IPDType) => void;
 }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [addPaymentModal, setAddPaymentModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const [dischargeModal, setDischargeModal] = useState(false);
+  const [cancelDischargeModal, setCancelDischargeModal] = useState(false);
+  const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
+  const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
 
   const { mutateAsync: dischargeIpd, isPending: dischargePending } =
     useDischargeIpd();
-  const router = useRouter();
+  const { mutateAsync: cancelDischargeIpd, isPending: cancelDischargePending } =
+    useCancelDischargeIpd();
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
@@ -100,14 +115,46 @@ const Actions = ({
     },
   ];
 
+  const ipdItems: DropdownItem[] = [];
+
+  if (canUpdate) {
+    ipdItems.push(
+      {
+        label: "Reallocate Bed",
+        onClick: () => setReallocateBedOpen(true),
+      },
+      {
+        label: "Reassign Consultant",
+        onClick: () => onChangeDoctor("consultant", data),
+      },
+      {
+        label: "Reassign Referred By",
+        onClick: () => onChangeDoctor("referring", data),
+      },
+      {
+        label: "Change IPD Date/Time",
+        onClick: () => setChangeDateTimeOpen(true),
+      },
+    );
+  }
+
   if (!data.isDischarged && canCreateDischarge) {
+    ipdItems.push({
+      label: "Discharge Patient",
+      onClick: () => setDischargeModal(true),
+    });
+  }
+
+  if (data.isDischarged && canCancelDischarge) {
+    ipdItems.push({
+      label: "Cancel Discharge",
+      onClick: () => setCancelDischargeModal(true),
+    });
+  }
+
+  if (ipdItems.length) {
     actionsGroups.push({
-      items: [
-        {
-          label: "Discharge Patient",
-          onClick: () => setDischargeModal(true),
-        },
-      ],
+      items: ipdItems,
       label: "IPD",
     });
   }
@@ -153,6 +200,30 @@ const Actions = ({
         handleConfirm={() => dischargeIpd({ ipdId: data.id })}
         pending={dischargePending}
       />
+
+      <CustomAlert
+        triggerButton={<div />}
+        open={cancelDischargeModal}
+        onOpenChange={setCancelDischargeModal}
+        title="Cancel Discharge?"
+        description="Are you sure you want to cancel discharge for this patient?"
+        cancelText="Cancel"
+        confirmText="Continue"
+        handleConfirm={() => cancelDischargeIpd({ ipdId: data.id })}
+        pending={cancelDischargePending}
+      />
+
+      <ReallocateIpdBedModal
+        open={reallocateBedOpen}
+        onOpenChange={setReallocateBedOpen}
+        ipd={data}
+      />
+
+      <ChangeIpdDateTimeModal
+        open={changeDateTimeOpen}
+        onOpenChange={setChangeDateTimeOpen}
+        ipd={data}
+      />
     </>
   );
 };
@@ -167,6 +238,15 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
     },
   });
   const [consultantValue, setConsultantValue] = useState("");
+  const [changeDoctorOpen, setChangeDoctorOpen] = useState(false);
+  const [changeDoctorMode, setChangeDoctorMode] = useState<
+    "consultant" | "referring"
+  >("consultant");
+  const [changeDoctorIpd, setChangeDoctorIpd] = useState<IPDType | null>(null);
+
+  const [changeBillingTypeOpen, setChangeBillingTypeOpen] = useState(false);
+  const [changeBillingTypeIpd, setChangeBillingTypeIpd] =
+    useState<IPDType | null>(null);
 
   const consultantQuery = useInfiniteDoctorList(
     {
@@ -212,14 +292,19 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
     ModuleType.DISCHARGE_PATIENT,
     ActionType.CREATE,
   );
+  const canCancelDischarge = hasActionPermission(
+    profile?.data,
+    ModuleType.DISCHARGE_PATIENT,
+    ActionType.UPDATE,
+  );
 
   const columns: ColumnDefWithClass<IPDType>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<IPDType> label="IPD" column={column} />;
+        return <SortableHeader<IPDType> label="ID" column={column} />;
       },
-      cell: ({ row }) => <span>{row.index + 1}</span>,
+      cell: ({ row }) => <span>{row.original.id}</span>,
       headerClassName: "min-w-15 max-w-20",
       cellClassName: "min-w-15 max-w-20",
     },
@@ -246,6 +331,16 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
               {row.original.patient.gender},{" "}
               {formatAge(row.original.patient.dob)}{" "}
             </div>
+            <div className="text-[10px] text-black/70">
+              {[
+                row.original.bed?.room?.roomType?.department?.name,
+                row.original.bed?.room?.roomType?.name,
+                row.original.bed?.room?.name,
+                row.original.bed?.name || row.original.bed?.bedNumber,
+              ]
+                .filter(Boolean)
+                .join(" / ") || "--"}
+            </div>
           </div>
         </div>
       ),
@@ -262,13 +357,26 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
       ),
     },
     {
-      accessorKey: "consultant",
+      accessorKey: "billingType",
       header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Consultant" column={column} />;
+        return <SortableHeader<IPDType> label="Billing Type" column={column} />;
       },
       cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          {row.original.consultantDoctor.user.name}
+        <div>
+          <div className="flex items-center text-tiny gap-2">
+            {String(row.original.invoice.billingType)}
+          </div>
+          {canUpdate && (
+            <div
+              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+              onClick={() => {
+                setChangeBillingTypeIpd(row.original);
+                setChangeBillingTypeOpen(true);
+              }}
+            >
+              Change
+            </div>
+          )}
         </div>
       ),
     },
@@ -278,76 +386,49 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
         return <SortableHeader<IPDType> label="	Referred By" column={column} />;
       },
       cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          {row.original.referringDoctor
-            ? row.original.referringDoctor.user.name
-            : "-- none --"}
+        <div>
+          <div className="flex items-center text-tiny gap-2">
+            {row.original.referringDoctor
+              ? row.original.referringDoctor.user.name
+              : "-- none --"}
+          </div>
+          {canUpdate && (
+            <div
+              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+              onClick={() => {
+                setChangeDoctorIpd(row.original);
+                setChangeDoctorMode("referring");
+                setChangeDoctorOpen(true);
+              }}
+            >
+              Change
+            </div>
+          )}
         </div>
       ),
     },
     {
-      accessorKey: "total",
+      accessorKey: "consultant",
       header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Total" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          ₹ {row.original.invoice.rate}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "discount",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Discount" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          ₹{" "}
-          {row.original.invoice.discountType === "PERCENTAGE"
-            ? (row.original.invoice.discountValue * row.original.invoice.rate) /
-              100
-            : row.original.invoice.discountValue}
-        </div>
-      ),
-    },
-
-    {
-      accessorKey: "final",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Final" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          ₹ {row.original.invoice.total}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "paid",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Paid" column={column} />;
+        return <SortableHeader<IPDType> label="Consultant" column={column} />;
       },
       cell: ({ row }) => (
         <div>
-          ₹{" "}
-          {row.original.invoice.transactions?.reduce(
-            (accumulator, currentItem) => {
-              return accumulator + currentItem.amount;
-            },
-            0,
+          <div className="flex items-center text-tiny gap-2">
+            {row.original.consultantDoctor.user.name}
+          </div>
+          {canUpdate && (
+            <div
+              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+              onClick={() => {
+                setChangeDoctorIpd(row.original);
+                setChangeDoctorMode("consultant");
+                setChangeDoctorOpen(true);
+              }}
+            >
+              Change
+            </div>
           )}
-          <TransactionsModal
-            billId={row.original.id}
-            patientName={`${row.original.patient.firstName} ${row.original.patient.lastName}`}
-            data={row.original.invoice.transactions || []}
-            printModule={ModuleType.IPD_BILL}
-            trigger={
-              <div className="text-blue-400 hover:underline cursor-pointer">
-                Details
-              </div>
-            }
-          />
         </div>
       ),
     },
@@ -357,9 +438,15 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
       cell: ({ row }) => (
         <Actions
           canCreateDischarge={Boolean(canCreateDischarge)}
+          canCancelDischarge={Boolean(canCancelDischarge)}
           canPrint={Boolean(canPrint)}
           canUpdate={Boolean(canUpdate)}
           data={row.original}
+          onChangeDoctor={(mode, ipd) => {
+            setChangeDoctorIpd(ipd);
+            setChangeDoctorMode(mode);
+            setChangeDoctorOpen(true);
+          }}
         />
       ),
     },
@@ -407,6 +494,23 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
             isError={isError}
             error={error}
             getRowId={(row) => String(row.id)}
+          />
+          <ChangeIpdDoctorModal
+            open={changeDoctorOpen}
+            onOpenChange={(open) => {
+              setChangeDoctorOpen(open);
+              if (!open) setChangeDoctorIpd(null);
+            }}
+            ipd={changeDoctorIpd}
+            mode={changeDoctorMode}
+          />
+          <ChangeIpdBillingTypeModal
+            open={changeBillingTypeOpen}
+            onOpenChange={(open) => {
+              setChangeBillingTypeOpen(open);
+              if (!open) setChangeBillingTypeIpd(null);
+            }}
+            ipd={changeBillingTypeIpd}
           />
         </>
       )}

@@ -139,6 +139,11 @@ export const OPD_VITALS = "/opd/vitals";
 // ----------------------------------
 export const IPD = "/ipd";
 export const IPD_DISCHARGE = "/ipd/discharge-patient";
+export const IPD_CANCEL_DISCHARGE = "/ipd/cancel-discharge";
+export const IPD_DOCTORS = "/ipd/doctors";
+export const IPD_BILLING_TYPE = "/ipd/billing-type";
+export const IPD_BED = "/ipd/bed";
+export const IPD_DATETIME = "/ipd/datetime";
 
 // ----------------------------------
 // ---------INVOICE ENDPOINTS--------

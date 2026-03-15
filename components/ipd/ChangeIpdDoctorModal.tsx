@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useUpdateOpdDoctors } from "@/hooks/query/opd";
-import { Doctor, OPDType, PaginatedResponse } from "@/lib/type";
+import { useUpdateIpdDoctors } from "@/hooks/query/ipd";
+import { Doctor, IPDType, PaginatedResponse } from "@/lib/type";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -26,13 +26,13 @@ type FormValues = {
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  opd: OPDType | null;
+  ipd: IPDType | null;
   mode: Mode;
 };
 
-const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
+const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
   const [doctorSearch, setDoctorSearch] = useState("");
-  const { mutateAsync, isPending } = useUpdateOpdDoctors();
+  const { mutateAsync, isPending } = useUpdateIpdDoctors();
 
   const doctorQuery = useInfiniteDoctorList(
     {
@@ -51,10 +51,10 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
     mode === "consultant" ? "Change Consultant" : "Change Referred By";
   const currentName =
     mode === "consultant"
-      ? opd?.consultantDoctor?.user?.name
-      : opd?.referringDoctor?.user?.name;
+      ? ipd?.consultantDoctor?.user?.name
+      : ipd?.referringDoctor?.user?.name;
 
-  const opdId = useMemo(() => (opd?.id ? Number(opd.id) : null), [opd?.id]);
+  const ipdId = useMemo(() => (ipd?.id ? Number(ipd.id) : null), [ipd?.id]);
 
   const handleClose = () => {
     onOpenChange(false);
@@ -63,7 +63,7 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!opdId) return;
+    if (!ipdId) return;
     if (!values.doctor?.userId) {
       toast.error("Please select a doctor");
       return;
@@ -77,12 +77,12 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
 
     if (mode === "consultant") {
       await mutateAsync({
-        opdId,
+        ipdId,
         consultantDoctor: { userId: selectedUserId },
       });
     } else {
       await mutateAsync({
-        opdId,
+        ipdId,
         referredDoctor: { userId: selectedUserId },
       });
     }
@@ -91,9 +91,9 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
   };
 
   const handleClearReferring = async () => {
-    if (!opdId) return;
+    if (!ipdId) return;
     await mutateAsync({
-      opdId,
+      ipdId,
       referredDoctor: null,
     });
     handleClose();
@@ -142,7 +142,7 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending || !opdId}>
+              <CustomButton type="submit" disabled={isPending || !ipdId}>
                 Save
               </CustomButton>
             </div>
@@ -153,4 +153,4 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
   );
 };
 
-export default ChangeOpdDoctorModal;
+export default ChangeIpdDoctorModal;

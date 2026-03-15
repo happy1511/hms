@@ -3,6 +3,7 @@ import {
   IdentityType,
   IpdArrival,
   IpdCareType,
+  PaymentCategory,
   RelationshipType,
   Status,
 } from "@/generated/prisma/enums";
@@ -55,9 +56,63 @@ const partialIpdValidator = ipdBaseValidator.partial().extend({
   ipdId: z.coerce.number(),
 });
 
+// -------------------- Ipd Updates --------------------
+const ipdDoctorUpdateValidator = z
+  .object({
+    ipdId: z.coerce.number(),
+    consultantDoctor: z.object({ userId: z.coerce.number() }).optional(),
+    referredDoctor: z
+      .object({ userId: z.coerce.number() })
+      .optional()
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.consultantDoctor && !data.referredDoctor) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one doctor change is required",
+      });
+    }
+  });
+
+const ipdBillingTypeUpdateValidator = z.object({
+  ipdId: z.coerce.number(),
+  billingType: z.enum(PaymentCategory),
+});
+
+const ipdBedUpdateValidator = z.object({
+  ipdId: z.coerce.number(),
+  bedId: z.coerce.number(),
+});
+
+const ipdDateTimeUpdateValidator = z.object({
+  ipdId: z.coerce.number(),
+  createdAt: z.coerce.date(),
+});
+
 // -------------------- Ipd Bill --------------------
 type ipdValidatorType = z.input<typeof ipdValidator>;
 type partialIpdValidatorType = z.input<typeof partialIpdValidator>;
+type ipdDoctorUpdateValidatorType = z.input<typeof ipdDoctorUpdateValidator>;
+type ipdBillingTypeUpdateValidatorType = z.input<
+  typeof ipdBillingTypeUpdateValidator
+>;
+type ipdBedUpdateValidatorType = z.input<typeof ipdBedUpdateValidator>;
+type ipdDateTimeUpdateValidatorType = z.input<typeof ipdDateTimeUpdateValidator>;
 
-export { ipdValidator, partialIpdValidator };
-export type { ipdValidatorType, partialIpdValidatorType };
+export {
+  ipdValidator,
+  partialIpdValidator,
+  ipdDoctorUpdateValidator,
+  ipdBillingTypeUpdateValidator,
+  ipdBedUpdateValidator,
+  ipdDateTimeUpdateValidator,
+};
+export type {
+  ipdValidatorType,
+  partialIpdValidatorType,
+  ipdDoctorUpdateValidatorType,
+  ipdBillingTypeUpdateValidatorType,
+  ipdBedUpdateValidatorType,
+  ipdDateTimeUpdateValidatorType,
+};

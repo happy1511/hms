@@ -1,4 +1,12 @@
-import { IPD, IPD_DISCHARGE } from "@/lib/apiDefinations";
+import {
+  IPD,
+  IPD_BED,
+  IPD_BILLING_TYPE,
+  IPD_CANCEL_DISCHARGE,
+  IPD_DATETIME,
+  IPD_DISCHARGE,
+  IPD_DOCTORS,
+} from "@/lib/apiDefinations";
 import {
   ApiResponse,
   FilterValues,
@@ -8,6 +16,10 @@ import {
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
+  ipdBedUpdateValidatorType,
+  ipdBillingTypeUpdateValidatorType,
+  ipdDateTimeUpdateValidatorType,
+  ipdDoctorUpdateValidatorType,
   ipdValidatorType,
   partialIpdValidatorType,
 } from "@/validators/api/ipd/ipd";
@@ -23,6 +35,17 @@ type UseCreateIpdOptions = {
 
 const createIpd = createRequest<ApiResponse<IPDType>>(IPD, "POST");
 const dischargeIpd = createRequest<ApiResponse<IPDType>>(IPD_DISCHARGE, "PUT");
+const cancelDischargeIpd = createRequest<ApiResponse<IPDType>>(
+  IPD_CANCEL_DISCHARGE,
+  "PUT",
+);
+const updateIpdDoctors = createRequest<ApiResponse<unknown>>(IPD_DOCTORS, "PUT");
+const updateIpdBillingType = createRequest<ApiResponse<unknown>>(
+  IPD_BILLING_TYPE,
+  "PUT",
+);
+const updateIpdBed = createRequest<ApiResponse<unknown>>(IPD_BED, "PUT");
+const updateIpdDateTime = createRequest<ApiResponse<unknown>>(IPD_DATETIME, "PUT");
 
 const getIPDs = createRequest<
   PaginatedResponse<IPDType>,
@@ -104,6 +127,108 @@ export const useDischargeIpd = () => {
     mutationFn: (data) => dischargeIpd({ body: data }),
     onSuccess: () => {
       toast.success("Patient Discharged Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useCancelDischargeIpd = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<IPDType>,
+    AxiosError<ApiResponse<null>>,
+    partialIpdValidatorType
+  >({
+    mutationKey: ["cancel-discharge-ipd"],
+    mutationFn: (data) => cancelDischargeIpd({ body: data }),
+    onSuccess: () => {
+      toast.success("Discharge Cancelled Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateIpdDoctors = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    ipdDoctorUpdateValidatorType
+  >({
+    mutationKey: ["update-ipd-doctors"],
+    mutationFn: (data) => updateIpdDoctors({ body: data }),
+    onSuccess: () => {
+      toast.success("IPD doctors updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateIpdBillingType = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    ipdBillingTypeUpdateValidatorType
+  >({
+    mutationKey: ["update-ipd-billing-type"],
+    mutationFn: (data) => updateIpdBillingType({ body: data }),
+    onSuccess: () => {
+      toast.success("Billing type updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateIpdBed = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    ipdBedUpdateValidatorType
+  >({
+    mutationKey: ["update-ipd-bed"],
+    mutationFn: (data) => updateIpdBed({ body: data }),
+    onSuccess: () => {
+      toast.success("Bed reallocated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["beds-infinite"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateIpdDateTime = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    ipdDateTimeUpdateValidatorType
+  >({
+    mutationKey: ["update-ipd-datetime"],
+    mutationFn: (data) => updateIpdDateTime({ body: data }),
+    onSuccess: () => {
+      toast.success("IPD date/time updated successfully");
       queryClient.invalidateQueries({
         queryKey: ["ipds"],
       });

@@ -90,7 +90,11 @@ export const useBedsList = (
   });
 };
 
-export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
+export const useInfiniteBedsList = (
+  filters: FilterValues,
+  limit: number,
+  enabled: boolean = true,
+) => {
   return useInfiniteQuery<
     PaginatedResponse<
       BedGetPayload<{
@@ -112,6 +116,7 @@ export const useInfiniteBedsList = (filters: FilterValues, limit: number) => {
     [string, FilterValues, number]
   >({
     queryKey: ["beds-infinite", filters, limit],
+    enabled,
 
     queryFn: ({ pageParam = 1 }) =>
       getBeds({

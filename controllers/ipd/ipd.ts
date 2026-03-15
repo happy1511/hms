@@ -12,7 +12,14 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { ipdValidator, partialIpdValidator } from "@/validators/api/ipd/ipd";
+import {
+  ipdBedUpdateValidator,
+  ipdBillingTypeUpdateValidator,
+  ipdDateTimeUpdateValidator,
+  ipdDoctorUpdateValidator,
+  ipdValidator,
+  partialIpdValidator,
+} from "@/validators/api/ipd/ipd";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -64,6 +71,19 @@ export const getAPI = async (req: Request) => {
           where,
           include: {
             invoice: { include: { transactions: true } },
+            bed: {
+              include: {
+                room: {
+                  include: {
+                    roomType: {
+                      include: {
+                        department: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
             consultantDoctor: {
               select: {
                 user: {
@@ -485,6 +505,292 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Patient Discharged Successfully",
+        });
+      });
+    },
+  });
+};
+
+export const cancelDischargePatientAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialIpdValidator,
+    req,
+    user,
+    onSuccess: async ({ body, user }) => {
+      return prisma.$transaction(async (tx) => {
+        const { ipdId } = body;
+
+        const existingIPD = await tx.ipd.findFirst({
+          where: { id: ipdId, isDischarged: true },
+          select: { id: true, bedId: true },
+        });
+
+        if (!existingIPD) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "IPD Not Found",
+          });
+        }
+
+        const bed = await tx.bed.findUnique({
+          where: { id: existingIPD.bedId },
+          select: { id: true, isOccupied: true, currentIpdId: true },
+        });
+
+        if (!bed) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Bed not found",
+          });
+        }
+
+        if (bed.isOccupied && bed.currentIpdId !== existingIPD.id) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Bed is already occupied",
+          });
+        }
+
+        await tx.bed.update({
+          where: { id: bed.id },
+          data: { isOccupied: true, currentIpdId: existingIPD.id },
+        });
+
+        await tx.ipd.update({
+          where: { id: existingIPD.id },
+          data: { isDischarged: false, updatedBy: user.id },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Discharge cancelled successfully",
+        });
+      });
+    },
+  });
+};
+
+export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdDoctorUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { ipdId, consultantDoctor, referredDoctor } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        if (consultantDoctor?.userId) {
+          const exists = await tx.doctor.findUnique({
+            where: { userId: consultantDoctor.userId },
+            select: { userId: true },
+          });
+          if (!exists) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Consultant doctor not found",
+            });
+          }
+        }
+
+        if (referredDoctor?.userId) {
+          const exists = await tx.doctor.findUnique({
+            where: { userId: referredDoctor.userId },
+            select: { userId: true },
+          });
+          if (!exists) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Referring doctor not found",
+            });
+          }
+        }
+
+        const updated = await tx.ipd.update({
+          where: { id: ipdId },
+          data: {
+            ...(consultantDoctor?.userId
+              ? { consultantDoctorId: consultantDoctor.userId }
+              : {}),
+            ...(referredDoctor === null
+              ? { referringDoctorId: null }
+              : referredDoctor?.userId
+                ? { referringDoctorId: referredDoctor.userId }
+                : {}),
+            updatedBy: user.id,
+          },
+          select: {
+            id: true,
+            consultantDoctor: {
+              select: { user: { select: { id: true, name: true } } },
+            },
+            referringDoctor: {
+              select: { user: { select: { id: true, name: true } } },
+            },
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "IPD doctors updated successfully",
+          data: updated,
+        });
+      });
+    },
+  });
+};
+
+export const updateIpdBillingTypeAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdBillingTypeUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { ipdId, billingType } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true, invoiceId: true },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        const updatedInvoice = await tx.invoice.update({
+          where: { id: existingIpd.invoiceId },
+          data: { billingType, updatedBy: user.id },
+          select: { id: true, billingType: true },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Billing type updated successfully",
+          data: updatedInvoice,
+        });
+      });
+    },
+  });
+};
+
+export const updateIpdBedAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdBedUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { ipdId, bedId } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true, bedId: true, isDischarged: true },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        if (existingIpd.isDischarged) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Cannot change bed for discharged IPD",
+          });
+        }
+
+        const newBed = await tx.bed.findFirst({
+          where: { id: bedId, isDeleted: false },
+          select: { id: true, isOccupied: true },
+        });
+
+        if (!newBed) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Bed not found",
+          });
+        }
+
+        if (newBed.isOccupied) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Bed is already occupied",
+          });
+        }
+
+        if (existingIpd.bedId !== bedId) {
+          await tx.bed.update({
+            where: { id: existingIpd.bedId },
+            data: { isOccupied: false, currentIpdId: null },
+          });
+
+          await tx.bed.update({
+            where: { id: bedId },
+            data: { isOccupied: true, currentIpdId: existingIpd.id },
+          });
+
+          await tx.ipd.update({
+            where: { id: existingIpd.id },
+            data: { bedId, updatedBy: user.id },
+          });
+        }
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Bed reallocated successfully",
+        });
+      });
+    },
+  });
+};
+
+export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdDateTimeUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { ipdId, createdAt } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true, invoiceId: true },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        await tx.ipd.update({
+          where: { id: existingIpd.id },
+          data: { createdAt, updatedBy: user.id },
+        });
+
+        await tx.invoice.update({
+          where: { id: existingIpd.invoiceId },
+          data: { createdAt, updatedBy: user.id },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "IPD date/time updated successfully",
         });
       });
     },
