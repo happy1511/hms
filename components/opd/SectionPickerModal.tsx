@@ -26,80 +26,78 @@ const SectionPickerModal = ({
   sections,
   onConfirm,
 }: Props) => {
-  const allIds = useMemo(
-    () =>
-      sections.map((s, idx) =>
-        String(s?.invoiceBillingSectionId ?? s?.id ?? idx),
-      ),
-    [sections],
-  );
+  const allIds = useMemo(() => sections.map((s) => String(s?.id)), [sections]);
 
-  // `null` means "all sections selected" (works even if `sections` loads later)
-  const [selectedSectionIds, setSelectedSectionIds] = useState<string[] | null>(
-    null,
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const handleToggle = (id: string, checked: boolean) => {
-    setSelectedSectionIds((prev) => {
-      if (prev === null) {
-        return checked ? allIds : allIds.filter((sid) => sid !== id);
+  console.log(allIds, sections);
+  const handleToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
       }
-      if (checked) {
-        return prev.includes(id) ? prev : [...prev, id];
-      }
-      return prev.filter((sid) => sid !== id);
+      return next;
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (value) {
+          setSelectedIds(new Set(allIds));
+        }
+        onOpenChange(value);
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-tiny">
             Select sections to include
           </DialogTitle>
         </DialogHeader>
+
         <div className="max-h-80 overflow-auto text-tiny space-y-2 py-2">
           {sections.map((section, idx) => {
-            const id = String(
-              section?.invoiceBillingSectionId ?? section?.id ?? idx,
-            );
-            const checked =
-              selectedSectionIds === null
-                ? true
-                : selectedSectionIds.includes(id);
+            const id = String(section?.id);
+            const checked = selectedIds.has(id);
+
             return (
               <button
                 type="button"
                 key={id}
                 className="flex w-full items-center gap-2 rounded border px-3 py-2 text-left cursor-pointer hover:bg-muted/40"
-                onClick={() => handleToggle(id, !checked)}
+                onClick={() => handleToggle(id)}
               >
-                <Checkbox
-                  className="size-3"
-                  checked={checked}
-                  onCheckedChange={(value) => handleToggle(id, Boolean(value))}
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <Checkbox className="size-3" checked={checked} />
                 <span>{section.name || `Section ${idx + 1}`}</span>
               </button>
             );
           })}
         </div>
+
         <Separator className="my-2" />
+
         <DialogFooter className="gap-2">
           <CustomButton
             variant="outline"
             onClick={() => {
-              setSelectedSectionIds(null);
-              onOpenChange(false);
+              setSelectedIds(new Set(allIds));
             }}
           >
             Reset
           </CustomButton>
+
           <CustomButton
             onClick={() => {
-              onConfirm(selectedSectionIds);
+              if (selectedIds.size === allIds.length) {
+                onConfirm(null);
+              } else {
+                onConfirm(Array.from(selectedIds));
+              }
               onOpenChange(false);
             }}
           >

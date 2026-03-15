@@ -154,10 +154,8 @@ export const filterSections = (
   sectionIds
     ? {
         ...data,
-        sections: data.sections.filter((section: any, idx: number) => {
-          const sectionId = String(
-            section?.invoiceBillingSectionId ?? section?.id ?? idx,
-          );
+        sections: data.sections.filter((section) => {
+          const sectionId = String(section?.id);
           return sectionIds.has(sectionId);
         }),
       }
