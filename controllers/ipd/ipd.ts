@@ -19,6 +19,7 @@ import {
   ipdBillingTypeUpdateValidator,
   ipdDateTimeUpdateValidator,
   ipdDoctorUpdateValidator,
+  ipdDischargeSummaryValidator,
   ipdMlcDeclareValidator,
   ipdValidator,
   partialIpdValidator,
@@ -321,6 +322,246 @@ export const getAdmissionPrintAPI = async (
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "Admission print fetched successfully",
+          data: ipd,
+        });
+      });
+    },
+  });
+};
+
+export const getIpdDischargeSummaryAPI = async (
+  req: Request,
+  { params }: { params: { ipdId: number } },
+  user: User,
+) => {
+  return validateRequest({
+    paramsSchema: partialIpdValidator,
+    params,
+    req,
+    user,
+    onSuccess: async ({ params }) => {
+      const { ipdId } = params;
+
+      return prisma.$transaction(async (tx) => {
+        const ipd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true, ipdDateTime: true },
+        });
+
+        if (!ipd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        const summary = await tx.ipdDischargeSummary.findUnique({
+          where: { ipdId },
+          include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+        });
+
+        if (!summary) {
+          return apiResponse({
+            status: RESPONSE_STATUS.SUCCESS,
+            message: "Discharge summary fetched successfully",
+            data: {
+              ipdId,
+              ipdDateTime: ipd.ipdDateTime,
+              drugs: [],
+            },
+          });
+        }
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Discharge summary fetched successfully",
+          data: summary,
+        });
+      });
+    },
+  });
+};
+
+export const upsertIpdDischargeSummaryAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdDischargeSummaryValidator,
+    req,
+    user,
+    onSuccess: async ({ body }) => {
+      const { ipdId, drugs = [], ...fields } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const ipd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true },
+        });
+
+        if (!ipd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        const upserted = await tx.ipdDischargeSummary.upsert({
+          where: { ipdId },
+          update: {
+            ...fields,
+          },
+          create: {
+            ipdId,
+            ...fields,
+          },
+        });
+
+        await tx.ipdDischargeDrug.deleteMany({
+          where: { dischargeSummaryId: upserted.id },
+        });
+
+        if (drugs?.length) {
+          await tx.ipdDischargeDrug.createMany({
+            data: drugs.map((drug) => ({
+              dischargeSummaryId: upserted.id,
+              drugId: Number((drug as any).drugId),
+              frequency: drug.frequency,
+              days: drug.days,
+              unit: drug.unit || null,
+              route: drug.route,
+              remarks: drug.remarks || null,
+            })),
+          });
+        }
+
+        const summary = await tx.ipdDischargeSummary.findUnique({
+          where: { ipdId },
+          include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Discharge summary saved successfully",
+          data: summary,
+        });
+      });
+    },
+  });
+};
+
+export const getIpdDischargePrintAPI = async (
+  req: Request,
+  { params }: { params: { ipdId: number } },
+  user: User,
+) => {
+  return validateRequest({
+    paramsSchema: partialIpdValidator,
+    params,
+    req,
+    user,
+    onSuccess: async ({ params }) => {
+      const { ipdId } = params;
+
+      return prisma.$transaction(async (tx) => {
+        const ipd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: {
+            id: true,
+            ipdDateTime: true,
+            dischargedAt: true,
+            isDischarged: true,
+            remarks: true,
+            patient: {
+              select: {
+                id: true,
+                uhid: true,
+                firstName: true,
+                lastName: true,
+                dob: true,
+                gender: true,
+                relations: true,
+                contacts: {
+                  where: {
+                    type: {
+                      in: [ContactType.PHONE, ContactType.MOBILE],
+                    },
+                  },
+                  select: {
+                    type: true,
+                    value: true,
+                  },
+                },
+                addresses: {
+                  where: { type: AddressType.HOME },
+                  select: {
+                    addressLineOne: true,
+                    addressLineTwo: true,
+                    addressLineThree: true,
+                    location: {
+                      select: {
+                        city: true,
+                        state: true,
+                        country: true,
+                        postcode: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            invoice: {
+              select: {
+                id: true,
+                billingType: true,
+              },
+            },
+            consultantDoctor: {
+              select: { user: { select: { name: true } } },
+            },
+            referringDoctor: {
+              select: { user: { select: { name: true } } },
+            },
+            bed: {
+              select: {
+                id: true,
+                bedNumber: true,
+                name: true,
+                room: {
+                  select: {
+                    id: true,
+                    name: true,
+                    roomType: {
+                      select: {
+                        id: true,
+                        name: true,
+                        department: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            dischargeSummary: {
+              include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+            },
+          },
+        });
+
+        if (!ipd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        if (!ipd.dischargeSummary) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Discharge summary not found",
+          });
+        }
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Discharge print fetched successfully",
           data: ipd,
         });
       });

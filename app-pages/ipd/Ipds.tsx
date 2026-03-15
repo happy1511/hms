@@ -23,7 +23,6 @@ import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import {
   useCancelDischargeIpd,
   useDeclareIpdMlc,
-  useDischargeIpd,
   useIpdList,
 } from "@/hooks/query/ipd";
 import {
@@ -122,10 +121,10 @@ const Actions = ({
   onChangeDoctor: (mode: "consultant" | "referring", ipd: IPDType) => void;
   dischargedList?: boolean;
 }) => {
+  const router = useRouter();
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [addPaymentModal, setAddPaymentModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
-  const [dischargeModal, setDischargeModal] = useState(false);
   const [cancelDischargeModal, setCancelDischargeModal] = useState(false);
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
@@ -134,8 +133,6 @@ const Actions = ({
   const { mutateAsync: declareMlc, isPending: declareMlcPending } =
     useDeclareIpdMlc();
 
-  const { mutateAsync: dischargeIpd, isPending: dischargePending } =
-    useDischargeIpd();
   const { mutateAsync: cancelDischargeIpd, isPending: cancelDischargePending } =
     useCancelDischargeIpd();
   const invoiceItems: DropdownItem[] = [
@@ -212,7 +209,7 @@ const Actions = ({
   if (!data.isDischarged && canCreateDischarge) {
     ipdItems.push({
       label: "Discharge Patient",
-      onClick: () => setDischargeModal(true),
+      onClick: () => router.push(`/ipd/discharge/${data.id}`),
     });
   }
 
@@ -275,18 +272,6 @@ const Actions = ({
           trigger={<div />}
         />
       )}
-
-      <CustomAlert
-        triggerButton={<div />}
-        open={dischargeModal}
-        onOpenChange={setDischargeModal}
-        title="Discharge Patient?"
-        description="Are you sure you want to discharge patient?"
-        cancelText="Cancel"
-        confirmText="Delete"
-        handleConfirm={() => dischargeIpd({ ipdId: data.id })}
-        pending={dischargePending}
-      />
 
       <CustomAlert
         triggerButton={<div />}

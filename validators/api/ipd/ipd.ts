@@ -95,6 +95,39 @@ const ipdMlcDeclareValidator = z.object({
   ipdId: z.coerce.number(),
 });
 
+// -------------------- Ipd Discharge Summary --------------------
+const ipdDischargeDrugValidator = z.object({
+  index: z.coerce.number().optional().nullable(),
+  drugId: z.coerce.number().min(1, "Drug is required"),
+  days: z.coerce.number().min(1),
+  frequency: z.coerce.number().min(1),
+  unit: z.string().optional().nullable(),
+  route: z.string().min(1, "Route is required"),
+  remarks: z.string().optional().nullable(),
+});
+
+const ipdDischargeSummaryValidator = z.object({
+  ipdId: z.coerce.number(),
+  ipdDateTime: z.coerce.date().optional().nullable(),
+  isUnfitForFurtherManagement: z.coerce.boolean().optional().default(false),
+  diagnosis: z.string().optional().nullable(),
+  procedureDate: z.coerce.date().optional().nullable(),
+  procedure: z.string().optional().nullable(),
+  courseInHospital: z.string().optional().nullable(),
+  investigationResults: z.string().optional().nullable(),
+  allergies: z.string().optional().nullable(),
+  diet: z.string().optional().nullable(),
+  physicalActivity: z.string().optional().nullable(),
+  followUpAfterDays: z.coerce.number().optional().nullable(),
+  followUpDate: z.coerce.date().optional().nullable(),
+  followUpAdvice: z.string().optional().nullable(),
+  otherAdvice: z.string().optional().nullable(),
+  urgentCareWhen: z.string().optional().nullable(),
+  isTransferred: z.coerce.boolean().optional().default(false),
+  remarks: z.string().optional().nullable(),
+  drugs: z.array(ipdDischargeDrugValidator).optional().default([]),
+});
+
 // -------------------- Ipd Bill --------------------
 type ipdValidatorType = z.input<typeof ipdValidator>;
 type partialIpdValidatorType = z.input<typeof partialIpdValidator>;
@@ -105,6 +138,10 @@ type ipdBillingTypeUpdateValidatorType = z.input<
 type ipdBedUpdateValidatorType = z.input<typeof ipdBedUpdateValidator>;
 type ipdDateTimeUpdateValidatorType = z.input<typeof ipdDateTimeUpdateValidator>;
 type ipdMlcDeclareValidatorType = z.input<typeof ipdMlcDeclareValidator>;
+type ipdDischargeDrugValidatorType = z.input<typeof ipdDischargeDrugValidator>;
+type ipdDischargeSummaryValidatorType = z.input<
+  typeof ipdDischargeSummaryValidator
+>;
 
 export {
   ipdValidator,
@@ -114,6 +151,8 @@ export {
   ipdBedUpdateValidator,
   ipdDateTimeUpdateValidator,
   ipdMlcDeclareValidator,
+  ipdDischargeDrugValidator,
+  ipdDischargeSummaryValidator,
 };
 export type {
   ipdValidatorType,
@@ -123,4 +162,6 @@ export type {
   ipdBedUpdateValidatorType,
   ipdDateTimeUpdateValidatorType,
   ipdMlcDeclareValidatorType,
+  ipdDischargeDrugValidatorType,
+  ipdDischargeSummaryValidatorType,
 };

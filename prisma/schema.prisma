@@ -1613,6 +1613,7 @@ model Ipd {
   referringDoctor     Doctor?              @relation("ReferringDoctorIpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
   invoice             Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  dischargeSummary    IpdDischargeSummary?
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
   room                Room?                @relation(fields: [roomId], references: [id])
@@ -1630,6 +1631,55 @@ model Ipd {
   @@index([ipdDateTime])
   @@index([dischargedAt])
   @@index([createdAt])
+}
+
+model IpdDischargeSummary {
+  id                               Int      @id @default(autoincrement())
+  ipdId                            Int      @unique
+  ipdDateTime                      DateTime?
+  isUnfitForFurtherManagement      Boolean  @default(false)
+  diagnosis                        String?  @db.LongText
+  procedureDate                    DateTime?
+  procedure                        String?  @db.LongText
+  courseInHospital                 String?  @db.LongText
+  investigationResults             String?  @db.LongText
+  allergies                        String?
+  diet                             String?
+  physicalActivity                 String?
+  followUpDate                     DateTime?
+  otherAdvice                      String?  @db.LongText
+  urgentCareWhen                   String?
+  isTransferred                    Boolean  @default(false)
+  remarks                          String?  @db.LongText
+
+  followUpAfterDays                Int?
+  followUpAdvice                   String?  @db.LongText
+
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @updatedAt
+
+  drugs                            IpdDischargeDrug[]
+  ipd                              Ipd      @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+
+  @@index([ipdId])
+  @@index([followUpDate])
+}
+
+model IpdDischargeDrug {
+  id                 Int     @id @default(autoincrement())
+  dischargeSummaryId Int
+  drugId             Int
+  frequency          Int
+  days               Int
+  unit               String?
+  route              String
+  remarks            String?
+
+  dischargeSummary IpdDischargeSummary @relation(fields: [dischargeSummaryId], references: [id], onDelete: Cascade)
+  drug            Drug                @relation(fields: [drugId], references: [id], onDelete: Restrict)
+
+  @@index([dischargeSummaryId])
+  @@index([drugId])
 }
 
 // -------------------- Company Details --------------------
@@ -1712,6 +1762,7 @@ model Drug {
 
   inventoryItems InventoryItems[]
   purchaseItems  PurchaseItem[]
+  ipdDischargeDrugs IpdDischargeDrug[]
 }
 
 model DrugSupplier {

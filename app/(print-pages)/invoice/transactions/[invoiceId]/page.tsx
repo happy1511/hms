@@ -1,10 +1,13 @@
 import PrintInvoiceTransactions from "@/app-pages/invoice/PrintInvoiceTransactions";
+import { Suspense } from "react";
 
 const page = () => {
   return (
-    <main>
-      <PrintInvoiceTransactions />
-    </main>
+    <Suspense>
+      <main>
+        <PrintInvoiceTransactions />
+      </main>
+    </Suspense>
   );
 };
 

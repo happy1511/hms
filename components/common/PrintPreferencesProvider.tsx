@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type PrintPreferences = {
@@ -33,6 +33,7 @@ const isPrintRoute = (pathname: string): boolean => {
     /^\/invoice\/(print|summary|daywise|compact|transactions)\//,
     /^\/opd\/consultation-print\//,
     /^\/ipd\/admission-print\//,
+    /^\/ipd\/discharge-print\//,
     /^\/pathology-print\//,
     /^\/radiology-print\//,
     /^\/pharmacy\/(sale-invoice|sale-transactions)\//,
@@ -45,32 +46,20 @@ const PrintPreferencesProvider = ({ children }: { children: React.ReactNode }) =
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [includeHeader, setIncludeHeaderState] = useState<boolean>(true);
-  const [showModal, setShowModal] = useState(false);
+  const isPrint = useMemo(() => isPrintRoute(pathname), [pathname]);
+  const parsedIncludeHeader = useMemo(
+    () => paramToBool(searchParams.get("includeHeader")),
+    [searchParams],
+  );
 
-  useEffect(() => {
-    if (!isPrintRoute(pathname)) {
-      setIncludeHeaderState(true);
-      setShowModal(false);
-      return;
-    }
-
-    const parsed = paramToBool(searchParams.get("includeHeader"));
-    if (parsed === null) {
-      setShowModal(true);
-      return;
-    }
-    setIncludeHeaderState(parsed);
-    setShowModal(false);
-  }, [searchParams]);
+  const includeHeader = !isPrint ? true : (parsedIncludeHeader ?? true);
+  const showModal = isPrint && parsedIncludeHeader === null;
 
   const setIncludeHeader = useCallback(
     (next: boolean) => {
-      setIncludeHeaderState(next);
       const params = new URLSearchParams(searchParams.toString());
       params.set("includeHeader", next ? "1" : "0");
       router.replace(`${pathname}?${params.toString()}`);
-      setShowModal(false);
     },
     [pathname, router, searchParams],
   );
@@ -82,7 +71,7 @@ const PrintPreferencesProvider = ({ children }: { children: React.ReactNode }) =
 
   return (
     <PrintPreferencesContext.Provider value={value}>
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={() => {}}>
         <DialogContent className="max-w-md border-secondary border-4 bg-white">
           <DialogHeader>
             <DialogTitle className="text-sm text-black/70">

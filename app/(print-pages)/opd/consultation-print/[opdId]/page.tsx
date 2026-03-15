@@ -1,10 +1,13 @@
 import PrintOpdConsultation from "@/app-pages/opd/PrintOpdConsultation";
+import { Suspense } from "react";
 
 const page = () => {
   return (
-    <main>
-      <PrintOpdConsultation />
-    </main>
+    <Suspense>
+      <main>
+        <PrintOpdConsultation />
+      </main>
+    </Suspense>
   );
 };
 

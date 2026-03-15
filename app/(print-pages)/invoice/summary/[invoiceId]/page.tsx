@@ -1,10 +1,13 @@
 import PrintInvoice from "@/app-pages/invoice/PrintInvoice";
+import { Suspense } from "react";
 
 const page = () => {
   return (
-    <main>
-      <PrintInvoice mode="summary" />
-    </main>
+    <Suspense>
+      <main>
+        <PrintInvoice mode="summary" />
+      </main>
+    </Suspense>
   );
 };
 

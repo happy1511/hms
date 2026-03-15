@@ -6,6 +6,8 @@ import {
   IPD_CANCEL_DISCHARGE,
   IPD_DATETIME,
   IPD_DISCHARGE,
+  IPD_DISCHARGE_PRINT,
+  IPD_DISCHARGE_SUMMARY,
   IPD_DOCTORS,
   IPD_MLC,
 } from "@/lib/apiDefinations";
@@ -22,6 +24,7 @@ import {
   ipdBillingTypeUpdateValidatorType,
   ipdDateTimeUpdateValidatorType,
   ipdDoctorUpdateValidatorType,
+  ipdDischargeSummaryValidatorType,
   ipdMlcDeclareValidatorType,
   ipdValidatorType,
   partialIpdValidatorType,
@@ -36,13 +39,69 @@ type UseCreateIpdOptions = {
   onSuccess?: (data: ApiResponse<IPDType>) => void;
 };
 
+export type IpdDischargeDrugLine = {
+  id?: number;
+  dischargeSummaryId?: number;
+  drugId?: number | null;
+  drug?: { id: number; name: string } | null;
+  index?: number | null;
+  frequency?: number;
+  days?: number;
+  unit?: string | null;
+  route?: string;
+  remarks?: string | null;
+};
+
+export type IpdDischargeSummaryResponse = {
+  id?: number;
+  ipdId: number;
+  ipdDateTime?: string | Date | null;
+  isUnfitForFurtherManagement?: boolean;
+  diagnosis?: string | null;
+  procedureDate?: string | Date | null;
+  procedure?: string | null;
+  courseInHospital?: string | null;
+  investigationResults?: string | null;
+  allergies?: string | null;
+  diet?: string | null;
+  physicalActivity?: string | null;
+  followUpAfterDays?: number | null;
+  followUpDate?: string | Date | null;
+  followUpAdvice?: string | null;
+  otherAdvice?: string | null;
+  urgentCareWhen?: string | null;
+  isTransferred?: boolean;
+  remarks?: string | null;
+  drugs?: IpdDischargeDrugLine[];
+};
+
+export type IpdDischargePrintResponse = IPDType & {
+  dischargeSummary: IpdDischargeSummaryResponse;
+};
+
 const createIpd = createRequest<ApiResponse<IPDType>>(IPD, "POST");
 const dischargeIpd = createRequest<ApiResponse<IPDType>>(IPD_DISCHARGE, "PUT");
+const upsertIpdDischargeSummary = createRequest<
+  ApiResponse<IpdDischargeSummaryResponse>,
+  undefined,
+  undefined,
+  ipdDischargeSummaryValidatorType
+>(IPD_DISCHARGE_SUMMARY, "PUT");
 const getIpdAdmissionPrint = createRequest<
   ApiResponse<IPDType>,
   undefined,
   { id: string }
 >((p) => `${IPD_ADMISSION_PRINT}/${p.id}`, "GET");
+const getIpdDischargeSummary = createRequest<
+  ApiResponse<IpdDischargeSummaryResponse>,
+  undefined,
+  { id: string }
+>((p) => `${IPD_DISCHARGE_SUMMARY}/${p.id}`, "GET");
+const getIpdDischargePrint = createRequest<
+  ApiResponse<IpdDischargePrintResponse>,
+  undefined,
+  { id: string }
+>((p) => `${IPD_DISCHARGE_PRINT}/${p.id}`, "GET");
 const cancelDischargeIpd = createRequest<ApiResponse<IPDType>>(
   IPD_CANCEL_DISCHARGE,
   "PUT",
@@ -123,6 +182,63 @@ export const useGetIpdAdmissionPrint = (id?: string) => {
     queryKey: ["get-ipd-admission-print", id],
     queryFn: () =>
       getIpdAdmissionPrint({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
+};
+
+export const useGetIpdDischargeSummary = (id?: string) => {
+  return useQuery<
+    ApiResponse<IpdDischargeSummaryResponse>,
+    AxiosError<ApiResponse<null>>,
+    IpdDischargeSummaryResponse,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-ipd-discharge-summary", id],
+    queryFn: () =>
+      getIpdDischargeSummary({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
+};
+
+export const useUpsertIpdDischargeSummary = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<IpdDischargeSummaryResponse>,
+    AxiosError<ApiResponse<null>>,
+    ipdDischargeSummaryValidatorType
+  >({
+    mutationKey: ["upsert-ipd-discharge-summary"],
+    mutationFn: (data) => upsertIpdDischargeSummary({ body: data }),
+    onSuccess: (_, variables) => {
+      toast.success("Discharge summary saved successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["get-ipd-discharge-summary", String(variables.ipdId)],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useGetIpdDischargePrint = (id?: string) => {
+  return useQuery<
+    ApiResponse<IpdDischargePrintResponse>,
+    AxiosError<ApiResponse<null>>,
+    IpdDischargePrintResponse,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-ipd-discharge-print", id],
+    queryFn: () =>
+      getIpdDischargePrint({
         urlHelpers: {
           id: id as string,
         },
