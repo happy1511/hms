@@ -11,7 +11,9 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddVitalsModal from "@/components/opd/AddVitalsModal";
+import ChangeOpdDateTimeModal from "@/components/opd/ChangeOpdDateTimeModal";
 import ChangeOpdDoctorModal from "@/components/opd/ChangeOpdDoctorModal";
+import ChangeOpdStatusModal from "@/components/opd/ChangeOpdStatusModal";
 import PrintConsultationModal from "@/components/opd/PrintConsultationModal";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
@@ -64,6 +66,7 @@ const Actions = ({
   const [addVitalsModal, setAddVitalsModal] = useState(false);
   const [confirmNewOpdOpen, setConfirmNewOpdOpen] = useState(false);
   const [confirmAddToIpdOpen, setConfirmAddToIpdOpen] = useState(false);
+  const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
   const router = useRouter();
   const invoiceItems: DropdownItem[] = [
     {
@@ -102,6 +105,10 @@ const Actions = ({
       {
         label: "Add to IPD",
         onClick: () => setConfirmAddToIpdOpen(true),
+      },
+      {
+        label: "Change Date/Time",
+        onClick: () => setChangeDateTimeOpen(true),
       },
       {
         label: "Vitals",
@@ -153,6 +160,11 @@ const Actions = ({
         onOpenChange={setViewInvoiceModal}
         trigger={<div />}
       />
+      <ChangeOpdDateTimeModal
+        opd={data}
+        open={changeDateTimeOpen}
+        onOpenChange={setChangeDateTimeOpen}
+      />
       <CustomAlert
         open={confirmNewOpdOpen}
         onOpenChange={setConfirmNewOpdOpen}
@@ -198,6 +210,8 @@ const OPDs = () => {
     "consultant" | "referring"
   >("consultant");
   const [changeDoctorOpd, setChangeDoctorOpd] = useState<OPDType | null>(null);
+  const [changeStatusOpen, setChangeStatusOpen] = useState(false);
+  const [changeStatusOpd, setChangeStatusOpd] = useState<OPDType | null>(null);
 
   const consultantQuery = useInfiniteDoctorList(
     {
@@ -258,6 +272,7 @@ const OPDs = () => {
               trigger={
                 <div className="uppercase text-tiny font-medium hover:bg-orange-100 inline cursor-pointer">
                   {[
+                    row.original.patient.title + ".",
                     row.original.patient.firstName,
                     row.original.patient.lastName,
                   ].join(" ")}
@@ -268,11 +283,15 @@ const OPDs = () => {
               {row.original.patient.gender},{" "}
               {formatAge(row.original.patient.dob)}{" "}
             </div>
-            {row.original.isInQueue && (
-              <div className="text-[10px] bg-orange-200 inline px-2">
-                In Queue{" "}
-              </div>
-            )}
+            <div
+              className="text-[10px] bg-orange-200 inline px-2 cursor-pointer"
+              onClick={() => {
+                setChangeStatusOpd(row.original);
+                setChangeStatusOpen(true);
+              }}
+            >
+              {String(row.original.status || "--")}
+            </div>
           </div>
         </div>
       ),
@@ -284,7 +303,7 @@ const OPDs = () => {
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
-          {format(row.original.createdAt, "dd/MM - h:mma")}
+          {format(row.original.opdDateTime, "dd/MM - h:mma")}
         </div>
       ),
     },
@@ -296,6 +315,7 @@ const OPDs = () => {
       cell: ({ row }) => (
         <div>
           <div className="flex items-center text-tiny gap-2">
+            {row.original.patient.title + "."}{" "}
             {row.original.consultantDoctor.user.name}
           </div>
           {canUpdate && (
@@ -322,7 +342,9 @@ const OPDs = () => {
         <div>
           <div className="flex items-center text-tiny gap-2">
             {row.original.referringDoctor
-              ? row.original.referringDoctor.user.name
+              ? row.original.referringDoctor.user.title +
+                ". " +
+                row.original.referringDoctor.user.name
               : "-- none --"}
           </div>
           {canUpdate && (
@@ -485,6 +507,14 @@ const OPDs = () => {
             }}
             opd={changeDoctorOpd}
             mode={changeDoctorMode}
+          />
+          <ChangeOpdStatusModal
+            open={changeStatusOpen}
+            onOpenChange={(open) => {
+              setChangeStatusOpen(open);
+              if (!open) setChangeStatusOpd(null);
+            }}
+            opd={changeStatusOpd}
           />
         </>
       )}

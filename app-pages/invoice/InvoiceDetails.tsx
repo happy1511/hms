@@ -309,9 +309,6 @@ const ServiceRow = ({
   const maxDiscount = watch(
     `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
-  const createdAt = watch(
-    `${rowPath}.createdAt` as Path<updateInvoiceValidatorType>,
-  );
   const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
   const itemId = watch(`${rowPath}.itemId` as Path<updateInvoiceValidatorType>);
   const updateReason = watch(

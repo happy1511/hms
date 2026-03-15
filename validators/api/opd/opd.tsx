@@ -2,6 +2,7 @@ import {
   ContactType,
   IdentityType,
   OpdArrival,
+  OpdStatus,
   RelationshipType,
   Status,
 } from "@/generated/prisma/enums";
@@ -63,6 +64,17 @@ const opdBaseValidator = z.object({
 const opdValidator = opdBaseValidator;
 const partialOpdValidator = opdBaseValidator.partial().extend({
   opdId: z.coerce.number(),
+});
+
+// -------------------- Opd Updates --------------------
+const opdStatusUpdateValidator = z.object({
+  opdId: z.coerce.number(),
+  status: z.enum(OpdStatus),
+});
+
+const opdDateTimeUpdateValidator = z.object({
+  opdId: z.coerce.number(),
+  opdDateTime: z.coerce.date(),
 });
 
 // -------------------- Opd File --------------------
@@ -140,6 +152,8 @@ const opdDoctorUpdateValidator = z
 // -------------------- Opd Bill --------------------
 type opdValidatorType = z.input<typeof opdValidator>;
 type partialOpdValidatorType = z.input<typeof partialOpdValidator>;
+type opdStatusUpdateValidatorType = z.input<typeof opdStatusUpdateValidator>;
+type opdDateTimeUpdateValidatorType = z.input<typeof opdDateTimeUpdateValidator>;
 
 // -------------------- Opd File --------------------
 type vitalValidatorType = z.input<typeof vitalsValidator>;
@@ -150,6 +164,8 @@ type opdDoctorUpdateValidatorType = z.input<typeof opdDoctorUpdateValidator>;
 export {
   opdValidator,
   partialOpdValidator,
+  opdStatusUpdateValidator,
+  opdDateTimeUpdateValidator,
   vitalsValidator,
   consultationFileValidator,
   prescribedDrugValidator,
@@ -158,6 +174,8 @@ export {
 export type {
   opdValidatorType,
   partialOpdValidatorType,
+  opdStatusUpdateValidatorType,
+  opdDateTimeUpdateValidatorType,
   vitalValidatorType,
   consultantFileType,
   prescribedDrugType,

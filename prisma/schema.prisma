@@ -172,6 +172,7 @@ enum ResultType {
 enum ModuleType {
   USER
   DASHBOARD
+  COMPANY_DETAILS
   DOCTOR_MASTER
   DEPARTMENT_MASTER
   ROOM_TYPE_MASTER
@@ -293,6 +294,13 @@ enum OpdArrival {
   AYUSHMAN_IP_SECOND
   AYUSHMAN_IP_THIRD
   OTHER
+}
+
+enum OpdStatus {
+  IN_QUEUE
+  IN_CONSULTATION
+  WAITING
+  COMPLETED
 }
 
 enum IpdArrival {
@@ -591,6 +599,7 @@ model User {
   createdIpds                Ipd[]                    @relation("IpdCreatedBy")
   updatedIpds                Ipd[]                    @relation("IpdUpdatedBy")
   deletedIpds                Ipd[]                    @relation("IpdDeletedBy")
+  dischargedIpds             Ipd[]                    @relation("IpdDischargedBy")
   createdDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryCreatedBy")
   updatedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryUpdatedBy")
   deletedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryDeletedBy")
@@ -1523,10 +1532,11 @@ model Opd {
   id                 Int        @id @default(autoincrement())
   patientId          Int
   arrivalState       OpdArrival
+  status             OpdStatus  @default(IN_QUEUE)
+  opdDateTime        DateTime   @default(now())
   remarks            String?
   consultantDoctorId Int
   referringDoctorId  Int?
-  isInQueue          Boolean    @default(true)
   invoiceId          Int        @unique
 
   createdBy Int?
@@ -1556,7 +1566,8 @@ model Opd {
   @@index([consultantDoctorId])
   @@index([referringDoctorId])
   @@index([invoiceId])
-  @@index([isInQueue])
+  @@index([status])
+  @@index([opdDateTime])
   @@index([createdAt])
 }
 
@@ -1573,6 +1584,9 @@ model Ipd {
   invoiceId          Int         @unique
   careType           IpdCareType @default(MEDICAL)
   isDischarged       Boolean     @default(false)
+  ipdDateTime        DateTime    @default(now())
+  dischargedAt       DateTime?
+  dischargedById     Int?
 
   createdBy Int?
   updatedBy Int?
@@ -1584,6 +1598,7 @@ model Ipd {
   createdByUser       User?                @relation("IpdCreatedBy", fields: [createdBy], references: [id])
   updatedByUser       User?                @relation("IpdUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser       User?                @relation("IpdDeletedBy", fields: [deletedBy], references: [id])
+  dischargedByUser    User?                @relation("IpdDischargedBy", fields: [dischargedById], references: [id])
   bed                 Bed                  @relation("BedToIpd", fields: [bedId], references: [id], onDelete: Cascade)
   currentBedLink      Bed?                 @relation("CurrentIpd")
   consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
@@ -1601,7 +1616,21 @@ model Ipd {
   @@index([bedId])
   @@index([invoiceId])
   @@index([isDischarged])
+  @@index([ipdDateTime])
+  @@index([dischargedAt])
   @@index([createdAt])
+}
+
+// -------------------- Company Details --------------------
+
+model CompanyDetails {
+  id      Int    @id @default(autoincrement())
+  name    String @default("")
+  address String @default("")
+  mobile  String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -------------------- Drug Management --------------------

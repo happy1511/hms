@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Fragment, useMemo } from "react";
 import Cell from "../invoice/Cell";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 type Props = {
   data: PathologyTestResultType;
@@ -99,6 +100,7 @@ const PathologyPrintBody = ({ data, layoutClassName = "" }: Props) => {
         layoutClassName,
       )}
     >
+      <CompanyPrintHeader className="mb-2" />
       <table className="w-full border border-black border-collapse">
         <tbody>
           <HeaderRow

@@ -53,12 +53,21 @@ export const getAPI = async (req: Request) => {
       }
 
       if (createdAtFrom || createdAtTo) {
-        and.push({
-          createdAt: {
-            ...(createdAtFrom && { gte: createdAtFrom }),
-            ...(createdAtTo && { lte: createdAtTo }),
-          },
-        });
+        if (isDischarged === true) {
+          and.push({
+            dischargedAt: {
+              ...(createdAtFrom && { gte: createdAtFrom }),
+              ...(createdAtTo && { lte: createdAtTo }),
+            },
+          });
+        } else {
+          and.push({
+            createdAt: {
+              ...(createdAtFrom && { gte: createdAtFrom }),
+              ...(createdAtTo && { lte: createdAtTo }),
+            },
+          });
+        }
       }
 
       const where: Prisma.IpdWhereInput = and.length ? { AND: and } : {};
@@ -110,6 +119,7 @@ export const getAPI = async (req: Request) => {
                 firstName: true,
                 middleName: true,
                 dob: true,
+                title: true,
                 maritalStatus: true,
                 relations: true,
                 addresses: true,
@@ -127,6 +137,116 @@ export const getAPI = async (req: Request) => {
         message: "Ipds Fetched Successfully",
         data: items,
         total,
+      });
+    },
+  });
+};
+
+export const getAdmissionPrintAPI = async (
+  req: Request,
+  { params }: { params: { ipdId: number } },
+) => {
+  return validateRequest({
+    paramsSchema: partialIpdValidator,
+    params,
+    req,
+    onSuccess: async ({ params }) => {
+      const { ipdId } = params;
+
+      return prisma.$transaction(async (tx) => {
+        const ipd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: {
+            id: true,
+            ipdDateTime: true,
+            arrivalState: true,
+            isDischarged: true,
+            remarks: true,
+            patient: {
+              select: {
+                id: true,
+                uhid: true,
+                firstName: true,
+                lastName: true,
+                dob: true,
+                gender: true,
+                relations: true,
+                contacts: {
+                  where: {
+                    type: {
+                      in: [ContactType.PHONE, ContactType.MOBILE],
+                    },
+                  },
+                  select: {
+                    type: true,
+                    value: true,
+                  },
+                },
+                addresses: {
+                  where: { type: AddressType.HOME },
+                  select: {
+                    addressLineOne: true,
+                    addressLineTwo: true,
+                    addressLineThree: true,
+                    location: {
+                      select: {
+                        city: true,
+                        state: true,
+                        country: true,
+                        postcode: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            invoice: {
+              select: {
+                id: true,
+                billingType: true,
+              },
+            },
+            consultantDoctor: {
+              select: { user: { select: { name: true } } },
+            },
+            referringDoctor: {
+              select: { user: { select: { name: true } } },
+            },
+            bed: {
+              select: {
+                id: true,
+                bedNumber: true,
+                name: true,
+                room: {
+                  select: {
+                    id: true,
+                    name: true,
+                    roomType: {
+                      select: {
+                        id: true,
+                        name: true,
+                        department: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!ipd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Admission print fetched successfully",
+          data: ipd,
+        });
       });
     },
   });
@@ -383,7 +503,7 @@ export const createAPI = async (req: Request, user: User) => {
                 referringDoctorId: body.referredDoctor?.userId,
                 createdBy: user.id,
                 updatedBy: user.id,
-                createdAt: createdAt,
+                ipdDateTime: createdAt,
               },
             },
           },
@@ -499,7 +619,12 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
 
         await tx.ipd.update({
           where: { id: body.ipdId },
-          data: { isDischarged: true, updatedBy: user.id },
+          data: {
+            isDischarged: true,
+            dischargedAt: new Date(),
+            dischargedById: user.id,
+            updatedBy: user.id,
+          },
         });
 
         return apiResponse({
@@ -558,7 +683,12 @@ export const cancelDischargePatientAPI = async (req: Request, user: User) => {
 
         await tx.ipd.update({
           where: { id: existingIPD.id },
-          data: { isDischarged: false, updatedBy: user.id },
+          data: {
+            isDischarged: false,
+            dischargedAt: null,
+            dischargedById: null,
+            updatedBy: user.id,
+          },
         });
 
         return apiResponse({
@@ -763,7 +893,7 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
     bodySchema: ipdDateTimeUpdateValidator,
     req,
     onSuccess: async ({ body }) => {
-      const { ipdId, createdAt } = body;
+      const { ipdId, ipdDateTime } = body;
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
@@ -780,12 +910,12 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
 
         await tx.ipd.update({
           where: { id: existingIpd.id },
-          data: { createdAt, updatedBy: user.id },
+          data: { ipdDateTime, updatedBy: user.id },
         });
 
         await tx.invoice.update({
           where: { id: existingIpd.invoiceId },
-          data: { createdAt, updatedBy: user.id },
+          data: { createdAt: ipdDateTime, updatedBy: user.id },
         });
 
         return apiResponse({

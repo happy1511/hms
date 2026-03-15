@@ -1,5 +1,6 @@
 import {
   IPD,
+  IPD_ADMISSION_PRINT,
   IPD_BED,
   IPD_BILLING_TYPE,
   IPD_CANCEL_DISCHARGE,
@@ -35,6 +36,11 @@ type UseCreateIpdOptions = {
 
 const createIpd = createRequest<ApiResponse<IPDType>>(IPD, "POST");
 const dischargeIpd = createRequest<ApiResponse<IPDType>>(IPD_DISCHARGE, "PUT");
+const getIpdAdmissionPrint = createRequest<
+  ApiResponse<IPDType>,
+  undefined,
+  { id: string }
+>((p) => `${IPD_ADMISSION_PRINT}/${p.id}`, "GET");
 const cancelDischargeIpd = createRequest<ApiResponse<IPDType>>(
   IPD_CANCEL_DISCHARGE,
   "PUT",
@@ -89,6 +95,25 @@ export const useIpdList = (
           }),
         },
       }),
+  });
+};
+
+export const useGetIpdAdmissionPrint = (id?: string) => {
+  return useQuery<
+    ApiResponse<IPDType>,
+    AxiosError<ApiResponse<null>>,
+    IPDType,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-ipd-admission-print", id],
+    queryFn: () =>
+      getIpdAdmissionPrint({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
   });
 };
 

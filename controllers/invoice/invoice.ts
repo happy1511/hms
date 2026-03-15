@@ -287,6 +287,8 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
         ]),
       );
 
+      console.log(existingInvoice, "existingInvoice");
+
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "invoice Fetched Successfully",

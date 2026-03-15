@@ -15,7 +15,9 @@ import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   consultationFileValidator,
   opdValidator,
+  opdDateTimeUpdateValidator,
   opdDoctorUpdateValidator,
+  opdStatusUpdateValidator,
   partialOpdValidator,
   vitalsValidator,
 } from "@/validators/api/opd/opd";
@@ -67,7 +69,8 @@ export const getAPI = async (req: Request) => {
             id: true,
             arrivalState: true,
             invoice: { include: { transactions: true } },
-            isInQueue: true,
+            status: true,
+            opdDateTime: true,
             consultantDoctor: {
               select: {
                 user: {
@@ -94,6 +97,7 @@ export const getAPI = async (req: Request) => {
                 firstName: true,
                 middleName: true,
                 dob: true,
+                title: true,
                 maritalStatus: true,
                 relations: true,
                 addresses: true,
@@ -154,7 +158,7 @@ export const getQueueAPI = async (req: Request) => {
         });
       }
 
-      and.push({ isInQueue: true });
+      and.push({ status: "IN_QUEUE" });
 
       const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
 
@@ -168,7 +172,8 @@ export const getQueueAPI = async (req: Request) => {
             id: true,
             arrivalState: true,
             invoice: { include: { transactions: true } },
-            isInQueue: true,
+            status: true,
+            opdDateTime: true,
             consultantDoctor: {
               select: {
                 user: {
@@ -242,7 +247,7 @@ export const getConsultationAPI = async (
           where: { id: opdId },
           select: {
             id: true,
-            createdAt: true,
+            opdDateTime: true,
             patientId: true,
             patient: {
               select: {
@@ -355,7 +360,7 @@ export const getConsultationAPI = async (
               orderBy: { createdAt: "desc" },
               select: {
                 id: true,
-                createdAt: true,
+                opdDateTime: true,
                 advisedPathologyTests: {
                   select: {
                     test: {
@@ -400,10 +405,10 @@ export const getConsultationAPI = async (
               overrideConsultantDoctor?.user?.name ??
               consultation?.consultantDoctor?.user?.name,
             referringDoctorName: consultation?.referringDoctor?.user?.name,
-            createdAt: consultation?.createdAt,
+            createdAt: consultation?.opdDateTime,
             previousOpdHistory: previousOpds.map((opd) => ({
               opdId: opd.id,
-              createdAt: opd.createdAt,
+              createdAt: opd.opdDateTime,
               investigations: Array.from(
                 new Set([
                   ...opd.advisedPathologyTests.map((item) => item.test.name),
@@ -656,7 +661,7 @@ export const createAPI = async (req: Request, user: User) => {
                 referringDoctorId: body.referredDoctor?.userId,
                 createdBy: user.id,
                 updatedBy: user.id,
-                createdAt: createdAt,
+                opdDateTime: createdAt,
               },
             },
           },
@@ -853,6 +858,46 @@ export const updateOpdDoctorsAPI = async (req: Request, user: User) => {
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "OPD doctors updated successfully",
+          data: updated,
+        });
+      });
+    },
+  });
+};
+
+export const updateOpdDateTimeAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: opdDateTimeUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { opdId, opdDateTime } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+          select: { id: true, invoiceId: true },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const updated = await tx.opd.update({
+          where: { id: opdId },
+          data: { opdDateTime, updatedBy: user.id },
+        });
+
+        await tx.invoice.update({
+          where: { id: existingOpd.invoiceId },
+          data: { createdAt: opdDateTime, updatedBy: user.id },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "OPD Date/Time Updated Successfully",
           data: updated,
         });
       });
@@ -1061,7 +1106,7 @@ export const deleteQueueAPI = async (req: Request, user: User) => {
         const updatedOpd = await tx.opd.update({
           where: { id: body.opdId },
           data: {
-            isInQueue: false,
+            status: "COMPLETED",
             updatedBy: user.id,
           },
         });
@@ -1070,6 +1115,45 @@ export const deleteQueueAPI = async (req: Request, user: User) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Opd Removed from queue Successfully",
           data: updatedOpd,
+        });
+      });
+    },
+  });
+};
+
+export const updateOpdStatusAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: opdStatusUpdateValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { opdId, status } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findUnique({
+          where: { id: opdId },
+          select: { id: true },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        const updated = await tx.opd.update({
+          where: { id: opdId },
+          data: {
+            status,
+            updatedBy: user.id,
+          },
+          select: { id: true, status: true },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "OPD status updated successfully",
+          data: updated,
         });
       });
     },

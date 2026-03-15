@@ -34,8 +34,9 @@ const SectionPickerModal = ({
     [sections],
   );
 
+  // `null` means "all sections selected" (works even if `sections` loads later)
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[] | null>(
-    allIds,
+    null,
   );
 
   const handleToggle = (id: string, checked: boolean) => {
@@ -68,17 +69,20 @@ const SectionPickerModal = ({
                 ? true
                 : selectedSectionIds.includes(id);
             return (
-              <label
+              <button
+                type="button"
                 key={id}
-                className="flex items-center gap-2 rounded border px-3 py-2"
+                className="flex w-full items-center gap-2 rounded border px-3 py-2 text-left cursor-pointer hover:bg-muted/40"
+                onClick={() => handleToggle(id, !checked)}
               >
                 <Checkbox
                   className="size-3"
                   checked={checked}
                   onCheckedChange={(value) => handleToggle(id, Boolean(value))}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <span>{section.name || `Section ${idx + 1}`}</span>
-              </label>
+              </button>
             );
           })}
         </div>

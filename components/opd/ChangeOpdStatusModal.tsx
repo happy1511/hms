@@ -10,55 +10,45 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { useUpdateIpdDateTime } from "@/hooks/query/ipd";
-import { IPDType } from "@/lib/type";
+import { OpdStatus } from "@/generated/prisma/enums";
+import { useUpdateOpdStatus } from "@/hooks/query/opd";
+import { OPDType } from "@/lib/type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-type Props = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  ipd: IPDType | null;
-};
-
 const schema = z.object({
-  ipdDateTime: z.date(),
+  status: z.enum(OpdStatus),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const toSafeDate = (value: unknown): Date => {
-  if (value instanceof Date) return value;
-  if (typeof value === "string" || typeof value === "number") {
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? new Date() : d;
-  }
-  return new Date();
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  opd: OPDType | null;
 };
 
-const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
-  const { mutateAsync, isPending } = useUpdateIpdDateTime();
+const ChangeOpdStatusModal = ({ open, onOpenChange, opd }: Props) => {
+  const { mutateAsync, isPending } = useUpdateOpdStatus();
 
-  const ipdId = useMemo(() => (ipd?.id ? Number(ipd.id) : null), [ipd]);
-  const currentDate = useMemo(() => {
-    return toSafeDate(ipd?.ipdDateTime);
-  }, [ipd]);
+  const opdId = useMemo(() => (opd?.id ? Number(opd.id) : null), [opd]);
+  const currentStatus = (opd as any)?.status ?? OpdStatus.IN_QUEUE;
 
   const form = useForm<FormValues>({
-    defaultValues: { ipdDateTime: currentDate },
+    defaultValues: { status: currentStatus },
     resolver: zodResolver(schema),
   });
 
   const handleClose = () => {
     onOpenChange(false);
-    form.reset({ ipdDateTime: currentDate });
+    form.reset({ status: currentStatus });
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!ipdId) return;
-    await mutateAsync({ ipdId, ipdDateTime: values.ipdDateTime });
+    if (!opdId) return;
+    await mutateAsync({ opdId, status: values.status });
     handleClose();
   };
 
@@ -70,10 +60,10 @@ const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
       <DialogContent className="max-w-lg border-secondary border-4 bg-white">
         <DialogHeader>
           <DialogTitle className="text-sm text-black/70">
-            Change IPD Date/Time
+            Change OPD Status
           </DialogTitle>
           <DialogDescription>
-            Current: {currentDate.toLocaleString()}
+            Current: {String(currentStatus || "--")}
           </DialogDescription>
         </DialogHeader>
 
@@ -83,10 +73,14 @@ const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
             className="space-y-3 text-tiny"
           >
             <FormField<FormValues>
-              label="IPD Date/Time"
-              name="ipdDateTime"
+              label="Status"
+              name="status"
               control={form.control}
-              type="dateTime"
+              type="select"
+              options={Object.values(OpdStatus).map((s) => ({
+                label: s.replaceAll("_", " ").toLowerCase(),
+                value: s,
+              }))}
               required
             />
 
@@ -98,7 +92,7 @@ const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending || !ipdId}>
+              <CustomButton type="submit" disabled={isPending || !opdId}>
                 Save
               </CustomButton>
             </div>
@@ -109,4 +103,5 @@ const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
   );
 };
 
-export default ChangeIpdDateTimeModal;
+export default ChangeOpdStatusModal;
+

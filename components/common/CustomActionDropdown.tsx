@@ -13,6 +13,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 export interface DropdownItem {
   label: string;
@@ -88,7 +89,10 @@ const CustomActionDropdown: React.FC<CommonActionDropdownProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="text-tiny py-0 h-auto px-2">
-        <Button variant="outline">{triggerLabel}</Button>
+        <Button variant="outline">
+          {triggerLabel}
+          <ChevronDown className="size-2.5" />
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="p-0 bg-white" align={align}>

@@ -594,8 +594,9 @@ export type OPDType = Prisma.OpdGetPayload<{
   select: {
     id: true;
     arrivalState: true;
+    status: true;
+    opdDateTime: true;
     invoice: { include: { transactions: true } };
-    isInQueue: true;
     consultantDoctor: {
       select: {
         user: {
@@ -618,6 +619,7 @@ export type OPDType = Prisma.OpdGetPayload<{
       select: {
         id: true;
         uhid: true;
+        title: true;
         lastName: true;
         firstName: true;
         middleName: true;

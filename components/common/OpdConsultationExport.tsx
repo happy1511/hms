@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import PrintToolbar from "./PrintToolbar";
 import { useState } from "react";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 type PrescribedDrugLine = {
   name?: string;
@@ -142,6 +143,7 @@ const OpdConsultationExport = ({ data }: { data: ConsultationExportData }) => {
         className="w-full bg-white text-black print:bg-white"
       >
         <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+          <CompanyPrintHeader />
           <header className="border border-black">
             <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
               <p className="font-semibold">OPD CONSULTATION</p>

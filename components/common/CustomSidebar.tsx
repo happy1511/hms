@@ -15,6 +15,7 @@ import {
   Stethoscope,
   User,
   Bolt,
+  Building2,
   LucideProps,
   Layers,
   DoorClosed,
@@ -195,6 +196,12 @@ const masters: SidebarItem[] = [
     url: "/locations",
     icon: BedDouble,
     module: [ModuleType.LOCATION_MASTER],
+  },
+  {
+    title: "COMPANY DETAILS",
+    url: "/company",
+    icon: Building2,
+    module: [ModuleType.COMPANY_DETAILS],
   },
 ];
 

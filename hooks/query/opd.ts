@@ -2,8 +2,10 @@ import {
   BILLING_SECTIONS,
   OPD,
   OPD_CONSULTATION,
+  OPD_DATETIME,
   OPD_DOCTORS,
   OPD_QUEUE,
+  OPD_STATUS,
   OPD_VITALS,
 } from "@/lib/apiDefinations";
 import { AddressType, ContactType } from "@/generated/prisma/enums";
@@ -18,7 +20,9 @@ import { createRequest } from "@/services/apiRequest";
 import { PartialBillingSectionValidatorType } from "@/validators/api/masters/billingSection";
 import {
   consultantFileType,
+  opdDateTimeUpdateValidatorType,
   opdDoctorUpdateValidatorType,
+  opdStatusUpdateValidatorType,
   opdValidatorType,
   partialOpdValidatorType,
   vitalValidatorType,
@@ -77,6 +81,8 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
   "PUT",
 );
 const updateOpdDoctors = createRequest<ApiResponse<unknown>>(OPD_DOCTORS, "PUT");
+const updateOpdStatus = createRequest<ApiResponse<unknown>>(OPD_STATUS, "PUT");
+const updateOpdDateTime = createRequest<ApiResponse<unknown>>(OPD_DATETIME, "PUT");
 const deleteBillingSection = createRequest<
   ApiResponse<null>,
   undefined,
@@ -320,6 +326,61 @@ export const useUpdateOpdDoctors = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ["opd-queue"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateOpdStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    opdStatusUpdateValidatorType
+  >({
+    mutationKey: ["update-opd-status"],
+    mutationFn: (data) =>
+      updateOpdStatus({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("OPD status updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["opd-queue"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUpdateOpdDateTime = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    opdDateTimeUpdateValidatorType
+  >({
+    mutationKey: ["update-opd-datetime"],
+    mutationFn: (data) =>
+      updateOpdDateTime({
+        body: data,
+      }),
+    onSuccess: () => {
+      toast.success("OPD Date/Time updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["opd-queue"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["invoice-details"],
       });
     },
     onError: showError,

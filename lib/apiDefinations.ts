@@ -132,6 +132,8 @@ export const OPD = "/opd";
 export const OPD_QUEUE = "/opd/queue";
 export const OPD_CONSULTATION = "/opd/consultation";
 export const OPD_DOCTORS = "/opd/doctors";
+export const OPD_STATUS = "/opd/status";
+export const OPD_DATETIME = "/opd/datetime";
 export const OPD_VITALS = "/opd/vitals";
 
 // ----------------------------------
@@ -144,6 +146,7 @@ export const IPD_DOCTORS = "/ipd/doctors";
 export const IPD_BILLING_TYPE = "/ipd/billing-type";
 export const IPD_BED = "/ipd/bed";
 export const IPD_DATETIME = "/ipd/datetime";
+export const IPD_ADMISSION_PRINT = "/ipd/admission";
 
 // ----------------------------------
 // ---------INVOICE ENDPOINTS--------
@@ -153,3 +156,8 @@ export const INVOICE = "/invoice";
 export const INVOICE_BILLING_ITEM = "/invoice/billing-item";
 export const INCOME = "/income";
 export const EXPENSE = "/expense";
+
+// ----------------------------------
+// ---------SETTINGS ENDPOINTS--------
+// ----------------------------------
+export const COMPANY = "/company";

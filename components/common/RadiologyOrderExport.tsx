@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 const sanitizeInline = (html: string) => {
   if (!html) return "";
@@ -18,6 +19,7 @@ const RadiologyReportPDF = ({ data }: any) => {
   return (
     <div className="w-full bg-white text-[11px] text-black print:bg-white">
       <div className="mx-auto max-w-4xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        <CompanyPrintHeader />
         {/* Header */}
         <div className="flex items-start justify-between border border-black p-4">
           <div>

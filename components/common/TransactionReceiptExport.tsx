@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 interface TransactionItem {
   id?: number;
@@ -51,6 +52,7 @@ const TransactionReceiptExport = ({
       style={{ fontSize }}
     >
       <div className="mx-auto max-w-3xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        <CompanyPrintHeader />
         <header>
           <div className="flex items-center border-t border-x justify-center border-b border-black bg-[#dedede] px-3 py-2">
             <p className="font-semibold">PAYMENT RECEIPT</p>

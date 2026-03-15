@@ -7,6 +7,7 @@ import { InvoiceGroupedBySection, InvoiceItem } from "@/lib/type";
 import InvoicePaymentSummary from "./InvoicePaymentSummary";
 import InvoicePaymentHistory from "./InvoicePaymentHistory";
 import { format } from "date-fns";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 interface Props {
   data: InvoiceGroupedBySection;
@@ -55,7 +56,7 @@ const InvoicePrintDetails = ({
       const discountLabel =
         item.discountType === "PERCENTAGE"
           ? `${item.discountValue}% (₹${discountAmount.toFixed(2)})`
-          : `₹${discountAmount.toFixed(2)}`;
+          : `${discountAmount.toFixed(2)}`;
 
       return {
         description: item.service.name,
@@ -83,6 +84,10 @@ const InvoicePrintDetails = ({
     };
   });
 
+  const visibleSectionsWithTotals = sectionsWithTotals.filter(
+    (section) => section.items.length > 0,
+  );
+
   const discount =
     data.discountType === "PERCENTAGE"
       ? (data.rate * data.discountValue) / 100
@@ -101,6 +106,7 @@ const InvoicePrintDetails = ({
           layoutClassName,
         )}
       >
+        <CompanyPrintHeader className="mb-3" />
         {!hideCustomerInfo && (
           <CustomerInfo
             customer={{
@@ -135,7 +141,7 @@ const InvoicePrintDetails = ({
         )}
 
         <div className="mt-4 space-y-3">
-          {sectionsWithTotals.map((section) => (
+          {visibleSectionsWithTotals.map((section) => (
             <div key={section.name} className="overflow-hidden">
               <InvoiceTable<InvoiceItem>
                 emptyMessage="No Items"
@@ -207,7 +213,7 @@ const InvoicePrintDetails = ({
           )}
 
           <InvoicePaymentSummary
-            sectionsWithTotals={sectionsWithTotals}
+            sectionsWithTotals={visibleSectionsWithTotals}
             paid={paid}
             discount={discount}
           />

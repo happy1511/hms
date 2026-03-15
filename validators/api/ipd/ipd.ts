@@ -87,7 +87,7 @@ const ipdBedUpdateValidator = z.object({
 
 const ipdDateTimeUpdateValidator = z.object({
   ipdId: z.coerce.number(),
-  createdAt: z.coerce.date(),
+  ipdDateTime: z.coerce.date(),
 });
 
 // -------------------- Ipd Bill --------------------

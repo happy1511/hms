@@ -6,6 +6,7 @@ import { amount, cn } from "@/lib/utils";
 import { InvoiceGroupedBySection, sectionsWithTotals } from "@/lib/type";
 import { format } from "date-fns";
 import CustomerInfo from "./CustomerInfo";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 interface Props {
   data: InvoiceGroupedBySection;
@@ -105,6 +106,7 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
           layoutClassName,
         )}
       >
+        <CompanyPrintHeader className="mb-3" />
         <CustomerInfo customer={customer} invoice={invoice} />
         <div className="my-4">
           <InvoiceTable

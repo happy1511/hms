@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 interface SaleInvoiceLine {
   name: string;
@@ -66,6 +67,7 @@ const SaleInvoiceExport = ({
       )}
     >
       <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        <CompanyPrintHeader />
         {/* Header */}
         <div className="border border-black">
           <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">

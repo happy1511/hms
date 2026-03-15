@@ -39,6 +39,32 @@ import { endOfDay, format, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const toDateOrNull = (value: unknown): Date | null => {
+  if (value instanceof Date) return value;
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+};
+
+const formatDuration = (from?: unknown, to?: unknown) => {
+  const start = toDateOrNull(from);
+  const end = toDateOrNull(to);
+  if (!start || !end) return "--";
+  const ms = Math.max(0, end.getTime() - start.getTime());
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts: string[] = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes || parts.length === 0) parts.push(`${minutes}m`);
+  return parts.join(" ");
+};
+
 const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   const router = useRouter();
   return (
@@ -61,6 +87,7 @@ const Actions = ({
   canUpdate,
   data,
   onChangeDoctor,
+  dischargedList = false,
 }: {
   canCreateDischarge: boolean;
   canCancelDischarge: boolean;
@@ -68,6 +95,7 @@ const Actions = ({
   canUpdate: boolean;
   data: IPDType;
   onChangeDoctor: (mode: "consultant" | "referring", ipd: IPDType) => void;
+  dischargedList?: boolean;
 }) => {
   const [addInvoiceItemModal, setAddInvoiceItemModal] = useState(false);
   const [addPaymentModal, setAddPaymentModal] = useState(false);
@@ -76,6 +104,7 @@ const Actions = ({
   const [cancelDischargeModal, setCancelDischargeModal] = useState(false);
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
+  const [patientViewOpen, setPatientViewOpen] = useState(false);
 
   const { mutateAsync: dischargeIpd, isPending: dischargePending } =
     useDischargeIpd();
@@ -88,7 +117,7 @@ const Actions = ({
     },
   ];
 
-  if (canUpdate) {
+  if (!dischargedList && canUpdate) {
     invoiceItems.unshift(
       {
         label: "Add Invoice Item",
@@ -101,7 +130,7 @@ const Actions = ({
     );
   }
 
-  if (canPrint) {
+  if (!dischargedList && canPrint) {
     invoiceItems.push({
       label: "Print Invoice",
       onClick: () => setViewInvoiceModal(true),
@@ -117,7 +146,7 @@ const Actions = ({
 
   const ipdItems: DropdownItem[] = [];
 
-  if (canUpdate) {
+  if (!dischargedList && canUpdate) {
     ipdItems.push(
       {
         label: "Reallocate Bed",
@@ -138,6 +167,13 @@ const Actions = ({
     );
   }
 
+  if (dischargedList) {
+    ipdItems.push({
+      label: "View Patient Profile",
+      onClick: () => setPatientViewOpen(true),
+    });
+  }
+
   if (!data.isDischarged && canCreateDischarge) {
     ipdItems.push({
       label: "Discharge Patient",
@@ -149,6 +185,13 @@ const Actions = ({
     ipdItems.push({
       label: "Cancel Discharge",
       onClick: () => setCancelDischargeModal(true),
+    });
+  }
+
+  if (data.isDischarged && canPrint) {
+    ipdItems.push({
+      label: "Print Admission",
+      onClick: () => window.open(`/ipd/admission-print/${data.id}`, "_blank"),
     });
   }
 
@@ -188,6 +231,15 @@ const Actions = ({
         onOpenChange={setViewInvoiceModal}
         trigger={<div />}
       />
+
+      {dischargedList && (
+        <PatientViewModal
+          data={data.patient as PatientType}
+          open={patientViewOpen}
+          onOpenChange={setPatientViewOpen}
+          trigger={<div />}
+        />
+      )}
 
       <CustomAlert
         triggerButton={<div />}
@@ -248,6 +300,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
   const [changeBillingTypeIpd, setChangeBillingTypeIpd] =
     useState<IPDType | null>(null);
 
+
   const consultantQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
@@ -298,7 +351,152 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
     ActionType.UPDATE,
   );
 
-  const columns: ColumnDefWithClass<IPDType>[] = [
+  const columns: ColumnDefWithClass<IPDType>[] = discharged
+    ? [
+        {
+          accessorKey: "id",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="IPD No" column={column} />
+          ),
+          cell: ({ row }) => <span>{row.original.id}</span>,
+          headerClassName: "min-w-15 max-w-20",
+          cellClassName: "min-w-15 max-w-20",
+        },
+        {
+          accessorKey: "patientName",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Patient" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div>
+              <div>
+                <PatientViewModal
+                  data={row.original.patient as PatientType}
+                  trigger={
+                    <div className="uppercase text-tiny font-medium hover:bg-orange-100 inline cursor-pointer">
+                      {[
+                        row.original.patient.firstName,
+                        row.original.patient.lastName,
+                      ].join(" ")}
+                    </div>
+                  }
+                />
+                <div className="text-[10px]">
+                  {row.original.patient.gender},{" "}
+                  {formatAge(row.original.patient.dob)}{" "}
+                </div>
+              </div>
+            </div>
+          ),
+        },
+        {
+          accessorKey: "consultant",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Consultant" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {row.original.consultantDoctor.user.name}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "createdAt",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="IPD Date/Time" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {format(row.original.ipdDateTime, "dd/MM - h:mma")}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "dischargedAt",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Discharged Date" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {row.original.dischargedAt
+                ? format(row.original.dischargedAt, "dd/MM - h:mma")
+                : "--"}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "duration",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Duration" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {formatDuration(
+                row.original.ipdDateTime,
+                row.original.dischargedAt,
+              )}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "billingType",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Billing Type" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {String(row.original.invoice.billingType)}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "referring",
+          header: ({ column }) => (
+            <SortableHeader<IPDType> label="Referred By" column={column} />
+          ),
+          cell: ({ row }) => (
+            <div>
+              <div className="flex items-center text-tiny gap-2">
+                {row.original.referringDoctor
+                  ? row.original.referringDoctor.user.name
+                  : "-- none --"}
+              </div>
+              {canUpdate && (
+                <div
+                  className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+                  onClick={() => {
+                    setChangeDoctorIpd(row.original);
+                    setChangeDoctorMode("referring");
+                    setChangeDoctorOpen(true);
+                  }}
+                >
+                  Change
+                </div>
+              )}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "action",
+          header: "Actions",
+          cell: ({ row }) => (
+            <Actions
+              canCreateDischarge={Boolean(canCreateDischarge)}
+              canCancelDischarge={Boolean(canCancelDischarge)}
+              canPrint={Boolean(canPrint)}
+              canUpdate={Boolean(canUpdate)}
+              data={row.original}
+              dischargedList
+              onChangeDoctor={(mode, ipd) => {
+                setChangeDoctorIpd(ipd);
+                setChangeDoctorMode(mode);
+                setChangeDoctorOpen(true);
+              }}
+            />
+          ),
+        },
+      ]
+    : [
     {
       accessorKey: "id",
       header: ({ column }) => {
@@ -308,43 +506,43 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
       headerClassName: "min-w-15 max-w-20",
       cellClassName: "min-w-15 max-w-20",
     },
-    {
-      accessorKey: "patientName",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Patient" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div>
-          <div>
-            <PatientViewModal
-              data={row.original.patient as PatientType}
-              trigger={
-                <div className="uppercase text-tiny font-medium hover:bg-orange-100 inline cursor-pointer">
-                  {[
-                    row.original.patient.firstName,
-                    row.original.patient.lastName,
-                  ].join(" ")}
+        {
+          accessorKey: "patientName",
+          header: ({ column }) => {
+            return <SortableHeader<IPDType> label="Patient" column={column} />;
+          },
+          cell: ({ row }) => (
+            <div>
+              <div>
+                <PatientViewModal
+                  data={row.original.patient as PatientType}
+                  trigger={
+                    <div className="uppercase text-tiny font-medium hover:bg-orange-100 inline cursor-pointer">
+                      {[
+                        row.original.patient.firstName,
+                        row.original.patient.lastName,
+                      ].join(" ")}
+                    </div>
+                  }
+                />
+                <div className="text-[10px]">
+                  {row.original.patient.gender},{" "}
+                  {formatAge(row.original.patient.dob)}{" "}
                 </div>
-              }
-            />
-            <div className="text-[10px]">
-              {row.original.patient.gender},{" "}
-              {formatAge(row.original.patient.dob)}{" "}
+                <div className="text-[10px] text-black/70">
+                  {[
+                    row.original.bed?.room?.roomType?.department?.name,
+                    row.original.bed?.room?.roomType?.name,
+                    row.original.bed?.room?.name,
+                    row.original.bed?.name || row.original.bed?.bedNumber,
+                  ]
+                    .filter(Boolean)
+                    .join(" / ") || "--"}
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] text-black/70">
-              {[
-                row.original.bed?.room?.roomType?.department?.name,
-                row.original.bed?.room?.roomType?.name,
-                row.original.bed?.room?.name,
-                row.original.bed?.name || row.original.bed?.bedNumber,
-              ]
-                .filter(Boolean)
-                .join(" / ") || "--"}
-            </div>
-          </div>
-        </div>
-      ),
-    },
+          ),
+        },
     {
       accessorKey: "createdDate",
       header: ({ column }) => {
@@ -352,7 +550,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
       },
       cell: ({ row }) => (
         <div className="flex items-center text-tiny gap-2">
-          {format(row.original.createdAt, "dd/MM - h:mma")}
+          {format(row.original.ipdDateTime, "dd/MM - h:mma")}
         </div>
       ),
     },

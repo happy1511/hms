@@ -6,6 +6,7 @@ import { BillingSections, InvoiceGroupedBySection } from "@/lib/type";
 import { amount, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMemo } from "react";
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 type InvoicePrintDayWiseProps = {
   data: InvoiceGroupedBySection;
@@ -63,6 +64,7 @@ export const InvoicePrintDayWise = ({
           layoutClassName,
         )}
       >
+        <CompanyPrintHeader className="mb-3" />
         <CustomerInfo
           invoice={{
             number: `INV-${data.id}`,
