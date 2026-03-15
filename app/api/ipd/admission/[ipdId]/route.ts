@@ -11,8 +11,12 @@ export async function GET(
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType.IPD_BILL, action: ActionType["VIEW"] }],
-      (req) => getAdmissionPrintAPI(req, { params: { ipdId: Number(ipdId) } }),
+      [
+        { module: ModuleType.IPD_BILL, action: ActionType.VIEW },
+        { module: ModuleType.DAY_CARE_IPD, action: ActionType.VIEW },
+      ],
+      (req, user) =>
+        getAdmissionPrintAPI(req, { params: { ipdId: Number(ipdId) } }, user),
     ),
   );
 }

@@ -61,7 +61,7 @@ import { PatientAddressValidatorType } from "@/validators/api/masters/patient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   useFieldArray,
@@ -115,6 +115,7 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
   return {
     patientId: data?.id ?? undefined,
     bed: { id: null },
+    isDayCare: false,
     invoice: {
       billingType: PaymentCategory["SELF_PAY"],
       billingItems: [],
@@ -944,6 +945,8 @@ const IpdBillForm = () => {
   const [createdInvoiceId, setCreatedInvoiceId] = useState<number | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isDayCare = searchParams.get("dayCare") === "true";
   const { mutateAsync, isPending } = useCreateIpd({
     navigateBackOnSuccess: false,
     onSuccess: (response) => {
@@ -958,7 +961,7 @@ const IpdBillForm = () => {
   const { data: patient, isLoading } = useGetPatient(params?.patientId);
 
   const form = useForm<ipdValidatorType>({
-    defaultValues: getInitialValues(patient),
+    defaultValues: { ...getInitialValues(patient), isDayCare },
     resolver: zodResolver(ipdValidator),
   });
 
@@ -999,10 +1002,9 @@ const IpdBillForm = () => {
   };
 
   useEffect(() => {
-    if (patient) {
-      form.reset(getInitialValues(patient));
-    }
-  }, [patient, form]);
+    const initial = { ...getInitialValues(patient), isDayCare };
+    form.reset(initial);
+  }, [patient, form, isDayCare]);
 
   if (isLoading && params?.patientId) {
     return (

@@ -7,8 +7,12 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["IPD_BILL"], action: ActionType["VIEW"] }],
-      () => getAPI(request),
+      [
+        { module: ModuleType.IPD_BILL, action: ActionType.VIEW },
+        { module: ModuleType.DAY_CARE_IPD, action: ActionType.VIEW },
+        { module: ModuleType.IPD_MLC, action: ActionType.VIEW },
+      ],
+      (req, user) => getAPI(req, user),
     ),
   );
 }
@@ -17,7 +21,10 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["IPD_BILL"], action: ActionType["CREATE"] }],
+      [
+        { module: ModuleType.IPD_BILL, action: ActionType.CREATE },
+        { module: ModuleType.DAY_CARE_IPD, action: ActionType.CREATE },
+      ],
       (req, user) => createAPI(req, user),
     ),
   );

@@ -40,6 +40,7 @@ const ipdBaseValidator = z.object({
   patient: ipdPatientValidator,
   arrivalState: z.enum(IpdArrival),
   careType: z.enum(IpdCareType).default(IpdCareType["MEDICAL"]),
+  isDayCare: z.coerce.boolean().optional().default(false),
   remarks: z.string().max(500).optional(),
   bed: z.object({ id: z.coerce.number() }),
   room: z.object({ id: z.coerce.number() }).optional(),
@@ -90,6 +91,10 @@ const ipdDateTimeUpdateValidator = z.object({
   ipdDateTime: z.coerce.date(),
 });
 
+const ipdMlcDeclareValidator = z.object({
+  ipdId: z.coerce.number(),
+});
+
 // -------------------- Ipd Bill --------------------
 type ipdValidatorType = z.input<typeof ipdValidator>;
 type partialIpdValidatorType = z.input<typeof partialIpdValidator>;
@@ -99,6 +104,7 @@ type ipdBillingTypeUpdateValidatorType = z.input<
 >;
 type ipdBedUpdateValidatorType = z.input<typeof ipdBedUpdateValidator>;
 type ipdDateTimeUpdateValidatorType = z.input<typeof ipdDateTimeUpdateValidator>;
+type ipdMlcDeclareValidatorType = z.input<typeof ipdMlcDeclareValidator>;
 
 export {
   ipdValidator,
@@ -107,6 +113,7 @@ export {
   ipdBillingTypeUpdateValidator,
   ipdBedUpdateValidator,
   ipdDateTimeUpdateValidator,
+  ipdMlcDeclareValidator,
 };
 export type {
   ipdValidatorType,
@@ -115,4 +122,5 @@ export type {
   ipdBillingTypeUpdateValidatorType,
   ipdBedUpdateValidatorType,
   ipdDateTimeUpdateValidatorType,
+  ipdMlcDeclareValidatorType,
 };

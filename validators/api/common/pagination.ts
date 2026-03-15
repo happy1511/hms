@@ -23,6 +23,10 @@ const paginationValidator = z.object({
     .string()
     .optional()
     .transform((t) => (t === "true" ? true : false)),
+  isDayCare: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
   testStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
   radiologyStatus: z.array(z.enum(RadiologyOrderStatus)).optional(),
   cancelled: z
@@ -83,9 +87,15 @@ const paginationValidator = z.object({
     .number()
     .optional()
     .transform((id) => Number(id)),
+  isMlcPatient: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
 
   "createdAt[from]": z.coerce.date().optional(),
   "createdAt[to]": z.coerce.date().optional(),
+  "mlcDeclarationDate[from]": z.coerce.date().optional(),
+  "mlcDeclarationDate[to]": z.coerce.date().optional(),
 });
 
 type PaginationValidatorType = z.infer<typeof paginationValidator>;

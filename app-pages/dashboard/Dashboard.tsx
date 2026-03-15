@@ -112,6 +112,11 @@ const Dashboard = () => {
     ModuleType.IPD_BILL,
     ActionType.CREATE,
   );
+  const canCreateDayCare = hasActionPermission(
+    profile.data,
+    ModuleType.DAY_CARE_IPD,
+    ActionType.CREATE,
+  );
   const canViewQueue = hasActionPermission(
     profile.data,
     ModuleType.OPD_QUEUE,
@@ -140,6 +145,15 @@ const Dashboard = () => {
           >
             <Bed className="size-3" />
             <span>New IPD</span>
+          </Link>
+        )}
+        {canCreateDayCare && (
+          <Link
+            href="/patient/search?ipdCreate=true&dayCare=true"
+            className="bg-secondary px-2 py-1.5 flex items-center gap-2 text-white border text-xs font-medium"
+          >
+            <Bed className="size-3" />
+            <span>New Day Care</span>
           </Link>
         )}
         {canViewQueue && (

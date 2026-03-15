@@ -243,12 +243,15 @@ export interface FilterValues {
   status?: string;
   nonOccupied?: boolean;
   createdAt?: string | { from?: Date; to?: Date };
+  mlcDeclarationDate?: string | { from?: Date; to?: Date };
   uhid?: string;
   contactNo?: string;
   doctorType?: DoctorType;
   roomTypeId?: string;
   departmentId?: string;
   isDischarged?: boolean;
+  isDayCare?: boolean;
+  isMlcPatient?: boolean;
   roomId?: string;
   documentType?: string;
   billingSectionId?: string;
@@ -640,6 +643,7 @@ export type OPDType = Prisma.OpdGetPayload<{
 export type IPDType = Prisma.IpdGetPayload<{
   include: {
     invoice: { include: { transactions: true } };
+    mlcDeclaredByUser: { select: { id: true; name: true } };
     bed: {
       include: {
         room: { include: { roomType: { include: { department: true } } } };

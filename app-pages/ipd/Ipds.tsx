@@ -22,6 +22,7 @@ import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import {
   useCancelDischargeIpd,
+  useDeclareIpdMlc,
   useDischargeIpd,
   useIpdList,
 } from "@/hooks/query/ipd";
@@ -65,16 +66,38 @@ const formatDuration = (from?: unknown, to?: unknown) => {
   return parts.join(" ");
 };
 
-const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
+const Buttons = ({
+  canCreateIpd = false,
+  canCreateDayCare = false,
+  dayCare = false,
+}: {
+  canCreateIpd?: boolean;
+  canCreateDayCare?: boolean;
+  dayCare?: boolean;
+}) => {
   const router = useRouter();
   return (
     <>
-      {canCreate && (
-        <CustomButton
-          onClick={() => router.push("/patient/search?ipdCreate=true")}
-        >
-          New IPD
-        </CustomButton>
+      {(canCreateIpd || canCreateDayCare) && (
+        <div className="flex gap-2">
+          {!dayCare && canCreateIpd && (
+            <CustomButton
+              onClick={() => router.push("/patient/search?ipdCreate=true")}
+            >
+              New IPD
+            </CustomButton>
+          )}
+          {canCreateDayCare && (
+            <CustomButton
+              variant={dayCare ? "default" : "secondary"}
+              onClick={() =>
+                router.push("/patient/search?ipdCreate=true&dayCare=true")
+              }
+            >
+              New Day Care
+            </CustomButton>
+          )}
+        </div>
       )}
     </>
   );
@@ -85,6 +108,7 @@ const Actions = ({
   canCancelDischarge,
   canPrint,
   canUpdate,
+  canMarkMlc,
   data,
   onChangeDoctor,
   dischargedList = false,
@@ -93,6 +117,7 @@ const Actions = ({
   canCancelDischarge: boolean;
   canPrint: boolean;
   canUpdate: boolean;
+  canMarkMlc: boolean;
   data: IPDType;
   onChangeDoctor: (mode: "consultant" | "referring", ipd: IPDType) => void;
   dischargedList?: boolean;
@@ -105,6 +130,9 @@ const Actions = ({
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
   const [patientViewOpen, setPatientViewOpen] = useState(false);
+
+  const { mutateAsync: declareMlc, isPending: declareMlcPending } =
+    useDeclareIpdMlc();
 
   const { mutateAsync: dischargeIpd, isPending: dischargePending } =
     useDischargeIpd();
@@ -165,6 +193,13 @@ const Actions = ({
         onClick: () => setChangeDateTimeOpen(true),
       },
     );
+
+    if (canMarkMlc && !data.isMlcPatient) {
+      ipdItems.push({
+        label: declareMlcPending ? "Mark as MLC..." : "Mark as MLC",
+        onClick: () => declareMlc({ ipdId: Number(data.id) }),
+      });
+    }
   }
 
   if (dischargedList) {
@@ -280,15 +315,22 @@ const Actions = ({
   );
 };
 
-const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
+const IPDs = ({
+  discharged = false,
+  dayCare = false,
+}: {
+  discharged?: boolean;
+  dayCare?: boolean;
+}) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<FilterValues>({
+  const [filters, setFilters] = useState<FilterValues>(() => ({
     createdAt: {
       from: startOfDay(new Date()),
       to: endOfDay(new Date()),
     },
-  });
+    isDayCare: dayCare,
+  }));
   const [consultantValue, setConsultantValue] = useState("");
   const [changeDoctorOpen, setChangeDoctorOpen] = useState(false);
   const [changeDoctorMode, setChangeDoctorMode] = useState<
@@ -300,7 +342,6 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
   const [changeBillingTypeIpd, setChangeBillingTypeIpd] =
     useState<IPDType | null>(null);
 
-
   const consultantQuery = useInfiniteDoctorList(
     {
       doctorType: "consulting",
@@ -310,7 +351,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
   );
   const { data: profile } = useProfile(false);
   const { data, isLoading, isError, error } = useIpdList(
-    { ...filters, isDischarged: !!discharged },
+    { ...filters, isDischarged: !!discharged, isDayCare: dayCare },
     page,
     limit,
   );
@@ -319,26 +360,42 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
     return <div />;
   }
 
+  const moduleForList = discharged
+    ? ("DISCHARGE_PATIENT" as ModuleType)
+    : dayCare
+      ? ModuleType.DAY_CARE_IPD
+      : ModuleType.IPD_BILL;
+
   const canView = hasActionPermission(
     profile?.data,
-    discharged ? ("DISCHARGE_PATIENT" as ModuleType) : ModuleType.IPD_BILL,
+    moduleForList,
     ActionType.VIEW,
   );
 
-  const canCreate = hasActionPermission(
+  const canCreateIpd = hasActionPermission(
     profile?.data,
     ModuleType.IPD_BILL,
     ActionType.CREATE,
   );
+  const canCreateDayCare = hasActionPermission(
+    profile?.data,
+    ModuleType.DAY_CARE_IPD,
+    ActionType.CREATE,
+  );
   const canUpdate = hasActionPermission(
     profile?.data,
-    ModuleType.IPD_BILL,
+    moduleForList,
     ActionType.UPDATE,
   );
   const canPrint = hasActionPermission(
     profile?.data,
-    ModuleType.IPD_BILL,
+    moduleForList,
     ActionType.PRINT,
+  );
+  const canMarkMlc = hasActionPermission(
+    profile?.data,
+    ModuleType.IPD_MLC,
+    ActionType.UPDATE,
   );
   const canCreateDischarge = hasActionPermission(
     profile?.data,
@@ -485,6 +542,7 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
               canCancelDischarge={Boolean(canCancelDischarge)}
               canPrint={Boolean(canPrint)}
               canUpdate={Boolean(canUpdate)}
+              canMarkMlc={Boolean(canMarkMlc)}
               data={row.original}
               dischargedList
               onChangeDoctor={(mode, ipd) => {
@@ -497,15 +555,15 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
         },
       ]
     : [
-    {
-      accessorKey: "id",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="ID" column={column} />;
-      },
-      cell: ({ row }) => <span>{row.original.id}</span>,
-      headerClassName: "min-w-15 max-w-20",
-      cellClassName: "min-w-15 max-w-20",
-    },
+        {
+          accessorKey: "id",
+          header: ({ column }) => {
+            return <SortableHeader<IPDType> label="ID" column={column} />;
+          },
+          cell: ({ row }) => <span>{row.original.id}</span>,
+          headerClassName: "min-w-15 max-w-20",
+          cellClassName: "min-w-15 max-w-20",
+        },
         {
           accessorKey: "patientName",
           header: ({ column }) => {
@@ -543,112 +601,121 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
             </div>
           ),
         },
-    {
-      accessorKey: "createdDate",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Date/Time" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div className="flex items-center text-tiny gap-2">
-          {format(row.original.ipdDateTime, "dd/MM - h:mma")}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "billingType",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Billing Type" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div>
-          <div className="flex items-center text-tiny gap-2">
-            {String(row.original.invoice.billingType)}
-          </div>
-          {canUpdate && (
-            <div
-              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
-              onClick={() => {
-                setChangeBillingTypeIpd(row.original);
-                setChangeBillingTypeOpen(true);
-              }}
-            >
-              Change
+        {
+          accessorKey: "createdDate",
+          header: ({ column }) => {
+            return (
+              <SortableHeader<IPDType> label="Date/Time" column={column} />
+            );
+          },
+          cell: ({ row }) => (
+            <div className="flex items-center text-tiny gap-2">
+              {format(row.original.ipdDateTime, "dd/MM - h:mma")}
             </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "referring",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="	Referred By" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div>
-          <div className="flex items-center text-tiny gap-2">
-            {row.original.referringDoctor
-              ? row.original.referringDoctor.user.name
-              : "-- none --"}
-          </div>
-          {canUpdate && (
-            <div
-              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
-              onClick={() => {
-                setChangeDoctorIpd(row.original);
-                setChangeDoctorMode("referring");
+          ),
+        },
+        {
+          accessorKey: "billingType",
+          header: ({ column }) => {
+            return (
+              <SortableHeader<IPDType> label="Billing Type" column={column} />
+            );
+          },
+          cell: ({ row }) => (
+            <div>
+              <div className="flex items-center text-tiny gap-2">
+                {String(row.original.invoice.billingType)}
+              </div>
+              {canUpdate && (
+                <div
+                  className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+                  onClick={() => {
+                    setChangeBillingTypeIpd(row.original);
+                    setChangeBillingTypeOpen(true);
+                  }}
+                >
+                  Change
+                </div>
+              )}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "referring",
+          header: ({ column }) => {
+            return (
+              <SortableHeader<IPDType> label="	Referred By" column={column} />
+            );
+          },
+          cell: ({ row }) => (
+            <div>
+              <div className="flex items-center text-tiny gap-2">
+                {row.original.referringDoctor
+                  ? row.original.referringDoctor.user.name
+                  : "-- none --"}
+              </div>
+              {canUpdate && (
+                <div
+                  className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+                  onClick={() => {
+                    setChangeDoctorIpd(row.original);
+                    setChangeDoctorMode("referring");
+                    setChangeDoctorOpen(true);
+                  }}
+                >
+                  Change
+                </div>
+              )}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "consultant",
+          header: ({ column }) => {
+            return (
+              <SortableHeader<IPDType> label="Consultant" column={column} />
+            );
+          },
+          cell: ({ row }) => (
+            <div>
+              <div className="flex items-center text-tiny gap-2">
+                {row.original.consultantDoctor.user.name}
+              </div>
+              {canUpdate && (
+                <div
+                  className="text-blue-400 hover:underline cursor-pointer text-[10px]"
+                  onClick={() => {
+                    setChangeDoctorIpd(row.original);
+                    setChangeDoctorMode("consultant");
+                    setChangeDoctorOpen(true);
+                  }}
+                >
+                  Change
+                </div>
+              )}
+            </div>
+          ),
+        },
+        {
+          accessorKey: "action",
+          header: "Actions",
+          cell: ({ row }) => (
+            <Actions
+              canCreateDischarge={Boolean(canCreateDischarge)}
+              canCancelDischarge={Boolean(canCancelDischarge)}
+              canPrint={Boolean(canPrint)}
+              canUpdate={Boolean(canUpdate)}
+              canMarkMlc={Boolean(canMarkMlc)}
+              data={row.original}
+              onChangeDoctor={(mode, ipd) => {
+                setChangeDoctorIpd(ipd);
+                setChangeDoctorMode(mode);
                 setChangeDoctorOpen(true);
               }}
-            >
-              Change
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "consultant",
-      header: ({ column }) => {
-        return <SortableHeader<IPDType> label="Consultant" column={column} />;
-      },
-      cell: ({ row }) => (
-        <div>
-          <div className="flex items-center text-tiny gap-2">
-            {row.original.consultantDoctor.user.name}
-          </div>
-          {canUpdate && (
-            <div
-              className="text-blue-400 hover:underline cursor-pointer text-[10px]"
-              onClick={() => {
-                setChangeDoctorIpd(row.original);
-                setChangeDoctorMode("consultant");
-                setChangeDoctorOpen(true);
-              }}
-            >
-              Change
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "action",
-      header: "Actions",
-      cell: ({ row }) => (
-        <Actions
-          canCreateDischarge={Boolean(canCreateDischarge)}
-          canCancelDischarge={Boolean(canCancelDischarge)}
-          canPrint={Boolean(canPrint)}
-          canUpdate={Boolean(canUpdate)}
-          data={row.original}
-          onChangeDoctor={(mode, ipd) => {
-            setChangeDoctorIpd(ipd);
-            setChangeDoctorMode(mode);
-            setChangeDoctorOpen(true);
-          }}
-        />
-      ),
-    },
-  ];
+            />
+          ),
+        },
+      ];
 
   const neededFilters: FilterConfig<FilterValues>[] = [
     { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
@@ -668,8 +735,20 @@ const IPDs = ({ discharged = false }: { discharged?: boolean }) => {
 
   return (
     <CustomLayout
-      title="Patient IPD"
-      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+      title={
+        dayCare
+          ? "Day Care"
+          : discharged
+            ? "Discharged Patients"
+            : "Patient IPD"
+      }
+      buttons={
+        <Buttons
+          canCreateIpd={Boolean(canCreateIpd)}
+          canCreateDayCare={Boolean(canCreateDayCare)}
+          dayCare={dayCare}
+        />
+      }
     >
       {canView && (
         <>

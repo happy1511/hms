@@ -147,6 +147,7 @@ export const IPD_BILLING_TYPE = "/ipd/billing-type";
 export const IPD_BED = "/ipd/bed";
 export const IPD_DATETIME = "/ipd/datetime";
 export const IPD_ADMISSION_PRINT = "/ipd/admission";
+export const IPD_MLC = "/ipd/mlc";
 
 // ----------------------------------
 // ---------INVOICE ENDPOINTS--------

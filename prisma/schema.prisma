@@ -173,6 +173,8 @@ enum ModuleType {
   USER
   DASHBOARD
   COMPANY_DETAILS
+  DAY_CARE_IPD
+  IPD_MLC
   DOCTOR_MASTER
   DEPARTMENT_MASTER
   ROOM_TYPE_MASTER
@@ -600,6 +602,7 @@ model User {
   updatedIpds                Ipd[]                    @relation("IpdUpdatedBy")
   deletedIpds                Ipd[]                    @relation("IpdDeletedBy")
   dischargedIpds             Ipd[]                    @relation("IpdDischargedBy")
+  mlcDeclaredIpds            Ipd[]                    @relation("IpdMlcDeclaredBy")
   createdDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryCreatedBy")
   updatedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryUpdatedBy")
   deletedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryDeletedBy")
@@ -1584,6 +1587,10 @@ model Ipd {
   invoiceId          Int         @unique
   careType           IpdCareType @default(MEDICAL)
   isDischarged       Boolean     @default(false)
+  isDayCare          Boolean     @default(false)
+  isMlcPatient       Boolean     @default(false)
+  mlcDeclaredById    Int?
+  mlcDeclarationDate DateTime?
   ipdDateTime        DateTime    @default(now())
   dischargedAt       DateTime?
   dischargedById     Int?
@@ -1599,6 +1606,7 @@ model Ipd {
   updatedByUser       User?                @relation("IpdUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser       User?                @relation("IpdDeletedBy", fields: [deletedBy], references: [id])
   dischargedByUser    User?                @relation("IpdDischargedBy", fields: [dischargedById], references: [id])
+  mlcDeclaredByUser   User?                @relation("IpdMlcDeclaredBy", fields: [mlcDeclaredById], references: [id])
   bed                 Bed                  @relation("BedToIpd", fields: [bedId], references: [id], onDelete: Cascade)
   currentBedLink      Bed?                 @relation("CurrentIpd")
   consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
@@ -1616,6 +1624,9 @@ model Ipd {
   @@index([bedId])
   @@index([invoiceId])
   @@index([isDischarged])
+  @@index([isDayCare])
+  @@index([isMlcPatient])
+  @@index([mlcDeclarationDate])
   @@index([ipdDateTime])
   @@index([dischargedAt])
   @@index([createdAt])

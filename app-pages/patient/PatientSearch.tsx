@@ -26,12 +26,13 @@ const Actions = ({
   data,
   createOpd,
   createIpd,
+  dayCare = false,
 }: {
   data: Patient;
   createOpd: boolean;
   createIpd: boolean;
+  dayCare?: boolean;
 }) => {
-  console.log(createIpd, "cs");
   return (
     <>
       {createOpd && (
@@ -45,7 +46,7 @@ const Actions = ({
       {createIpd && (
         <Link
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-tiny rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/ipd/bill/${data.id}`}
+          href={`/ipd/bill/${data.id}${dayCare ? "?dayCare=true" : ""}`}
         >
           Select
         </Link>
@@ -61,6 +62,7 @@ const PatientSearch = () => {
   const query = useSearchParams();
   const opdCreate = query.get("opdCreate");
   const ipdCreate = query.get("ipdCreate");
+  const dayCare = query.get("dayCare") === "true";
   const router = useRouter();
 
   const { data: profile } = useProfile(false);
@@ -102,7 +104,7 @@ const PatientSearch = () => {
 
   const canCreateIPD = hasActionPermission(
     profile?.data,
-    ModuleType.IPD_BILL,
+    dayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
     ActionType.CREATE,
   );
 
@@ -111,7 +113,7 @@ const PatientSearch = () => {
       router.push("/opd/bill/new");
       return;
     } else if (canCreateIPD && ipdCreate) {
-      router.push("/ipd/bill/new");
+      router.push(`/ipd/bill/new${dayCare ? "?dayCare=true" : ""}`);
       return;
     } else {
       router.push("/patient/new");
@@ -163,6 +165,7 @@ const PatientSearch = () => {
           data={row.original}
           createIpd={!!canCreateIPD && !!ipdCreate}
           createOpd={!!canCreateOPD && !!opdCreate}
+          dayCare={dayCare}
         />
       ),
       headerClassName: "min-w-50",

@@ -16,6 +16,7 @@ import {
   User,
   Bolt,
   Building2,
+  AlertTriangle,
   LucideProps,
   Layers,
   DoorClosed,
@@ -91,12 +92,23 @@ const ipdItems = [
     module: [ModuleType.IPD_BILL],
   },
   {
+    title: "DAY CARE",
+    url: "/ipd/daycare",
+    icon: Users,
+    module: [ModuleType.DAY_CARE_IPD],
+  },
+  {
+    title: "MLC PATIENTS",
+    url: "/ipd/mlc",
+    icon: AlertTriangle,
+    module: [ModuleType.IPD_MLC],
+  },
+  {
     title: "DISCHARGED PATIENTS",
     url: "/ipd/discharged",
     icon: UserCheck,
     module: [ModuleType.DISCHARGE_PATIENT],
   },
-  // { title: "MLC PATIENTS", url: "/ipd/mlc", icon: AlertTriangle },
   // { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
 ];
 

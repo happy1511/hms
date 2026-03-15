@@ -7,9 +7,11 @@ export async function PUT(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["IPD_BILL"], action: ActionType["UPDATE"] }],
+      [
+        { module: ModuleType.IPD_BILL, action: ActionType.UPDATE },
+        { module: ModuleType.DAY_CARE_IPD, action: ActionType.UPDATE },
+      ],
       (req, user) => updateIpdBillingTypeAPI(req, user),
     ),
   );
 }
-

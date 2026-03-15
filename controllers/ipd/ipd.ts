@@ -7,8 +7,10 @@ import {
   Prisma,
   User,
 } from "@/generated/prisma/client";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { hasUserPermission } from "@/lib/serverPermission";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
@@ -17,11 +19,12 @@ import {
   ipdBillingTypeUpdateValidator,
   ipdDateTimeUpdateValidator,
   ipdDoctorUpdateValidator,
+  ipdMlcDeclareValidator,
   ipdValidator,
   partialIpdValidator,
 } from "@/validators/api/ipd/ipd";
 
-export const getAPI = async (req: Request) => {
+export const getAPI = async (req: Request, user: User) => {
   return validateRequest({
     querySchema: paginationValidator,
     req,
@@ -30,6 +33,8 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
+      const mlcFrom = query["mlcDeclarationDate[from]"] ?? "";
+      const mlcTo = query["mlcDeclarationDate[to]"] ?? "";
       const consultantDoctorId = query.consultantDoctorId
         ? Number(query.consultantDoctorId)
         : null;
@@ -37,6 +42,39 @@ export const getAPI = async (req: Request) => {
         ? Number(query.referringDoctorId)
         : null;
       const isDischarged = query.isDischarged ?? "";
+      const isMlcPatient = query.isMlcPatient ?? "";
+      const isMlcView = isMlcPatient === true;
+
+      const requestedIsDayCare =
+        typeof query.isDayCare === "boolean" ? query.isDayCare : undefined;
+
+      // Default behavior: normal IPDs only (unless explicitly requesting day care).
+      // For MLC list, allow both IPD + Day Care when `isDayCare` isn't provided.
+      const resolvedIsDayCare: boolean | undefined =
+        typeof requestedIsDayCare === "boolean"
+          ? requestedIsDayCare
+          : isMlcView
+            ? undefined
+            : false;
+
+      const moduleToCheck = isMlcView
+        ? ModuleType.IPD_MLC
+        : resolvedIsDayCare
+          ? ModuleType.DAY_CARE_IPD
+          : ModuleType.IPD_BILL;
+
+      const canViewRequested = await hasUserPermission(
+        user.id,
+        moduleToCheck,
+        ActionType.VIEW,
+      );
+
+      if (!canViewRequested) {
+        return apiResponse({
+          status: RESPONSE_STATUS.UNAUTHORIZED,
+          message: "Not Allowed to permit the action",
+        });
+      }
 
       const skip = (page - 1) * limit;
       const and: Prisma.IpdWhereInput[] = [];
@@ -50,6 +88,23 @@ export const getAPI = async (req: Request) => {
 
       if (typeof isDischarged == "boolean") {
         and.push({ isDischarged: isDischarged });
+      }
+
+      if (typeof resolvedIsDayCare === "boolean") {
+        and.push({ isDayCare: resolvedIsDayCare });
+      }
+
+      if (typeof isMlcPatient === "boolean") {
+        and.push({ isMlcPatient });
+      }
+
+      if (mlcFrom || mlcTo) {
+        and.push({
+          mlcDeclarationDate: {
+            ...(mlcFrom && { gte: mlcFrom }),
+            ...(mlcTo && { lte: mlcTo }),
+          },
+        });
       }
 
       if (createdAtFrom || createdAtTo) {
@@ -80,6 +135,12 @@ export const getAPI = async (req: Request) => {
           where,
           include: {
             invoice: { include: { transactions: true } },
+            mlcDeclaredByUser: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             bed: {
               include: {
                 room: {
@@ -145,6 +206,7 @@ export const getAPI = async (req: Request) => {
 export const getAdmissionPrintAPI = async (
   req: Request,
   { params }: { params: { ipdId: number } },
+  user: User,
 ) => {
   return validateRequest({
     paramsSchema: partialIpdValidator,
@@ -161,6 +223,7 @@ export const getAdmissionPrintAPI = async (
             ipdDateTime: true,
             arrivalState: true,
             isDischarged: true,
+            isDayCare: true,
             remarks: true,
             patient: {
               select: {
@@ -242,6 +305,19 @@ export const getAdmissionPrintAPI = async (
           });
         }
 
+        const canView = await hasUserPermission(
+          user.id,
+          ipd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.VIEW,
+        );
+
+        if (!canView) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
+          });
+        }
+
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "Admission print fetched successfully",
@@ -258,6 +334,19 @@ export const createAPI = async (req: Request, user: User) => {
     req,
     user,
     onSuccess: async ({ body, user }) => {
+      const canCreate = await hasUserPermission(
+        user.id,
+        body.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+        ActionType.CREATE,
+      );
+
+      if (!canCreate) {
+        return apiResponse({
+          status: RESPONSE_STATUS.UNAUTHORIZED,
+          message: "Not Allowed to permit the action",
+        });
+      }
+
       return prisma.$transaction(async (tx) => {
         const { patient, patientId, bed } = body;
 
@@ -498,6 +587,7 @@ export const createAPI = async (req: Request, user: User) => {
                 arrivalState: body.arrivalState,
                 bedId: bed.id,
                 careType: body.careType,
+                isDayCare: body.isDayCare ?? false,
                 remarks: body.remarks,
                 consultantDoctorId: body.consultantDoctor.userId,
                 referringDoctorId: body.referredDoctor?.userId,
@@ -710,13 +800,26 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId },
-          select: { id: true },
+          select: { id: true, isDayCare: true },
         });
 
         if (!existingIpd) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Ipd not found",
+          });
+        }
+
+        const canUpdate = await hasUserPermission(
+          user.id,
+          existingIpd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.UPDATE,
+        );
+
+        if (!canUpdate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
           });
         }
 
@@ -790,13 +893,26 @@ export const updateIpdBillingTypeAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId },
-          select: { id: true, invoiceId: true },
+          select: { id: true, invoiceId: true, isDayCare: true },
         });
 
         if (!existingIpd) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Ipd not found",
+          });
+        }
+
+        const canUpdate = await hasUserPermission(
+          user.id,
+          existingIpd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.UPDATE,
+        );
+
+        if (!canUpdate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
           });
         }
 
@@ -826,13 +942,26 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId },
-          select: { id: true, bedId: true, isDischarged: true },
+          select: { id: true, bedId: true, isDischarged: true, isDayCare: true },
         });
 
         if (!existingIpd) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Ipd not found",
+          });
+        }
+
+        const canUpdate = await hasUserPermission(
+          user.id,
+          existingIpd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.UPDATE,
+        );
+
+        if (!canUpdate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
           });
         }
 
@@ -898,13 +1027,26 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId },
-          select: { id: true, invoiceId: true },
+          select: { id: true, invoiceId: true, isDayCare: true },
         });
 
         if (!existingIpd) {
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Ipd not found",
+          });
+        }
+
+        const canUpdate = await hasUserPermission(
+          user.id,
+          existingIpd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.UPDATE,
+        );
+
+        if (!canUpdate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
           });
         }
 
@@ -921,6 +1063,65 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "IPD date/time updated successfully",
+        });
+      });
+    },
+  });
+};
+
+export const declareIpdMlcAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: ipdMlcDeclareValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const { ipdId } = body;
+
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findUnique({
+          where: { id: ipdId },
+          select: { id: true, isDayCare: true, isMlcPatient: true },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        const canUpdate = await hasUserPermission(
+          user.id,
+          ModuleType.IPD_MLC,
+          ActionType.UPDATE,
+        );
+
+        if (!canUpdate) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
+          });
+        }
+
+        if (existingIpd.isMlcPatient) {
+          return apiResponse({
+            status: RESPONSE_STATUS.SUCCESS,
+            message: "Patient already marked as MLC",
+          });
+        }
+
+        await tx.ipd.update({
+          where: { id: ipdId },
+          data: {
+            isMlcPatient: true,
+            mlcDeclaredById: user.id,
+            mlcDeclarationDate: new Date(),
+            updatedBy: user.id,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Patient marked as MLC successfully",
         });
       });
     },

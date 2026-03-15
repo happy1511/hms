@@ -9,6 +9,13 @@ export const MODULE_ACTION_MATRIX = {
   ],
   [ModuleType.DASHBOARD]: [ActionType.VIEW],
   [ModuleType.COMPANY_DETAILS]: [ActionType.VIEW, ActionType.UPDATE],
+  [ModuleType.DAY_CARE_IPD]: [
+    ActionType.CREATE,
+    ActionType.UPDATE,
+    ActionType.VIEW,
+    ActionType.PRINT,
+  ],
+  [ModuleType.IPD_MLC]: [ActionType.VIEW, ActionType.UPDATE],
   [ModuleType.DOCTOR_MASTER]: [
     ActionType.CREATE,
     ActionType.UPDATE,

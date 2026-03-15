@@ -7,6 +7,7 @@ import {
   IPD_DATETIME,
   IPD_DISCHARGE,
   IPD_DOCTORS,
+  IPD_MLC,
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
@@ -21,6 +22,7 @@ import {
   ipdBillingTypeUpdateValidatorType,
   ipdDateTimeUpdateValidatorType,
   ipdDoctorUpdateValidatorType,
+  ipdMlcDeclareValidatorType,
   ipdValidatorType,
   partialIpdValidatorType,
 } from "@/validators/api/ipd/ipd";
@@ -52,6 +54,7 @@ const updateIpdBillingType = createRequest<ApiResponse<unknown>>(
 );
 const updateIpdBed = createRequest<ApiResponse<unknown>>(IPD_BED, "PUT");
 const updateIpdDateTime = createRequest<ApiResponse<unknown>>(IPD_DATETIME, "PUT");
+const declareIpdMlc = createRequest<ApiResponse<unknown>>(IPD_MLC, "PUT");
 
 const getIPDs = createRequest<
   PaginatedResponse<IPDType>,
@@ -59,7 +62,10 @@ const getIPDs = createRequest<
     limit: number;
     name?: string;
     createdAt?: string | { from?: Date; to?: Date };
+    mlcDeclarationDate?: string | { from?: Date; to?: Date };
     status?: string;
+    isDayCare?: boolean;
+    isMlcPatient?: boolean;
   }
 >(IPD, "GET");
 
@@ -81,11 +87,20 @@ export const useIpdList = (
         params: {
           limit,
           ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.mlcDeclarationDate && {
+            mlcDeclarationDate: filters.mlcDeclarationDate,
+          }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
           ...(typeof filters.isDischarged === "boolean" && {
             isDischarged: filters.isDischarged,
+          }),
+          ...(typeof filters.isDayCare === "boolean" && {
+            isDayCare: filters.isDayCare,
+          }),
+          ...(typeof filters.isMlcPatient === "boolean" && {
+            isMlcPatient: filters.isMlcPatient,
           }),
           ...(filters.consultantDoctor && {
             consultantDoctorId: filters.consultantDoctor.userId,
@@ -257,6 +272,24 @@ export const useUpdateIpdDateTime = () => {
       queryClient.invalidateQueries({
         queryKey: ["ipds"],
       });
+    },
+    onError: showError,
+  });
+};
+
+export const useDeclareIpdMlc = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<unknown>,
+    AxiosError<ApiResponse<null>>,
+    ipdMlcDeclareValidatorType
+  >({
+    mutationKey: ["declare-ipd-mlc"],
+    mutationFn: (data) => declareIpdMlc({ body: data }),
+    onSuccess: () => {
+      toast.success("Patient marked as MLC successfully");
+      queryClient.invalidateQueries({ queryKey: ["ipds"] });
     },
     onError: showError,
   });
