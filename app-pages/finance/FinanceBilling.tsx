@@ -3,9 +3,7 @@
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
-import CustomLayout from "@/components/common/CustomLayout";
 import CustomTabs from "@/components/common/CustomTabs";
-import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
@@ -413,18 +411,16 @@ const FinanceBilling = () => {
     );
   };
 
-  return (
-    <CustomLayout title="Invoices">
-      {canViewBilling ? (
-        <>
-          <CustomTabs
-            value={activeTab}
-            onValueChange={(v) => {
-              setActiveTab(v as InvoiceTab);
-              setPage(1);
-            }}
-            defaultValue="search"
-            tabs={[
+  return canViewBilling ? (
+    <>
+      <CustomTabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v as InvoiceTab);
+          setPage(1);
+        }}
+        defaultValue="search"
+        tabs={[
           {
             value: "search",
             name: "Search Invoices",
@@ -619,21 +615,21 @@ const FinanceBilling = () => {
             content: <CashFlowAccounts />,
           },
         ]}
-          />
+      />
 
-          <ViewInvoiceModal
-            open={viewInvoiceOpen}
-            onOpenChange={(open) => {
-              setViewInvoiceOpen(open);
-              if (!open) setViewInvoiceId(null);
-            }}
-            invoiceId={viewInvoiceId ?? undefined}
-          />
-        </>
-      ) : (
-        <NoPermission />
-      )}
-    </CustomLayout>
+      <ViewInvoiceModal
+        open={viewInvoiceOpen}
+        onOpenChange={(open) => {
+          setViewInvoiceOpen(open);
+          if (!open) setViewInvoiceId(null);
+        }}
+        invoiceId={viewInvoiceId ?? undefined}
+      />
+    </>
+  ) : (
+    <div className="border border-red-500 bg-red-50 px-3 py-2 text-tiny text-red-600">
+      This page does not have permission to install the custom tab.
+    </div>
   );
 };
 
