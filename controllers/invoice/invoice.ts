@@ -2,6 +2,7 @@ import {
   AddressType,
   ContactType,
   DiscountType,
+  Prisma,
   User,
 } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
@@ -11,6 +12,7 @@ import { prisma } from "@/services/prisma";
 import {
   addInvoiceBillItemValidator,
   addInvoiceTransactionValidator,
+  invoiceListValidator,
   partialInvoiceValidator,
   updateInvoiceValidator,
 } from "@/validators/api/invoice/invoice";
@@ -308,6 +310,155 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
             };
           }),
         },
+      });
+    },
+  });
+};
+
+export const getInvoiceListAPI = async (req: Request) => {
+  return validateRequest({
+    querySchema: invoiceListValidator,
+    req,
+    onSuccess: async ({ query }) => {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const skip = (page - 1) * limit;
+
+      const invoiceId = query.invoiceId ? Number(query.invoiceId) : null;
+      const uhid =
+        typeof query.uhid === "string" && query.uhid.trim()
+          ? query.uhid.trim()
+          : null;
+      const createdAtFrom = query["createdAt[from]"] ?? null;
+      const createdAtTo = query["createdAt[to]"] ?? null;
+      const invoiceType = query.invoiceType ?? null;
+
+      const and: Prisma.InvoiceWhereInput[] = [{ isDeleted: false }];
+
+      if (invoiceId) {
+        and.push({ id: invoiceId });
+      }
+
+      if (createdAtFrom || createdAtTo) {
+        and.push({
+          createdAt: {
+            ...(createdAtFrom ? { gte: createdAtFrom } : {}),
+            ...(createdAtTo ? { lte: createdAtTo } : {}),
+          },
+        });
+      }
+
+      if (uhid) {
+        and.push({
+          OR: [
+            { opd: { is: { patient: { uhid } } } },
+            { ipd: { is: { patient: { uhid } } } },
+          ],
+        });
+      }
+
+      if (invoiceType) {
+        switch (invoiceType) {
+          case "opd":
+            and.push({ opd: { isNot: null } });
+            break;
+          case "daycare":
+            and.push({ ipd: { is: { isDayCare: true } } });
+            break;
+          case "discharged":
+            and.push({ ipd: { is: { isDischarged: true } } });
+            break;
+          case "ipd":
+            and.push({ ipd: { is: { isDayCare: false, isDischarged: false } } });
+            break;
+        }
+      }
+
+      const where: Prisma.InvoiceWhereInput = and.length ? { AND: and } : {};
+
+      const [items, total] = await prisma.$transaction([
+        prisma.invoice.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          where,
+          include: {
+            transactions: { select: { amount: true } },
+            opd: {
+              include: {
+                consultantDoctor: { select: { user: { select: { name: true } } } },
+                referringDoctor: { select: { user: { select: { name: true } } } },
+                patient: {
+                  include: {
+                    addresses: { include: { location: true } },
+                    contacts: true,
+                    relations: true,
+                  },
+                },
+              },
+            },
+            ipd: {
+              include: {
+                consultantDoctor: { select: { user: { select: { name: true } } } },
+                referringDoctor: { select: { user: { select: { name: true } } } },
+                patient: {
+                  include: {
+                    addresses: { include: { location: true } },
+                    contacts: true,
+                    relations: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+        prisma.invoice.count({ where }),
+      ]);
+
+      const rows = items.map((invoice) => {
+        const paidAmount = invoice.transactions.reduce(
+          (sum, t) => sum + Number(t.amount || 0),
+          0,
+        );
+        const discountAmount = getDiscountAmount(
+          Number(invoice.rate || 0),
+          invoice.discountType,
+          Number(invoice.discountValue || 0),
+        );
+
+        const patient = invoice.opd?.patient ?? invoice.ipd?.patient ?? null;
+        const consultantDoctorName =
+          invoice.opd?.consultantDoctor?.user?.name ??
+          invoice.ipd?.consultantDoctor?.user?.name ??
+          null;
+        const referredByName =
+          invoice.opd?.referringDoctor?.user?.name ??
+          invoice.ipd?.referringDoctor?.user?.name ??
+          null;
+
+        return {
+          id: invoice.id,
+          createdAt: invoice.createdAt,
+          invoiceFor: invoice.opd ? "OPD" : invoice.ipd ? "IPD" : "UNKNOWN",
+          rate: invoice.rate,
+          discountType: invoice.discountType,
+          discountValue: invoice.discountValue,
+          discountAmount,
+          total: invoice.total,
+          isPaid: invoice.isPaid,
+          isFree: invoice.isFree,
+          paidAmount,
+          patient,
+          consultantDoctorName,
+          referredByName,
+        };
+      });
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "Invoices Fetched Successfully",
+        data: rows,
+        total,
       });
     },
   });

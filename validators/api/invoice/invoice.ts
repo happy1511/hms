@@ -3,6 +3,7 @@ import {
   PaymentCategory,
   PaymentMode,
 } from "@/generated/prisma/enums";
+import { paginationValidator } from "@/validators/api/common/pagination";
 import z from "zod";
 
 const billingItemValidator = z.object({
@@ -171,6 +172,13 @@ type partialInvoiceValidatorType = z.input<typeof partialInvoiceValidator>;
 type billingItemValidatorType = z.input<typeof billingItemValidator>;
 type transactionValidatorType = z.input<typeof transactionsValidator>;
 
+const invoiceListValidator = paginationValidator.extend({
+  invoiceType: z.enum(["opd", "ipd", "daycare", "discharged"]).optional(),
+  invoiceId: z.coerce.number().int().positive().optional(),
+});
+
+type invoiceListValidatorType = z.input<typeof invoiceListValidator>;
+
 export type {
   invoiceValidatorType,
   billingItemValidatorType,
@@ -179,6 +187,7 @@ export type {
   addInvoiceBillItemValidatorType,
   addInvoiceTransactionValidatorType,
   updateInvoiceValidatorType,
+  invoiceListValidatorType,
 };
 export {
   invoiceValidator,
@@ -188,4 +197,5 @@ export {
   addInvoiceBillItemValidator,
   addInvoiceTransactionValidator,
   updateInvoiceValidator,
+  invoiceListValidator,
 };

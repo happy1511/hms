@@ -3,6 +3,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
@@ -194,6 +195,7 @@ const Locations = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            defaultToday={false}
           />
           <CustomTable
             columns={columns}
@@ -211,6 +213,7 @@ const Locations = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

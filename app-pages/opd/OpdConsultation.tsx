@@ -6,6 +6,7 @@ import CustomTabs from "@/components/common/CustomTabs";
 import OpdConsultationForm from "./OpdConsultationForm";
 import AdvisedRadiologyTestResults from "../clinical-tests/radiology/AdvisedPathologyTestResults";
 import CustomButton from "@/components/common/CustomButton";
+import NoPermission from "@/components/common/NoPermission";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { hasActionPermission } from "@/lib/utils";
@@ -16,13 +17,29 @@ const OpdConsultation = () => {
   const { opdId }: { opdId?: string } = useParams();
   const { data: profile } = useProfile(false);
 
-  const canPrint = profile
-    ? hasActionPermission(
-        profile.data,
-        "CONSULTATION_FILE" as ModuleType,
-        ActionType.PRINT,
-      )
-    : false;
+  if (!profile) {
+    return <div />;
+  }
+
+  const canView = hasActionPermission(
+    profile.data,
+    ModuleType.CONSULTATION_FILE,
+    ActionType.VIEW,
+  );
+
+  const canPrint = hasActionPermission(
+    profile.data,
+    ModuleType.CONSULTATION_FILE,
+    ActionType.PRINT,
+  );
+
+  if (!canView) {
+    return (
+      <CustomLayout title="Consultation File">
+        <NoPermission />
+      </CustomLayout>
+    );
+  }
 
   const tabs = [
     {
@@ -54,7 +71,9 @@ const OpdConsultation = () => {
         canPrint && opdId ? (
           <CustomButton
             type="button"
-            onClick={() => window.open(`/opd/consultation-print/${opdId}`, "_blank")}
+            onClick={() =>
+              window.open(`/opd/consultation-print/${opdId}`, "_blank")
+            }
           >
             Print Consultation
           </CustomButton>

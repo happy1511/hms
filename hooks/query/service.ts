@@ -49,6 +49,7 @@ const getServices = createRequest<
     name?: string;
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
+    doctorId?: number;
   }
 >(SERVICES, "GET");
 
@@ -73,6 +74,7 @@ export const useServicesList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(filters.doctorId && { doctorId: filters.doctorId }),
         },
       }),
   });
@@ -99,6 +101,7 @@ export const useInfiniteServicesList = (
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(filters.doctorId && { doctorId: filters.doctorId }),
           ...(filters.billingSectionId && {
             billingSectionId: filters.billingSectionId,
           }),
@@ -132,6 +135,27 @@ export const useGetService = (id?: string) => {
       }),
     select: (data) => data.data,
     enabled: !!id,
+  });
+};
+
+export const useConsultingDoctorService = (doctorId?: number) => {
+  return useQuery<
+    PaginatedResponse<ServiceDataType>,
+    AxiosError<ApiResponse<null>>,
+    ServiceDataType | null,
+    [string, number | undefined]
+  >({
+    queryKey: ["consulting-doctor-service", doctorId],
+    queryFn: () =>
+      getServices({
+        pageParam: 1,
+        params: {
+          limit: 1,
+          doctorId: doctorId as number,
+        },
+      }),
+    select: (data) => data.data?.[0] ?? null,
+    enabled: !!doctorId,
   });
 };
 

@@ -2,17 +2,21 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import PermissionsSection from "@/components/user/PermissionsSection";
 import UserProfileFields from "@/components/user/UserProfileFields";
 import { Form } from "@/components/ui/form";
 import {
+  ActionType,
   Days,
   DoctorType,
   Gender,
+  ModuleType,
   NameTitle,
   Status,
 } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useCreateDoctor,
   useGetDoctor,
@@ -20,6 +24,7 @@ import {
 } from "@/hooks/query/doctor";
 import { usePermissionsList } from "@/hooks/query/permission";
 import { Doctor } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   doctorValidator,
   DoctorValidatorType,
@@ -62,6 +67,7 @@ const getInitialValues = (
       specialization: data.specialization || "",
       yearsExperience: data.yearsExperience || 0,
       designation: data.designation || "",
+      consultationCharges: data.consultationCharges ?? 0,
       emergencyContact: data.emergencyContact || "",
       consultationStartingTime: data.consultationStartingTime || "",
       consultationEndingTime: data.consultationEndingTime || "",
@@ -98,6 +104,7 @@ const getInitialValues = (
     specialization: "",
     yearsExperience: 0,
     designation: "",
+    consultationCharges: 0,
     emergencyContact: "",
     consultationStartingTime: "",
     consultationEndingTime: "",
@@ -175,6 +182,13 @@ const UpdateCreateForm = ({
             required
           />
           <FormField<DoctorValidatorType>
+            label="Consultation Charges"
+            type="number"
+            name="consultationCharges"
+            control={form.control}
+            required={isConsulting}
+          />
+          <FormField<DoctorValidatorType>
             label="Designation"
             type="text"
             name="designation"
@@ -245,6 +259,7 @@ const UpdateCreateForm = ({
 
 const DoctorForm = () => {
   const { doctorId }: { doctorId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingUser } = useGetDoctor(doctorId);
   const { data: permissions, isLoading: fetchingPermission } =
@@ -264,6 +279,29 @@ const DoctorForm = () => {
 
   if (!permissions && !doctorId) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.DOCTOR_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.DOCTOR_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((doctorId && !canUpdate) || (!doctorId && !canCreate)) {
+    return (
+      <CustomLayout title={doctorId ? "Edit Doctor" : "Create Doctor"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

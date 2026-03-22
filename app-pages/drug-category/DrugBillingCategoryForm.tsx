@@ -2,8 +2,12 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
+import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -75,6 +79,7 @@ const UpdateCreateForm = ({ data }: { data?: DrugBillingCategory }) => {
 
 const DrugBillingCategoryForm = () => {
   const { categoryId }: { categoryId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingRoomType } =
     useGetDrugBillingCategory(categoryId);
@@ -93,6 +98,29 @@ const DrugBillingCategoryForm = () => {
 
   if (categoryId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_DRUG_CATEGORY_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_DRUG_CATEGORY_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((categoryId && !canUpdate) || (!categoryId && !canCreate)) {
+    return (
+      <CustomLayout title={categoryId ? "Edit Drug Category" : "Create Drug Category"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

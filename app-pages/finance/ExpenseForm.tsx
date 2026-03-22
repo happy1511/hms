@@ -2,10 +2,13 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { ExpenseCategory, PaymentMode } from "@/generated/prisma/enums";
+import { ActionType, ExpenseCategory, ModuleType, PaymentMode } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { useCreateExpense, useGetExpense, useUpdateExpense } from "@/hooks/query/expense";
+import { hasActionPermission } from "@/lib/utils";
 import {
   expenseValidator,
   ExpenseValidatorType,
@@ -119,12 +122,28 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
 const ExpenseForm = () => {
   const { expenseId }: { expenseId?: string } = useParams();
   const { data, isLoading } = useGetExpense(expenseId);
+  const { data: profile } = useProfile(false);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <LoaderIcon role="status" aria-label="Loading" className="size-4 animate-spin" />
       </div>
+    );
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(profile.data, ModuleType.EXPENSE, ActionType.CREATE);
+  const canUpdate = hasActionPermission(profile.data, ModuleType.EXPENSE, ActionType.UPDATE);
+
+  if ((expenseId && !canUpdate) || (!expenseId && !canCreate)) {
+    return (
+      <CustomLayout title={expenseId ? "Edit Expense" : "Create Expense"}>
+        <NoPermission />
+      </CustomLayout>
     );
   }
 

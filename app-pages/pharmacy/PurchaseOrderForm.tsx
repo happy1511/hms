@@ -2,11 +2,13 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
 import { DrugSupplier } from "@/generated/prisma/client";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
@@ -21,6 +23,7 @@ import {
   purchaseOrderValidator,
   purchaseOrderValidatorType,
 } from "@/validators/api/masters/pharmacyPurchase";
+import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -421,6 +424,7 @@ const UpdateCreateForm = ({
 
 const PurchaseOrderForm = () => {
   const params: { orderId: string } = useParams();
+  const { data: profile } = useProfile(false);
   const { data: order, isLoading } = useGetPurchaseOrder(params?.orderId);
 
   if (isLoading && params?.orderId) {
@@ -437,6 +441,29 @@ const PurchaseOrderForm = () => {
 
   if (params?.orderId && !order) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_PURCHASE_ORDER,
+    ActionType.UPDATE,
+  );
+
+  if ((params?.orderId && !canUpdate) || (!params?.orderId && !canCreate)) {
+    return (
+      <CustomLayout title="PO">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

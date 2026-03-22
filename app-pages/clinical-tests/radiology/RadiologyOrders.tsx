@@ -1,9 +1,11 @@
 "use client";
 
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import DocumentUploadDialog from "@/components/common/DocumentUploadDialog";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ActionType,
@@ -16,6 +18,7 @@ import {
   useCancelRadiologyTestOrder,
   useOutsourceRadiologyTestOrder,
   useRadiologyOrdersList,
+  useUploadOutsourcedRadiologyReport,
 } from "@/hooks/query/radiology";
 import {
   ColumnDefWithClass,
@@ -42,8 +45,11 @@ const Actions = ({
     useOutsourceRadiologyTestOrder();
   const { mutateAsync: cancel, isPending: cancelling } =
     useCancelRadiologyTestOrder();
+  const { mutateAsync: uploadReport, isPending: uploadingReport } =
+    useUploadOutsourcedRadiologyReport();
 
   const router = useRouter();
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const handleCancel = (value: boolean) => {
     cancel({ orderId: data.id, isCancelled: value });
@@ -105,6 +111,26 @@ const Actions = ({
     });
   }
 
+  if (canUpdate && data.isOutSourced && !data.isCancelled) {
+    items.push({
+      label: "Upload Report",
+      onClick: () => setUploadOpen(true),
+      disabled: uploadingReport,
+    });
+  }
+
+  if (canPrint && data.isOutSourced && data.scannedReportDocument?.path) {
+    items.push({
+      label: "Print Report",
+      onClick: () =>
+        window.open(
+          data.scannedReportDocument?.path,
+          "_blank",
+          "noopener,noreferrer",
+        ),
+    });
+  }
+
   if (
     canUpdate &&
     data.status !== RadiologyOrderStatus["COMPLETED"] &&
@@ -127,6 +153,18 @@ const Actions = ({
             label: "Manage",
           },
         ]}
+      />
+      <DocumentUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        title="Upload Scanned Report"
+        description={`Order #${data.id} • ${data.test.name}`}
+        existingFileUrl={data.scannedReportDocument?.path}
+        uploading={uploadingReport}
+        onUpload={async (file) => {
+          await uploadReport({ orderId: data.id, file });
+          setUploadOpen(false);
+        }}
       />
     </>
   );
@@ -155,10 +193,12 @@ const neededFilters: FilterConfig<FilterValues>[] = [
 const RadiologyOrders = ({
   cancelled,
   outsourced,
+  forcedTestStatus,
   title,
 }: {
   cancelled: boolean;
   outsourced: boolean;
+  forcedTestStatus?: RadiologyOrderStatus[];
   title: string;
 }) => {
   const [page, setPage] = useState(1);
@@ -173,9 +213,10 @@ const RadiologyOrders = ({
       cancelled,
       outsourced,
       testStatus:
-        !cancelled && !outsourced
+        forcedTestStatus ??
+        (!cancelled && !outsourced
           ? [RadiologyOrderStatus["RESULT_PENDING"]]
-          : [],
+          : []),
     },
     page,
     limit,
@@ -336,7 +377,7 @@ const RadiologyOrders = ({
         </div>
       </div>
       <div className="grid grid-cols-[40%_60%] space-x-2">
-        {canView && (
+        {canView ? (
           <div>
             <CustomTable
               columns={patientColumns}
@@ -356,6 +397,8 @@ const RadiologyOrders = ({
               getRowId={(data) => String(data.id)}
             />
           </div>
+        ) : (
+          <NoPermission />
         )}
         <div className="space-y-3">
           {selectedPatientData && (

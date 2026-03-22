@@ -2,14 +2,18 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInput } from "@/components/form-inputs/FormInput";
 import { Form } from "@/components/ui/form";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useGetPathologyOrderParameters,
   useUpdatePathologyTestOrder,
 } from "@/hooks/query/pathology";
 import { PathologyTestResultType } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   PathologyResultEntryValidatorType,
   pathologyResultsEntry,
@@ -154,6 +158,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
 
 const ResultEntry = () => {
   const { orderId }: { orderId: string } = useParams();
+  const { data: profile } = useProfile(false);
   const { data, isLoading: fetching } = useGetPathologyOrderParameters(orderId);
 
   if (fetching) {
@@ -170,6 +175,24 @@ const ResultEntry = () => {
 
   if (!orderId || !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.PATHOLOGY_ORDER,
+    ActionType.UPDATE,
+  );
+
+  if (!canUpdate) {
+    return (
+      <CustomLayout title="Pathology Result Entry">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

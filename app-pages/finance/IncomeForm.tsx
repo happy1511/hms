@@ -2,13 +2,15 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { IncomeCategory, PaymentMode } from "@/generated/prisma/enums";
+import { ActionType, IncomeCategory, ModuleType, PaymentMode } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useCreateIncome, useGetIncome, useUpdateIncome } from "@/hooks/query/income";
 import { useUsersList } from "@/hooks/query/user";
 import { FilterValues } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   incomeValidator,
   IncomeValidatorType,
@@ -148,12 +150,28 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
 const IncomeForm = () => {
   const { incomeId }: { incomeId?: string } = useParams();
   const { data, isLoading } = useGetIncome(incomeId);
+  const { data: profile } = useProfile(false);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <LoaderIcon role="status" aria-label="Loading" className="size-4 animate-spin" />
       </div>
+    );
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(profile.data, ModuleType.INCOME, ActionType.CREATE);
+  const canUpdate = hasActionPermission(profile.data, ModuleType.INCOME, ActionType.UPDATE);
+
+  if ((incomeId && !canUpdate) || (!incomeId && !canCreate)) {
+    return (
+      <CustomLayout title={incomeId ? "Edit Income" : "Create Income"}>
+        <NoPermission />
+      </CustomLayout>
     );
   }
 

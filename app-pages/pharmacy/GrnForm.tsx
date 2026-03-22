@@ -2,6 +2,7 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
@@ -10,7 +11,8 @@ import {
   DrugBillingCategory,
   DrugSupplier,
 } from "@/generated/prisma/client";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
@@ -22,6 +24,7 @@ import {
   grnValidator,
   grnValidatorType,
 } from "@/validators/api/masters/pharmacyGRN";
+import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -389,6 +392,7 @@ const UpdateCreateForm = ({
 const GrnForm = () => {
   const params: { orderId: string } = useParams();
   const isNewGrn = params?.orderId === "new";
+  const { data: profile } = useProfile(false);
   const { data: order, isLoading } = useGetPurchaseOrder(
     !isNewGrn ? params?.orderId : undefined,
   );
@@ -407,6 +411,24 @@ const GrnForm = () => {
 
   if (!isNewGrn && params?.orderId && !order) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_GRN,
+    ActionType.CREATE,
+  );
+
+  if (!canCreate) {
+    return (
+      <CustomLayout title={isNewGrn ? "GRN (Without PO)" : "GRN"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

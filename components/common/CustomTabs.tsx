@@ -8,19 +8,30 @@ interface Props {
     name: string;
     content: ReactNode;
   }[];
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   buttons?: ReactNode;
   classNames?: string;
 }
 
-const CustomTabs = ({ tabs, defaultValue, buttons, classNames }: Props) => {
+const CustomTabs = ({
+  tabs,
+  defaultValue,
+  value,
+  onValueChange,
+  buttons,
+  classNames,
+}: Props) => {
   return (
     <Tabs
       className={clsx(
         "border border-pink-200 shadow-md bg-white p-3",
         classNames,
       )}
-      defaultValue={defaultValue}
+      {...(defaultValue ? { defaultValue } : {})}
+      {...(value !== undefined ? { value } : {})}
+      {...(onValueChange ? { onValueChange } : {})}
     >
       <div className="border-b border-primary flex justify-between items-end">
         <TabsList className="bg-white">

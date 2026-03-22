@@ -2,15 +2,19 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
 import { RadiologyTest } from "@/generated/prisma/client";
 import {
+  ActionType,
+  ModuleType,
   ServiceApplicableOn,
   ServiceType,
   Status,
 } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { useInfinitePathologyTestsList } from "@/hooks/query/pathology";
 import { useInfiniteRadiologyTestsList } from "@/hooks/query/radiology";
 import {
@@ -23,6 +27,7 @@ import {
   PathologyTestDataType,
   ServiceDataType,
 } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   serviceValidator,
   ServiceValidatorType,
@@ -229,6 +234,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
 
 const ServiceForm = () => {
   const { serviceId }: { serviceId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingService } = useGetService(serviceId);
 
@@ -246,6 +252,29 @@ const ServiceForm = () => {
 
   if (serviceId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.SERVICE_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.SERVICE_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((serviceId && !canUpdate) || (!serviceId && !canCreate)) {
+    return (
+      <CustomLayout title={serviceId ? "Edit Service" : "Create Service"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

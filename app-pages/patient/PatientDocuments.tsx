@@ -2,6 +2,7 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
@@ -223,6 +224,7 @@ const PatientDocuments = () => {
             />
           </>
         )}
+        {!canView && <NoPermission />}
       </CustomLayout>
       <CustomLayout
         title="Patient Documents"
@@ -250,6 +252,7 @@ const PatientDocuments = () => {
             />
           </>
         )}
+        {!canView && <NoPermission />}
       </CustomLayout>
     </>
   );

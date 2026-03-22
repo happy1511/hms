@@ -49,6 +49,23 @@ export type PaginatedResponse<T> = {
   message: string;
 };
 
+export type CashFlowSummaryType = {
+  period: { from: Date | string; to: Date | string };
+  total: number;
+  income: {
+    total: number;
+    opd: number;
+    ipd: number;
+    dayCare: number;
+    pharmacy: number;
+    byCategory: Array<{ category: string; amount: number }>;
+  };
+  expense: {
+    total: number;
+    byCategory: Array<{ category: string; amount: number }>;
+  };
+};
+
 // ----------------------------------
 // ---------FORM FIELD TYPE----------
 // ----------------------------------
@@ -247,6 +264,7 @@ export interface FilterValues {
   uhid?: string;
   contactNo?: string;
   doctorType?: DoctorType;
+  doctorId?: number;
   roomTypeId?: string;
   departmentId?: string;
   isDischarged?: boolean;
@@ -449,6 +467,7 @@ export interface Doctor extends Pick<
   yearsExperience: number;
   designation: string;
   doctorType: DoctorType;
+  consultationCharges?: number | null;
   emergencyContact: string;
   consultationStartingTime: string;
   consultationEndingTime: string;
@@ -750,6 +769,23 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
   };
 }>;
 
+export type InvoiceListRowType = {
+  id: number;
+  createdAt: Date | string;
+  invoiceFor: "OPD" | "IPD" | "UNKNOWN";
+  rate: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discountAmount: number;
+  total: number;
+  isPaid: boolean;
+  isFree: boolean;
+  paidAmount: number;
+  patient: PatientType | null;
+  consultantDoctorName: string | null;
+  referredByName: string | null;
+};
+
 export type BillingSections = Prisma.BillingSectionGetPayload<{
   include: { createdByUser: true };
 }> & {
@@ -781,6 +817,17 @@ export type PathologyOrderByPatientsType = Prisma.PatientGetPayload<{
         verifiedAt: true;
         isCancelled: true;
         isOutSourced: true;
+        scannedReportDocument: {
+          select: {
+            id: true;
+            type: true;
+            path: true;
+            originalName: true;
+            mimeType: true;
+            size: true;
+            createdAt: true;
+          };
+        };
 
         test: {
           select: {
@@ -844,6 +891,17 @@ export type PathologyOrderType = Prisma.PathologyTestOrderGetPayload<{
     verifiedAt: true;
     isCancelled: true;
     isOutSourced: true;
+    scannedReportDocument: {
+      select: {
+        id: true;
+        type: true;
+        path: true;
+        originalName: true;
+        mimeType: true;
+        size: true;
+        createdAt: true;
+      };
+    };
 
     test: {
       select: {
@@ -954,6 +1012,17 @@ export type RadiologyOrderByPatientsType = Prisma.PatientGetPayload<{
         verifiedAt: true;
         isCancelled: true;
         isOutSourced: true;
+        scannedReportDocument: {
+          select: {
+            id: true;
+            type: true;
+            path: true;
+            originalName: true;
+            mimeType: true;
+            size: true;
+            createdAt: true;
+          };
+        };
 
         test: {
           select: {
@@ -1015,6 +1084,17 @@ export type RadiologyOrderType = Prisma.RadiologyTestOrderGetPayload<{
     verifiedAt: true;
     isCancelled: true;
     isOutSourced: true;
+    scannedReportDocument: {
+      select: {
+        id: true;
+        type: true;
+        path: true;
+        originalName: true;
+        mimeType: true;
+        size: true;
+        createdAt: true;
+      };
+    };
 
     test: {
       select: {

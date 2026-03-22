@@ -9,6 +9,7 @@ import { hasActionPermission } from "@/lib/utils";
 import CreatePathologyTestModal from "./pathology/CreatePathologyTestModal";
 import CustomButton from "@/components/common/CustomButton";
 import RadiologyTestForm from "./radiology/RadiologyTestForm";
+import NoPermission from "@/components/common/NoPermission";
 
 const Buttons = () => {
   const { data: profile } = useProfile(false);
@@ -28,7 +29,6 @@ const Buttons = () => {
     ActionType.CREATE,
   );
 
-  console.log(canCreatePathology, canCreateRadiology);
   return (
     <div className="flex gap-2">
       {canCreatePathology && (
@@ -80,11 +80,15 @@ const ClinicalTests = () => {
     });
   }
 
+  if (tabs.length === 0) {
+    return <NoPermission />;
+  }
+
   return (
     <CustomTabs
       tabs={tabs}
       buttons={<Buttons />}
-      defaultValue="pathology-tests"
+      defaultValue={tabs[0].value}
     />
   );
 };

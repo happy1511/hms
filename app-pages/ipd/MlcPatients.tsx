@@ -3,6 +3,7 @@
 import CustomLayout from "@/components/common/CustomLayout";
 import CustomFilters from "@/components/common/CustomFilters";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
@@ -111,7 +112,13 @@ const MlcPatients = () => {
     { label: "Medico-Legal Date", valueKey: "mlcDeclarationDate", type: "dateRange" },
   ];
 
-  if (!canView) return <div />;
+  if (!canView) {
+    return (
+      <CustomLayout title="MLC Patients">
+        <NoPermission />
+      </CustomLayout>
+    );
+  }
 
   return (
     <CustomLayout title="MLC Patients">

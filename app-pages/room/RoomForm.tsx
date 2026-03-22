@@ -2,9 +2,10 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -15,6 +16,8 @@ import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect"
 import { RoomGetPayload } from "@/generated/prisma/models";
 import { useInfiniteRoomTypeList } from "@/hooks/query/roomType";
 import { RoomType } from "@/generated/prisma/client";
+import { useProfile } from "@/hooks/query/auth";
+import { hasActionPermission } from "@/lib/utils";
 import {
   roomValidator,
   roomValidatorType,
@@ -111,6 +114,7 @@ const UpdateCreateForm = ({
 
 const RoomForm = () => {
   const { roomId }: { roomId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingRoom } = useGetRoom(roomId);
 
@@ -128,6 +132,29 @@ const RoomForm = () => {
 
   if (roomId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.ROOM_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.ROOM_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((roomId && !canUpdate) || (!roomId && !canCreate)) {
+    return (
+      <CustomLayout title={roomId ? "Edit Room" : "Create Room"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

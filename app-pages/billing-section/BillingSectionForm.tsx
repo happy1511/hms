@@ -2,15 +2,18 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { BillingSection } from "@/generated/prisma/client";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useCreateBillingSection,
   useGetBillingSection,
   useUpdateBillingSection,
 } from "@/hooks/query/bllingSection";
+import { hasActionPermission } from "@/lib/utils";
 import {
   billingSectionValidator,
   BillingSectionValidatorType,
@@ -90,6 +93,7 @@ const UpdateCreateForm = ({ data }: { data?: BillingSection }) => {
 
 const BillingSectionForm = () => {
   const { sectionId }: { sectionId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingSection } = useGetBillingSection(sectionId);
 
@@ -107,6 +111,29 @@ const BillingSectionForm = () => {
 
   if (sectionId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.BILLING_SECTION_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.BILLING_SECTION_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((sectionId && !canUpdate) || (!sectionId && !canCreate)) {
+    return (
+      <CustomLayout title={sectionId ? "Edit Billing Section" : "Create Billing Section"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

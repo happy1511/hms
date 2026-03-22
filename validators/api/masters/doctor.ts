@@ -19,6 +19,7 @@ const doctorBaseValidator = userValidator.extend({
   yearsExperience: z.number().min(0, "Experience must be greater than zero").optional(),
   designation: optionalText,
   doctorType: z.enum(DoctorType),
+  consultationCharges: z.coerce.number().min(0, "Consultation charges must be greater than or equal to 0").optional(),
   emergencyContact: optionalPhone,
   availableDays: z
     .array(z.object({ day: z.enum(Days), available: z.boolean() }))
@@ -113,6 +114,14 @@ const doctorValidator = doctorBaseValidator.superRefine((data, ctx) => {
       ctx.addIssue({
         path: ["consultationEndingTime"],
         message: "Consultation end time is required for consulting doctors",
+        code: z.ZodIssueCode.custom,
+      });
+    }
+
+    if (data.consultationCharges === undefined) {
+      ctx.addIssue({
+        path: ["consultationCharges"],
+        message: "Consultation charges are required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }

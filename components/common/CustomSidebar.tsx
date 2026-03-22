@@ -279,6 +279,12 @@ const pathologyOrders: SidebarItem[] = [
     module: [ModuleType.PATHOLOGY_ORDER],
   },
   {
+    title: "COMPLETED",
+    url: "/pathology/completed",
+    icon: TestTubes,
+    module: [ModuleType.PATHOLOGY_ORDER],
+  },
+  {
     title: "CANCELLED",
     url: "/pathology/cancelled",
     icon: TestTubes,
@@ -296,6 +302,12 @@ const radiologyOrders: SidebarItem[] = [
   {
     title: "CLAIMED",
     url: "/radiology/claimed",
+    icon: TestTubes,
+    module: [ModuleType.RADIOLOGY_ORDER],
+  },
+  {
+    title: "COMPLETED",
+    url: "/radiology/completed",
     icon: TestTubes,
     module: [ModuleType.RADIOLOGY_ORDER],
   },
@@ -366,6 +378,25 @@ export function CustomSidebar() {
   const canViewDashboard = hasModulePermission(data.data, [
     ModuleType.DASHBOARD,
   ]);
+  const canUsePatientSearch = hasModulePermission(data.data, [
+    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
+    ModuleType.PATIENT_MASTER,
+  ]);
+  const canViewBedAvailability = hasModulePermission(data.data, [
+    ModuleType.BED_MASTER,
+  ]);
+
+  const showOpdSection = visibleOpd.length > 0 || canUsePatientSearch;
+  const showIpdSection = visibleIpd.length > 0 || canViewBedAvailability;
+  const showPharmacySection = visiblePharmacy.length > 0;
+  const showFinanceSection = visibleFinance.length > 0;
+  const showLabMasterSection = visibleLabMasters.length > 0;
+  const showPathologyOrdersSection = visiblePathologyOrders.length > 0;
+  const showRadiologyOrdersSection = visibleRadiologyOrders.length > 0;
+  const showBillingMastersSection = visibleBillingMasters.length > 0;
+  const showPharmacyMastersSection = visiblePharmacyMaster.length > 0;
+  const showMastersSection = visibleMasters.length > 0;
 
   return (
     <Sidebar className="border-r border-sidebar-border top-12 h-[calc(100dvh-48px)] px-2 py-2 bg-sidebar text-tiny!">
@@ -390,115 +421,122 @@ export function CustomSidebar() {
 
       <SidebarContent className="px-0 bg-primary/10">
         {/* OPD Section */}
-        <Collapsible open={opdOpen} onOpenChange={setOpdOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny! ">
-                <div className="flex items-center gap-3">
-                  <Users className="size-3" />
-                  <span>OPD</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    opdOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleOpd.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                  <PatientSearchModal
-                    trigger={
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black"
-                        >
-                          <div>
-                            <UserCircle />
-                            <span>PATIENT PROFILE</span>
-                          </div>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    }
-                    actions={(row) => (
-                      <Link
-                        className="text-secondary hover:underline text-tiny"
-                        href={`/invoice/${(row as OPDType).invoice.id}`}
-                      >
-                        Select
-                      </Link>
+        {showOpdSection && (
+          <Collapsible open={opdOpen} onOpenChange={setOpdOpen}>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny! ">
+                  <div className="flex items-center gap-3">
+                    <Users className="size-3" />
+                    <span>OPD</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      opdOpen ? "rotate-180" : "",
                     )}
                   />
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleOpd.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                    {canUsePatientSearch && (
+                      <PatientSearchModal
+                        trigger={
+                          <SidebarMenuItem>
+                            <SidebarMenuButton
+                              asChild
+                              className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black"
+                            >
+                              <div>
+                                <UserCircle />
+                                <span>PATIENT PROFILE</span>
+                              </div>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        }
+                        actions={(row) => (
+                          <Link
+                            className="text-secondary hover:underline text-tiny"
+                            href={`/invoice/${(row as OPDType).invoice.id}`}
+                          >
+                            Select
+                          </Link>
+                        )}
+                      />
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
 
         {/* IPD Section */}
-        <Collapsible open={ipdOpen} onOpenChange={setIpdOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <BedDouble className="size-3" />
-                  <span>IPD</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    ipdOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleIpd.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                  {hasModulePermission(data.data, [ModuleType.BED_MASTER]) && (
-                    <SidebarMenuItem>
-                      <BedAvailabilityModal />
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        {showIpdSection && (
+          <Collapsible open={ipdOpen} onOpenChange={setIpdOpen}>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <BedDouble className="size-3" />
+                    <span>IPD</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      ipdOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleIpd.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                    {canViewBedAvailability && (
+                      <SidebarMenuItem>
+                        <BedAvailabilityModal />
+                      </SidebarMenuItem>
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
 
         {/* Pharmacy Section */}
-        <Collapsible open={pharmacyOpen} onOpenChange={setPharmacyOpen}>
+        {showPharmacySection && (
+          <Collapsible open={pharmacyOpen} onOpenChange={setPharmacyOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -535,10 +573,12 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
         {/* Finance Section */}
-        <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
+        {showFinanceSection && (
+          <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -575,9 +615,11 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
-        <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
+        {showLabMasterSection && (
+          <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -614,12 +656,14 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
-        <Collapsible
-          open={pathologyOrderOpen}
-          onOpenChange={setPathologyOrderOpen}
-        >
+        {showPathologyOrdersSection && (
+          <Collapsible
+            open={pathologyOrderOpen}
+            onOpenChange={setPathologyOrderOpen}
+          >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -656,12 +700,14 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
-        <Collapsible
-          open={radiologyOrderOpen}
-          onOpenChange={setRadiologyOrderOpen}
-        >
+        {showRadiologyOrdersSection && (
+          <Collapsible
+            open={radiologyOrderOpen}
+            onOpenChange={setRadiologyOrderOpen}
+          >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -698,13 +744,15 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
         {/* Master Section */}
-        <Collapsible
-          open={billingMasterOpen}
-          onOpenChange={setBillingMasterOpen}
-        >
+        {showBillingMastersSection && (
+          <Collapsible
+            open={billingMasterOpen}
+            onOpenChange={setBillingMasterOpen}
+          >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -741,13 +789,15 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
         {/* Pharmacy Master Section */}
-        <Collapsible
-          open={pharmacyMasterOpen}
-          onOpenChange={setPharmacyMasterOpen}
-        >
+        {showPharmacyMastersSection && (
+          <Collapsible
+            open={pharmacyMasterOpen}
+            onOpenChange={setPharmacyMasterOpen}
+          >
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -784,10 +834,12 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
 
         {/* Master Section */}
-        <Collapsible open={masterOpen} onOpenChange={setMasterOpen}>
+        {showMastersSection && (
+          <Collapsible open={masterOpen} onOpenChange={setMasterOpen}>
           <SidebarGroup className="p-0">
             <CollapsibleTrigger className="w-full bg-transparent">
               <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
@@ -824,7 +876,8 @@ export function CustomSidebar() {
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
-        </Collapsible>
+          </Collapsible>
+        )}
       </SidebarContent>
     </Sidebar>
   );

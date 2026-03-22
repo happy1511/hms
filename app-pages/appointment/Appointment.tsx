@@ -5,6 +5,7 @@ import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -294,6 +295,7 @@ const Appointments = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

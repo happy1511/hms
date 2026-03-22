@@ -4,6 +4,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
@@ -487,6 +488,7 @@ const Income = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

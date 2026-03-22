@@ -2,9 +2,10 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -13,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { PaginatedResponse } from "@/lib/type";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { RoomTypeGetPayload } from "@/generated/prisma/models";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useCreateRoomType,
   useGetRoomType,
@@ -24,6 +26,7 @@ import {
 } from "@/validators/api/masters/roomType";
 import { useInfiniteDepartmentsList } from "@/hooks/query/department";
 import { Department } from "@/generated/prisma/client";
+import { hasActionPermission } from "@/lib/utils";
 
 const getInitialValues = (
   data?: RoomTypeGetPayload<{ include: { department: true } }>,
@@ -115,6 +118,7 @@ const UpdateCreateForm = ({
 
 const RoomTypeForm = () => {
   const { typeId }: { typeId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingRoomType } = useGetRoomType(typeId);
 
@@ -132,6 +136,29 @@ const RoomTypeForm = () => {
 
   if (typeId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.ROOM_TYPE_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.ROOM_TYPE_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((typeId && !canUpdate) || (!typeId && !canCreate)) {
+    return (
+      <CustomLayout title={typeId ? "Edit Room Type" : "Create Room Type"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

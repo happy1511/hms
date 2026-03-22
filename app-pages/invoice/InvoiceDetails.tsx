@@ -2,6 +2,7 @@
 
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import CustomButton from "@/components/common/CustomButton";
+import NoPermission from "@/components/common/NoPermission";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
@@ -43,7 +44,7 @@ import {
   Plus,
   User,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrayPath,
@@ -753,12 +754,29 @@ const InvoiceDetails = () => {
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const { invoiceId }: { invoiceId: string } = useParams();
+  const searchParams = useSearchParams();
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
   });
   const { data: profile } = useProfile(false);
   const { mutateAsync, isPending } = useUpdateInvoice();
   const router = useRouter();
+
+  useEffect(() => {
+    const modal = searchParams.get("modal");
+    const focus = searchParams.get("focus");
+
+    if (modal === "transactions") {
+      setTransactionsOpen(true);
+    }
+    if (modal === "payment") {
+      setPaymentModalOpen(true);
+    }
+    if (focus === "items") {
+      const target = document.getElementById("invoice-items");
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [searchParams]);
 
   const form = useForm<updateInvoiceValidatorType>({
     resolver: zodResolver(updateInvoiceValidator),
@@ -994,7 +1012,7 @@ const InvoiceDetails = () => {
   );
 
   if (!canViewInvoice) {
-    return <div />;
+    return <NoPermission />;
   }
 
   return (
@@ -1121,6 +1139,7 @@ const InvoiceDetails = () => {
           </div>
 
           <Tabs
+            id="invoice-items"
             defaultValue={String(data.sections[0]?.id)}
             className="flex h-[calc(100%-52px)] overflow-hidden bg-white"
             orientation="vertical"

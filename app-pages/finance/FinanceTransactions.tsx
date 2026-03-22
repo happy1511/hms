@@ -4,6 +4,7 @@ import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -223,6 +224,7 @@ const FinanceTransactions = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

@@ -2,6 +2,7 @@
 
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useDashboard } from "@/hooks/query/dashboard";
@@ -100,6 +101,20 @@ const Dashboard = () => {
 
   if (!profile) {
     return <div />;
+  }
+
+  const canViewDashboard = hasActionPermission(
+    profile.data,
+    ModuleType.DASHBOARD,
+    ActionType.VIEW,
+  );
+
+  if (!canViewDashboard) {
+    return (
+      <CustomLayout title="Dashboard">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   const canCreateOpd = hasActionPermission(

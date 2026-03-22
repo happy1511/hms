@@ -2,6 +2,7 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormTextarea } from "@/components/form-inputs/FormTextArea";
 import { Form } from "@/components/ui/form";
@@ -59,7 +60,13 @@ const CompanyDetails = () => {
     ActionType.UPDATE,
   );
 
-  if (!canView) return <div />;
+  if (!canView) {
+    return (
+      <CustomLayout title="Company Details" buttons={<div />}>
+        <NoPermission />
+      </CustomLayout>
+    );
+  }
 
   const onSubmit = async (values: FormValues) => {
     await mutateAsync(values);

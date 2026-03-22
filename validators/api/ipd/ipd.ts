@@ -1,4 +1,5 @@
 import {
+  AddressType,
   ContactType,
   IdentityType,
   IpdArrival,
@@ -12,6 +13,15 @@ import { patientValidator } from "../masters/patient";
 import { invoiceValidator } from "../invoice/invoice";
 
 const ipdPatientValidator = patientValidator.extend({
+  addresses: z.array(
+    z.object({
+      type: z.enum(AddressType),
+      addressLineOne: z.string().optional().nullable(),
+      addressLineTwo: z.string().optional().nullable(),
+      addressLineThree: z.string().optional().nullable(),
+      location: z.object({ id: z.coerce.number() }).optional().nullable(),
+    }),
+  ),
   contacts: z.array(
     z.object({
       type: z.enum(ContactType),

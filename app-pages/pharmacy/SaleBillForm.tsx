@@ -1,15 +1,19 @@
 "use client";
 
 import CustomButton from "@/components/common/CustomButton";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
 import {
+  ActionType,
   DiscountType,
+  ModuleType,
   PaymentCategory,
   PaymentMode,
   Status,
 } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useInfiniteInventoryItems } from "@/hooks/query/pharmacyInventory";
@@ -25,7 +29,7 @@ import {
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
-import { getDiscountTypeOptions } from "@/lib/utils";
+import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -781,6 +785,7 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
 
 const SaleBillForm = () => {
   const params: { billId: string } = useParams();
+  const { data: profile } = useProfile(false);
   const { data, isLoading } = useGetSaleBill(params?.billId);
 
   if (isLoading && params?.billId) {
@@ -797,6 +802,29 @@ const SaleBillForm = () => {
 
   if (params?.billId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_SALE_BILL,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_SALE_BILL,
+    ActionType.UPDATE,
+  );
+
+  if ((params?.billId && !canUpdate) || (!params?.billId && !canCreate)) {
+    return (
+      <CustomLayout title="Sale">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

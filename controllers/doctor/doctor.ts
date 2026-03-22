@@ -10,8 +10,84 @@ import {
 import { generateUUID } from "@/lib/utils";
 import { updatePermissions } from "../user/user";
 import { paginationValidator } from "@/validators/api/common/pagination";
-import { Days, Prisma, Status, User } from "@/generated/prisma/client";
+import {
+  Days,
+  DoctorType,
+  Prisma,
+  ServiceApplicableOn,
+  ServiceType,
+  Status,
+  User,
+} from "@/generated/prisma/client";
 import { buildUserName, trimOptionalString } from "@/lib/user";
+
+const upsertConsultingService = async (
+  tx: Prisma.TransactionClient,
+  {
+    doctorId,
+    doctorName,
+    consultationCharges,
+    actingUserId,
+  }: {
+    doctorId: number;
+    doctorName: string;
+    consultationCharges: number;
+    actingUserId: number;
+  },
+) => {
+  return tx.service.upsert({
+    where: { consultingDoctorId: doctorId },
+    create: {
+      consultingDoctorId: doctorId,
+      name: doctorName,
+      description: `Consultation charges for ${doctorName}`,
+      type: ServiceType["OTHER"],
+      applicableOn: ServiceApplicableOn["CONSULTATION"],
+      price: consultationCharges,
+      discountAvailable: false,
+      maxDiscount: 0,
+      status: Status["active"],
+      createdBy: actingUserId,
+      updatedBy: actingUserId,
+    },
+    update: {
+      isDeleted: false,
+      name: doctorName,
+      description: `Consultation charges for ${doctorName}`,
+      type: ServiceType["OTHER"],
+      applicableOn: ServiceApplicableOn["CONSULTATION"],
+      price: consultationCharges,
+      updatedBy: actingUserId,
+    },
+  });
+};
+
+const softDeleteConsultingService = async (
+  tx: Prisma.TransactionClient,
+  {
+    doctorId,
+    actingUserId,
+  }: {
+    doctorId: number;
+    actingUserId: number;
+  },
+) => {
+  const existing = await tx.service.findFirst({
+    where: { consultingDoctorId: doctorId, isDeleted: false },
+    select: { id: true },
+  });
+
+  if (!existing) return;
+
+  await tx.service.update({
+    where: { id: existing.id },
+    data: {
+      isDeleted: true,
+      deletedBy: actingUserId,
+      updatedBy: actingUserId,
+    },
+  });
+};
 
 export const updateAvailability = async (
   availableDays: DoctorValidatorType["availableDays"],
@@ -167,6 +243,7 @@ export const getDetailsAPI = async (
           qualifications: true,
           specialization: true,
           yearsExperience: true,
+          consultationCharges: true,
         },
       });
 
@@ -331,6 +408,8 @@ export const createAPI = async (req: Request, actingUser: User) => {
         department: rest.department?.trim() || null,
         yearsExperience: rest.yearsExperience ?? null,
         doctorType: rest.doctorType,
+        consultationCharges:
+          rest.consultationCharges !== undefined ? rest.consultationCharges : null,
         email: rest.email?.trim() || null,
         phoneNumber: rest.contactNumber?.trim() || null,
         designation: rest.designation?.trim() || null,
@@ -339,13 +418,26 @@ export const createAPI = async (req: Request, actingUser: User) => {
         emergencyContact: rest.emergencyContact?.trim() || null,
       };
 
-      const doctor = await prisma.doctor.create({
-        data: {
-          ...doctorData,
-          userId: user.id,
-          createdBy: actingUser.id ,
-          updatedBy: actingUser.id ,
-        },
+      const doctor = await prisma.$transaction(async (tx) => {
+        const createdDoctor = await tx.doctor.create({
+          data: {
+            ...doctorData,
+            userId: user.id,
+            createdBy: actingUser.id,
+            updatedBy: actingUser.id,
+          },
+        });
+
+        if (rest.doctorType === DoctorType["consulting"]) {
+          await upsertConsultingService(tx, {
+            doctorId: user.id,
+            doctorName: name,
+            consultationCharges: Number(rest.consultationCharges ?? 0),
+            actingUserId: actingUser.id,
+          });
+        }
+
+        return createdDoctor;
       });
 
       const availability = await updateAvailability(availableDays, user.id);
@@ -463,6 +555,20 @@ export const updateAPI = async (
             })
           : existingUser.name;
 
+      const effectiveDoctorType = rest.doctorType ?? existingUser.doctor.doctorType;
+      const effectiveCharges =
+        rest.consultationCharges ?? existingUser.doctor.consultationCharges;
+
+      if (
+        effectiveDoctorType === DoctorType["consulting"] &&
+        (effectiveCharges === null || effectiveCharges === undefined)
+      ) {
+        return apiResponse({
+          status: RESPONSE_STATUS.BAD_REQUEST,
+          message: "Consultation charges are required for consulting doctors",
+        });
+      }
+
       const updatedUser = await prisma.user.update({
         where: { id: data.userId },
         data: {
@@ -551,6 +657,10 @@ export const updateAPI = async (
               ? trimOptionalString(rest.designation)
               : undefined,
           doctorType: rest.doctorType,
+          consultationCharges:
+            rest.consultationCharges !== undefined
+              ? rest.consultationCharges
+              : undefined,
           email:
             rest.email !== undefined
               ? trimOptionalString(rest.email)
@@ -571,6 +681,24 @@ export const updateAPI = async (
           updatedBy: actingUser.id ,
         },
       });
+
+      if (effectiveDoctorType === DoctorType["consulting"]) {
+        await prisma.$transaction((tx) =>
+          upsertConsultingService(tx, {
+            doctorId: existingUser.id,
+            doctorName: (nextName ?? existingUser.name ?? "").trim(),
+            consultationCharges: Number(effectiveCharges),
+            actingUserId: actingUser.id,
+          }),
+        );
+      } else {
+        await prisma.$transaction((tx) =>
+          softDeleteConsultingService(tx, {
+            doctorId: existingUser.id,
+            actingUserId: actingUser.id,
+          }),
+        );
+      }
 
       let updatedPermissions;
       if (permissions?.length) {
@@ -646,6 +774,14 @@ export const deleteAPI = async (
             isDeleted: true,
             deletedBy: actingUser.id ,
             updatedBy: actingUser.id ,
+          },
+        }),
+        prisma.service.updateMany({
+          where: { consultingDoctorId: data.userId, isDeleted: false },
+          data: {
+            isDeleted: true,
+            deletedBy: actingUser.id,
+            updatedBy: actingUser.id,
           },
         }),
       ]);

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm, FieldValues, Path, DefaultValues } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
@@ -10,6 +10,8 @@ import { Label } from "../ui/label";
 import CustomButton from "./CustomButton";
 import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 import { cn } from "@/lib/utils";
+import { endOfToday, startOfToday } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 interface CustomFiltersProps<T extends FieldValues> {
   filters: FilterConfig<T>[];
@@ -18,6 +20,8 @@ interface CustomFiltersProps<T extends FieldValues> {
   className?: string;
   filtersContainerClassName?: string;
   actionsContainerClassName?: string;
+  defaultToday?: boolean;
+  autoSubmitDefaultToday?: boolean;
 }
 
 const CustomFilters = <T extends FieldValues>({
@@ -27,17 +31,67 @@ const CustomFilters = <T extends FieldValues>({
   className,
   filtersContainerClassName,
   actionsContainerClassName,
+  defaultToday = true,
+  autoSubmitDefaultToday = true,
 }: CustomFiltersProps<T>) => {
+  const hasAutoSubmitted = useRef(false);
+
+  const todayRange = useMemo<DateRange>(
+    () => ({
+      from: startOfToday(),
+      to: endOfToday(),
+    }),
+    [],
+  );
+
+  const effectiveDefaultValues = useMemo(() => {
+    if (!defaultToday) return defaultValues;
+
+    const dateRangeKeys = filters
+      .filter((f) => f.type === "dateRange")
+      .map((f) => String(f.valueKey));
+
+    if (dateRangeKeys.length === 0) return defaultValues;
+
+    const merged = { ...(defaultValues || {}) } as Record<string, unknown>;
+
+    for (const key of dateRangeKeys) {
+      if (merged[key] === undefined) {
+        merged[key] = todayRange;
+      }
+    }
+
+    return merged as DefaultValues<T>;
+  }, [defaultToday, defaultValues, filters, todayRange]);
+
   const form = useForm<T>({
     mode: "onSubmit",
-    defaultValues,
+    defaultValues: effectiveDefaultValues,
   });
 
   useEffect(() => {
-    if (defaultValues) {
-      form.reset(defaultValues);
+    if (effectiveDefaultValues) {
+      form.reset(effectiveDefaultValues);
     }
-  }, [defaultValues, form]);
+  }, [effectiveDefaultValues, form]);
+
+  useEffect(() => {
+    if (!defaultToday || !autoSubmitDefaultToday) return;
+    if (!effectiveDefaultValues) return;
+    if (hasAutoSubmitted.current) return;
+
+    const hasDateRangeFilter = filters.some((f) => f.type === "dateRange");
+    if (!hasDateRangeFilter) return;
+
+    hasAutoSubmitted.current = true;
+    onSubmit(effectiveDefaultValues as T);
+  }, [
+    autoSubmitDefaultToday,
+    defaultToday,
+    effectiveDefaultValues,
+    filters,
+    onSubmit,
+  ]);
 
   const handleReset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

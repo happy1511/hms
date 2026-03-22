@@ -2,8 +2,12 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
+import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -130,6 +134,7 @@ const UpdateCreateForm = ({ data }: { data?: Drug }) => {
 
 const DrugForm = () => {
   const { drugId }: { drugId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading } = useGetDrug(drugId);
 
@@ -147,6 +152,29 @@ const DrugForm = () => {
 
   if (drugId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_DRUG_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.PHARMACY_DRUG_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((drugId && !canUpdate) || (!drugId && !canCreate)) {
+    return (
+      <CustomLayout title={drugId ? "Edit Drug" : "Create Drug"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

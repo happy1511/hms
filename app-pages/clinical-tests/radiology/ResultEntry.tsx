@@ -2,13 +2,17 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useGetRadiologyOrderTemplate,
   useUpdateRadiologyTestOrder,
 } from "@/hooks/query/radiology";
 import { RadiologyTestResultType } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   RadiologyResultEntryValidatorType,
   radiologyResultsEntry,
@@ -72,6 +76,7 @@ const ResultEntryForm = ({ data }: { data: RadiologyTestResultType }) => {
 
 const ResultEntry = () => {
   const { orderId }: { orderId: string } = useParams();
+  const { data: profile } = useProfile(false);
   const { data, isLoading: fetching } = useGetRadiologyOrderTemplate(orderId);
 
   if (fetching) {
@@ -88,6 +93,24 @@ const ResultEntry = () => {
 
   if (!orderId || !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.RADIOLOGY_ORDER,
+    ActionType.UPDATE,
+  );
+
+  if (!canUpdate) {
+    return (
+      <CustomLayout title="Radiology Result Entry">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

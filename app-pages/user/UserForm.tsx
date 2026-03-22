@@ -2,14 +2,17 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import PermissionsSection from "@/components/user/PermissionsSection";
 import UserProfileFields from "@/components/user/UserProfileFields";
 import { Form } from "@/components/ui/form";
-import { Gender, NameTitle, Status } from "@/generated/prisma/enums";
+import { ActionType, Gender, ModuleType, NameTitle, Status } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { usePermissionsList } from "@/hooks/query/permission";
 import { useCreateUser, useGetUser, useUpdateUser } from "@/hooks/query/user";
 import { User } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   userValidator,
   UserValidatorType,
@@ -139,6 +142,7 @@ const UpdateCreateForm = ({
 
 const UserForm = () => {
   const { userId }: { userId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingUser } = useGetUser(userId);
   const { data: permissions, isLoading: fetchingPermission } =
@@ -158,6 +162,21 @@ const UserForm = () => {
 
   if (!permissions && !userId) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(profile.data, ModuleType.USER, ActionType.CREATE);
+  const canUpdate = hasActionPermission(profile.data, ModuleType.USER, ActionType.UPDATE);
+
+  if ((userId && !canUpdate) || (!userId && !canCreate)) {
+    return (
+      <CustomLayout title={userId ? "Edit User" : "Create User"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

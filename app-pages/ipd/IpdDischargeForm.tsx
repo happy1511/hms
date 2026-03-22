@@ -4,11 +4,14 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Drug } from "@/generated/prisma/client";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import {
   IpdDischargeSummaryResponse,
@@ -17,7 +20,7 @@ import {
   useUpsertIpdDischargeSummary,
 } from "@/hooks/query/ipd";
 import { ColumnDefWithClass, PaginatedResponse, SelectOption } from "@/lib/type";
-import { cn } from "@/lib/utils";
+import { cn, hasActionPermission } from "@/lib/utils";
 import {
   ipdDischargeDrugValidator,
   ipdDischargeSummaryValidator,
@@ -477,6 +480,7 @@ const normalizeSummaryToFormValues = (
 const IpdDischargeForm = () => {
   const router = useRouter();
   const { ipdId }: { ipdId: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const numericIpdId = Number(ipdId);
   const { data, isLoading } = useGetIpdDischargeSummary(ipdId);
@@ -538,6 +542,24 @@ const IpdDischargeForm = () => {
       <div className="flex justify-center items-center h-full">
         <LoaderIcon className="size-4 animate-spin" />
       </div>
+    );
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.DISCHARGE_PATIENT,
+    ActionType.UPDATE,
+  );
+
+  if (!canUpdate) {
+    return (
+      <CustomLayout title="Discharge Summary">
+        <NoPermission />
+      </CustomLayout>
     );
   }
 

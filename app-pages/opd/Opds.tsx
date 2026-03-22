@@ -7,6 +7,7 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import TransactionsModal from "@/components/common/TransactionsModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
@@ -518,6 +519,7 @@ const OPDs = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

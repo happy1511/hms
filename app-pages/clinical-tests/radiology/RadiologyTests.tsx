@@ -1,6 +1,7 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
 import { RadiologyTest } from "@/generated/prisma/client";
@@ -112,6 +113,10 @@ const RadiologyTests = () => {
     ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.DELETE,
   );
+
+  if (!canView) {
+    return <NoPermission />;
+  }
 
   const columns: ColumnDefWithClass<RadiologyTest>[] = [
     {

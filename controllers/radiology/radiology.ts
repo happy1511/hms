@@ -4,12 +4,14 @@ import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
+  DocumentStoreType,
   Prisma,
   RadiologyOrderStatus,
   ServiceApplicableOn,
   ServiceType,
   User,
 } from "@/generated/prisma/client";
+import { deletePublicDocument, savePublicDocument } from "@/services/documentStore";
 import {
   partialRadiologyTemplateValidator,
   partialRadiologyTestOrder,
@@ -564,6 +566,17 @@ export const getOrdersAPI = async (req: Request) => {
                 verifiedAt: true,
                 isOutSourced: true,
                 isCancelled: true,
+                scannedReportDocument: {
+                  select: {
+                    id: true,
+                    type: true,
+                    path: true,
+                    originalName: true,
+                    mimeType: true,
+                    size: true,
+                    createdAt: true,
+                  },
+                },
                 test: {
                   select: {
                     id: true,
@@ -784,6 +797,114 @@ export const markOutsourceOrderAPI = async (req: Request, user: User) => {
       });
     },
   });
+};
+
+export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
+  const formData = await req.formData();
+  const orderIdRaw = formData.get("orderId");
+  const file = formData.get("file");
+
+  const orderId = typeof orderIdRaw === "string" ? Number(orderIdRaw) : NaN;
+
+  if (!orderId || Number.isNaN(orderId)) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: "Invalid orderId",
+    });
+  }
+
+  if (!(file instanceof File)) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: "File is required",
+    });
+  }
+
+  const order = await prisma.radiologyTestOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      isOutSourced: true,
+      isCancelled: true,
+      scannedReportDocumentId: true,
+      scannedReportDocument: {
+        select: { id: true, path: true },
+      },
+    },
+  });
+
+  if (!order) {
+    return apiResponse({
+      status: RESPONSE_STATUS.NOT_FOUND,
+      message: "Order not found",
+    });
+  }
+
+  if (!order.isOutSourced || order.isCancelled) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: "Only active outsourced orders can upload reports",
+    });
+  }
+
+  const saved = await savePublicDocument({ file });
+
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const doc = await tx.documentStore.create({
+        data: {
+          type: DocumentStoreType.LAB_REPORT_RADIOLOGY,
+          path: saved.publicPath,
+          originalName: saved.originalName,
+          mimeType: saved.mimeType,
+          size: saved.size,
+          createdBy: user.id,
+        },
+        select: {
+          id: true,
+          type: true,
+          path: true,
+          originalName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.radiologyTestOrder.update({
+        where: { id: orderId },
+        data: {
+          scannedReportDocumentId: doc.id,
+        },
+      });
+
+      return doc;
+    });
+
+    if (order.scannedReportDocument?.path) {
+      try {
+        await prisma.documentStore.delete({
+          where: { id: order.scannedReportDocument.id },
+        });
+      } catch {}
+
+      try {
+        await deletePublicDocument(order.scannedReportDocument.path);
+      } catch {}
+    }
+
+    return apiResponse({
+      status: RESPONSE_STATUS.SUCCESS,
+      message: "Report uploaded successfully",
+      data: created,
+    });
+  } catch (e) {
+    try {
+      await deletePublicDocument(saved.publicPath);
+    } catch {}
+
+    throw e;
+  }
 };
 
 export const getCompletedOrdersWithResultsAPI = async (req: Request) => {

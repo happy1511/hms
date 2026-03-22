@@ -3,6 +3,7 @@
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
@@ -173,8 +174,12 @@ const PatientSearch = () => {
     });
   }
 
-  if (!canView || !canCreateOPD) {
-    return <div />;
+  if (!canView) {
+    return (
+      <CustomLayout title="Patient Search">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

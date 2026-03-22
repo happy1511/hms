@@ -2,6 +2,7 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { PatientViewModal } from "@/components/patient/PatientView";
@@ -220,6 +221,7 @@ const WalkInQueue = () => {
           />
         </>
       )}
+      {!canView && <NoPermission />}
     </CustomLayout>
   );
 };

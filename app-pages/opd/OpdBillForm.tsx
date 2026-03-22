@@ -4,26 +4,23 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import PostCreatePrintDialog from "@/components/opd/PostCreatePrintDialog";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { BillingSection, Location } from "@/generated/prisma/client";
 import {
+  ActionType,
   AddressType,
   BloodGroup,
   ContactType,
   DiscountType,
   Gender,
   IdentityType,
+  ModuleType,
   MaritalStatus,
   NameTitle,
   OpdArrival,
@@ -36,8 +33,12 @@ import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useInfiniteLocationsList } from "@/hooks/query/locations";
 import { useCreateOpd } from "@/hooks/query/opd";
+import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
-import { useInfiniteServicesList } from "@/hooks/query/service";
+import {
+  useConsultingDoctorService,
+  useInfiniteServicesList,
+} from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -45,7 +46,7 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
-import { getDiscountTypeOptions } from "@/lib/utils";
+import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -55,10 +56,10 @@ import {
 import { PatientAddressValidatorType } from "@/validators/api/masters/patient";
 import { opdValidator, opdValidatorType } from "@/validators/api/opd/opd";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { format, startOfDay, subYears } from "date-fns";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useFieldArray,
   UseFieldArrayRemove,
@@ -218,6 +219,7 @@ const Actions = ({
 const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
+  const lastAutoAddedConsultingServiceId = useRef<number | null>(null);
 
   const { append, update, remove } = useFieldArray({
     name: "invoice.billingItems",
@@ -242,6 +244,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const discountValue = billingItemForm.watch("discountValue");
   const discountType = billingItemForm.watch("discountType");
   const addedBillingItems = form.watch("invoice.billingItems");
+  const invoiceDiscountType = form.watch("invoice.discountType");
+  const invoiceDiscountValue = form.watch("invoice.discountValue");
   const editingIndex = billingItemForm.watch("index");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
@@ -254,6 +258,13 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     10,
   );
 
+  const consultantDoctor = form.watch("consultantDoctor");
+  const consultantDoctorId = (
+    consultantDoctor as { userId?: number } | undefined
+  )?.userId;
+  const { data: consultingDoctorService } =
+    useConsultingDoctorService(consultantDoctorId);
+
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
@@ -261,6 +272,74 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
       ),
     [servicesQuery.data],
   );
+
+  useEffect(() => {
+    const autoServiceId = lastAutoAddedConsultingServiceId.current;
+
+    const removeAutoServiceIfPresent = () => {
+      if (!autoServiceId) return;
+      const index = (addedBillingItems || []).findIndex(
+        (item) => Number(item?.service?.id) === autoServiceId,
+      );
+      if (index >= 0) {
+        remove(index);
+      }
+      lastAutoAddedConsultingServiceId.current = null;
+    };
+
+    if (!consultantDoctorId) {
+      removeAutoServiceIfPresent();
+      return;
+    }
+
+    if (!consultingDoctorService?.id) return;
+
+    if (autoServiceId && autoServiceId !== consultingDoctorService.id) {
+      removeAutoServiceIfPresent();
+    }
+
+    const alreadyAdded = (addedBillingItems || []).some(
+      (item) => Number(item?.service?.id) === consultingDoctorService.id,
+    );
+
+    if (alreadyAdded) {
+      lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+      return;
+    }
+
+    const preferredBillingSection =
+      (addedBillingItems || [])?.[0]?.billingSection ??
+      billingItemQuery.data?.pages?.[0]?.data?.[0];
+
+    if (!preferredBillingSection?.id) return;
+
+    append({
+      billingSection: {
+        id: Number(preferredBillingSection.id),
+        name: preferredBillingSection.name,
+      },
+      service: {
+        id: consultingDoctorService.id,
+        name: consultingDoctorService.name,
+        maxDiscount: consultingDoctorService.maxDiscount ?? 0,
+      },
+      createdAt: new Date(),
+      quantity: 1,
+      rate: consultingDoctorService.price,
+      discountType: DiscountType.VALUE,
+      discountValue: 0,
+      total: consultingDoctorService.price,
+    } as any);
+
+    lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+  }, [
+    addedBillingItems,
+    append,
+    billingItemQuery.data,
+    consultantDoctorId,
+    consultingDoctorService,
+    remove,
+  ]);
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
     {
@@ -461,6 +540,38 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     }
   }, [quantity, rate, discountType, discountValue, service]);
 
+  const invoiceSummary = useMemo(() => {
+    const subTotal = (addedBillingItems || []).reduce(
+      (sum, item) => sum + Number(item.total || 0),
+      0,
+    );
+
+    const discount =
+      invoiceDiscountType === DiscountType["PERCENTAGE"]
+        ? (subTotal * Number(invoiceDiscountValue || 0)) / 100
+        : Number(invoiceDiscountValue || 0);
+
+    const total = subTotal - discount;
+    const roundedTotal = Math.round(total);
+    const roundOffAmount = roundedTotal - total;
+
+    return {
+      subTotal,
+      discount,
+      total,
+      roundOffAmount,
+      finalTotal: total + roundOffAmount,
+    };
+  }, [addedBillingItems, invoiceDiscountType, invoiceDiscountValue]);
+
+  useEffect(() => {
+    if (
+      Number(form.getValues("invoice.total") || 0) !== invoiceSummary.finalTotal
+    ) {
+      form.setValue("invoice.total", invoiceSummary.finalTotal as any);
+    }
+  }, [form, invoiceSummary.finalTotal]);
+
   return (
     <CustomLayout
       title="Billing Items"
@@ -569,6 +680,49 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           getRowId={(row) => row.index as string}
         />
       </div>
+      <div className="col-span-2 flex justify-end">
+        <div className="w-full max-w-md bg-white border rounded-md p-2 text-tiny">
+          <div className="grid grid-cols-[1fr_170px] gap-1 items-center">
+            <div className="text-right font-semibold">Invoice Total:</div>
+            <div className="text-right">
+              {invoiceSummary.subTotal.toFixed(2)}
+            </div>
+
+            <div className="text-right font-semibold">Discount:</div>
+            <div className="grid grid-cols-[80px_1fr] gap-2">
+              <FormField<opdValidatorType>
+                name="invoice.discountType"
+                control={form.control}
+                type="select"
+                options={[
+                  { value: DiscountType["VALUE"], label: "Rs." },
+                  { value: DiscountType["PERCENTAGE"], label: "%" },
+                ]}
+                required
+              />
+              <FormField<opdValidatorType>
+                name="invoice.discountValue"
+                control={form.control}
+                type="number"
+                required
+              />
+            </div>
+
+            <div className="text-right font-semibold">Total:</div>
+            <div className="text-right">{invoiceSummary.total.toFixed(2)}</div>
+
+            <div className="text-right font-semibold">Round off Amount:</div>
+            <div className="text-right">
+              {invoiceSummary.roundOffAmount.toFixed(2)}
+            </div>
+
+            <div className="text-right font-semibold">Final Total:</div>
+            <div className="text-right font-semibold">
+              {invoiceSummary.finalTotal.toFixed(2)}
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="col-span-2">
         <FormField
           control={form.control}
@@ -594,6 +748,17 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const addedTransactions = form.watch("invoice.transactions");
   const isPaid = form.watch("invoice.isPaid");
   const editingIndex = transactionForm.watch("index");
+
+  const invoiceTotal = Number(form.watch("invoice.total") || 0);
+
+  useEffect(() => {
+    if (isPaid !== "true") return;
+
+    const currentAmount = Number(transactionForm.getValues("amount") || 0);
+    if (currentAmount > 0) return;
+
+    transactionForm.setValue("amount", invoiceTotal);
+  }, [invoiceTotal, isPaid, transactionForm]);
 
   const columns: ColumnDefWithClass<transactionValidatorType>[] = [
     {
@@ -735,10 +900,53 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
 const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const [locationSearch, setLocationSearch] = useState("");
+  const isSettingDobFromAge = useRef(false);
+  const prevDob = useRef<Date | undefined>(undefined);
   const locationQuery = useInfiniteLocationsList(
     { name: locationSearch, status: Status["active"] },
     10,
   );
+
+  const dob = form.watch("patient.dob") as unknown;
+  const ageYears = form.watch("patient.ageYears" as any) as unknown;
+  const parsedAgeYears =
+    typeof ageYears === "number" && Number.isFinite(ageYears) ? ageYears : null;
+  const isAgeValid = parsedAgeYears !== null && parsedAgeYears >= 0;
+
+  useEffect(() => {
+    if (!isAgeValid || parsedAgeYears === null) return;
+
+    isSettingDobFromAge.current = true;
+    form.setValue(
+      "patient.dob",
+      startOfDay(subYears(new Date(), parsedAgeYears)) as any,
+    );
+    setTimeout(() => {
+      isSettingDobFromAge.current = false;
+    }, 0);
+  }, [form, isAgeValid, parsedAgeYears]);
+
+  useEffect(() => {
+    const currentDob = (() => {
+      if (!dob) return undefined;
+      if (dob instanceof Date) return dob;
+      const d = new Date(dob as any);
+      return Number.isNaN(d.getTime()) ? undefined : d;
+    })();
+    const previousDob = prevDob.current;
+
+    if (
+      parsedAgeYears !== null &&
+      currentDob &&
+      previousDob &&
+      currentDob.getTime() !== previousDob.getTime() &&
+      !isSettingDobFromAge.current
+    ) {
+      form.setValue("patient.ageYears" as any, undefined);
+    }
+
+    prevDob.current = currentDob;
+  }, [dob, form, parsedAgeYears]);
 
   return (
     <CustomLayout
@@ -774,6 +982,19 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           control={form.control}
           type="date"
           required
+          disabled={isAgeValid}
+        />
+        <FormField<any>
+          label="Age (years)"
+          name="patient.ageYears"
+          control={form.control as any}
+          type="number"
+          rules={{
+            min: {
+              value: 0,
+              message: "Age must be greater than or equal to 0",
+            },
+          }}
         />
         <FormField<opdValidatorType>
           label="Gender"
@@ -806,7 +1027,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           name="patient.addresses.0.addressLineOne"
           control={form.control}
           type="text"
-          required
         />
 
         <FormInfiniteSelect<
@@ -825,7 +1045,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="City"
           search={locationSearch}
           onSearchChange={setLocationSearch}
-          required
         />
         <FormInfiniteSelect<
           Location,
@@ -843,7 +1062,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="State"
           search={locationSearch}
           onSearchChange={setLocationSearch}
-          required
         />
         <FormInfiniteSelect<
           Location,
@@ -861,7 +1079,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="Country"
           search={locationSearch}
           onSearchChange={setLocationSearch}
-          required
         />
         <FormInfiniteSelect<
           Location,
@@ -879,7 +1096,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="Country"
           search={locationSearch}
           onSearchChange={setLocationSearch}
-          required
         />
         <div className="grid grid-cols-2 space-x-2">
           <FormField<opdValidatorType>
@@ -940,6 +1156,7 @@ const OpdBillForm = () => {
   const [createdOpdId, setCreatedOpdId] = useState<number | null>(null);
 
   const router = useRouter();
+  const { data: profile } = useProfile(false);
   const { mutateAsync, isPending } = useCreateOpd({
     navigateBackOnSuccess: false,
     onSuccess: (response) => {
@@ -1010,6 +1227,24 @@ const OpdBillForm = () => {
 
   if (params?.patientId && !patient) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.OPD_BILL,
+    ActionType.CREATE,
+  );
+
+  if (!canCreate) {
+    return (
+      <CustomLayout title="OPD Billing">
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (
@@ -1112,7 +1347,7 @@ const OpdBillForm = () => {
         pending={isPending}
         handleConfirm={handleConfirmedCreate}
       />
-      <Dialog
+      <PostCreatePrintDialog
         open={postCreatePrintOpen}
         onOpenChange={(open) => {
           setPostCreatePrintOpen(open);
@@ -1120,71 +1355,13 @@ const OpdBillForm = () => {
             router.push("/opd/patients");
           }
         }}
-      >
-        <DialogContent className="max-w-lg border-secondary border-4 bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-sm text-black/70">
-              OPD Created Successfully
-            </DialogTitle>
-            <DialogDescription>
-              Print invoice or consultation paper before closing.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end">
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdInvoiceId) {
-                  window.open(`/invoice/print/${createdInvoiceId}`, "_blank");
-                }
-              }}
-              disabled={!createdInvoiceId}
-            >
-              Print Invoice
-            </CustomButton>
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdInvoiceId) {
-                  window.open(
-                    `/invoice/transactions/${createdInvoiceId}`,
-                    "_blank",
-                  );
-                }
-              }}
-              disabled={!createdInvoiceId}
-            >
-              Print Transaction Receipt
-            </CustomButton>
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdOpdId) {
-                  window.open(
-                    `/opd/consultation-print/${createdOpdId}`,
-                    "_blank",
-                  );
-                }
-              }}
-              disabled={!createdOpdId}
-            >
-              Print Consult Page
-            </CustomButton>
-            <CustomButton
-              type="button"
-              onClick={() => {
-                setPostCreatePrintOpen(false);
-                router.push("/opd/patients");
-              }}
-            >
-              Done
-            </CustomButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+        invoiceId={createdInvoiceId}
+        opdId={createdOpdId}
+        onDone={() => {
+          setPostCreatePrintOpen(false);
+          router.push("/opd/patients");
+        }}
+      />
     </Form>
   );
 };

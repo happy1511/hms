@@ -49,6 +49,23 @@ const updateRadiologyOrder = createRequest<
   undefined,
   { id: number }
 >(RADIOLOGY_ORDERS, "PUT");
+
+type UploadedDocumentStore = {
+  id: number;
+  path: string;
+  originalName: string;
+  mimeType: string | null;
+  size: number;
+  createdAt: string;
+  type: string;
+};
+
+const uploadOutsourcedRadiologyReport = createRequest<
+  ApiResponse<UploadedDocumentStore>,
+  undefined,
+  undefined,
+  { orderId: number; file: File }
+>(RADIOLOGY_ORDERS, "POST", true);
 const cancelRadiologyOrder = createRequest<
   ApiResponse<RadiologyOrderValidatorType>
 >(CANCEL_RADIOLOGY_ORDERS, "PUT");
@@ -348,6 +365,25 @@ export const useOutsourceRadiologyTestOrder = () => {
       }),
     onSuccess: () => {
       toast.success("Order outsource Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["radiology-orders"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useUploadOutsourcedRadiologyReport = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<UploadedDocumentStore>,
+    AxiosError<ApiResponse<null>>,
+    { orderId: number; file: File }
+  >({
+    mutationKey: ["upload-outsourced-radiology-report"],
+    mutationFn: (data) => uploadOutsourcedRadiologyReport({ body: data }),
+    onSuccess: () => {
+      toast.success("Report uploaded successfully");
       queryClient.invalidateQueries({
         queryKey: ["radiology-orders"],
       });

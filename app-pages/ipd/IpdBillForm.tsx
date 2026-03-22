@@ -4,6 +4,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
@@ -19,6 +20,7 @@ import {
 import { BillingSection, Location } from "@/generated/prisma/client";
 import { BedGetPayload } from "@/generated/prisma/models";
 import {
+  ActionType,
   AddressType,
   BloodGroup,
   ContactType,
@@ -28,6 +30,7 @@ import {
   IpdArrival,
   IpdCareType,
   MaritalStatus,
+  ModuleType,
   NameTitle,
   OpdArrival,
   PaymentCategory,
@@ -40,8 +43,12 @@ import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useCreateIpd } from "@/hooks/query/ipd";
 import { useInfiniteLocationsList } from "@/hooks/query/locations";
+import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
-import { useInfiniteServicesList } from "@/hooks/query/service";
+import {
+  useConsultingDoctorService,
+  useInfiniteServicesList,
+} from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -49,7 +56,7 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
-import { getDiscountTypeOptions } from "@/lib/utils";
+import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -59,10 +66,10 @@ import {
 import { ipdValidator, ipdValidatorType } from "@/validators/api/ipd/ipd";
 import { PatientAddressValidatorType } from "@/validators/api/masters/patient";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { format, startOfDay, subYears } from "date-fns";
 import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useFieldArray,
   UseFieldArrayRemove,
@@ -230,6 +237,7 @@ const Actions = ({
 const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
+  const lastAutoAddedConsultingServiceId = useRef<number | null>(null);
 
   const { append, update, remove } = useFieldArray({
     name: "invoice.billingItems",
@@ -254,6 +262,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const discountValue = billingItemForm.watch("discountValue");
   const discountType = billingItemForm.watch("discountType");
   const addedBillingItems = form.watch("invoice.billingItems");
+  const invoiceDiscountType = form.watch("invoice.discountType");
+  const invoiceDiscountValue = form.watch("invoice.discountValue");
   const editingIndex = billingItemForm.watch("index");
 
   const billingItemQuery = useInfiniteBillingSectionsList(
@@ -266,6 +276,13 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
     10,
   );
 
+  const consultantDoctor = form.watch("consultantDoctor");
+  const consultantDoctorId = (
+    consultantDoctor as { userId?: number } | undefined
+  )?.userId;
+  const { data: consultingDoctorService } =
+    useConsultingDoctorService(consultantDoctorId);
+
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
@@ -273,6 +290,74 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
       ),
     [servicesQuery.data],
   );
+
+  useEffect(() => {
+    const autoServiceId = lastAutoAddedConsultingServiceId.current;
+
+    const removeAutoServiceIfPresent = () => {
+      if (!autoServiceId) return;
+      const index = (addedBillingItems || []).findIndex(
+        (item) => Number(item?.service?.id) === autoServiceId,
+      );
+      if (index >= 0) {
+        remove(index);
+      }
+      lastAutoAddedConsultingServiceId.current = null;
+    };
+
+    if (!consultantDoctorId) {
+      removeAutoServiceIfPresent();
+      return;
+    }
+
+    if (!consultingDoctorService?.id) return;
+
+    if (autoServiceId && autoServiceId !== consultingDoctorService.id) {
+      removeAutoServiceIfPresent();
+    }
+
+    const alreadyAdded = (addedBillingItems || []).some(
+      (item) => Number(item?.service?.id) === consultingDoctorService.id,
+    );
+
+    if (alreadyAdded) {
+      lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+      return;
+    }
+
+    const preferredBillingSection =
+      (addedBillingItems || [])?.[0]?.billingSection ??
+      billingItemQuery.data?.pages?.[0]?.data?.[0];
+
+    if (!preferredBillingSection?.id) return;
+
+    append({
+      billingSection: {
+        id: Number(preferredBillingSection.id),
+        name: preferredBillingSection.name,
+      },
+      service: {
+        id: consultingDoctorService.id,
+        name: consultingDoctorService.name,
+        maxDiscount: consultingDoctorService.maxDiscount ?? 0,
+      },
+      createdAt: new Date(),
+      quantity: 1,
+      rate: consultingDoctorService.price,
+      discountType: DiscountType.VALUE,
+      discountValue: 0,
+      total: consultingDoctorService.price,
+    } as any);
+
+    lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+  }, [
+    addedBillingItems,
+    append,
+    billingItemQuery.data,
+    consultantDoctorId,
+    consultingDoctorService,
+    remove,
+  ]);
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
     {
@@ -473,6 +558,38 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
     }
   }, [quantity, rate, discountType, discountValue, service]);
 
+  const invoiceSummary = useMemo(() => {
+    const subTotal = (addedBillingItems || []).reduce(
+      (sum, item) => sum + Number(item.total || 0),
+      0,
+    );
+
+    const discount =
+      invoiceDiscountType === DiscountType["PERCENTAGE"]
+        ? (subTotal * Number(invoiceDiscountValue || 0)) / 100
+        : Number(invoiceDiscountValue || 0);
+
+    const total = subTotal - discount;
+    const roundedTotal = Math.round(total);
+    const roundOffAmount = roundedTotal - total;
+
+    return {
+      subTotal,
+      discount,
+      total,
+      roundOffAmount,
+      finalTotal: total + roundOffAmount,
+    };
+  }, [addedBillingItems, invoiceDiscountType, invoiceDiscountValue]);
+
+  useEffect(() => {
+    if (
+      Number(form.getValues("invoice.total") || 0) !== invoiceSummary.finalTotal
+    ) {
+      form.setValue("invoice.total", invoiceSummary.finalTotal as any);
+    }
+  }, [form, invoiceSummary.finalTotal]);
+
   return (
     <CustomLayout
       title="Billing Items"
@@ -579,6 +696,49 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           getRowId={(row) => row.index as string}
         />
       </div>
+      <div className="col-span-2 flex justify-end">
+        <div className="w-full max-w-md bg-white border rounded-md p-2 text-tiny">
+          <div className="grid grid-cols-[1fr_170px] gap-1 items-center">
+            <div className="text-right font-semibold">Invoice Total:</div>
+            <div className="text-right">
+              {invoiceSummary.subTotal.toFixed(2)}
+            </div>
+
+            <div className="text-right font-semibold">Discount:</div>
+            <div className="grid grid-cols-[80px_1fr] gap-2">
+              <FormField<ipdValidatorType>
+                name="invoice.discountType"
+                control={form.control}
+                type="select"
+                options={[
+                  { value: DiscountType["VALUE"], label: "Rs." },
+                  { value: DiscountType["PERCENTAGE"], label: "%" },
+                ]}
+                required
+              />
+              <FormField<ipdValidatorType>
+                name="invoice.discountValue"
+                control={form.control}
+                type="number"
+                required
+              />
+            </div>
+
+            <div className="text-right font-semibold">Total:</div>
+            <div className="text-right">{invoiceSummary.total.toFixed(2)}</div>
+
+            <div className="text-right font-semibold">Round off Amount:</div>
+            <div className="text-right">
+              {invoiceSummary.roundOffAmount.toFixed(2)}
+            </div>
+
+            <div className="text-right font-semibold">Final Total:</div>
+            <div className="text-right font-semibold">
+              {invoiceSummary.finalTotal.toFixed(2)}
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="col-span-2">
         <FormField
           control={form.control}
@@ -605,6 +765,17 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const addedTransactions = form.watch("invoice.transactions");
   const isPaid = form.watch("invoice.isPaid");
   const editingIndex = transactionForm.watch("index");
+
+  const invoiceTotal = Number(form.watch("invoice.total") || 0);
+
+  useEffect(() => {
+    if (isPaid !== "true") return;
+
+    const currentAmount = Number(transactionForm.getValues("amount") || 0);
+    if (currentAmount > 0) return;
+
+    transactionForm.setValue("amount", invoiceTotal);
+  }, [invoiceTotal, isPaid, transactionForm]);
 
   const columns: ColumnDefWithClass<transactionValidatorType>[] = [
     {
@@ -746,10 +917,53 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 
 const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [locationSearch, setLocationSearch] = useState("");
+  const isSettingDobFromAge = useRef(false);
+  const prevDob = useRef<Date | undefined>(undefined);
   const locationQuery = useInfiniteLocationsList(
     { name: locationSearch, status: Status["active"] },
     10,
   );
+
+  const dob = form.watch("patient.dob") as unknown;
+  const ageYears = form.watch("patient.ageYears" as any) as unknown;
+  const parsedAgeYears =
+    typeof ageYears === "number" && Number.isFinite(ageYears) ? ageYears : null;
+  const isAgeValid = parsedAgeYears !== null && parsedAgeYears >= 0;
+
+  useEffect(() => {
+    if (!isAgeValid || parsedAgeYears === null) return;
+
+    isSettingDobFromAge.current = true;
+    form.setValue(
+      "patient.dob",
+      startOfDay(subYears(new Date(), parsedAgeYears)) as any,
+    );
+    setTimeout(() => {
+      isSettingDobFromAge.current = false;
+    }, 0);
+  }, [form, isAgeValid, parsedAgeYears]);
+
+  useEffect(() => {
+    const currentDob = (() => {
+      if (!dob) return undefined;
+      if (dob instanceof Date) return dob;
+      const d = new Date(dob as any);
+      return Number.isNaN(d.getTime()) ? undefined : d;
+    })();
+    const previousDob = prevDob.current;
+
+    if (
+      parsedAgeYears !== null &&
+      currentDob &&
+      previousDob &&
+      currentDob.getTime() !== previousDob.getTime() &&
+      !isSettingDobFromAge.current
+    ) {
+      form.setValue("patient.ageYears" as any, undefined);
+    }
+
+    prevDob.current = currentDob;
+  }, [dob, form, parsedAgeYears]);
 
   return (
     <CustomLayout
@@ -785,6 +999,19 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           control={form.control}
           type="date"
           required
+          disabled={isAgeValid}
+        />
+        <FormField<any>
+          label="Age (years)"
+          name="patient.ageYears"
+          control={form.control as any}
+          type="number"
+          rules={{
+            min: {
+              value: 0,
+              message: "Age must be greater than or equal to 0",
+            },
+          }}
         />
         <FormField<ipdValidatorType>
           label="Gender"
@@ -947,6 +1174,7 @@ const IpdBillForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDayCare = searchParams.get("dayCare") === "true";
+  const { data: profile } = useProfile(false);
   const { mutateAsync, isPending } = useCreateIpd({
     navigateBackOnSuccess: false,
     onSuccess: (response) => {
@@ -1020,6 +1248,24 @@ const IpdBillForm = () => {
 
   if (params?.patientId && !patient) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+    ActionType.CREATE,
+  );
+
+  if (!canCreate) {
+    return (
+      <CustomLayout title={isDayCare ? "Day Care Billing" : "IPD Billing"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (
@@ -1164,9 +1410,7 @@ const IpdBillForm = () => {
             <DialogTitle className="text-sm text-black/70">
               IPD Created Successfully
             </DialogTitle>
-            <DialogDescription>
-              Print invoice before closing.
-            </DialogDescription>
+            <DialogDescription>Print invoice before closing.</DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end">
             <CustomButton

@@ -1,5 +1,6 @@
 import {
   getOrdersAPI,
+  uploadOutsourcedReportAPI,
   updateOrderAPI,
 } from "@/controllers/pathology/pathology";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
@@ -32,6 +33,21 @@ export async function PUT(request: Request) {
         },
       ],
       updateOrderAPI,
+    ),
+  );
+}
+
+export async function POST(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      [
+        {
+          module: ModuleType["PATHOLOGY_ORDER"],
+          action: ActionType["UPDATE"],
+        },
+      ],
+      uploadOutsourcedReportAPI,
     ),
   );
 }

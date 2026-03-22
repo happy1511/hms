@@ -1,13 +1,16 @@
 import {
   INVOICE,
   INVOICE_BILLING_ITEM,
+  INVOICE_LIST,
   INVOICE_TRANSACTION,
 } from "@/lib/apiDefinations";
 import {
   ApiResponse,
   FilterValues,
   InvoiceGroupedBySection,
+  InvoiceListRowType,
   InvoiceType,
+  PaginatedResponse,
 } from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
@@ -36,6 +39,17 @@ const getInvoiceDetails = createRequest<
   { id?: string }
 >(INVOICE, "GET");
 
+const getInvoiceList = createRequest<
+  PaginatedResponse<InvoiceListRowType>,
+  {
+    limit: number;
+    invoiceType?: "opd" | "ipd" | "daycare" | "discharged";
+    invoiceId?: number;
+    uhid?: string;
+    createdAt?: string | { from?: Date; to?: Date };
+  }
+>(INVOICE_LIST, "GET");
+
 export const useInvoiceDetails = (filters: FilterValues) => {
   return useQuery<
     ApiResponse<InvoiceGroupedBySection>,
@@ -54,6 +68,34 @@ export const useInvoiceDetails = (filters: FilterValues) => {
       }),
     select: (data) => data.data,
     enabled: !!filters.invoiceId,
+  });
+};
+
+export const useInvoiceList = (
+  filters: FilterValues & { invoiceType?: "opd" | "ipd" | "daycare" | "discharged" },
+  page: number,
+  limit: number,
+  enabled = true,
+) => {
+  return useQuery<
+    PaginatedResponse<InvoiceListRowType>,
+    AxiosError<ApiResponse<null>>,
+    PaginatedResponse<InvoiceListRowType>,
+    [string, FilterValues & { invoiceType?: string }, number, number]
+  >({
+    queryKey: ["invoice-list", filters, page, limit],
+    queryFn: () =>
+      getInvoiceList({
+        pageParam: page,
+        params: {
+          limit,
+          ...(filters.invoiceType ? { invoiceType: filters.invoiceType } : {}),
+          ...(filters.invoiceId ? { invoiceId: filters.invoiceId } : {}),
+          ...(filters.uhid ? { uhid: filters.uhid } : {}),
+          ...(filters.createdAt ? { createdAt: filters.createdAt } : {}),
+        },
+      }),
+    enabled,
   });
 };
 

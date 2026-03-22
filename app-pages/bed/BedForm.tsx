@@ -2,15 +2,18 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
 import { Room } from "@/generated/prisma/client";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { BedGetPayload } from "@/generated/prisma/models";
 import { useCreateBed, useGetBed, useUpdateBed } from "@/hooks/query/bed";
 import { useInfiniteRoomsList } from "@/hooks/query/room";
+import { useProfile } from "@/hooks/query/auth";
 import { PaginatedResponse } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
 import {
   bedValidator,
   BedValidatorType,
@@ -151,6 +154,7 @@ const UpdateForm = ({
 
 const BedForm = () => {
   const { bedId }: { bedId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingBed } = useGetBed(bedId);
 
@@ -168,6 +172,29 @@ const BedForm = () => {
 
   if (bedId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.BED_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.BED_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((bedId && !canUpdate) || (!bedId && !canCreate)) {
+    return (
+      <CustomLayout title={bedId ? "Edit Bed" : "Create Bed"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

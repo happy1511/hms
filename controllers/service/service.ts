@@ -18,6 +18,7 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const status = query.status ?? "";
+      const doctorId = query.doctorId;
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -31,6 +32,10 @@ export const getAPI = async (req: Request) => {
 
       if (status) {
         and.push({ status: { equals: status } });
+      }
+
+      if (doctorId) {
+        and.push({ consultingDoctorId: { equals: doctorId } });
       }
 
       if (createdAtFrom || createdAtTo) {
@@ -61,6 +66,7 @@ export const getAPI = async (req: Request) => {
             price: true,
             discountAvailable: true,
             maxDiscount: true,
+            consultingDoctorId: true,
             pathologyTests: {
               select: {
                 test: { select: { name: true } },

@@ -103,7 +103,13 @@ const stripHtmlToText = (value?: unknown) => {
   return normalized || "--";
 };
 
-const OpdConsultationExport = ({ data }: { data: ConsultationExportData }) => {
+const OpdConsultationExport = ({
+  data,
+  patientOnly = false,
+}: {
+  data: ConsultationExportData;
+  patientOnly?: boolean;
+}) => {
   const [fontSize, setFontSize] = useState<number>(10);
   const patientName = [data.patient?.firstName, data.patient?.lastName]
     .filter(Boolean)
@@ -175,102 +181,108 @@ const OpdConsultationExport = ({ data }: { data: ConsultationExportData }) => {
             <InfoRow label1="Address" value1={valueOrDash(address)} />
           </header>
 
-          <Section title="Vitals">
-            <div className="grid grid-cols-4">
-              <KV label="Height" value={data.vitals?.height} />
-              <KV label="Weight" value={data.vitals?.weight} />
-              <KV
-                label="BP"
-                value={`${valueOrDash(data.vitals?.bpMm)}/${valueOrDash(data.vitals?.bpHg)}`}
-              />
-              <KV label="Pulse" value={data.vitals?.pulse} />
-              <KV label="RBS" value={data.vitals?.rbs} />
-              <KV label="RR" value={data.vitals?.rr} />
-              <KV label="SpO2" value={data.vitals?.spo2} />
-              <KV label="Temp" value={data.vitals?.temp} />
-            </div>
-          </Section>
+          {!patientOnly && (
+            <>
+              <Section title="Vitals">
+                <div className="grid grid-cols-4">
+                  <KV label="Height" value={data.vitals?.height} />
+                  <KV label="Weight" value={data.vitals?.weight} />
+                  <KV
+                    label="BP"
+                    value={`${valueOrDash(data.vitals?.bpMm)}/${valueOrDash(data.vitals?.bpHg)}`}
+                  />
+                  <KV label="Pulse" value={data.vitals?.pulse} />
+                  <KV label="RBS" value={data.vitals?.rbs} />
+                  <KV label="RR" value={data.vitals?.rr} />
+                  <KV label="SpO2" value={data.vitals?.spo2} />
+                  <KV label="Temp" value={data.vitals?.temp} />
+                </div>
+              </Section>
 
-          <Section title="Clinical Notes">
-            <BodyRow label="Notes" value={data.notes} />
-            <BodyRow
-              label="General Examination"
-              value={data.generalExaminations}
-            />
-            <BodyRow
-              label="Systemic Examination"
-              value={data.systemicExaminations}
-            />
-            <BodyRow label="Diagnosis" value={data.diagnosis} />
-            <BodyRow label="Chronic Illness" value={data.chronicIllness} />
-          </Section>
+              <Section title="Clinical Notes">
+                <BodyRow label="Notes" value={data.notes} />
+                <BodyRow
+                  label="General Examination"
+                  value={data.generalExaminations}
+                />
+                <BodyRow
+                  label="Systemic Examination"
+                  value={data.systemicExaminations}
+                />
+                <BodyRow label="Diagnosis" value={data.diagnosis} />
+                <BodyRow label="Chronic Illness" value={data.chronicIllness} />
+              </Section>
 
-          <Section title="Advised Tests">
-            <BodyRow
-              label="Pathology"
-              value={listToText(data.advisedPathologyTests)}
-            />
-            <BodyRow
-              label="Radiology"
-              value={listToText(data.advisedRadiologyTests)}
-            />
-          </Section>
+              <Section title="Advised Tests">
+                <BodyRow
+                  label="Pathology"
+                  value={listToText(data.advisedPathologyTests)}
+                />
+                <BodyRow
+                  label="Radiology"
+                  value={listToText(data.advisedRadiologyTests)}
+                />
+              </Section>
 
-          <Section title="Prescription">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#f2f2f2]">
-                  <Cell as="th" className="w-[38%] text-left">
-                    Drug
-                  </Cell>
-                  <Cell as="th" className="w-[16%] text-center">
-                    Frequency
-                  </Cell>
-                  <Cell as="th" className="w-[16%] text-center">
-                    Days
-                  </Cell>
-                  <Cell as="th" className="w-[30%] text-left">
-                    Remarks
-                  </Cell>
-                </tr>
-              </thead>
-              <tbody>
-                {drugs.map((drug, index) => (
-                  <tr key={`drug-${index}`}>
-                    <Cell className="text-left">{valueOrDash(drug.name)}</Cell>
-                    <Cell className="text-center">
-                      {valueOrDash(drug.frequency)}
-                    </Cell>
-                    <Cell className="text-center">
-                      {valueOrDash(drug.days)}
-                    </Cell>
-                    <Cell className="text-left">
-                      {valueOrDash(drug.remarks)}
-                    </Cell>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Section>
+              <Section title="Prescription">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-[#f2f2f2]">
+                      <Cell as="th" className="w-[38%] text-left">
+                        Drug
+                      </Cell>
+                      <Cell as="th" className="w-[16%] text-center">
+                        Frequency
+                      </Cell>
+                      <Cell as="th" className="w-[16%] text-center">
+                        Days
+                      </Cell>
+                      <Cell as="th" className="w-[30%] text-left">
+                        Remarks
+                      </Cell>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drugs.map((drug, index) => (
+                      <tr key={`drug-${index}`}>
+                        <Cell className="text-left">
+                          {valueOrDash(drug.name)}
+                        </Cell>
+                        <Cell className="text-center">
+                          {valueOrDash(drug.frequency)}
+                        </Cell>
+                        <Cell className="text-center">
+                          {valueOrDash(drug.days)}
+                        </Cell>
+                        <Cell className="text-left">
+                          {valueOrDash(drug.remarks)}
+                        </Cell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Section>
 
-          <Section title="Follow Up">
-            <BodyRow
-              label="After Days"
-              value={valueOrDash(data.prescription?.followUpAfterDays)}
-            />
-            <BodyRow
-              label="Follow Up Date"
-              value={formatDateOrDash(data.prescription?.followUpDate)}
-            />
-            <BodyRow
-              label="Follow Up Advice"
-              value={stripHtmlToText(data.prescription?.followUpAdvice)}
-            />
-            <BodyRow
-              label="Other Advice"
-              value={stripHtmlToText(data.prescription?.otherAdvice)}
-            />
-          </Section>
+              <Section title="Follow Up">
+                <BodyRow
+                  label="After Days"
+                  value={valueOrDash(data.prescription?.followUpAfterDays)}
+                />
+                <BodyRow
+                  label="Follow Up Date"
+                  value={formatDateOrDash(data.prescription?.followUpDate)}
+                />
+                <BodyRow
+                  label="Follow Up Advice"
+                  value={stripHtmlToText(data.prescription?.followUpAdvice)}
+                />
+                <BodyRow
+                  label="Other Advice"
+                  value={stripHtmlToText(data.prescription?.otherAdvice)}
+                />
+              </Section>
+            </>
+          )}
         </div>
       </div>
     </>

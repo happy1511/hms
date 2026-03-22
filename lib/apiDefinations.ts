@@ -156,9 +156,11 @@ export const IPD_MLC = "/ipd/mlc";
 // ----------------------------------
 export const INVOICE_TRANSACTION = "/invoice/transaction";
 export const INVOICE = "/invoice";
+export const INVOICE_LIST = "/invoice/list";
 export const INVOICE_BILLING_ITEM = "/invoice/billing-item";
 export const INCOME = "/income";
 export const EXPENSE = "/expense";
+export const CASH_FLOW_SUMMARY = "/finance/cash-flow";
 
 // ----------------------------------
 // ---------SETTINGS ENDPOINTS--------

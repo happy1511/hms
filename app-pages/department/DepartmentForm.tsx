@@ -2,15 +2,18 @@
 
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
+import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
 import { Department } from "@/generated/prisma/client";
-import { Status } from "@/generated/prisma/enums";
+import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useCreateDepartment,
   useGetDepartment,
   useUpdateDepartment,
 } from "@/hooks/query/department";
+import { hasActionPermission } from "@/lib/utils";
 import {
   departmentValidator,
   departmentValidatorType,
@@ -81,6 +84,7 @@ const UpdateCreateForm = ({ data }: { data?: Department }) => {
 
 const DepartmentForm = () => {
   const { departmentId }: { departmentId?: string } = useParams();
+  const { data: profile } = useProfile(false);
 
   const { data, isLoading: fetchingFloor } = useGetDepartment(departmentId);
 
@@ -98,6 +102,29 @@ const DepartmentForm = () => {
 
   if (departmentId && !data) {
     return <div />;
+  }
+
+  if (!profile) {
+    return <div />;
+  }
+
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.DEPARTMENT_MASTER,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.DEPARTMENT_MASTER,
+    ActionType.UPDATE,
+  );
+
+  if ((departmentId && !canUpdate) || (!departmentId && !canCreate)) {
+    return (
+      <CustomLayout title={departmentId ? "Edit Department" : "Create Department"}>
+        <NoPermission />
+      </CustomLayout>
+    );
   }
 
   return (

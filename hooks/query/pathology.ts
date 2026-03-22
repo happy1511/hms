@@ -68,6 +68,23 @@ const updatePathologyOrder = createRequest<
   undefined,
   { id: number }
 >(PATHOLOGY_ORDERS, "PUT");
+
+type UploadedDocumentStore = {
+  id: number;
+  path: string;
+  originalName: string;
+  mimeType: string | null;
+  size: number;
+  createdAt: string;
+  type: string;
+};
+
+const uploadOutsourcedPathologyReport = createRequest<
+  ApiResponse<UploadedDocumentStore>,
+  undefined,
+  undefined,
+  { orderId: number; file: File }
+>(PATHOLOGY_ORDERS, "POST", true);
 const cancelPathologyOrder = createRequest<
   ApiResponse<PathologyOrderValidatorType>
 >(CANCEL_PATHOLOGY_ORDERS, "PUT");
@@ -876,6 +893,25 @@ export const useDeleteOption = (testId: number, parameterId: number) => {
           };
         },
       );
+    },
+    onError: showError,
+  });
+};
+
+export const useUploadOutsourcedPathologyReport = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<UploadedDocumentStore>,
+    AxiosError<ApiResponse<null>>,
+    { orderId: number; file: File }
+  >({
+    mutationKey: ["upload-outsourced-pathology-report"],
+    mutationFn: (data) => uploadOutsourcedPathologyReport({ body: data }),
+    onSuccess: () => {
+      toast.success("Report uploaded successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["pathology-orders"],
+      });
     },
     onError: showError,
   });

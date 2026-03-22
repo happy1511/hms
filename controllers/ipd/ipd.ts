@@ -645,7 +645,12 @@ export const createAPI = async (req: Request, user: User) => {
             );
 
             if (homeAddress) {
-              const { location, ...rest } = homeAddress;
+              const locationId = homeAddress.location?.id;
+              const addressLineOne = homeAddress.addressLineOne?.trim();
+
+              if (!locationId || !addressLineOne) {
+                // Address is optional in billing forms
+              } else {
               await tx.patientAddress.upsert({
                 where: {
                   type_patientId: {
@@ -654,15 +659,22 @@ export const createAPI = async (req: Request, user: User) => {
                   },
                 },
                 create: {
-                  ...rest,
-                  locationId: location.id,
+                  type: homeAddress.type,
+                  addressLineOne,
+                  addressLineTwo: homeAddress.addressLineTwo ?? null,
+                  addressLineThree: homeAddress.addressLineThree ?? null,
+                  locationId,
                   patientId: existingPatient.id,
                 },
                 update: {
-                  ...rest,
-                  locationId: location.id,
+                  type: homeAddress.type,
+                  addressLineOne,
+                  addressLineTwo: homeAddress.addressLineTwo ?? null,
+                  addressLineThree: homeAddress.addressLineThree ?? null,
+                  locationId,
                 },
               });
+              }
             }
 
             const contactsToUpsert = (patient?.contacts ?? [])
@@ -761,13 +773,18 @@ export const createAPI = async (req: Request, user: User) => {
                   })),
               },
               addresses: {
-                create: addresses.map((l) => ({
-                  addressLineOne: l.addressLineOne,
-                  addressLineThree: l.addressLineThree,
-                  addressLineTwo: l.addressLineTwo,
-                  locationId: l.location.id,
-                  type: l.type,
-                })),
+                create: addresses
+                  .filter(
+                    (l) =>
+                      Boolean(l.addressLineOne?.trim()) && Boolean(l.location?.id),
+                  )
+                  .map((l) => ({
+                    addressLineOne: String(l.addressLineOne).trim(),
+                    addressLineThree: l.addressLineThree ?? null,
+                    addressLineTwo: l.addressLineTwo ?? null,
+                    locationId: l.location!.id,
+                    type: l.type,
+                  })),
               },
               relations: {
                 create: relations
