@@ -256,7 +256,7 @@ const OPDs = () => {
       header: ({ column }) => {
         return <SortableHeader<OPDType> label="OPD" column={column} />;
       },
-      cell: ({ row }) => <span>{row.index + 1}</span>,
+      cell: ({ row }) => <span>{row.original.id}</span>,
       headerClassName: "min-w-15 max-w-20",
       cellClassName: "min-w-15 max-w-20",
     },
