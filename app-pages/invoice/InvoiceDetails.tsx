@@ -690,25 +690,25 @@ const InvoiceBillingTable = ({
               </th>
               <th></th>
               <th className="w-62.5">
-                <div className="px-2 py-1">Service</div>
+                <div className="px-2 py-1 min-w-40">Service</div>
               </th>
               <th className="w-28">
                 <div className="px-2 py-1">Date</div>
               </th>
               <th>
-                <div className="px-2 py-1">Qty</div>
+                <div className="px-2 py-1 min-w-20">Qty</div>
               </th>
               <th>
-                <div className="px-2 py-1">Rate</div>
+                <div className="px-2 py-1 min-w-20">Rate</div>
               </th>
               <th>
-                <div className="px-2 py-1">Disc Type</div>
+                <div className="px-2 py-1 min-w-20">Disc Type</div>
               </th>
               <th>
-                <div className="px-2 py-1">Discount</div>
+                <div className="px-2 py-1 min-w-20">Discount</div>
               </th>
               <th>
-                <div className="px-2 py-1">Total</div>
+                <div className="px-2 py-1 min-w-20">Total</div>
               </th>
             </tr>
           </thead>
