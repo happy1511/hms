@@ -1241,16 +1241,20 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
     name: true;
     invoiceBillingItems: {
       select: {
+        isLocked: true;
         quantity: true;
         total: true;
         discountType: true;
         discountValue: true;
         rate: true;
+        ipdBedAllocationId: true;
         service: {
           select: {
             id: true;
             name: true;
             maxDiscount: true;
+            consultingDoctorId: true;
+            roomId: true;
           };
         };
       };

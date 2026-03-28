@@ -45,13 +45,13 @@ const TransactionReceiptExport = ({
   return (
     <div
       className={cn(
-        "w-full bg-white text-black",
+        "w-full bg-white text-black overflow-auto",
         "print:bg-white print:text-black",
         className,
       )}
       style={{ fontSize }}
     >
-      <div className="mx-auto max-w-3xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+      <div className="mx-auto min-w-200 max-w-3xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
         <CompanyPrintHeader />
         <header>
           <div className="flex items-center border-t border-x justify-center border-b border-black bg-[#dedede] px-3 py-2">

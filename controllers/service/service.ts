@@ -8,6 +8,7 @@ import {
   partialServiceValidator,
   serviceValidator,
 } from "@/validators/api/masters/service";
+import { isProtectedService } from "@/lib/systemBillingConstants";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -67,6 +68,7 @@ export const getAPI = async (req: Request) => {
             discountAvailable: true,
             maxDiscount: true,
             consultingDoctorId: true,
+            roomId: true,
             pathologyTests: {
               select: {
                 test: { select: { name: true } },
@@ -111,6 +113,8 @@ export const getDetailsAPI = async (
           description: true,
           status: true,
           price: true,
+          roomId: true,
+          consultingDoctorId: true,
           discountAvailable: true,
           maxDiscount: true,
           pathologyTests: {
@@ -283,6 +287,13 @@ export const updateAPI = async (
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Service not found",
+          });
+        }
+
+        if (isProtectedService(existingService)) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Protected services cannot be deleted",
           });
         }
 

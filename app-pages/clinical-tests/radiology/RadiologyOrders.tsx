@@ -364,6 +364,7 @@ const RadiologyOrders = ({
       <CustomFilters<FilterValues>
         filters={neededFilters}
         onSubmit={setFilters}
+        filtersContainerClassName="grid-cols-1 md:grid-cols-2"
       />
       <div className="flex gap-4 items-center text-xs font-medium mb-2">
         <div className="flex items-center gap-1">

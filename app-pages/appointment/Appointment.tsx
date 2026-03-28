@@ -173,10 +173,7 @@ const Appointments = () => {
         );
       },
       cell: ({ row }) => (
-        <Link
-          href="#"
-          className="hover:underline"
-        >
+        <Link href="#" className="hover:underline">
           {row.original.patient?.firstName +
             " " +
             row.original.patient?.lastName || "-"}
@@ -278,6 +275,7 @@ const Appointments = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

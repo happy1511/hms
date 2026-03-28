@@ -20,47 +20,7 @@ import {
   User,
 } from "@/generated/prisma/client";
 import { buildUserName, trimOptionalString } from "@/lib/user";
-
-const upsertConsultingService = async (
-  tx: Prisma.TransactionClient,
-  {
-    doctorId,
-    doctorName,
-    consultationCharges,
-    actingUserId,
-  }: {
-    doctorId: number;
-    doctorName: string;
-    consultationCharges: number;
-    actingUserId: number;
-  },
-) => {
-  return tx.service.upsert({
-    where: { consultingDoctorId: doctorId },
-    create: {
-      consultingDoctorId: doctorId,
-      name: doctorName,
-      description: `Consultation charges for ${doctorName}`,
-      type: ServiceType["OTHER"],
-      applicableOn: ServiceApplicableOn["CONSULTATION"],
-      price: consultationCharges,
-      discountAvailable: false,
-      maxDiscount: 0,
-      status: Status["active"],
-      createdBy: actingUserId,
-      updatedBy: actingUserId,
-    },
-    update: {
-      isDeleted: false,
-      name: doctorName,
-      description: `Consultation charges for ${doctorName}`,
-      type: ServiceType["OTHER"],
-      applicableOn: ServiceApplicableOn["CONSULTATION"],
-      price: consultationCharges,
-      updatedBy: actingUserId,
-    },
-  });
-};
+import { upsertConsultingDoctorService } from "@/lib/systemBilling";
 
 const softDeleteConsultingService = async (
   tx: Prisma.TransactionClient,
@@ -429,7 +389,7 @@ export const createAPI = async (req: Request, actingUser: User) => {
         });
 
         if (rest.doctorType === DoctorType["consulting"]) {
-          await upsertConsultingService(tx, {
+          await upsertConsultingDoctorService(tx, {
             doctorId: user.id,
             doctorName: name,
             consultationCharges: Number(rest.consultationCharges ?? 0),
@@ -684,7 +644,7 @@ export const updateAPI = async (
 
       if (effectiveDoctorType === DoctorType["consulting"]) {
         await prisma.$transaction((tx) =>
-          upsertConsultingService(tx, {
+          upsertConsultingDoctorService(tx, {
             doctorId: existingUser.id,
             doctorName: (nextName ?? existingUser.name ?? "").trim(),
             consultationCharges: Number(effectiveCharges),

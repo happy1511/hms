@@ -146,9 +146,9 @@ const OpdConsultationExport = ({
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
       <div
         style={{ fontSize }}
-        className="w-full bg-white text-black print:bg-white"
+        className="w-full bg-white text-black print:bg-white overflow-auto"
       >
-        <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+        <div className="mx-auto min-w-200 max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
           <CompanyPrintHeader />
           <header className="border border-black">
             <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">

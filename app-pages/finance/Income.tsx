@@ -471,6 +471,7 @@ const Income = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

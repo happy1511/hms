@@ -47,7 +47,7 @@ const PaymentModeStats = ({
       Transactions by Mode
     </h3>
 
-    <div className="grid grid-cols-3 gap-3 text-tiny">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-tiny">
       {data.map((item) => (
         <div
           key={item.mode}
@@ -71,7 +71,7 @@ const SectionBillingStats = ({
       Billing by Section
     </h3>
 
-    <div className="grid grid-cols-3 gap-3 text-tiny">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-tiny">
       {data.map((section) => (
         <div
           key={section.id}
@@ -140,14 +140,14 @@ const Dashboard = () => {
 
   return (
     <CustomLayout
-      contentClassName="grid grid-cols-[15%_85%] h-full space-x-3"
+      contentClassName="grid grid-cols-1 md:grid-cols-[15%_85%] h-full max-md:space-y-3 md:space-x-3"
       title="Dashboard"
     >
-      <div className="grid grid-cols-1 gap-2 content-start">
+      <div className="grid grid-cols-4 md:grid-cols-1 gap-2 content-start">
         {canCreateOpd && (
           <Link
             href="/patient/search?opdCreate=true"
-            className="bg-secondary px-2 py-1.5 flex items-center gap-2 text-white border text-xs font-medium"
+            className="bg-secondary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
           >
             <NotebookPen className="size-3" />
             <span>New OPD</span>
@@ -156,7 +156,7 @@ const Dashboard = () => {
         {canCreateIpd && (
           <Link
             href="/patient/search?ipdCreate=true"
-            className="bg-yellow-400 px-2 py-1.5 flex items-center gap-2 text-white border text-xs font-medium"
+            className="bg-yellow-400 px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
           >
             <Bed className="size-3" />
             <span>New IPD</span>
@@ -165,7 +165,7 @@ const Dashboard = () => {
         {canCreateDayCare && (
           <Link
             href="/patient/search?ipdCreate=true&dayCare=true"
-            className="bg-secondary px-2 py-1.5 flex items-center gap-2 text-white border text-xs font-medium"
+            className="bg-secondary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
           >
             <Bed className="size-3" />
             <span>New Day Care</span>
@@ -174,7 +174,7 @@ const Dashboard = () => {
         {canViewQueue && (
           <Link
             href="/opd/walk-in"
-            className="bg-primary px-2 py-1.5 flex items-center gap-2 text-white border text-xs font-medium"
+            className="bg-primary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
           >
             <UserPlus className="size-3" />
             <span>Walk-In Queue</span>
@@ -186,7 +186,7 @@ const Dashboard = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             defaultValues={filters}
-            filtersContainerClassName="grid-cols-1"
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
             onSubmit={setFilters}
           />
         </div>

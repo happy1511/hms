@@ -107,8 +107,8 @@ const PrintInvoice = ({
   return (
     <>
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
-      <div style={{ fontSize }} className="bg-white text-black">
-        {renderLayout()}
+      <div style={{ fontSize }} className="bg-white text-black overflow-auto ">
+        <div className="min-w-200 ">{renderLayout()}</div>
       </div>
     </>
   );

@@ -742,7 +742,7 @@ const IPDs = ({
             filters={neededFilters}
             defaultValues={filters}
             onSubmit={setFilters}
-            filtersContainerClassName="grid-cols-2"
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

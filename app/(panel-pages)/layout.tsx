@@ -8,16 +8,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main>
-      <CustomHeader />
-      <div className="relative h-[calc(100dvh-48px)]">
-        <SidebarProvider className="h-[calc(100dvh-48px)] flex min-h-auto">
+    <SidebarProvider className="flex min-h-screen flex-col">
+      <main>
+        <CustomHeader />
+        <div className="relative h-[calc(100dvh-48px)] flex justify-end">
           <CustomSidebar />
-          <div className="h-[calc(100dvh-48px)] overflow-auto grow p-3 bg-linear-to-b from-background to-white">
+          <div className="w-[calc(100dvw-var(--sidebar-width))] h-[calc(100dvh-48px)] overflow-auto grow p-3 bg-linear-to-b from-background to-white">
             {children}
           </div>
-        </SidebarProvider>
-      </div>
-    </main>
+        </div>
+      </main>
+    </SidebarProvider>
   );
 }

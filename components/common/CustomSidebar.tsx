@@ -406,7 +406,7 @@ export function CustomSidebar() {
           <Link href="/">
             <div
               className={cn(
-                "flex items-center gap-3 px-4 py-1.5 h-auto font-semibold data-[active=true]:text-white hover:text-white transition-colors",
+                "flex text-tiny! items-center gap-3 px-4 py-1.5 h-auto font-semibold data-[active=true]:text-white hover:text-white transition-colors",
                 isActive("/")
                   ? "bg-primary text-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent",
@@ -537,125 +537,125 @@ export function CustomSidebar() {
         {/* Pharmacy Section */}
         {showPharmacySection && (
           <Collapsible open={pharmacyOpen} onOpenChange={setPharmacyOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <BedDouble className="size-3" />
-                  <span>PHARMACY</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    pharmacyOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visiblePharmacy.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <BedDouble className="size-3" />
+                    <span>PHARMACY</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      pharmacyOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visiblePharmacy.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
         {/* Finance Section */}
         {showFinanceSection && (
           <Collapsible open={financeOpen} onOpenChange={setFinanceOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="size-3" />
-                  <span>FINANCE</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    financeOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleFinance.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="size-3" />
+                    <span>FINANCE</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      financeOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleFinance.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
         {showLabMasterSection && (
           <Collapsible open={labMasterOpen} onOpenChange={setLabMasterOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>LAB MASTER</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    labMasterOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleLabMasters.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>LAB MASTER</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      labMasterOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleLabMasters.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
@@ -664,42 +664,42 @@ export function CustomSidebar() {
             open={pathologyOrderOpen}
             onOpenChange={setPathologyOrderOpen}
           >
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>PATHOLOGY ORDER</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    pathologyOrderOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visiblePathologyOrders.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>PATHOLOGY ORDER</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      pathologyOrderOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visiblePathologyOrders.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
@@ -708,42 +708,42 @@ export function CustomSidebar() {
             open={radiologyOrderOpen}
             onOpenChange={setRadiologyOrderOpen}
           >
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>RADIOLOGY ORDER</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    radiologyOrderOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleRadiologyOrders.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>RADIOLOGY ORDER</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      radiologyOrderOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleRadiologyOrders.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
@@ -753,42 +753,42 @@ export function CustomSidebar() {
             open={billingMasterOpen}
             onOpenChange={setBillingMasterOpen}
           >
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>BILLING</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    billingMasterOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleBillingMasters.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>BILLING</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      billingMasterOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleBillingMasters.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
@@ -798,84 +798,84 @@ export function CustomSidebar() {
             open={pharmacyMasterOpen}
             onOpenChange={setPharmacyMasterOpen}
           >
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>PHARMACY MASTERS</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    pharmacyMasterOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visiblePharmacyMaster.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>PHARMACY MASTERS</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      pharmacyMasterOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visiblePharmacyMaster.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
 
         {/* Master Section */}
         {showMastersSection && (
           <Collapsible open={masterOpen} onOpenChange={setMasterOpen}>
-          <SidebarGroup className="p-0">
-            <CollapsibleTrigger className="w-full bg-transparent">
-              <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
-                <div className="flex items-center gap-3">
-                  <Bolt className="size-3" />
-                  <span>MASTERS</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "size-3 transition-transform duration-200",
-                    masterOpen ? "rotate-180" : "",
-                  )}
-                />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-background">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0">
-                  {visibleMasters.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
-                      >
-                        <Link href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
+            <SidebarGroup className="p-0">
+              <CollapsibleTrigger className="w-full bg-transparent">
+                <SidebarGroupLabel className="flex items-center justify-between px-4 py-1.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent cursor-pointer font-semibold data-[active=true]:text-white hover:text-white text-tiny!">
+                  <div className="flex items-center gap-3">
+                    <Bolt className="size-3" />
+                    <span>MASTERS</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      masterOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="bg-background">
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0">
+                    {visibleMasters.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.url)}
+                          className="pl-8 py-1.5 h-auto text-tiny!   [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-black hover:text0white"
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
           </Collapsible>
         )}
       </SidebarContent>

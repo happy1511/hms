@@ -556,6 +556,7 @@ const FinanceBilling = () => {
                     setTabFilters((prev) => ({ ...prev, opd: values }));
                     setPage(1);
                   }}
+                  filtersContainerClassName="grid-cols-1 md:grid-cols-2"
                 />
                 {renderTable(opdQuery)}
               </div>
@@ -572,6 +573,7 @@ const FinanceBilling = () => {
                     setTabFilters((prev) => ({ ...prev, daycare: values }));
                     setPage(1);
                   }}
+                  filtersContainerClassName="grid-cols-1 md:grid-cols-2"
                 />
                 {renderTable(dayCareQuery)}
               </div>
@@ -588,6 +590,7 @@ const FinanceBilling = () => {
                     setTabFilters((prev) => ({ ...prev, ipd: values }));
                     setPage(1);
                   }}
+                  filtersContainerClassName="grid-cols-1 md:grid-cols-2"
                 />
                 {renderTable(ipdQuery)}
               </div>
@@ -604,6 +607,7 @@ const FinanceBilling = () => {
                     setTabFilters((prev) => ({ ...prev, discharged: values }));
                     setPage(1);
                   }}
+                  filtersContainerClassName="grid-cols-1 md:grid-cols-2"
                 />
                 {renderTable(dischargedQuery)}
               </div>

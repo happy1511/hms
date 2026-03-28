@@ -9,6 +9,7 @@ import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
+import { syncIpdLockedBillingItems } from "@/lib/ipdBilling";
 import {
   addInvoiceBillItemValidator,
   addInvoiceTransactionValidator,
@@ -214,61 +215,129 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
     onSuccess: async ({ query }) => {
       const { id } = query;
 
-      const existingInvoice = await prisma.invoice.findFirst({
-        where: { id, isDeleted: false },
-        include: {
-          billingSections: {
-            include: {
-              billingSection: true,
-              items: {
-                include: {
-                  service: true,
-                },
-              },
-            },
-          },
-          transactions: { include: { receivedBy: { select: { name: true } } } },
-          opd: {
-            include: {
-              consultantDoctor: {
-                select: { user: { select: { name: true } } },
-              },
-              referringDoctor: {
-                select: { user: { select: { name: true } } },
-              },
-              patient: {
-                include: {
-                  addresses: {
-                    where: { type: AddressType["HOME"] },
-                    include: { location: true },
+      const existingInvoice = await prisma.$transaction(async (tx) => {
+        const invoice = await tx.invoice.findFirst({
+          where: { id, isDeleted: false },
+          include: {
+            billingSections: {
+              include: {
+                billingSection: true,
+                items: {
+                  include: {
+                    service: true,
                   },
-                  contacts: { where: { type: ContactType["PHONE"] } },
-                  relations: true,
                 },
               },
             },
-          },
-          ipd: {
-            include: {
-              consultantDoctor: {
-                select: { user: { select: { name: true } } },
-              },
-              referringDoctor: {
-                select: { user: { select: { name: true } } },
-              },
-              patient: {
-                include: {
-                  addresses: {
-                    where: { type: AddressType["HOME"] },
-                    include: { location: true },
+            transactions: { include: { receivedBy: { select: { name: true } } } },
+            opd: {
+              include: {
+                consultantDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                patient: {
+                  include: {
+                    addresses: {
+                      where: { type: AddressType["HOME"] },
+                      include: { location: true },
+                    },
+                    contacts: { where: { type: ContactType["PHONE"] } },
+                    relations: true,
                   },
-                  contacts: { where: { type: ContactType["PHONE"] } },
-                  relations: true,
+                },
+              },
+            },
+            ipd: {
+              include: {
+                consultantDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                patient: {
+                  include: {
+                    addresses: {
+                      where: { type: AddressType["HOME"] },
+                      include: { location: true },
+                    },
+                    contacts: { where: { type: ContactType["PHONE"] } },
+                    relations: true,
+                  },
                 },
               },
             },
           },
-        },
+        });
+
+        if (invoice?.ipd?.id) {
+          await syncIpdLockedBillingItems(tx, {
+            ipdId: invoice.ipd.id,
+            actingUserId: invoice.updatedBy ?? invoice.createdBy ?? 1,
+          });
+
+          return tx.invoice.findFirst({
+            where: { id, isDeleted: false },
+            include: {
+              billingSections: {
+                include: {
+                  billingSection: true,
+                  items: {
+                    include: {
+                      service: true,
+                    },
+                  },
+                },
+              },
+              transactions: { include: { receivedBy: { select: { name: true } } } },
+              opd: {
+                include: {
+                  consultantDoctor: {
+                    select: { user: { select: { name: true } } },
+                  },
+                  referringDoctor: {
+                    select: { user: { select: { name: true } } },
+                  },
+                  patient: {
+                    include: {
+                      addresses: {
+                        where: { type: AddressType["HOME"] },
+                        include: { location: true },
+                      },
+                      contacts: { where: { type: ContactType["PHONE"] } },
+                      relations: true,
+                    },
+                  },
+                },
+              },
+              ipd: {
+                include: {
+                  consultantDoctor: {
+                    select: { user: { select: { name: true } } },
+                  },
+                  referringDoctor: {
+                    select: { user: { select: { name: true } } },
+                  },
+                  patient: {
+                    include: {
+                      addresses: {
+                        where: { type: AddressType["HOME"] },
+                        include: { location: true },
+                      },
+                      contacts: { where: { type: ContactType["PHONE"] } },
+                      relations: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        return invoice;
       });
 
       if (!existingInvoice) {
@@ -506,6 +575,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             section.items.map((item) => ({
               ...item,
               invoiceBillingSectionId: section.id,
+              isLocked: item.isLocked,
               updateReason: (item as { updateReason?: string | null })
                 .updateReason,
             })),
@@ -591,6 +661,12 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             const previousItem = existingItemsById.get(item.itemId);
             const itemChanged =
               previousItem && hasBillingItemChanged(previousItem, item);
+            if (previousItem?.isLocked && itemChanged) {
+              return apiResponse({
+                status: RESPONSE_STATUS.BAD_REQUEST,
+                message: "Locked invoice rows cannot be edited",
+              });
+            }
             const updateReason =
               (typeof item.updateReason === "string"
                 ? item.updateReason.trim()

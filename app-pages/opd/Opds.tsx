@@ -472,7 +472,7 @@ const OPDs = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             defaultValues={filters}
-            filtersContainerClassName="grid-cols-2"
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
             onSubmit={setFilters}
           />
           <CustomTable

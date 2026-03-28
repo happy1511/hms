@@ -210,7 +210,7 @@ const AddInvoiceItemModal = ({
                     required
                   />
                 </div>
-                <div className="col-span-2 grid grid-cols-5 space-x-2">
+                <div className="col-span-2 grid grid-cols-2 md:grid-cols-5 space-x-2">
                   <FormField
                     control={billingItemForm.control}
                     label="Qty"

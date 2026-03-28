@@ -18,6 +18,7 @@ import {
 } from "@/hooks/query/bllingSection";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
+import { isProtectedBillingSection } from "@/lib/systemBillingConstants";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -95,7 +96,7 @@ const Actions = ({
           <Edit2 className="size-2.5" />
         </Link>
       )}
-      {canDelete && (
+      {canDelete && !isProtectedBillingSection(data) && (
         <CustomAlert
           triggerButton={
             <Button

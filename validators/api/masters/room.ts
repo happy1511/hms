@@ -4,6 +4,7 @@ import { z } from "zod";
 const roomBaseValidator = z.object({
   name: z.string().min(1, "ward Name is required"),
   description: z.string().optional().nullable(),
+  price: z.coerce.number().min(0, "Room price must be greater than or equal to 0"),
   roomType: z
     .object({
       id: z.coerce.number(),

@@ -8,6 +8,7 @@ import {
   partialRoomValidator,
   roomValidator,
 } from "@/validators/api/masters/room";
+import { upsertRoomChargeService } from "@/lib/systemBilling";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -60,6 +61,7 @@ export const getAPI = async (req: Request) => {
             roomType: true,
             description: true,
             name: true,
+            price: true,
             status: true,
             createdAt: true,
             updatedAt: true,
@@ -96,6 +98,7 @@ export const getDetailsAPI = async (
           roomType: true,
           description: true,
           name: true,
+          price: true,
           status: true,
         },
       });
@@ -123,7 +126,7 @@ export const createAPI = async (req: Request, user: User) => {
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const { name, roomType, status, description } = data;
+        const { name, roomType, status, description, price } = data;
         const existingWard = await tx.room.findFirst({
           where: { name: data.name, isDeleted: false },
         });
@@ -155,11 +158,19 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             name,
             description,
+            price,
             status,
             roomTypeId: existingRoomType.id,
             createdBy: user.id ,
             updatedBy: user.id ,
           },
+        });
+
+        await upsertRoomChargeService(tx, {
+          roomId: ward.id,
+          roomName: ward.name,
+          roomPrice: Number(ward.price ?? 0),
+          actingUserId: user.id,
         });
 
         return apiResponse({
@@ -185,7 +196,7 @@ export const updateAPI = async (
       const data = body;
 
       return prisma.$transaction(async (tx) => {
-        const { description, name, roomType, status } = data;
+        const { description, name, roomType, status, price } = data;
         const existingRoom = await tx.room.findFirst({
           where: { id: data.roomId, isDeleted: false },
           include: { roomType: true },
@@ -236,10 +247,18 @@ export const updateAPI = async (
           data: {
             name,
             description,
+            price,
             status,
             roomTypeId: roomType?.id,
             updatedBy: user.id ,
           },
+        });
+
+        await upsertRoomChargeService(tx, {
+          roomId: updatedWard.id,
+          roomName: updatedWard.name,
+          roomPrice: Number(updatedWard.price ?? 0),
+          actingUserId: user.id,
         });
 
         return apiResponse({
@@ -281,6 +300,15 @@ export const deleteAPI = async (
             isDeleted: true,
             deletedBy: user.id ,
             updatedBy: user.id ,
+          },
+        });
+
+        await tx.service.updateMany({
+          where: { roomId: data.roomId, isDeleted: false },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 

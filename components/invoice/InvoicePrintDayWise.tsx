@@ -57,10 +57,10 @@ export const InvoicePrintDayWise = ({
     "";
 
   return (
-    <div className="bg-white text-black">
+    <div className="bg-white text-black overflow-auto">
       <div
         className={cn(
-          "mx-auto w-full max-w-275 bg-white p-6 print:max-w-none print:border-0 print:p-0",
+          "mx-auto w-full min-w-200 max-w-275 bg-white p-6 print:max-w-none print:border-0 print:p-0",
           layoutClassName,
         )}
       >

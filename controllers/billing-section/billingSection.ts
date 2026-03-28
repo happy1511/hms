@@ -8,6 +8,7 @@ import {
   billingSectionValidator,
   partialBillingSectionValidator,
 } from "@/validators/api/masters/billingSection";
+import { isProtectedBillingSection } from "@/lib/systemBillingConstants";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -55,6 +56,7 @@ export const getAPI = async (req: Request) => {
           select: {
             id: true,
             name: true,
+            systemKey: true,
             description: true,
             status: true,
             createdAt: true,
@@ -90,6 +92,7 @@ export const getDetailsAPI = async (
         select: {
           id: true,
           name: true,
+          systemKey: true,
           description: true,
           status: true,
         },
@@ -174,6 +177,13 @@ export const updateAPI = async (
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Billing Section not found",
+          });
+        }
+
+        if (isProtectedBillingSection(existingBillingSection)) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Protected billing sections cannot be deleted",
           });
         }
 

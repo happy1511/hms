@@ -37,8 +37,15 @@ const AddPaymentModal = ({ billId, open, onOpenChange, trigger }: Props) => {
     resolver: zodResolver(addInvoiceTransactionValidator),
   });
 
-  const onSubmit = (values: addInvoiceTransactionValidatorType) => {
-    mutateAsync(values);
+  const onSubmit = async (values: addInvoiceTransactionValidatorType) => {
+    await mutateAsync(values);
+    transactionForm.reset({
+      id: billId,
+      amount: 0,
+      mode: PaymentMode.CASH,
+      remarks: "",
+    });
+    onOpenChange?.(false);
   };
 
   return (

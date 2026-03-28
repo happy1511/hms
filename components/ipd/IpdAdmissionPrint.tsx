@@ -144,8 +144,11 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
   return (
     <>
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
-      <div style={{ fontSize }} className="w-full bg-white text-black">
-        <div className="mx-auto max-w-6xl bg-white p-4 print:max-w-none print:p-0">
+      <div
+        style={{ fontSize }}
+        className="w-full bg-white text-black overflow-auto"
+      >
+        <div className="mx-auto min-w-200 max-w-6xl bg-white p-4 print:max-w-none print:p-0">
           <CompanyPrintHeader className="mb-2" />
           <table className="w-full border border-black border-collapse">
             <thead>
@@ -172,7 +175,9 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
               <tr>
                 <Cell className="bg-[#f2f2f2] font-semibold">Age/Sex:</Cell>
                 <Cell>{valueOrDash(ageSex)}</Cell>
-                <Cell className="bg-[#f2f2f2] font-semibold">Billing Type:</Cell>
+                <Cell className="bg-[#f2f2f2] font-semibold">
+                  Billing Type:
+                </Cell>
                 <Cell>{valueOrDash((data.invoice as any)?.billingType)}</Cell>
               </tr>
               <tr>

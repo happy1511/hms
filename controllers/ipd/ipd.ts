@@ -13,6 +13,7 @@ import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { hasUserPermission } from "@/lib/serverPermission";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
+import { syncIpdLockedBillingItems } from "@/lib/ipdBilling";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   ipdBedUpdateValidator,
@@ -591,8 +592,17 @@ export const createAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const { patient, patientId, bed } = body;
 
-        const existingBed = await prisma.bed.findFirst({
+        const existingBed = await tx.bed.findFirst({
           where: { id: bed.id, isOccupied: false, isDeleted: false },
+          include: {
+            room: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+              },
+            },
+          },
         });
 
         if (!existingBed) {
@@ -852,6 +862,7 @@ export const createAPI = async (req: Request, user: User) => {
                 createdBy: user.id,
                 updatedBy: user.id,
                 ipdDateTime: createdAt,
+                roomId: existingBed.room.id,
               },
             },
           },
@@ -898,6 +909,15 @@ export const createAPI = async (req: Request, user: User) => {
           data: { isOccupied: true, currentIpdId: invoice.ipd?.id },
         });
 
+        await tx.ipdBedAllocation.create({
+          data: {
+            ipdId: invoice.ipd!.id,
+            bedId: bed.id,
+            roomId: existingBed.room.id,
+            fromDateTime: createdAt,
+          },
+        });
+
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
             serviceId: { in: billingItems?.map((s) => s.service.id) },
@@ -930,6 +950,12 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
+        await syncIpdLockedBillingItems(tx, {
+          ipdId: invoice.ipd!.id,
+          actingUserId: user.id,
+          now: createdAt,
+        });
+
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
           message: "Ipd Created Successfully",
@@ -949,7 +975,7 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const { ipdId } = body;
 
-        const existingIPD = await prisma.ipd.findFirst({
+        const existingIPD = await tx.ipd.findFirst({
           where: { id: ipdId, isDischarged: false },
         });
 
@@ -960,19 +986,37 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
           });
         }
 
+        const dischargedAt = new Date();
+
         await tx.bed.update({
           where: { id: existingIPD.bedId },
           data: { isOccupied: false },
+        });
+
+        await tx.ipdBedAllocation.updateMany({
+          where: {
+            ipdId,
+            toDateTime: null,
+          },
+          data: {
+            toDateTime: dischargedAt,
+          },
         });
 
         await tx.ipd.update({
           where: { id: body.ipdId },
           data: {
             isDischarged: true,
-            dischargedAt: new Date(),
+            dischargedAt,
             dischargedById: user.id,
             updatedBy: user.id,
           },
+        });
+
+        await syncIpdLockedBillingItems(tx, {
+          ipdId,
+          actingUserId: user.id,
+          now: dischargedAt,
         });
 
         return apiResponse({
@@ -1037,6 +1081,26 @@ export const cancelDischargePatientAPI = async (req: Request, user: User) => {
             dischargedById: null,
             updatedBy: user.id,
           },
+        });
+
+        const latestAllocation = await tx.ipdBedAllocation.findFirst({
+          where: { ipdId },
+          orderBy: { fromDateTime: "desc" },
+          select: { id: true },
+        });
+
+        if (latestAllocation) {
+          await tx.ipdBedAllocation.update({
+            where: { id: latestAllocation.id },
+            data: {
+              toDateTime: null,
+            },
+          });
+        }
+
+        await syncIpdLockedBillingItems(tx, {
+          ipdId,
+          actingUserId: user.id,
         });
 
         return apiResponse({
@@ -1131,6 +1195,11 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
           },
         });
 
+        await syncIpdLockedBillingItems(tx, {
+          ipdId,
+          actingUserId: user.id,
+        });
+
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "IPD doctors updated successfully",
@@ -1200,7 +1269,18 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId },
-          select: { id: true, bedId: true, isDischarged: true, isDayCare: true },
+          select: {
+            id: true,
+            bedId: true,
+            ipdDateTime: true,
+            isDischarged: true,
+            isDayCare: true,
+            bed: {
+              select: {
+                roomId: true,
+              },
+            },
+          },
         });
 
         if (!existingIpd) {
@@ -1232,7 +1312,7 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
 
         const newBed = await tx.bed.findFirst({
           where: { id: bedId, isDeleted: false },
-          select: { id: true, isOccupied: true },
+          select: { id: true, isOccupied: true, roomId: true },
         });
 
         if (!newBed) {
@@ -1250,6 +1330,18 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
         }
 
         if (existingIpd.bedId !== bedId) {
+          const reallocatedAt = new Date();
+
+          await tx.ipdBedAllocation.updateMany({
+            where: {
+              ipdId,
+              toDateTime: null,
+            },
+            data: {
+              toDateTime: reallocatedAt,
+            },
+          });
+
           await tx.bed.update({
             where: { id: existingIpd.bedId },
             data: { isOccupied: false, currentIpdId: null },
@@ -1262,7 +1354,22 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
 
           await tx.ipd.update({
             where: { id: existingIpd.id },
-            data: { bedId, updatedBy: user.id },
+            data: { bedId, roomId: newBed.roomId, updatedBy: user.id },
+          });
+
+          await tx.ipdBedAllocation.create({
+            data: {
+              ipdId,
+              bedId,
+              roomId: newBed.roomId,
+              fromDateTime: reallocatedAt,
+            },
+          });
+
+          await syncIpdLockedBillingItems(tx, {
+            ipdId,
+            actingUserId: user.id,
+            now: reallocatedAt,
           });
         }
 
@@ -1316,6 +1423,25 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
         await tx.invoice.update({
           where: { id: existingIpd.invoiceId },
           data: { createdAt: ipdDateTime, updatedBy: user.id },
+        });
+
+        const firstAllocation = await tx.ipdBedAllocation.findFirst({
+          where: { ipdId },
+          orderBy: { fromDateTime: "asc" },
+          select: { id: true },
+        });
+
+        if (firstAllocation) {
+          await tx.ipdBedAllocation.update({
+            where: { id: firstAllocation.id },
+            data: { fromDateTime: ipdDateTime },
+          });
+        }
+
+        await syncIpdLockedBillingItems(tx, {
+          ipdId,
+          actingUserId: user.id,
+          now: ipdDateTime,
         });
 
         return apiResponse({

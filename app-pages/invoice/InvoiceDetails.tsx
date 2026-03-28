@@ -21,6 +21,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -41,6 +48,7 @@ import {
   ChevronUp,
   FilePenLine,
   LoaderIcon,
+  Menu,
   Plus,
   User,
 } from "lucide-react";
@@ -77,6 +85,9 @@ const roundAmount = (value: number) => Number(value.toFixed(2));
 
 const formatCurrency = (value: number) =>
   `Rs. ${roundAmount(value).toFixed(2)}`;
+
+const getDiscountTypeLabel = (discountType: DiscountType) =>
+  discountType === DiscountType.PERCENTAGE ? "%" : "Rs.";
 
 const getDiscountAmount = (
   amount: number,
@@ -297,6 +308,9 @@ const ServiceRow = ({
   const service = watch(
     `${rowPath}.service` as Path<updateInvoiceValidatorType>,
   ) as billingItemValidatorType["service"];
+  const isLocked = Boolean(
+    watch(`${rowPath}.isLocked` as Path<updateInvoiceValidatorType>),
+  );
   const quantity = watch(
     `${rowPath}.quantity` as Path<updateInvoiceValidatorType>,
   );
@@ -415,7 +429,7 @@ const ServiceRow = ({
         <div className="px-2 py-1">{index + 1}</div>
       </td>
       <td>
-        {isUpdatedRow && (
+        {isUpdatedRow && !isLocked && (
           <Button
             type="button"
             variant={hasUpdateReason ? "outline" : "destructive"}
@@ -438,6 +452,7 @@ const ServiceRow = ({
                 Add the reason for updating this invoice row.
               </p>
               <Textarea
+                disabled={isLocked}
                 value={String(updateReason ?? "")}
                 onChange={(event) =>
                   setValue(
@@ -462,18 +477,26 @@ const ServiceRow = ({
         <div className="px-2 py-1 space-y-1">
           <div className="flex items-start gap-2">
             <div className="flex-1">
-              <FormInfiniteSelect
-                control={control}
-                name={`${rowPath}.service` as Path<updateInvoiceValidatorType>}
-                query={servicesQuery}
-                getItems={(page) => page?.data}
-                valueKey={(item) => String(item.id)}
-                labelKey={(item) => item.name}
-                search={serviceSearch}
-                onSearchChange={setServiceSearch}
-                placeholder="Service"
-                hideError
-              />
+              {isLocked ? (
+                <div className="rounded border px-2 py-1 text-xs bg-muted/30">
+                  {service?.name || "--"}
+                </div>
+              ) : (
+                <FormInfiniteSelect
+                  control={control}
+                  name={
+                    `${rowPath}.service` as Path<updateInvoiceValidatorType>
+                  }
+                  query={servicesQuery}
+                  getItems={(page) => page?.data}
+                  valueKey={(item) => String(item.id)}
+                  labelKey={(item) => item.name}
+                  search={serviceSearch}
+                  onSearchChange={setServiceSearch}
+                  placeholder="Service"
+                  hideError
+                />
+              )}
             </div>
           </div>
           {isUpdatedRow && !hasUpdateReason && (
@@ -501,6 +524,7 @@ const ServiceRow = ({
                 <input
                   type="date"
                   className="w-full rounded border px-2 py-1 text-xs"
+                  disabled={isLocked}
                   value={value}
                   onChange={(e) =>
                     field.onChange(
@@ -520,6 +544,7 @@ const ServiceRow = ({
             type="number"
             name={`${rowPath}.quantity` as Path<updateInvoiceValidatorType>}
             control={control}
+            disabled={isLocked}
             hideError
           />
         </div>
@@ -530,19 +555,30 @@ const ServiceRow = ({
             type="number"
             name={`${rowPath}.rate` as Path<updateInvoiceValidatorType>}
             control={control}
+            disabled={isLocked}
             hideError
           />
         </div>
       </td>
       <td>
         <div className="px-2 py-1">
-          <FormField
-            type="select"
-            name={`${rowPath}.discountType` as Path<updateInvoiceValidatorType>}
-            control={control}
-            options={getDiscountTypeOptions()}
-            hideError
-          />
+          {isLocked ? (
+            <div className="rounded border px-2 py-1 text-xs bg-muted/30">
+              {getDiscountTypeLabel(
+                (discountType || DiscountType.VALUE) as DiscountType,
+              )}
+            </div>
+          ) : (
+            <FormField
+              type="select"
+              name={
+                `${rowPath}.discountType` as Path<updateInvoiceValidatorType>
+              }
+              control={control}
+              options={getDiscountTypeOptions()}
+              hideError
+            />
+          )}
         </div>
       </td>
       <td>
@@ -553,6 +589,7 @@ const ServiceRow = ({
               `${rowPath}.discountValue` as Path<updateInvoiceValidatorType>
             }
             control={control}
+            disabled={isLocked}
             hideError
           />
         </div>
@@ -689,8 +726,8 @@ const InvoiceBillingTable = ({
         </table>
 
         <div className="border-t border-border bg-white mt-2">
-          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 grid grid-cols-2">
-            <div className="grid gap-3 sm:grid-cols-[140px_120px]">
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-[140px_120px]">
               <FormField
                 control={control}
                 hideError
@@ -735,8 +772,14 @@ const InvoiceBillingTable = ({
 };
 
 const InvoiceDetails = () => {
-  const [transactionsOpen, setTransactionsOpen] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const initialModal = searchParams.get("modal");
+  const [transactionsOpen, setTransactionsOpen] = useState(
+    initialModal === "transactions",
+  );
+  const [paymentModalOpen, setPaymentModalOpen] = useState(
+    initialModal === "payment",
+  );
   const [previewInvoiceOpen, setPreviewInvoiceOpen] = useState(false);
   const [dayWiseModalOpen, setDayWiseModalOpen] = useState(false);
   const [dayWiseDate, setDayWiseDate] = useState<string>(() =>
@@ -751,27 +794,23 @@ const InvoiceDetails = () => {
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[] | null>(
     null,
   );
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState("");
+  const [summaryCollapsed, setSummaryCollapsed] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false,
+  );
+  const [sectionsMenuOpen, setSectionsMenuOpen] = useState(false);
   const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const { invoiceId }: { invoiceId: string } = useParams();
-  const searchParams = useSearchParams();
   const { data, isLoading } = useInvoiceDetails({
     invoiceId: Number(invoiceId),
   });
-  const { data: profile } = useProfile(false);
+  const { data: profile } = useProfile(true);
   const { mutateAsync, isPending } = useUpdateInvoice();
   const router = useRouter();
 
   useEffect(() => {
-    const modal = searchParams.get("modal");
     const focus = searchParams.get("focus");
 
-    if (modal === "transactions") {
-      setTransactionsOpen(true);
-    }
-    if (modal === "payment") {
-      setPaymentModalOpen(true);
-    }
     if (focus === "items") {
       const target = document.getElementById("invoice-items");
       target?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -798,29 +837,39 @@ const InvoiceDetails = () => {
     control: form.control,
     name: "isFree",
   });
-  const watchedTransactions = useWatch({
-    control: form.control,
-    name: "transactions",
-  });
 
-  const invoiceAmounts = useMemo(
+  const apiPaidAmount = useMemo(
     () =>
-      getInvoiceAmounts({
-        billingSections: watchedSections,
-        discountType: (watchedDiscountType ||
-          DiscountType.VALUE) as DiscountType,
-        discountValue: Number(watchedDiscountValue || 0),
-        isFree: Boolean(watchedIsFree),
-        transactions: watchedTransactions,
-      }),
-    [
-      watchedDiscountType,
-      watchedDiscountValue,
-      watchedIsFree,
-      watchedSections,
-      watchedTransactions,
-    ],
+      roundAmount(
+        (data?.transactions || []).reduce(
+          (sum, transaction) => sum + Number(transaction?.amount || 0),
+          0,
+        ),
+      ),
+    [data?.transactions],
   );
+
+  const invoiceAmounts = useMemo(() => {
+    const amounts = getInvoiceAmounts({
+      billingSections: watchedSections,
+      discountType: (watchedDiscountType || DiscountType.VALUE) as DiscountType,
+      discountValue: Number(watchedDiscountValue || 0),
+      isFree: Boolean(watchedIsFree),
+      transactions: [],
+    });
+
+    return {
+      ...amounts,
+      paid: apiPaidAmount,
+      due: roundAmount(Math.max(amounts.total - apiPaidAmount, 0)),
+    };
+  }, [
+    apiPaidAmount,
+    watchedDiscountType,
+    watchedDiscountValue,
+    watchedIsFree,
+    watchedSections,
+  ]);
   const isFormInitialized =
     !!data &&
     watchedDiscountType !== undefined &&
@@ -889,6 +938,10 @@ const InvoiceDetails = () => {
     () =>
       watchedSections?.flatMap((section, sectionIndex) =>
         (section?.billingItems || []).flatMap((item, itemIndex) => {
+          if (item?.isLocked) {
+            return [];
+          }
+
           if (
             !hasBillingItemChanged(
               item,
@@ -936,6 +989,7 @@ const InvoiceDetails = () => {
         discountType: section.discountType ?? DiscountType.VALUE,
         discountValue: section.discountValue ?? 0,
         billingItems: section.invoiceBillingItems.map((item) => ({
+          isLocked: Boolean((item as { isLocked?: boolean }).isLocked),
           quantity: item.quantity,
           total: item.total,
           discountType: item.discountType,
@@ -1015,6 +1069,123 @@ const InvoiceDetails = () => {
     return <NoPermission />;
   }
 
+  const renderInvoiceSummary = () => (
+    <div className="border-t bg-white">
+      <div className="flex w-full items-center justify-between bg-secondary px-4 py-3 text-left text-white">
+        <div>
+          <p className="text-tiny uppercase tracking-[0.2em] text-white/70">
+            Invoice Summary
+          </p>
+          <p className="text-tiny font-semibold">
+            {formatCurrency(invoiceAmounts.total)}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-sm p-1 text-white transition hover:bg-white/10"
+          onClick={() => setSummaryCollapsed((value) => !value)}
+          aria-expanded={!summaryCollapsed}
+          aria-label={
+            summaryCollapsed
+              ? "Expand invoice summary"
+              : "Collapse invoice summary"
+          }
+        >
+          {summaryCollapsed ? (
+            <ChevronUp className="size-4" />
+          ) : (
+            <ChevronDown className="size-4" />
+          )}
+        </button>
+      </div>
+
+      {!summaryCollapsed && (
+        <div className="grid gap-3 p-4 text-tiny">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <span className="text-muted-foreground">Discount</span>
+            <div className="grid grid-cols-[72px_92px] gap-2">
+              <FormField
+                type="select"
+                name={"discountType" as Path<updateInvoiceValidatorType>}
+                control={form.control}
+                options={getDiscountTypeOptions()}
+                hideError
+              />
+              <FormField
+                type="number"
+                name={"discountValue" as Path<updateInvoiceValidatorType>}
+                control={form.control}
+                hideError
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Invoice Subtotal</span>
+            <span className="font-medium">
+              {formatCurrency(invoiceAmounts.subtotal)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Discount Amount</span>
+            <span className="font-medium">
+              {formatCurrency(invoiceAmounts.invoiceDiscount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Paid</span>
+            <span className="font-medium">
+              {formatCurrency(invoiceAmounts.paid)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between border-t pt-3">
+            <span className="font-semibold">Total</span>
+            <span className="text-base font-semibold">
+              {formatCurrency(invoiceAmounts.total)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+            <span className="font-semibold">Due</span>
+            <span className="text-base font-semibold text-destructive">
+              {formatCurrency(invoiceAmounts.due)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSectionsSidebar = () => (
+    <div className="flex h-full w-full min-h-0 flex-col bg-white">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+        <TabsList className="flex h-auto w-full flex-col items-stretch justify-start rounded-none p-0">
+          {liveSections.map((item) => {
+            return (
+              <TabsTrigger
+                key={item.id}
+                value={String(item.id)}
+                onClick={() => setSectionsMenuOpen(false)}
+                className="m-0 flex h-auto w-full items-start justify-between bg-white rounded-none border-b border-border px-3 py-2 text-left text-tiny font-bold uppercase whitespace-normal data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                <div className="flex w-full flex-col gap-0.5 text-left">
+                  <span className="text-tiny font-bold">{item.name}</span>
+                  <span className="text-tiny opacity-80">
+                    {formatCurrency(item.liveTotal)}
+                  </span>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className="text-tiny! ml-1 h-4 min-w-4 shrink-0 rounded-full bg-background px-1 text-black"
+                >
+                  {item.liveItemCount}
+                </Badge>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Form {...form}>
@@ -1024,10 +1195,10 @@ const InvoiceDetails = () => {
               ? form.handleSubmit(onSubmit)
               : (event) => event.preventDefault()
           }
-          className="h-full"
+          className="flex grow min-h-0 flex-col"
         >
-          <div className="w-full border flex items-center justify-between px-2 py-2 bg-white">
-            <div className="flex gap-2">
+          <div className="flex w-full flex-wrap items-start justify-between gap-3 border bg-white px-2 py-2">
+            <div className="flex flex-wrap gap-2">
               <CustomActionDropdown
                 groups={[
                   {
@@ -1121,7 +1292,7 @@ const InvoiceDetails = () => {
                 Close
               </CustomButton>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Badge className="text-tiny! h-4 min-w-4 px-1 rounded-none bg-background text-black">
                 <User className="fill-black size-2" />
                 {data.opd?.patient.firstName} {data.opd?.patient.lastName}
@@ -1140,144 +1311,95 @@ const InvoiceDetails = () => {
 
           <Tabs
             id="invoice-items"
-            defaultValue={String(data.sections[0]?.id)}
-            className="flex h-[calc(100%-52px)] overflow-hidden bg-white"
+            value={activeSectionId || String(data.sections[0]?.id || "")}
+            onValueChange={setActiveSectionId}
+            className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden bg-white lg:grid-cols-[320px_minmax(0,1fr)]"
             orientation="vertical"
           >
-            <div className="h-full border-r">
-              <TabsList className="flex flex-col w-56 rounded-none p-0 items-stretch justify-start overflow-x-hidden overflow-y-auto">
-                {liveSections.map((item) => {
-                  return (
-                    <TabsTrigger
+            <aside className="hidden min-h-0 min-w-0 border-r bg-muted/20 lg:block">
+              <div className="min-w-[320px]">{renderSectionsSidebar()}</div>
+            </aside>
+
+            <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+              <div className="flex items-center justify-between gap-2 border-b bg-white px-3 py-2 lg:hidden">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium"
+                  onClick={() => setSectionsMenuOpen(true)}
+                >
+                  <Menu className="size-4" />
+                  Billing Sections
+                </button>
+                <div className="text-right text-xs">
+                  <p className="font-semibold">
+                    {formatCurrency(invoiceAmounts.total)}
+                  </p>
+                  <p className="text-muted-foreground">
+                    Due {formatCurrency(invoiceAmounts.due)}
+                  </p>
+                </div>
+              </div>
+
+              <Sheet open={sectionsMenuOpen} onOpenChange={setSectionsMenuOpen}>
+                <SheetContent
+                  side="left"
+                  className="w-[320px] p-0 sm:max-w-[320px]"
+                >
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Billing Sections</SheetTitle>
+                    <SheetDescription>
+                      Select an invoice billing section from the left sidebar.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <Tabs
+                    value={
+                      activeSectionId || String(data.sections[0]?.id || "")
+                    }
+                    onValueChange={setActiveSectionId}
+                    orientation="vertical"
+                    className="h-full"
+                  >
+                    {renderSectionsSidebar()}
+                  </Tabs>
+                </SheetContent>
+              </Sheet>
+
+              <div className="min-h-0 min-w-0 overflow-auto border-b lg:border-b-0">
+                <div className="min-w-[720px]">
+                  {data.sections.map((item, index) => (
+                    <TabsContent
                       key={item.id}
                       value={String(item.id)}
-                      className="flex w-full m-0 border-none items-start justify-between text-left rounded-none border-b px-3 py-2 text-tiny font-bold uppercase bg-white data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none whitespace-normal h-auto"
+                      className="mt-0 h-full"
                     >
-                      <div className="flex w-full flex-col gap-0.5 text-left">
-                        <span className="text-tiny font-bold">{item.name}</span>
-                        <span className="text-tiny opacity-80">
-                          {formatCurrency(item.liveTotal)}
-                        </span>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="text-tiny! h-4 min-w-4 px-1 rounded-full ml-1 shrink-0 bg-background text-black"
-                      >
-                        {item.liveItemCount}
-                      </Badge>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </div>
-
-            <div className="flex-1 overflow-hidden">
-              {data.sections.map((item, index) => (
-                <TabsContent
-                  key={item.id}
-                  value={String(item.id)}
-                  className="h-full"
-                >
-                  <InvoiceBillingTable
-                    form={form}
-                    data={item}
-                    selectedIndex={index}
-                    initialItemsMap={initialItemsMap}
-                    canUpdateInvoice={Boolean(canUpdateInvoice)}
-                  />
-                </TabsContent>
-              ))}
+                      <InvoiceBillingTable
+                        form={form}
+                        data={item}
+                        selectedIndex={index}
+                        initialItemsMap={initialItemsMap}
+                        canUpdateInvoice={Boolean(canUpdateInvoice)}
+                      />
+                    </TabsContent>
+                  ))}
+                </div>
+              </div>
             </div>
           </Tabs>
+          <div className="pointer-events-none fixed right-4 bottom-4 z-40 hidden w-[min(360px,calc(100vw-2rem))] lg:block">
+            <div className="pointer-events-auto overflow-hidden rounded-xl border border-secondary/20 bg-white shadow-2xl">
+              {renderInvoiceSummary()}
+            </div>
+          </div>
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 lg:hidden">
+            <div className="pointer-events-auto overflow-hidden rounded-t-xl border border-secondary/20 bg-white shadow-2xl">
+              {renderInvoiceSummary()}
+            </div>
+          </div>
           {canUpdateInvoice && updatedRowsMissingReasons.length > 0 && (
-            <div className="border-t bg-white px-3 py-2 text-xs text-red-500">
+            <div className="border-t bg-white px-3 py-2 text-xs text-red-500 lg:pr-[392px]">
               Add a reason for each updated row before saving the invoice.
             </div>
           )}
-          <div className="fixed right-4 bottom-4 z-40 w-[min(360px,calc(100vw-2rem))]">
-            <div className="overflow-hidden rounded-xl border border-secondary/20 bg-white shadow-2xl">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between bg-secondary px-4 py-3 text-left text-white"
-                onClick={() => setSummaryCollapsed((value) => !value)}
-              >
-                <div>
-                  <p className="text-tiny uppercase tracking-[0.2em] text-white/70">
-                    Invoice Summary
-                  </p>
-                  <p className="text-tiny font-semibold">
-                    {formatCurrency(invoiceAmounts.total)}
-                  </p>
-                </div>
-                {summaryCollapsed ? (
-                  <ChevronUp className="size-4" />
-                ) : (
-                  <ChevronDown className="size-4" />
-                )}
-              </button>
-
-              {!summaryCollapsed && (
-                <div className="grid gap-3 p-4 text-tiny">
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
-                    <span className="text-muted-foreground">Discount</span>
-                    <div className="grid grid-cols-[72px_92px] gap-2">
-                      <FormField
-                        type="select"
-                        name={
-                          "discountType" as Path<updateInvoiceValidatorType>
-                        }
-                        control={form.control}
-                        options={getDiscountTypeOptions()}
-                        hideError
-                      />
-                      <FormField
-                        type="number"
-                        name={
-                          "discountValue" as Path<updateInvoiceValidatorType>
-                        }
-                        control={form.control}
-                        hideError
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      Invoice Subtotal
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(invoiceAmounts.subtotal)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      Discount Amount
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(invoiceAmounts.invoiceDiscount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Paid</span>
-                    <span className="font-medium">
-                      {formatCurrency(invoiceAmounts.paid)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between border-t pt-3">
-                    <span className="font-semibold">Total</span>
-                    <span className="text-base font-semibold">
-                      {formatCurrency(invoiceAmounts.total)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                    <span className="font-semibold">Due</span>
-                    <span className="text-base font-semibold text-destructive">
-                      {formatCurrency(invoiceAmounts.due)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </form>
       </Form>
 

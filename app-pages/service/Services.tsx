@@ -24,6 +24,7 @@ import {
   ServiceDataType,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
+import { isProtectedService } from "@/lib/systemBillingConstants";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -101,7 +102,7 @@ const Actions = ({
           <Edit2 className="size-2.5" />
         </Link>
       )}
-      {canDelete && (
+      {canDelete && !isProtectedService(data) && (
         <CustomAlert
           triggerButton={
             <Button
@@ -358,6 +359,7 @@ const Services = () => {
             filters={neededFilters}
             onSubmit={setFilters}
             defaultToday={false}
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

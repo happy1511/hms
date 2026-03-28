@@ -76,6 +76,7 @@ const Actions = ({
           fields={[
             { key: "id", label: "RoomId" },
             { key: "name", label: "Name" },
+            { key: "price", label: "Price Per Day" },
             { key: "description", label: "Description" },
             { key: "status", label: "Status" },
             { key: "createdAt", label: "Created At" },
@@ -204,6 +205,21 @@ const Rooms = () => {
     },
 
     {
+      accessorKey: "price",
+      header: ({ column }) => {
+        return (
+          <SortableHeader<RoomGetPayload<{ include: { roomType: true } }>>
+            label="Price / Day"
+            column={column}
+          />
+        );
+      },
+      cell: ({ row }) =>
+        Number((row.original as { price?: number }).price || 0).toFixed(2),
+      headerClassName: "min-w-30",
+      cellClassName: "min-w-30",
+    },
+    {
       accessorKey: "status",
       header: () => {
         return <button className="flex">Status</button>;
@@ -281,6 +297,7 @@ const Rooms = () => {
             filters={neededFilters}
             onSubmit={setFilters}
             defaultToday={false}
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

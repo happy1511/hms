@@ -77,6 +77,19 @@ const FinanceTransactions = () => {
   const opdQuery = useOpdList(filters, 1, 100);
   const ipdQuery = useIpdList(filters, 1, 100);
 
+  const rows = useMemo(() => {
+    const opdRows = (opdQuery.data?.data || []).flatMap(
+      toTransactionRowsFromOpd,
+    );
+    const ipdRows = (ipdQuery.data?.data || []).flatMap(
+      toTransactionRowsFromIpd,
+    );
+    return [...opdRows, ...ipdRows].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [opdQuery.data?.data, ipdQuery.data?.data]);
+
   if (!profile) {
     return <div />;
   }
@@ -87,18 +100,12 @@ const FinanceTransactions = () => {
     ActionType.VIEW,
   );
 
-  const rows = useMemo(() => {
-    const opdRows = (opdQuery.data?.data || []).flatMap(toTransactionRowsFromOpd);
-    const ipdRows = (ipdQuery.data?.data || []).flatMap(toTransactionRowsFromIpd);
-    return [...opdRows, ...ipdRows].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  }, [opdQuery.data?.data, ipdQuery.data?.data]);
-
   const columns: ColumnDefWithClass<TransactionRow>[] = [
     {
       accessorKey: "srn",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="ID" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="ID" column={column} />
+      ),
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
       cellClassName: "min-w-15 max-w-20",
@@ -113,46 +120,61 @@ const FinanceTransactions = () => {
     },
     {
       accessorKey: "billType",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Type" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Type" column={column} />
+      ),
       headerClassName: "min-w-20 max-w-24",
       cellClassName: "min-w-20 max-w-24",
     },
     {
       accessorKey: "billNumber",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Bill No." column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Bill No." column={column} />
+      ),
       cell: ({ row }) => `${row.original.billType}-${row.original.billNumber}`,
       headerClassName: "min-w-24 max-w-30",
       cellClassName: "min-w-24 max-w-30",
     },
     {
       accessorKey: "patientName",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Patient" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Patient" column={column} />
+      ),
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
     {
       accessorKey: "createdAt",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Date/Time" column={column} />,
-      cell: ({ row }) => format(new Date(row.original.createdAt), "dd/MM/yyyy - h:mma"),
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Date/Time" column={column} />
+      ),
+      cell: ({ row }) =>
+        format(new Date(row.original.createdAt), "dd/MM/yyyy - h:mma"),
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
     {
       accessorKey: "mode",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Mode" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Mode" column={column} />
+      ),
       headerClassName: "min-w-24 max-w-30",
       cellClassName: "min-w-24 max-w-30",
     },
     {
       accessorKey: "amount",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Amount" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Amount" column={column} />
+      ),
       cell: ({ row }) => `₹ ${row.original.amount.toFixed(2)}`,
       headerClassName: "min-w-24 max-w-30",
       cellClassName: "min-w-24 max-w-30",
     },
     {
       accessorKey: "remarks",
-      header: ({ column }) => <SortableHeader<TransactionRow> label="Remarks" column={column} />,
+      header: ({ column }) => (
+        <SortableHeader<TransactionRow> label="Remarks" column={column} />
+      ),
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
@@ -211,7 +233,11 @@ const FinanceTransactions = () => {
     <CustomLayout title="Finance Transactions (OPD + IPD)">
       {canView && (
         <>
-          <CustomFilters<FilterValues> filters={neededFilters} onSubmit={setFilters} />
+          <CustomFilters<FilterValues>
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+            filters={neededFilters}
+            onSubmit={setFilters}
+          />
           <CustomTable
             columns={columns}
             data={rows}

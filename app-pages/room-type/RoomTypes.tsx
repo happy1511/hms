@@ -282,6 +282,7 @@ const RoomTypes = () => {
             filters={neededFilters}
             onSubmit={setFilters}
             defaultToday={false}
+            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable
             columns={columns}

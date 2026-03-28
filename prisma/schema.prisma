@@ -849,6 +849,7 @@ model Room {
   name        String  @unique
   description String?
   roomTypeId  Int
+  price       Float   @default(0)
 
   status    Status  @default(active)
   isDeleted Boolean @default(false)
@@ -863,8 +864,10 @@ model Room {
   updatedByUser User?    @relation("RoomUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?    @relation("RoomDeletedBy", fields: [deletedBy], references: [id])
 
-  beds Bed[]
-  ipds Ipd[]
+  beds           Bed[]
+  ipds           Ipd[]
+  chargeService  Service?           @relation("RoomChargeService")
+  ipdAllocations IpdBedAllocation[]
 
   @@index([roomTypeId])
 }
@@ -885,13 +888,14 @@ model Bed {
   isOccupied   Boolean  @default(false)
   isDeleted    Boolean  @default(false)
 
-  patient       Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  room          Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  currentIpd    Ipd?     @relation("CurrentIpd", fields: [currentIpdId], references: [id], onDelete: SetNull)
-  createdByUser User?    @relation("BedCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User?    @relation("BedUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User?    @relation("BedDeletedBy", fields: [deletedBy], references: [id])
-  ipds          Ipd[]    @relation("BedToIpd")
+  patient        Patient?           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  room           Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  currentIpd     Ipd?               @relation("CurrentIpd", fields: [currentIpdId], references: [id], onDelete: SetNull)
+  createdByUser  User?              @relation("BedCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser  User?              @relation("BedUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser  User?              @relation("BedDeletedBy", fields: [deletedBy], references: [id])
+  ipds           Ipd[]              @relation("BedToIpd")
+  ipdAllocations IpdBedAllocation[]
 
   @@index([roomId])
   @@index([currentIpdId])
@@ -1290,6 +1294,7 @@ model RadiologyTemplate {
 model BillingSection {
   id          Int     @id @default(autoincrement())
   name        String  @unique
+  systemKey   String? @unique
   description String?
   status      Status  @default(active)
   isDeleted   Boolean @default(false)
@@ -1331,6 +1336,8 @@ model Service {
   invoiceBillingItems InvoiceBillingItem[]
   consultingDoctorId  Int?                 @unique
   consultingDoctor    Doctor?              @relation("ConsultingDoctorService", fields: [consultingDoctorId], references: [userId])
+  roomId              Int?                 @unique
+  room                Room?                @relation("RoomChargeService", fields: [roomId], references: [id])
 }
 
 model PathologyTestService {
@@ -1390,6 +1397,8 @@ model InvoiceBillingItem {
   billingSectionId Int
   invoiceBillingSectionId Int
   serviceId        Int
+  isLocked         Boolean      @default(false)
+  ipdBedAllocationId Int?       @unique
   quantity         Int
   rate             Float
   discountType     DiscountType
@@ -1408,6 +1417,7 @@ model InvoiceBillingItem {
   invoiceBillingSection InvoiceBillingSection @relation(fields: [invoiceBillingSectionId], references: [id], onDelete: Cascade)
   service              Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   invoice              Invoice?             @relation(fields: [invoiceId], references: [id])
+  ipdBedAllocation     IpdBedAllocation?    @relation(fields: [ipdBedAllocationId], references: [id], onDelete: SetNull)
   invoiceId            Int?
   createdByUser        User?                @relation("InvoiceBillingItemCreatedBy", fields: [createdBy], references: [id])
   updatedByUser        User?                @relation("InvoiceBillingItemUpdatedBy", fields: [updatedBy], references: [id])
@@ -1419,6 +1429,7 @@ model InvoiceBillingItem {
   @@index([billingSectionId])
   @@index([invoiceBillingSectionId])
   @@index([serviceId])
+  @@index([ipdBedAllocationId])
 }
 
 model InvoiceBillingSection {
@@ -1654,6 +1665,7 @@ model Ipd {
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
   invoice             Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   dischargeSummary    IpdDischargeSummary?
+  bedAllocations      IpdBedAllocation[]
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
   room                Room?                @relation(fields: [roomId], references: [id])
@@ -1671,6 +1683,28 @@ model Ipd {
   @@index([ipdDateTime])
   @@index([dischargedAt])
   @@index([createdAt])
+}
+
+model IpdBedAllocation {
+  id           Int      @id @default(autoincrement())
+  ipdId        Int
+  bedId        Int
+  roomId       Int
+  fromDateTime DateTime
+  toDateTime   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ipd  Ipd  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  bed  Bed  @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  invoiceBillingItem InvoiceBillingItem?
+
+  @@index([ipdId])
+  @@index([bedId])
+  @@index([roomId])
+  @@index([fromDateTime])
+  @@index([toDateTime])
 }
 
 model IpdDischargeSummary {

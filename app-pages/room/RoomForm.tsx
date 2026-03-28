@@ -29,6 +29,7 @@ const getInitialValues = (
 ): roomValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? null,
+  price: Number((data as { price?: number } | undefined)?.price ?? 0),
   status: data?.status ?? Status["active"],
   roomType: data?.roomType ?? undefined,
 });
@@ -75,6 +76,13 @@ const UpdateCreateForm = ({
             type="select"
             name="status"
             options={Object.values(Status).map((s) => ({ value: s, label: s }))}
+            control={form.control}
+            required
+          />
+          <FormField<roomValidatorType>
+            label="Price Per Day"
+            type="number"
+            name="price"
             control={form.control}
             required
           />

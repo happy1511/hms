@@ -9,6 +9,7 @@ import z from "zod";
 const billingItemValidator = z.object({
   index: z.coerce.string().optional(),
   itemId: z.coerce.number().optional(),
+  isLocked: z.coerce.boolean().optional().default(false),
   billingSection: z.object({ id: z.coerce.number().min(1), name: z.string() }),
   service: z.object({
     id: z.coerce.number().min(1),

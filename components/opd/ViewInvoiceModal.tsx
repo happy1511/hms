@@ -96,38 +96,40 @@ const ViewInvoiceModal = ({
             )}
           </div>
 
-          <div className="mt-3 flex justify-center gap-2 print:hidden">
-            <CustomButton
-              type="button"
-              variant="secondary"
-              onClick={() => setSectionPickerOpen(true)}
-            >
-              Choose Sections to Print
-            </CustomButton>
-            <CustomButton
-              type="button"
-              onClick={() => router.push(`/invoice/${effectiveInvoiceId}`)}
-            >
-              View More Details
-            </CustomButton>
-            <CustomButton
-              type="button"
-              onClick={() =>
-                window.open(
-                  `/invoice/transactions/${effectiveInvoiceId}`,
-                  "_blank",
-                )
-              }
-            >
-              Print Payment Receipt
-            </CustomButton>
-            <CustomButton
-              type="button"
-              className="bg-destructive"
-              onClick={() => onOpenChange?.(false)}
-            >
-              Close
-            </CustomButton>
+          <div className="mt-3 flex justify-center print:hidden">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 ">
+              <CustomButton
+                type="button"
+                variant="secondary"
+                onClick={() => setSectionPickerOpen(true)}
+              >
+                Choose Sections to Print
+              </CustomButton>
+              <CustomButton
+                type="button"
+                onClick={() => router.push(`/invoice/${effectiveInvoiceId}`)}
+              >
+                View More Details
+              </CustomButton>
+              <CustomButton
+                type="button"
+                onClick={() =>
+                  window.open(
+                    `/invoice/transactions/${effectiveInvoiceId}`,
+                    "_blank",
+                  )
+                }
+              >
+                Print Payment Receipt
+              </CustomButton>
+              <CustomButton
+                type="button"
+                className="bg-destructive"
+                onClick={() => onOpenChange?.(false)}
+              >
+                Close
+              </CustomButton>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

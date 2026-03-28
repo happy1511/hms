@@ -111,6 +111,12 @@ export const useCreateInvoiceTransaction = () => {
     onSuccess: () => {
       toast.success("Transaction Created Successfully");
       queryClient.invalidateQueries({
+        queryKey: ["invoice-details"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["invoice-list"],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["opds"],
       });
       queryClient.invalidateQueries({
