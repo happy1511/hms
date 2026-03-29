@@ -123,13 +123,21 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
   const collectionRows = [
     { type: "OPD", value: data.collections.opd },
     { type: "IPD", value: data.collections.ipd },
-    { type: "Total OPD + IPD", value: data.collections.totalClinical },
     { type: "Other Income", value: data.collections.otherIncome },
-    { type: "Total Income", value: data.collections.totalIncome },
+    {
+      type: "Total Income",
+      value: data.collections.totalIncome,
+    },
     { type: "Expenses", value: data.collections.expenses },
     { type: "Balance", value: data.collections.balance },
+    { type: "Online Paid", value: data.paymentModes.digitalWallet },
+    {
+      type: "Cash Balance",
+      value: data.collections.balance - data.paymentModes.digitalWallet,
+    },
     { type: "IPD Due", value: data.collections.ipdDue },
     { type: "OPD Due", value: data.collections.opdDue },
+   
   ];
 
   const totalBillingRows = [{ type: "OPD", value: data.billing.opd }];
@@ -156,8 +164,10 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
       <TableCard
         title="Collections"
         rows={collectionRows}
-        totalLabel="Total"
-        totalValue={collectionRows.reduce((sum, row) => sum + row.value, 0)}
+        totalLabel="Net"
+        totalValue={data.collections.balance -
+        data.paymentModes.digitalWallet -
+        (data.collections.ipdDue + data.collections.opdDue)}
       />
       <TableCard
         title="Total Billing"
