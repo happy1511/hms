@@ -258,6 +258,7 @@ export interface FormRadioGroupProps<T extends FieldValues> {
 export interface FilterValues {
   name?: string;
   status?: string;
+  isInvoiceOnly?: boolean;
   nonOccupied?: boolean;
   createdAt?: string | { from?: Date; to?: Date };
   mlcDeclarationDate?: string | { from?: Date; to?: Date };
@@ -1235,6 +1236,7 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
   select: {
     id: true;
     name: true;
+    isOtherCharges: true;
     invoiceBillingItems: {
       select: {
         isLocked: true;
@@ -1385,6 +1387,7 @@ export type BillingItem = {
 export type Transaction = {
   date: string;
   mode: string;
+  transactionType?: string;
   amount: number;
   remarks?: string;
   receivedBy?: string;

@@ -50,6 +50,7 @@ const getServices = createRequest<
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
     doctorId?: number;
+    isInvoiceOnly?: boolean;
   }
 >(SERVICES, "GET");
 
@@ -75,6 +76,9 @@ export const useServicesList = (
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
           ...(filters.doctorId && { doctorId: filters.doctorId }),
+          ...(typeof filters.isInvoiceOnly === "boolean" && {
+            isInvoiceOnly: filters.isInvoiceOnly,
+          }),
         },
       }),
   });
@@ -102,6 +106,9 @@ export const useInfiniteServicesList = (
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
           ...(filters.doctorId && { doctorId: filters.doctorId }),
+          ...(typeof filters.isInvoiceOnly === "boolean" && {
+            isInvoiceOnly: filters.isInvoiceOnly,
+          }),
           ...(filters.billingSectionId && {
             billingSectionId: filters.billingSectionId,
           }),

@@ -4,6 +4,7 @@ import CustomActionDropdown from "@/components/common/CustomActionDropdown";
 import CustomButton from "@/components/common/CustomButton";
 import NoPermission from "@/components/common/NoPermission";
 import TransactionsModal from "@/components/common/TransactionsModal";
+import { FormCreatableSelect } from "@/components/form-inputs/FormCreatableSelect";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
 import AddPaymentModal from "@/components/opd/AddPayment";
@@ -39,6 +40,10 @@ import {
 import { useProfile } from "@/hooks/query/auth";
 import { useInvoiceDetails, useUpdateInvoice } from "@/hooks/query/invoice";
 import { useInfiniteServicesList } from "@/hooks/query/service";
+import {
+  getInvoiceDueAmount,
+  getNetInvoicePaidAmount,
+} from "@/lib/invoiceTransactions";
 import { InvoiceBillingItem } from "@/lib/type";
 import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,6 +79,7 @@ type BillingItemSnapshot = {
   itemId?: number;
   billingSectionId?: number;
   serviceId?: number;
+  serviceName?: string;
   quantity: number;
   rate: number;
   discountType: DiscountType;
@@ -137,6 +143,7 @@ const getBillingItemSnapshot = (
     ? Number(item.billingSection.id)
     : undefined,
   serviceId: item?.service?.id ? Number(item.service.id) : undefined,
+  serviceName: String(item?.manualServiceName || item?.service?.name || ""),
   quantity: Number(item?.quantity || 0),
   rate: Number(item?.rate || 0),
   discountType: (item?.discountType || DiscountType.VALUE) as DiscountType,
@@ -157,6 +164,7 @@ const hasBillingItemChanged = (
   return (
     initialItem.billingSectionId !== currentSnapshot.billingSectionId ||
     initialItem.serviceId !== currentSnapshot.serviceId ||
+    initialItem.serviceName !== currentSnapshot.serviceName ||
     initialItem.quantity !== currentSnapshot.quantity ||
     initialItem.rate !== currentSnapshot.rate ||
     initialItem.discountType !== currentSnapshot.discountType ||
@@ -262,13 +270,11 @@ const getInvoiceAmounts = ({
   const total = isFree
     ? 0
     : roundAmount(Math.max(subtotal - invoiceDiscount, 0));
-  const paid = roundAmount(
-    (transactions || []).reduce(
-      (sum, transaction) => sum + Number(transaction?.amount || 0),
-      0,
-    ),
-  );
-  const due = roundAmount(Math.max(total - paid, 0));
+  const paid = getNetInvoicePaidAmount(transactions || []);
+  const due = getInvoiceDueAmount({
+    total,
+    transactions: transactions || [],
+  });
 
   return { subtotal, invoiceDiscount, total, paid, due };
 };
@@ -308,6 +314,12 @@ const ServiceRow = ({
   const service = watch(
     `${rowPath}.service` as Path<updateInvoiceValidatorType>,
   ) as billingItemValidatorType["service"];
+  const billingSection = watch(
+    `${rowPath}.billingSection` as Path<updateInvoiceValidatorType>,
+  ) as billingItemValidatorType["billingSection"];
+  const manualServiceName = watch(
+    `${rowPath}.manualServiceName` as Path<updateInvoiceValidatorType>,
+  );
   const isLocked = Boolean(
     watch(`${rowPath}.isLocked` as Path<updateInvoiceValidatorType>),
   );
@@ -329,7 +341,7 @@ const ServiceRow = ({
   const updateReason = watch(
     `${rowPath}.updateReason` as Path<updateInvoiceValidatorType>,
   );
-
+  const isOtherCharges = Boolean(billingSection?.isOtherCharges);
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((page) =>
@@ -345,6 +357,14 @@ const ServiceRow = ({
 
   useEffect(() => {
     const selectedServiceId = Number(service?.id || 0);
+
+    if (isOtherCharges && String(manualServiceName || "").trim()) {
+      setValue(
+        `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
+        100,
+      );
+      return;
+    }
 
     if (!selectedServiceId) return;
 
@@ -379,7 +399,16 @@ const ServiceRow = ({
       `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
       existingService.maxDiscount ?? 0,
     );
-  }, [service, flatServices, itemId, initialItemsMap, rowPath, setValue]);
+  }, [
+    service,
+    flatServices,
+    itemId,
+    initialItemsMap,
+    isOtherCharges,
+    manualServiceName,
+    rowPath,
+    setValue,
+  ]);
 
   useEffect(() => {
     const gross = Number(quantity) * Number(rate || 0);
@@ -410,9 +439,11 @@ const ServiceRow = ({
 
   const gross = Number(quantity) * Number(rate);
   const maxAllowed =
-    discountType === DiscountType.PERCENTAGE
-      ? (gross * (Number(maxDiscount) || 0)) / 100
-      : Number(maxDiscount || 0);
+    isOtherCharges && String(manualServiceName || "").trim()
+      ? gross
+      : discountType === DiscountType.PERCENTAGE
+        ? (gross * (Number(maxDiscount) || 0)) / 100
+        : Number(maxDiscount || 0);
   const isInvalidDiscount = Number(discountValue) > Number(maxAllowed);
   const initialItem = initialItemsMap.get(Number(itemId));
   const isUpdatedRow = hasBillingItemChanged(
@@ -479,23 +510,64 @@ const ServiceRow = ({
             <div className="flex-1">
               {isLocked ? (
                 <div className="rounded border px-2 py-1 text-xs bg-muted/30">
-                  {service?.name || "--"}
+                  {String(manualServiceName || service?.name || "--")}
                 </div>
               ) : (
-                <FormInfiniteSelect
-                  control={control}
-                  name={
-                    `${rowPath}.service` as Path<updateInvoiceValidatorType>
-                  }
-                  query={servicesQuery}
-                  getItems={(page) => page?.data}
-                  valueKey={(item) => String(item.id)}
-                  labelKey={(item) => item.name}
-                  search={serviceSearch}
-                  onSearchChange={setServiceSearch}
-                  placeholder="Service"
-                  hideError
-                />
+                <div className="space-y-2">
+                  {isOtherCharges && (
+                    <FormCreatableSelect
+                      control={control}
+                      name={
+                        `${rowPath}.service` as Path<updateInvoiceValidatorType>
+                      }
+                      items={flatServices}
+                      valueKey={(item) => String(item.id)}
+                      labelKey={(item) => item.name}
+                      placeholder="Select or create charge"
+                      hideError
+                      inputValue={serviceSearch}
+                      onInputChange={setServiceSearch}
+                      onReachEnd={() => {
+                        if (servicesQuery.hasNextPage) {
+                          servicesQuery.fetchNextPage();
+                        }
+                      }}
+                      createdLabel={String(manualServiceName || "")}
+                      onCreatedLabelChange={(value) =>
+                        setValue(
+                          `${rowPath}.manualServiceName` as Path<updateInvoiceValidatorType>,
+                          value ?? "",
+                          { shouldDirty: true, shouldValidate: true },
+                        )
+                      }
+                      onSelectedItemChange={(item) => {
+                        setValue(
+                          `${rowPath}.service` as Path<updateInvoiceValidatorType>,
+                          item as never,
+                          { shouldDirty: true, shouldValidate: true },
+                        );
+                      }}
+                      isLoading={servicesQuery.isFetching}
+                    />
+                  )}
+
+                  {!isOtherCharges && (
+                    <FormInfiniteSelect
+                      control={control}
+                      name={
+                        `${rowPath}.service` as Path<updateInvoiceValidatorType>
+                      }
+                      query={servicesQuery}
+                      getItems={(page) => page?.data}
+                      valueKey={(item) => String(item.id)}
+                      labelKey={(item) => item.name}
+                      search={serviceSearch}
+                      onSearchChange={setServiceSearch}
+                      placeholder="Service"
+                      hideError
+                    />
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -669,7 +741,11 @@ const InvoiceBillingTable = ({
                   discountType: DiscountType.VALUE,
                   discountValue: 0,
                   total: 0,
-                  billingSection: { id: data.id, name: data.name },
+                  billingSection: {
+                    id: data.id,
+                    name: data.name,
+                    isOtherCharges: Boolean(data.isOtherCharges),
+                  },
                   createdAt: new Date(),
                 } as billingItemValidatorType)
               }
@@ -839,13 +915,7 @@ const InvoiceDetails = () => {
   });
 
   const apiPaidAmount = useMemo(
-    () =>
-      roundAmount(
-        (data?.transactions || []).reduce(
-          (sum, transaction) => sum + Number(transaction?.amount || 0),
-          0,
-        ),
-      ),
+    () => getNetInvoicePaidAmount(data?.transactions || []),
     [data?.transactions],
   );
 
@@ -861,10 +931,14 @@ const InvoiceDetails = () => {
     return {
       ...amounts,
       paid: apiPaidAmount,
-      due: roundAmount(Math.max(amounts.total - apiPaidAmount, 0)),
+      due: getInvoiceDueAmount({
+        total: amounts.total,
+        transactions: data?.transactions || [],
+      }),
     };
   }, [
     apiPaidAmount,
+    data?.transactions,
     watchedDiscountType,
     watchedDiscountValue,
     watchedIsFree,
@@ -922,6 +996,7 @@ const InvoiceDetails = () => {
               itemId: item.id,
               billingSectionId: section.id,
               serviceId: item.service.id,
+              serviceName: item.service.name,
               quantity: item.quantity,
               rate: item.rate,
               discountType: item.discountType,
@@ -998,8 +1073,13 @@ const InvoiceDetails = () => {
             ...item.service,
             maxDiscount: item.service.maxDiscount ?? 0,
           },
+          manualServiceName: null,
           rate: item.rate,
-          billingSection: { id: section.id, name: section.name },
+          billingSection: {
+            id: section.id,
+            name: section.name,
+            isOtherCharges: Boolean(section.isOtherCharges),
+          },
           createdAt: new Date(item.createdAt),
           itemId: item.id,
           updateReason:
@@ -1164,7 +1244,7 @@ const InvoiceDetails = () => {
                 key={item.id}
                 value={String(item.id)}
                 onClick={() => setSectionsMenuOpen(false)}
-                className="m-0 flex h-auto w-full items-start justify-between bg-white rounded-none border-b border-border px-3 py-2 text-left text-tiny font-bold uppercase whitespace-normal data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none"
+                className="m-0 border-none flex h-auto w-full items-start justify-between bg-white rounded-none border-b border-border px-3 py-2 text-left text-tiny font-bold uppercase whitespace-normal data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-none"
               >
                 <div className="flex w-full flex-col gap-0.5 text-left">
                   <span className="text-tiny font-bold">{item.name}</span>
@@ -1185,7 +1265,7 @@ const InvoiceDetails = () => {
       </div>
     </div>
   );
-
+  console.log(form.formState.errors);
   return (
     <>
       <Form {...form}>
@@ -1435,6 +1515,7 @@ const InvoiceDetails = () => {
         onOpenChange={setPaymentModalOpen}
         billId={data.id}
         dueAmount={invoiceAmounts.due}
+        paidAmount={invoiceAmounts.paid}
         trigger={<div />}
       />
       <InvoicePreviewModal

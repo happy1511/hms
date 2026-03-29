@@ -354,6 +354,11 @@ enum PaymentMode {
   OTHER
 }
 
+enum TransactionType {
+  PAYMENT
+  REFUND
+}
+
 enum IncomeCategory {
   OUT_PR_DRESSING
   OUT_PT_ECG
@@ -1293,6 +1298,7 @@ model BillingSection {
   id          Int     @id @default(autoincrement())
   name        String  @unique
   systemKey   String? @unique
+  isOtherCharges Boolean @default(false)
   description String?
   status      Status  @default(active)
   isDeleted   Boolean @default(false)
@@ -1313,6 +1319,7 @@ model Service {
   id                Int                    @id @default(autoincrement())
   name              String
   description       String?
+  isInvoiceOnly     Boolean                @default(false)
   type              ServiceType
   price             Float
   discountAvailable Boolean                @default(false)
@@ -1372,11 +1379,12 @@ model RadiologyTestService {
 
 // -------------------- Transactions Management --------------------
 model Transaction {
-  id      Int         @id @default(autoincrement())
-  opdId   Int?
-  amount  Float
-  mode    PaymentMode
-  remarks String?
+  id              Int             @id @default(autoincrement())
+  opdId           Int?
+  amount          Float
+  mode            PaymentMode
+  transactionType TransactionType @default(PAYMENT)
+  remarks         String?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

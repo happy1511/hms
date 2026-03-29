@@ -57,6 +57,7 @@ export const getAPI = async (req: Request) => {
             id: true,
             name: true,
             systemKey: true,
+            isOtherCharges: true,
             description: true,
             status: true,
             createdAt: true,
@@ -93,6 +94,7 @@ export const getDetailsAPI = async (
           id: true,
           name: true,
           systemKey: true,
+          isOtherCharges: true,
           description: true,
           status: true,
         },
@@ -133,12 +135,13 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
-        const { name, description, status } = data;
+        const { name, description, status, isOtherCharges } = data;
 
         const createdBillingSection = await tx.billingSection.create({
           data: {
             name,
             description,
+            isOtherCharges,
             status,
             createdBy: user.id ,
             updatedBy: user.id ,
@@ -187,13 +190,14 @@ export const updateAPI = async (
           });
         }
 
-        const { name, description, status } = data;
+        const { name, description, status, isOtherCharges } = data;
 
         const updatedBillingSection = await tx.billingSection.update({
           where: { id: data.sectionId },
           data: {
             name,
             description,
+            isOtherCharges,
             status,
             updatedBy: user.id ,
           },

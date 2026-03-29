@@ -1,6 +1,7 @@
 import { DiscountType, Prisma } from "@/generated/prisma/client";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { SYSTEM_BILLING_SECTION_KEYS } from "@/lib/systemBillingConstants";
+import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import {
   ensureConsultingDoctorService,
   getLockedBillingItemTotal,
@@ -332,10 +333,7 @@ export const syncIpdLockedBillingItems = async (
       ? (subtotal * Number(invoice.discountValue || 0)) / 100
       : Number(invoice.discountValue || 0);
   const total = invoice.isFree ? 0 : Math.max(subtotal - invoiceDiscount, 0);
-  const paidAmount = invoice.transactions.reduce(
-    (sum, transaction) => sum + Number(transaction.amount || 0),
-    0,
-  );
+  const paidAmount = getNetInvoicePaidAmount(invoice.transactions);
 
   await tx.invoice.update({
     where: { id: ipd.invoiceId },

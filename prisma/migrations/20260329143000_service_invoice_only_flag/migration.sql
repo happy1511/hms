@@ -1,0 +1,2 @@
+ALTER TABLE `Service`
+  ADD COLUMN `isInvoiceOnly` BOOLEAN NOT NULL DEFAULT false;

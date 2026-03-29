@@ -3,6 +3,7 @@
 import TransactionReceiptExport from "@/components/common/TransactionReceiptExport";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
+import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -94,8 +95,9 @@ const PrintInvoiceTransactions = () => {
 
   const receiptTransactions = filteredTransactions.map((txn) => ({
     id: txn.id,
-    amount: txn.amount,
+    amount: Math.abs(getSignedTransactionAmount(txn)),
     mode: txn.mode,
+    transactionType: txn.transactionType || "PAYMENT",
     remarks: txn.remarks || "",
     receivedBy: txn.receivedBy?.name || "Cashier",
     date: format(new Date(txn.createdAt), "dd/MM/yyyy - hh:mm a"),
@@ -138,7 +140,9 @@ const PrintInvoiceTransactions = () => {
                 }}
               />
               <span className="text-sm">
-                Rs. {txn.amount} - {txn.mode}
+                {txn.transactionType || "PAYMENT"} - Rs.{" "}
+                {Math.abs(getSignedTransactionAmount(txn)).toFixed(2)} -{" "}
+                {txn.mode}
               </span>
             </div>
           ))}

@@ -2,17 +2,17 @@ import { prisma } from "@/services/prisma";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
-import { paginationValidator } from "@/validators/api/common/pagination";
 import { Prisma, ServiceApplicableOn, User } from "@/generated/prisma/client";
 import {
   partialServiceValidator,
+  serviceListValidator,
   serviceValidator,
 } from "@/validators/api/masters/service";
 import { isProtectedService } from "@/lib/systemBillingConstants";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
-    querySchema: paginationValidator,
+    querySchema: serviceListValidator,
     req,
     onSuccess: async ({ query }) => {
       const page = Number(query.page ?? 1);
@@ -20,6 +20,8 @@ export const getAPI = async (req: Request) => {
       const search = query.search ?? "";
       const status = query.status ?? "";
       const doctorId = query.doctorId;
+      const isInvoiceOnly =
+        typeof query.isInvoiceOnly === "boolean" ? query.isInvoiceOnly : false;
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -34,6 +36,8 @@ export const getAPI = async (req: Request) => {
       if (status) {
         and.push({ status: { equals: status } });
       }
+
+      and.push({ isInvoiceOnly });
 
       if (doctorId) {
         and.push({ consultingDoctorId: { equals: doctorId } });
@@ -61,6 +65,7 @@ export const getAPI = async (req: Request) => {
             name: true,
             description: true,
             status: true,
+            isInvoiceOnly: true,
             createdAt: true,
             updatedAt: true,
             type: true,
@@ -112,6 +117,7 @@ export const getDetailsAPI = async (
           name: true,
           description: true,
           status: true,
+          isInvoiceOnly: true,
           price: true,
           roomId: true,
           consultingDoctorId: true,
@@ -194,6 +200,7 @@ export const createAPI = async (req: Request, user: User) => {
           connectedLabTests,
           connectedRadiologyTests,
           discountAvailable,
+          isInvoiceOnly,
         } = data;
 
         if (connectedLabTests) {
@@ -234,6 +241,7 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             name,
             description,
+            isInvoiceOnly: Boolean(isInvoiceOnly),
             status,
             maxDiscount,
             price,
@@ -301,6 +309,7 @@ export const updateAPI = async (
           name,
           description,
           status,
+          isInvoiceOnly,
           maxDiscount,
           price,
           applicableOn,
@@ -349,6 +358,7 @@ export const updateAPI = async (
           data: {
             name,
             description,
+            isInvoiceOnly,
             status,
             maxDiscount,
             price,

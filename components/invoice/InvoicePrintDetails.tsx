@@ -1,5 +1,6 @@
 "use client";
 
+import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { amount, cn, lineNet } from "@/lib/utils";
 import CustomerInfo from "./CustomerInfo";
 import InvoiceTable from "./InvoiceTable";
@@ -93,10 +94,7 @@ const InvoicePrintDetails = ({
       ? (data.rate * data.discountValue) / 100
       : data.discountValue;
 
-  const paid = data.transactions.reduce(
-    (sum, transaction) => sum + transaction.amount,
-    0,
-  );
+  const paid = getNetInvoicePaidAmount(data.transactions);
 
   return (
     <div className="bg-white text-black overflow-auto">
@@ -205,6 +203,7 @@ const InvoicePrintDetails = ({
               transactions={data.transactions.map((txn) => ({
                 date: format(new Date(txn.createdAt), "dd/MM/yyyy hh:mm a"),
                 mode: String(txn.mode),
+                transactionType: String(txn.transactionType),
                 amount: txn.amount,
                 remarks: txn.remarks || "",
                 receivedBy: txn.receivedBy?.name || "-",

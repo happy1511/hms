@@ -884,11 +884,13 @@ export const createAPI = async (req: Request, user: User) => {
           }
 
           await tx.invoiceBillingItem.createMany({
-            data: sectionItems.map((item) => ({
+            data: sectionItems
+              .filter((item) => item.service?.id)
+              .map((item) => ({
               invoiceId: invoice.id,
               invoiceBillingSectionId: invoiceBillingSection.id,
               billingSectionId: item.billingSection.id,
-              serviceId: item.service.id,
+              serviceId: item.service!.id,
               quantity: item.quantity,
               rate: item.rate,
               discountType: item.discountType,
@@ -917,7 +919,12 @@ export const createAPI = async (req: Request, user: User) => {
 
         const pathologyServices = await tx.pathologyTestService.findMany({
           where: {
-            serviceId: { in: billingItems?.map((s) => s.service.id) },
+            serviceId: {
+              in:
+                billingItems
+                  ?.filter((s) => s.service?.id)
+                  .map((s) => s.service!.id) || [],
+            },
           },
         });
 
@@ -933,7 +940,12 @@ export const createAPI = async (req: Request, user: User) => {
 
         const radiologyServices = await tx.radiologyTestService.findMany({
           where: {
-            serviceId: { in: billingItems?.map((s) => s.service.id) },
+            serviceId: {
+              in:
+                billingItems
+                  ?.filter((s) => s.service?.id)
+                  .map((s) => s.service!.id) || [],
+            },
           },
         });
 

@@ -3,11 +3,13 @@ import {
   ServiceType,
   Status,
 } from "@/generated/prisma/enums";
+import { paginationValidator } from "@/validators/api/common/pagination";
 import { z } from "zod";
 
 const serviceValidator = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
+  isInvoiceOnly: z.coerce.boolean().default(false),
   type: z.enum(ServiceType),
   status: z.enum(Status).optional(),
   price: z.number().min(0, "Price must be a positive number"),
@@ -27,8 +29,12 @@ const partialServiceValidator = serviceValidator.partial().extend({
   serviceId: z.number().min(1, "Service Id is required"),
 });
 
+const serviceListValidator = paginationValidator.extend({
+  isInvoiceOnly: z.coerce.boolean().optional(),
+});
+
 type ServiceValidatorType = z.input<typeof serviceValidator>;
 type PartialServiceValidatorType = z.input<typeof partialServiceValidator>;
 
-export { serviceValidator, partialServiceValidator };
+export { serviceValidator, partialServiceValidator, serviceListValidator };
 export type { ServiceValidatorType, PartialServiceValidatorType };

@@ -384,7 +384,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           />
         );
       },
-      cell: ({ row }) => row.original.service.name,
+      cell: ({ row }) => row.original.service?.name || "--",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -593,7 +593,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   return (
     <CustomLayout
       title="Billing Items"
-      contentClassName="grid grid-cols-2 space-x-2"
+      contentClassName="grid grid-cols-1 md:grid-cols-2 space-x-2"
     >
       <>
         <FormField
@@ -621,7 +621,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           search={billingItemSearch}
           onSearchChange={setBillingItemSearch}
         />
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <FormInfiniteSelect<
             ServiceDataType,
             PaginatedResponse<ServiceDataType>,
@@ -640,7 +640,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             onSearchChange={setServiceSearch}
           />
         </div>
-        <div className="col-span-2 grid grid-cols-5 space-x-2">
+        <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 space-x-2">
           <FormField
             control={billingItemForm.control}
             label="Qty"
@@ -679,7 +679,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             readOnly
           />
         </div>
-        <div className="col-span-2 space-x-2">
+        <div className="md:col-span-2 space-x-2">
           <div className="w-full flex justify-end">
             <CustomButton onClick={handleAddUpdate} className="self-end">
               {typeof editingIndex === "number" ? "Update" : "Add"}
@@ -687,7 +687,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           </div>
         </div>
       </>
-      <div className="col-span-2 py-2">
+      <div className="md:col-span-2 py-2">
         <CustomTable
           data={addedBillingItems}
           columns={columns}
@@ -696,7 +696,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           getRowId={(row) => row.index as string}
         />
       </div>
-      <div className="col-span-2 flex justify-end">
+      <div className="md:col-span-2 flex justify-end">
         <div className="w-full max-w-md bg-white border rounded-md p-2 text-tiny">
           <div className="grid grid-cols-[1fr_170px] gap-1 items-center">
             <div className="text-right font-semibold">Invoice Total:</div>
@@ -739,7 +739,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           </div>
         </div>
       </div>
-      <div className="col-span-2">
+      <div className="md:col-span-2">
         <FormField
           control={form.control}
           label="Remarks"
@@ -838,8 +838,11 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   };
 
   return (
-    <CustomLayout title="Payment" contentClassName="grid grid-cols-2 space-x-2">
-      <div className="col-span-2">
+    <CustomLayout
+      title="Payment"
+      contentClassName="grid grid-cols-1 md:grid-cols-2 space-x-2"
+    >
+      <div className="md:col-span-2">
         <FormField<ipdValidatorType>
           label="Payment received for this invoice?"
           type="radio"
@@ -892,7 +895,7 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
               required
             />
 
-            <div className="col-span-2 space-x-2">
+            <div className="md:col-span-2 space-x-2">
               <div className="w-full flex justify-end">
                 <CustomButton onClick={handleAddUpdate} className="self-end">
                   {typeof editingIndex === "number" ? "Update" : "Add"}
@@ -968,7 +971,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   return (
     <CustomLayout
       title="Personal Details"
-      contentClassName="grid grid-cols-2 space-x-2 pb-0"
+      contentClassName="grid grid-cols-1 md:grid-cols-2 space-x-2 pb-0"
     >
       <div>
         <FormField<ipdValidatorType>
@@ -1114,7 +1117,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           search={locationSearch}
           onSearchChange={setLocationSearch}
         />
-        <div className="grid grid-cols-2 space-x-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 space-x-2">
           <FormField<ipdValidatorType>
             label="Phone"
             name="patient.contacts.0.value"
@@ -1273,7 +1276,7 @@ const IpdBillForm = () => {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CustomLayout
           title="Patient Registration"
-          contentClassName="grid grid-cols-2 pb-0 space-x-2"
+          contentClassName="grid grid-cols-1 md:grid-cols-2 pb-0 space-x-2"
         >
           <FormField<ipdValidatorType>
             label="Arrival State"
@@ -1290,7 +1293,7 @@ const IpdBillForm = () => {
         <PatientForm form={form} />
         <CustomLayout
           title="Billing"
-          contentClassName="grid grid-cols-2 pb-0 space-x-2"
+          contentClassName="grid grid-cols-1 md:grid-cols-2 pb-0 space-x-2"
         >
           <FormField<ipdValidatorType>
             label="Billing Date"

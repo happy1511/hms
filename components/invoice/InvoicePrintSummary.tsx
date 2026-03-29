@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import InvoiceTable from "./InvoiceTable";
 import InvoicePaymentHistory from "./InvoicePaymentHistory";
 import InvoicePaymentSummary from "./InvoicePaymentSummary";
+import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { amount, cn } from "@/lib/utils";
 import { InvoiceGroupedBySection, sectionsWithTotals } from "@/lib/type";
 import { format } from "date-fns";
@@ -41,10 +42,7 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
       data.discountType === "PERCENTAGE"
         ? (data.rate * data.discountValue) / 100
         : data.discountValue;
-    const paid = data.transactions.reduce(
-      (sum: number, txn: any) => sum + txn.amount,
-      0,
-    );
+    const paid = getNetInvoicePaidAmount(data.transactions);
 
     return { sectionTotals, invoiceDiscount, paid };
   }, [data]);
@@ -139,6 +137,7 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
           transactions={data.transactions.map((txn) => ({
             date: format(new Date(txn.createdAt), "dd/MM/yyyy hh:mm a"),
             mode: String(txn.mode),
+            transactionType: String(txn.transactionType),
             amount: txn.amount,
             remarks: txn.remarks || "",
             receivedBy: txn.receivedBy?.name || "-",

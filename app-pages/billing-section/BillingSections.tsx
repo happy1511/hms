@@ -81,6 +81,7 @@ const Actions = ({
           fields={[
             { key: "id", label: "Billing Section Id" },
             { key: "name", label: "Name" },
+            { key: "isOtherCharges", label: "Other Charges Section" },
             { key: "description", label: "Description" },
             { key: "status", label: "Status" },
             { key: "createdAt", label: "Created At" },
@@ -193,6 +194,20 @@ const BillingSections = () => {
       cell: ({ row }) => row.original.description || "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
+    },
+    {
+      accessorKey: "isOtherCharges",
+      header: ({ column }) => {
+        return (
+          <SortableHeader<BillingSection>
+            label="Other Charges"
+            column={column}
+          />
+        );
+      },
+      cell: ({ row }) => (row.original.isOtherCharges ? "Yes" : "No"),
+      headerClassName: "min-w-28 max-w-36",
+      cellClassName: "min-w-28 max-w-36",
     },
     {
       accessorKey: "status",

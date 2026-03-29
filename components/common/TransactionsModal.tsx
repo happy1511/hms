@@ -1,4 +1,12 @@
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { Transaction } from "@/generated/prisma/client";
+import { useProfile } from "@/hooks/query/auth";
+import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
+import { ColumnDefWithClass } from "@/lib/type";
+import { hasActionPermission } from "@/lib/utils";
+import Link from "next/link";
+import { Eye } from "lucide-react";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,15 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Eye } from "lucide-react";
 import { CustomTable } from "./CustomTable";
-import { ColumnDefWithClass } from "@/lib/type";
 import { SortableHeader } from "./SortableHeader";
-import { useProfile } from "@/hooks/query/auth";
-import { hasActionPermission } from "@/lib/utils";
-import Link from "next/link";
-import { ActionType, ModuleType } from "@/generated/prisma/enums";
 
 interface Props {
   data: Transaction[];
@@ -64,11 +65,18 @@ const TransactionsModal = ({
       },
     },
     {
+      accessorKey: "transactionType",
+      header: ({ column }) => {
+        return <SortableHeader<Transaction> label="Type" column={column} />;
+      },
+    },
+    {
       accessorKey: "payment",
       header: ({ column }) => {
-        return <SortableHeader<Transaction> label="Payment" column={column} />;
+        return <SortableHeader<Transaction> label="Amount" column={column} />;
       },
-      cell: ({ row }) => `₹ ${row.original.amount}`,
+      cell: ({ row }) =>
+        `Rs. ${getSignedTransactionAmount(row.original).toFixed(2)}`,
     },
     {
       accessorKey: "mode",
@@ -111,21 +119,21 @@ const TransactionsModal = ({
         {trigger ?? (
           <Button
             variant="outline"
-            className="h-auto shadow-none p-1 cursor-pointer"
+            className="h-auto cursor-pointer p-1 shadow-none"
           >
             <Eye className="size-2.5 text-destructive" />
           </Button>
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-w-3xl! border-secondary border-4 bg-white">
+      <DialogContent className="max-w-3xl! border-4 border-secondary bg-white">
         <DialogHeader>
-          <DialogTitle className="text-black/60 text-sm">
-            Payment History
+          <DialogTitle className="text-sm text-black/60">
+            Transaction History
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 max-h-[70dvh] overflow-y-auto text-tiny">
+        <div className="max-h-[70dvh] space-y-4 overflow-y-auto text-tiny">
           <div className="flex items-center gap-2">
             <span className="bg-blue-400 px-2 text-white">{patientName}</span>
             <span className="bg-blue-400 px-2 text-white">

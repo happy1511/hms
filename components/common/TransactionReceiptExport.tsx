@@ -8,6 +8,7 @@ interface TransactionItem {
   id?: number;
   amount: number;
   mode: string;
+  transactionType?: string;
   remarks?: string;
   receivedBy: string;
   date: string;
@@ -55,7 +56,7 @@ const TransactionReceiptExport = ({
         <CompanyPrintHeader />
         <header>
           <div className="flex items-center border-t border-x justify-center border-b border-black bg-[#dedede] px-3 py-2">
-            <p className="font-semibold">PAYMENT RECEIPT</p>
+            <p className="font-semibold">TRANSACTION RECEIPT</p>
           </div>
           <InfoRow
             label1="Patient Name"
@@ -76,7 +77,7 @@ const TransactionReceiptExport = ({
           {transactions.map((txn, index) => (
             <section key={txn.id ?? index} className="bg-white">
               <div className="flex items-center justify-between border-t border-x border-black bg-[#dedede] px-3 py-2 font-semibold">
-                <span>PAYMENT CREDITED TO ORGANISATION</span>
+                <span>{txn.transactionType || "PAYMENT"} RECEIPT</span>
                 <span>
                   Receipt No.:{" "}
                   {transactions.length > 1
@@ -101,8 +102,12 @@ const TransactionReceiptExport = ({
                     value={txn.receivedBy || "-"}
                   />
                   <KeyValueRow
-                    label="PAYMENT AMOUNT"
+                    label="TRANSACTION AMOUNT"
                     value={formatMoney(txn.amount)}
+                  />
+                  <KeyValueRow
+                    label="TRANSACTION TYPE"
+                    value={txn.transactionType || "-"}
                   />
                   <KeyValueRow label="PAYMENT MODE" value={txn.mode || "-"} />
                   <KeyValueRow

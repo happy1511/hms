@@ -4,6 +4,7 @@ import { z } from "zod";
 const billingSectionValidator = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
+  isOtherCharges: z.coerce.boolean().default(false),
   status: z.enum(Status).optional(),
 });
 

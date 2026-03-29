@@ -13,7 +13,8 @@ import { useForm } from "react-hook-form";
 import { Form } from "../ui/form";
 import CustomButton from "../common/CustomButton";
 import FormField from "../form-inputs/FormField";
-import { PaymentMode } from "@/generated/prisma/enums";
+import { PaymentMode, TransactionType } from "@/generated/prisma/enums";
+import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
 import {
   addInvoiceTransactionValidator,
   addInvoiceTransactionValidatorType,
@@ -23,6 +24,7 @@ import { useCreateInvoiceTransaction } from "@/hooks/query/invoice";
 interface Props {
   billId: number;
   dueAmount?: number;
+  paidAmount?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
@@ -31,6 +33,7 @@ interface Props {
 const AddPaymentModal = ({
   billId,
   dueAmount = 0,
+  paidAmount = 0,
   open,
   onOpenChange,
   trigger,
@@ -40,9 +43,22 @@ const AddPaymentModal = ({
   const transactionForm = useForm<addInvoiceTransactionValidatorType>({
     defaultValues: {
       id: billId,
+      mode: PaymentMode.CASH,
+      transactionType: TransactionType.PAYMENT,
     },
     resolver: zodResolver(addInvoiceTransactionValidator),
   });
+
+  const transactionType = transactionForm.watch("transactionType");
+  const amount = Number(transactionForm.watch("amount") || 0);
+  const projectedDue = Math.max(
+    Number(dueAmount || 0) -
+      getSignedTransactionAmount({
+        amount,
+        transactionType,
+      }),
+    0,
+  );
 
   const onSubmit = async (values: addInvoiceTransactionValidatorType) => {
     await mutateAsync(values);
@@ -50,6 +66,7 @@ const AddPaymentModal = ({
       id: billId,
       amount: 0,
       mode: PaymentMode.CASH,
+      transactionType: TransactionType.PAYMENT,
       remarks: "",
     });
     onOpenChange?.(false);
@@ -71,22 +88,32 @@ const AddPaymentModal = ({
       <DialogContent className="max-w-3xl! border-secondary border-4 bg-white">
         <DialogHeader>
           <DialogTitle className="text-black/60 text-sm">
-            Add Payment Transaction
+            Add Invoice Transaction
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 max-h-[70dvh] overflow-y-auto text-tiny">
           <Form {...transactionForm}>
             <form onSubmit={transactionForm.handleSubmit(onSubmit)}>
-              <div className="rounded-md border border-secondary/20 bg-secondary/5 px-3 py-2 mb-5 text-sm">
+              <div className="mb-5 rounded-md border border-secondary/20 bg-secondary/5 px-3 py-2 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-black/60">Due Amount</span>
+                  <span className="text-black/60">Due</span>
                   <span className="font-semibold">
-                    Rs. {Number(dueAmount || 0).toFixed(2)}
+                    Rs. {Number(projectedDue || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
-
+              <FormField
+                control={transactionForm.control}
+                label="Transaction Type"
+                name="transactionType"
+                options={Object.values(TransactionType).map((type) => ({
+                  value: type,
+                  label: type,
+                }))}
+                type="select"
+                required
+              />
               <FormField
                 control={transactionForm.control}
                 label="Amount"

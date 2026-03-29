@@ -28,6 +28,7 @@ const getInitialValues = (
 ): BillingSectionValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
+  isOtherCharges: data?.isOtherCharges ?? false,
   status: data?.status ?? Status["active"],
 });
 
@@ -71,6 +72,13 @@ const UpdateCreateForm = ({ data }: { data?: BillingSection }) => {
             options={Object.values(Status).map((s) => ({ value: s, label: s }))}
             control={form.control}
             required
+          />
+
+          <FormField<BillingSectionValidatorType>
+            label="Other Charges Section"
+            type="checkbox"
+            name="isOtherCharges"
+            control={form.control}
           />
 
           <div className="col-span-2">

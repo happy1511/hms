@@ -3,9 +3,13 @@ import {
   ContactType,
   DiscountType,
   Prisma,
+  ServiceApplicableOn,
+  ServiceType,
+  Status,
   User,
 } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
+import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
@@ -27,6 +31,7 @@ const hasBillingItemChanged = (
   existingItem: {
     billingSectionId: number;
     serviceId: number;
+    serviceName: string;
     quantity: number;
     rate: number;
     discountType: string;
@@ -35,7 +40,8 @@ const hasBillingItemChanged = (
   },
   incomingItem: {
     billingSection: { id: number };
-    service: { id: number };
+    service?: { id: number; name: string } | null;
+    manualServiceName?: string | null;
     quantity: number;
     rate: number;
     discountType: string;
@@ -43,9 +49,13 @@ const hasBillingItemChanged = (
     total: number;
   },
 ) => {
+  const incomingServiceName =
+    incomingItem.manualServiceName?.trim() || incomingItem.service?.name || "";
+
   return (
     existingItem.billingSectionId !== incomingItem.billingSection.id ||
-    existingItem.serviceId !== incomingItem.service.id ||
+    existingItem.serviceId !== Number(incomingItem.service?.id || 0) ||
+    existingItem.serviceName !== incomingServiceName ||
     existingItem.quantity !== incomingItem.quantity ||
     existingItem.rate !== incomingItem.rate ||
     existingItem.discountType !== incomingItem.discountType ||
@@ -384,6 +394,66 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
   });
 };
 
+const resolveInvoiceItemService = async (
+  tx: InvoiceTx,
+  item: {
+    billingSection: { name: string; isOtherCharges?: boolean | null };
+    service?: { id?: number; name?: string } | null;
+    manualServiceName?: string | null;
+    rate: number;
+  },
+  actingUserId: number,
+) => {
+  if (item.service?.id) {
+    return {
+      id: Number(item.service.id),
+      name: String(item.service.name || ""),
+    };
+  }
+
+  const manualServiceName = String(item.manualServiceName || "").trim();
+
+  if (!item.billingSection?.isOtherCharges || !manualServiceName) {
+    throw new Error("Service is required for invoice item");
+  }
+
+  const existingService = await tx.service.findFirst({
+    where: {
+      name: manualServiceName,
+      isDeleted: false,
+      isInvoiceOnly: true,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (existingService) {
+    return existingService;
+  }
+
+  return tx.service.create({
+    data: {
+      name: manualServiceName,
+      description: `Manual invoice service for ${item.billingSection.name}`,
+      isInvoiceOnly: true,
+      type: ServiceType.OTHER,
+      price: Number(item.rate || 0),
+      discountAvailable: true,
+      maxDiscount: 100,
+      applicableOn: ServiceApplicableOn.BOTH,
+      status: Status.active,
+      createdBy: actingUserId,
+      updatedBy: actingUserId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+};
+
 export const getInvoiceListAPI = async (req: Request) => {
   return validateRequest({
     querySchema: invoiceListValidator,
@@ -449,7 +519,7 @@ export const getInvoiceListAPI = async (req: Request) => {
           orderBy: { createdAt: "desc" },
           where,
           include: {
-            transactions: { select: { amount: true } },
+            transactions: { select: { amount: true, transactionType: true } },
             opd: {
               include: {
                 consultantDoctor: { select: { user: { select: { name: true } } } },
@@ -482,10 +552,7 @@ export const getInvoiceListAPI = async (req: Request) => {
       ]);
 
       const rows = items.map((invoice) => {
-        const paidAmount = invoice.transactions.reduce(
-          (sum, t) => sum + Number(t.amount || 0),
-          0,
-        );
+        const paidAmount = getNetInvoicePaidAmount(invoice.transactions);
         const discountAmount = getDiscountAmount(
           Number(invoice.rate || 0),
           invoice.discountType,
@@ -544,7 +611,16 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             transactions: true,
             billingSections: {
               include: {
-                items: true,
+                items: {
+                  include: {
+                    service: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             opd: true,
@@ -573,6 +649,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
               ...item,
               invoiceBillingSectionId: section.id,
               isLocked: item.isLocked,
+              serviceName: item.service?.name || "",
               updateReason: (item as { updateReason?: string | null })
                 .updateReason,
             })),
@@ -654,6 +731,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         }
 
         for (const item of incomingItems) {
+          const resolvedService = await resolveInvoiceItemService(tx, item, user.id);
+
           if (item.itemId) {
             const previousItem = existingItemsById.get(item.itemId);
             const itemChanged =
@@ -683,7 +762,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
                 invoiceBillingSectionId:
                   resolvedInvoiceSectionIds.get(item.billingSection.id) ??
                   previousItem?.invoiceBillingSectionId,
-                serviceId: item.service.id,
+                serviceId: resolvedService.id,
                 quantity: item.quantity,
                 rate: item.rate,
                 discountType: item.discountType,
@@ -697,12 +776,12 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
               } as any,
             });
 
-            if (previousItem && previousItem.serviceId !== item.service.id) {
+            if (previousItem && previousItem.serviceId !== resolvedService.id) {
               await cancelOrdersForBillingItems(tx, [item.itemId], user.id);
 
               const orderError = await createOrdersForBillingItem(tx, {
                 billingItemId: item.itemId,
-                serviceId: item.service.id,
+                serviceId: resolvedService.id,
                 patientId,
                 opdId,
                 ipdId,
@@ -723,7 +802,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
               invoiceBillingSectionId: resolvedInvoiceSectionIds.get(
                 item.billingSection.id,
               )!,
-              serviceId: item.service.id,
+              serviceId: resolvedService.id,
               quantity: item.quantity,
               rate: item.rate,
               discountType: item.discountType,
@@ -736,7 +815,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
 
           const orderError = await createOrdersForBillingItem(tx, {
             billingItemId: createdItem.id,
-            serviceId: item.service.id,
+            serviceId: resolvedService.id,
             patientId,
             opdId,
             ipdId,
@@ -765,6 +844,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
           isFree: rest.isFree,
         });
 
+        const netPaidAmount = getNetInvoicePaidAmount(transactions || []);
+
         const updatedOpd = await tx.invoice.update({
           where: { id },
           data: {
@@ -773,7 +854,8 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
             discountValue: rest.discountValue,
             total: totals.total,
             isFree: rest.isFree,
-            isPaid: !rest.isFree && totals.total === 0 ? false : true,
+            isPaid:
+              !rest.isFree && netPaidAmount >= totals.total && totals.total > 0,
             updatedBy: user.id,
           },
         });
@@ -790,6 +872,7 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
               invoiceId: existingInvoice.id,
               amount: t.amount,
               mode: t.mode,
+              transactionType: t.transactionType,
               remarks: t.remarks,
               receivedById: user.id,
             })),
@@ -830,6 +913,13 @@ export const addItemAPI = async (req: Request, user: User) => {
             return apiResponse({
               status: RESPONSE_STATUS.BAD_REQUEST,
               message: "Invoice Not Found",
+            });
+          }
+
+          if (!body.service?.id) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Service is required",
             });
           }
 
@@ -943,6 +1033,14 @@ export const addTransactionAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const existingInvoice = await tx.invoice.findFirst({
           where: { id: body.id, isDeleted: false },
+          include: {
+            transactions: {
+              select: {
+                amount: true,
+                transactionType: true,
+              },
+            },
+          },
         });
 
         if (!existingInvoice) {
@@ -952,15 +1050,52 @@ export const addTransactionAPI = async (req: Request, user: User) => {
           });
         }
 
+        const currentNetPaid = getNetInvoicePaidAmount(existingInvoice.transactions);
+        const currentDue = Math.max(
+          Number(existingInvoice.total || 0) - currentNetPaid,
+          0,
+        );
+
+        if (
+          body.transactionType === "PAYMENT" &&
+          Number(body.amount || 0) > currentDue
+        ) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Payment amount cannot exceed due amount",
+          });
+        }
+
+        if (
+          body.transactionType === "REFUND" &&
+          Number(body.amount || 0) > currentNetPaid
+        ) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Refund amount cannot exceed collected amount",
+          });
+        }
+
+        const nextNetPaid =
+          currentNetPaid +
+          (body.transactionType === "REFUND"
+            ? -Number(body.amount || 0)
+            : Number(body.amount || 0));
+
         const updatedInvoice = await tx.invoice.update({
           where: { id: body.id },
           data: {
             updatedBy: user.id,
+            isPaid:
+              !existingInvoice.isFree &&
+              nextNetPaid >= Number(existingInvoice.total || 0) &&
+              Number(existingInvoice.total || 0) > 0,
             transactions: {
               create: [
                 {
                   amount: body.amount,
                   mode: body.mode,
+                  transactionType: body.transactionType,
                   receivedById: user.id,
                   remarks: body.remarks,
                 },

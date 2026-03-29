@@ -1,4 +1,5 @@
 import { Transaction } from "@/lib/type";
+import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
 import Cell from "./Cell";
 import { amount } from "@/lib/utils";
 
@@ -16,6 +17,9 @@ const InvoicePaymentHistory = ({
           <tr className="bg-[#dedede]">
             <Cell as="th" className="w-42.5 text-left">
               Date
+            </Cell>
+            <Cell as="th" className="w-32.5 text-left">
+              Type
             </Cell>
             <Cell as="th" className="w-32.5 text-left">
               Mode
@@ -38,6 +42,9 @@ const InvoicePaymentHistory = ({
             transactions.map((transaction, index) => (
               <tr key={`${transaction.date}-${transaction.mode}-${index}`}>
                 <Cell className="text-left">{transaction.date}</Cell>
+                <Cell className="text-left">
+                  {transaction.transactionType || "PAYMENT"}
+                </Cell>
                 <Cell className="text-left">{transaction.mode}</Cell>
                 {includeRemarks && (
                   <Cell className="text-left">
@@ -47,13 +54,15 @@ const InvoicePaymentHistory = ({
                 <Cell className="text-left">
                   {transaction.receivedBy || "-"}
                 </Cell>
-                <Cell className="text-right">{amount(transaction.amount)}</Cell>
+                <Cell className="text-right">
+                  {amount(getSignedTransactionAmount(transaction))}
+                </Cell>
               </tr>
             ))
           ) : (
             <tr>
-              <Cell colSpan={includeRemarks ? 5 : 4} className="text-center">
-                No payment transactions found
+              <Cell colSpan={includeRemarks ? 6 : 5} className="text-center">
+                No transactions found
               </Cell>
             </tr>
           )}
