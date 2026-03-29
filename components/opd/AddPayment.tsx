@@ -22,12 +22,19 @@ import { useCreateInvoiceTransaction } from "@/hooks/query/invoice";
 
 interface Props {
   billId: number;
+  dueAmount?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
 }
 
-const AddPaymentModal = ({ billId, open, onOpenChange, trigger }: Props) => {
+const AddPaymentModal = ({
+  billId,
+  dueAmount = 0,
+  open,
+  onOpenChange,
+  trigger,
+}: Props) => {
   const { mutateAsync, isPending } = useCreateInvoiceTransaction();
 
   const transactionForm = useForm<addInvoiceTransactionValidatorType>({
@@ -71,6 +78,15 @@ const AddPaymentModal = ({ billId, open, onOpenChange, trigger }: Props) => {
         <div className="space-y-4 max-h-[70dvh] overflow-y-auto text-tiny">
           <Form {...transactionForm}>
             <form onSubmit={transactionForm.handleSubmit(onSubmit)}>
+              <div className="rounded-md border border-secondary/20 bg-secondary/5 px-3 py-2 mb-5 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-black/60">Due Amount</span>
+                  <span className="font-semibold">
+                    Rs. {Number(dueAmount || 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
               <FormField
                 control={transactionForm.control}
                 label="Amount"

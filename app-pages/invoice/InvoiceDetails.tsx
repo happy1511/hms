@@ -1434,6 +1434,7 @@ const InvoiceDetails = () => {
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
         billId={data.id}
+        dueAmount={invoiceAmounts.due}
         trigger={<div />}
       />
       <InvoicePreviewModal
