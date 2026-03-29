@@ -157,7 +157,10 @@ export function FormDateRangePicker<T extends FieldValues>({
                           variant={active ? "secondary" : "ghost"}
                           size="sm"
                           className="justify-start text-tiny h-auto py-1"
-                          onClick={() => field.onChange(preset.range)}
+                          onClick={() => {
+                            field.onChange(preset.range);
+                            setOpen(false);
+                          }}
                         >
                           {preset.label}
                         </Button>

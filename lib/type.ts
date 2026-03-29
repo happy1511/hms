@@ -1268,25 +1268,38 @@ export interface DashboardType {
   patients: {
     opd: number;
     ipd: number;
+    dayCare: number;
   };
   collections: {
     opd: number;
     ipd: number;
+    totalClinical: number;
+    otherIncome: number;
+    totalIncome: number;
+    expenses: number;
+    balance: number;
+    ipdDue: number;
+    opdDue: number;
   };
   billing: {
     opd: number;
     ipd: number;
+    dayCare: number;
   };
   transactions: {
     mode: string;
     amount: number;
   }[];
-  sectionWiseBilling: {
-    id: number;
-    name: string;
+  paymentModes: {
+    cash: number;
+    digitalWallet: number;
     total: number;
-  }[];
-  expense: number;
+  };
+  ipdCareType: {
+    surgical: number;
+    medical: number;
+    total: number;
+  };
 }
 
 // ----------------------------------

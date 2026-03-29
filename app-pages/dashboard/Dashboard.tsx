@@ -6,84 +6,181 @@ import NoPermission from "@/components/common/NoPermission";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useDashboard } from "@/hooks/query/dashboard";
-import { FilterConfig, FilterValues } from "@/lib/type";
+import { DashboardType, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { endOfDay, startOfDay } from "date-fns";
 import { Bed, LoaderIcon, NotebookPen, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-const StatCard = ({
+const formatAmount = (value: unknown) => {
+  const amount = Number(value || 0);
+  return amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const TableCard = ({
   title,
-  opd,
-  ipd,
+  rows,
+  totalLabel,
+  totalValue,
+  valueHeader = "Amount",
 }: {
   title: string;
-  opd: number;
-  ipd: number;
+  rows: Array<{ type: string; value: number }>;
+  totalLabel: string;
+  totalValue: number;
+  valueHeader?: string;
 }) => (
-  <div className="bg-white p-2 border">
-    <h3 className="font-semibold text-gray-600 text-sm mb-2">{title}</h3>
-    <div className="flex justify-between text-tiny">
-      <div>
-        <p className="text-gray-500">OPD</p>
-        <p className="font-bold text-sm">{opd}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">IPD</p>
-        <p className="text-sm font-bold text-sm">{ipd}</p>
-      </div>
-    </div>
+  <div className="border bg-white">
+    <div className="border-b px-2 py-2 text-tiny font-semibold">{title}</div>
+    <table className="w-full text-tiny">
+      <thead className="bg-muted">
+        <tr>
+          <th className="w-12 px-2 py-1 text-left">No.</th>
+          <th className="px-2 py-1 text-left">Type</th>
+          <th className="w-40 px-2 py-1 text-right">{valueHeader}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, idx) => (
+          <tr key={`${title}-${row.type}-${idx}`} className="border-t">
+            <td className="px-2 py-1">{idx + 1}.</td>
+            <td className="px-2 py-1">{row.type}</td>
+            <td className="px-2 py-1 text-right">{formatAmount(row.value)}</td>
+          </tr>
+        ))}
+        <tr className="border-t font-semibold">
+          <td className="px-2 py-1" />
+          <td className="px-2 py-1">{totalLabel}</td>
+          <td className="px-2 py-1 text-right">{formatAmount(totalValue)}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 );
 
-const PaymentModeStats = ({
-  data,
+const QuickLinks = ({
+  canCreateOpd,
+  canCreateIpd,
+  canCreateDayCare,
+  canViewQueue,
 }: {
-  data: { mode: string; amount: number }[];
+  canCreateOpd: boolean;
+  canCreateIpd: boolean;
+  canCreateDayCare: boolean;
+  canViewQueue: boolean;
 }) => (
-  <div className="bg-white p-2 border col-span-3">
-    <h3 className="font-semibold text-gray-600 mb-3 text-sm">
-      Transactions by Mode
-    </h3>
-
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-tiny">
-      {data.map((item) => (
-        <div
-          key={item.mode}
-          className="flex justify-between border rounded-lg p-1"
-        >
-          <span className="text-gray-500">{item.mode}</span>
-          <span className="font-bold text-sm">{item.amount}</span>
-        </div>
-      ))}
-    </div>
+  <div className="grid grid-cols-4 gap-2 md:grid-cols-1 md:content-start">
+    {canCreateOpd && (
+      <Link
+        href="/patient/search?opdCreate=true"
+        className="flex items-center gap-2 border bg-secondary px-2 py-1.5 text-xs font-medium text-white max-md:flex-col"
+      >
+        <NotebookPen className="size-3" />
+        <span>New OPD</span>
+      </Link>
+    )}
+    {canCreateIpd && (
+      <Link
+        href="/patient/search?ipdCreate=true"
+        className="flex items-center gap-2 border bg-yellow-400 px-2 py-1.5 text-xs font-medium text-white max-md:flex-col"
+      >
+        <Bed className="size-3" />
+        <span>New IPD</span>
+      </Link>
+    )}
+    {canCreateDayCare && (
+      <Link
+        href="/patient/search?ipdCreate=true&dayCare=true"
+        className="flex items-center gap-2 border bg-secondary px-2 py-1.5 text-xs font-medium text-white max-md:flex-col"
+      >
+        <Bed className="size-3" />
+        <span>New Day Care</span>
+      </Link>
+    )}
+    {canViewQueue && (
+      <Link
+        href="/opd/walk-in"
+        className="flex items-center gap-2 border bg-primary px-2 py-1.5 text-xs font-medium text-white max-md:flex-col"
+      >
+        <UserPlus className="size-3" />
+        <span>Walk-In Queue</span>
+      </Link>
+    )}
   </div>
 );
 
-const SectionBillingStats = ({
-  data,
-}: {
-  data: { id: number; name: string; total: number }[];
-}) => (
-  <div className="bg-white p-2 border col-span-3">
-    <h3 className="font-semibold text-gray-600 mb-3 text-sm">
-      Billing by Section
-    </h3>
+const DashboardTables = ({ data }: { data: DashboardType }) => {
+  const patientRows = [
+    { type: "OPD", value: data.patients.opd },
+    { type: "IPD", value: data.patients.ipd },
+    { type: "DayCare", value: data.patients.dayCare },
+  ];
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-tiny">
-      {data.map((section) => (
-        <div
-          key={section.id}
-          className="flex justify-between border rounded-lg p-1"
-        >
-          <span className="text-gray-500 ">{section.name}</span>
-          <span className="font-bold text-sm">{section.total}</span>
-        </div>
-      ))}
+  const collectionRows = [
+    { type: "OPD", value: data.collections.opd },
+    { type: "IPD", value: data.collections.ipd },
+    { type: "Total OPD + IPD", value: data.collections.totalClinical },
+    { type: "Other Income", value: data.collections.otherIncome },
+    { type: "Total Income", value: data.collections.totalIncome },
+    { type: "Expenses", value: data.collections.expenses },
+    { type: "Balance", value: data.collections.balance },
+    { type: "IPD Due", value: data.collections.ipdDue },
+    { type: "OPD Due", value: data.collections.opdDue },
+  ];
+
+  const totalBillingRows = [{ type: "OPD", value: data.billing.opd }];
+
+  const paymentModeRows = [
+    { type: "Cash", value: data.paymentModes.cash },
+    { type: "Digital Wallet", value: data.paymentModes.digitalWallet },
+  ];
+
+  const careTypeRows = [
+    { type: "Surgical", value: data.ipdCareType.surgical },
+    { type: "Medical", value: data.ipdCareType.medical },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <TableCard
+        title="Patients"
+        rows={patientRows}
+        totalLabel="Total Patients"
+        totalValue={patientRows.reduce((sum, row) => sum + row.value, 0)}
+        valueHeader="Count"
+      />
+      <TableCard
+        title="Collections"
+        rows={collectionRows}
+        totalLabel="Total"
+        totalValue={collectionRows.reduce((sum, row) => sum + row.value, 0)}
+      />
+      <TableCard
+        title="Total Billing"
+        rows={totalBillingRows}
+        totalLabel="Total"
+        totalValue={data.billing.opd}
+      />
+      <TableCard
+        title="Payment Modes"
+        rows={paymentModeRows}
+        totalLabel="Total"
+        totalValue={data.paymentModes.total}
+      />
+      <TableCard
+        title="IPD Care Type"
+        rows={careTypeRows}
+        totalLabel="Current Patients"
+        totalValue={data.ipdCareType.total}
+        valueHeader="Current IPD Patients"
+      />
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard = () => {
   const [filters, setFilters] = useState<FilterValues>({
@@ -140,93 +237,34 @@ const Dashboard = () => {
 
   return (
     <CustomLayout
-      contentClassName="grid grid-cols-1 md:grid-cols-[15%_85%] h-full max-md:space-y-3 md:space-x-3"
+      contentClassName="grid h-full grid-cols-1 md:grid-cols-[15%_85%] md:space-x-3 max-md:space-y-3"
       title="Dashboard"
     >
-      <div className="grid grid-cols-4 md:grid-cols-1 gap-2 content-start">
-        {canCreateOpd && (
-          <Link
-            href="/patient/search?opdCreate=true"
-            className="bg-secondary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
-          >
-            <NotebookPen className="size-3" />
-            <span>New OPD</span>
-          </Link>
-        )}
-        {canCreateIpd && (
-          <Link
-            href="/patient/search?ipdCreate=true"
-            className="bg-yellow-400 px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
-          >
-            <Bed className="size-3" />
-            <span>New IPD</span>
-          </Link>
-        )}
-        {canCreateDayCare && (
-          <Link
-            href="/patient/search?ipdCreate=true&dayCare=true"
-            className="bg-secondary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
-          >
-            <Bed className="size-3" />
-            <span>New Day Care</span>
-          </Link>
-        )}
-        {canViewQueue && (
-          <Link
-            href="/opd/walk-in"
-            className="bg-primary px-2 py-1.5 flex max-md:flex-col items-center gap-2 text-white border text-xs font-medium"
-          >
-            <UserPlus className="size-3" />
-            <span>Walk-In Queue</span>
-          </Link>
-        )}
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-3">
-          <CustomFilters<FilterValues>
-            filters={neededFilters}
-            defaultValues={filters}
-            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
-            onSubmit={setFilters}
-          />
-        </div>
+      <QuickLinks
+        canCreateOpd={Boolean(canCreateOpd)}
+        canCreateIpd={Boolean(canCreateIpd)}
+        canCreateDayCare={Boolean(canCreateDayCare)}
+        canViewQueue={Boolean(canViewQueue)}
+      />
+
+      <div className="space-y-3">
+        <CustomFilters<FilterValues>
+          filters={neededFilters}
+          defaultValues={filters}
+          filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+          onSubmit={setFilters}
+        />
+
         {!data && isPending ? (
-          <div className="col-span-3 flex items-center justify-center h-40 border bg-white">
+          <div className="flex h-40 items-center justify-center border bg-white">
             <LoaderIcon className="size-4 animate-spin" />
           </div>
-        ) : (
-          <>
-            <StatCard
-              title="Patients"
-              opd={data?.patients.opd || 0}
-              ipd={data?.patients.ipd || 0}
-            />
+        ) : data ? (
+          <DashboardTables data={data} />
+        ) : null}
 
-            <StatCard
-              title="Collections"
-              opd={data?.collections.opd || 0}
-              ipd={data?.collections.ipd || 0}
-            />
-
-            <StatCard
-              title="Billing"
-              opd={data?.billing.opd || 0}
-              ipd={data?.billing.ipd || 0}
-            />
-
-            <div className="bg-white p-2 border">
-              <h3 className="font-semibold text-gray-600 mb-2 text-sm">
-                Expense
-              </h3>
-              <p className="text-sm font-bold">{data?.expense || 0}</p>
-            </div>
-
-            <PaymentModeStats data={data?.transactions || []} />
-            <SectionBillingStats data={data?.sectionWiseBilling || []} />
-          </>
-        )}
         {isFetching && (
-          <div className="col-span-3 flex justify-end">
+          <div className="flex justify-end">
             <div className="inline-flex items-center gap-2 text-xs text-gray-500">
               <LoaderIcon className="size-3 animate-spin" />
               Updating...
