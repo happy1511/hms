@@ -174,9 +174,9 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
       <TableCard
         title="IPD Care Type"
         rows={careTypeRows}
-        totalLabel="Current Patients"
+        totalLabel="Total Patients"
         totalValue={data.ipdCareType.total}
-        valueHeader="Current IPD Patients"
+        valueHeader="IPD Patients"
       />
     </div>
   );
