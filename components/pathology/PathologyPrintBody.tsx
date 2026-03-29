@@ -104,10 +104,10 @@ const PathologyPrintBody = ({ data, layoutClassName = "" }: Props) => {
       <table className="w-full border border-black border-collapse">
         <tbody>
           <HeaderRow
-            leftLabel="UHID"
-            leftValue={patient?.uhid || "-"}
+            leftLabel="Patient UHID"
+            leftValue={String(patient?.id || "-")}
             rightLabel="Barcode"
-            rightValue={patient?.uhid || "-"}
+            rightValue={String(patient?.id || "-")}
           />
           <HeaderRow
             leftLabel="Patient"

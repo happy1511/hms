@@ -444,8 +444,8 @@ const PathologyOrders = ({
                 </div>
 
                 <div>
-                  <span className="font-medium">UHID:</span>{" "}
-                  {selectedPatientData.uhid}
+                  <span className="font-medium">Patient UHID:</span>{" "}
+                  {selectedPatientData.id}
                 </div>
 
                 <div>

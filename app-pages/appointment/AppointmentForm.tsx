@@ -54,7 +54,7 @@ const AppointmentForm = () => {
     <CustomLayout title="Book new Appointment">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-2 space-y-3 gap-x-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 space-y-3 gap-x-2">
             <div>
               <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
@@ -178,7 +178,7 @@ const AppointmentForm = () => {
                 )}
               />
             </div>
-            <div className="col-span-2 ">
+            <div className="md:col-span-2">
               <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-1 border-r border-black/15 px-2 bg-pink-50">
                   Remarks

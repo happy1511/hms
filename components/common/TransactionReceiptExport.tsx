@@ -60,7 +60,7 @@ const TransactionReceiptExport = ({
           <InfoRow
             label1="Patient Name"
             value1={customer.name || "-"}
-            label2="UHID"
+            label2="Patient UHID"
             value2={customer.uhid || "-"}
           />
           <InfoRow

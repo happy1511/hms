@@ -53,7 +53,7 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
 
   const customer = {
     name: `${patient?.firstName || ""} ${patient?.lastName || ""}`.trim(),
-    uhid: patient?.uhid || "-",
+    uhid: String(patient?.id || "-"),
     gender: patient?.gender ? String(patient.gender) : "-",
     age: patient?.dob
       ? `${Math.max(

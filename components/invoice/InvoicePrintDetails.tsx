@@ -111,7 +111,7 @@ const InvoicePrintDetails = ({
           <CustomerInfo
             customer={{
               name: `${patient?.firstName} ${patient?.lastName}`,
-              uhid: patient?.uhid || "",
+              uhid: String(patient?.id || ""),
               age: patientAge,
               gender: patientGender,
               relation: patientRelation,

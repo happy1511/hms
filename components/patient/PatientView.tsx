@@ -77,8 +77,8 @@ export function PatientViewModal({
             contentClassName="grid grid-cols-[40%_60%] space-y-1"
             title="Personal"
           >
-            <div>UHID</div>
-            <div>{data.uhid}</div>
+            <div>Patient UHID</div>
+            <div>{data.id}</div>
 
             <div>Name</div>
             <div>

@@ -146,8 +146,10 @@ const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
                   <tr>
                     <Cell className="bg-[#f2f2f2] font-semibold">IPD No:</Cell>
                     <Cell>{valueOrDash(data.id)}</Cell>
-                    <Cell className="bg-[#f2f2f2] font-semibold">UHID:</Cell>
-                    <Cell>{valueOrDash(data.patient?.uhid)}</Cell>
+                    <Cell className="bg-[#f2f2f2] font-semibold">
+                      Patient UHID:
+                    </Cell>
+                    <Cell>{valueOrDash(data.patient?.id)}</Cell>
                   </tr>
                   <tr>
                     <Cell className="bg-[#f2f2f2] font-semibold">Patient:</Cell>

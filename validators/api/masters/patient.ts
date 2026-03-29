@@ -103,7 +103,7 @@ const partialPatientValidator = patientValidator.partial().extend({
 
 const findPatientValidator = z
   .object({
-    uhid: z.string().optional(),
+    uhid: z.coerce.number().int().positive().optional(),
     name: z.string().optional(),
     contactNo: z.string().optional(),
   })

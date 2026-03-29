@@ -266,7 +266,7 @@ const Appointments = () => {
   return (
     <CustomLayout
       title="Appointments"
-      buttons={<Buttons canCreate={canCreate} />}
+      // buttons={<Buttons canCreate={canCreate} />}
       contentClassName="space-y-4"
     >
       {canCreate && <AppointmentForm />}

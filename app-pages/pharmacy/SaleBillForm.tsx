@@ -714,10 +714,10 @@ const UpdateCreateForm = ({ data }: { data?: any }) => {
             query={patientQuery}
             getItems={(p) => p?.data}
             valueKey={(i) => String(i.id)}
-            labelKey={(i) => `${i.uhid} | ${i.firstName} ${i.lastName}`}
+            labelKey={(i) => `${i.id} | ${i.firstName} ${i.lastName}`}
             search={patientSearch}
             onSearchChange={setPatientSearch}
-            placeholder="Search patient by name/UHID"
+            placeholder="Search patient by name/ID"
           />
           <FormInfiniteSelect<
             Doctor,

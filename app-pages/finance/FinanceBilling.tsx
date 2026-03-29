@@ -41,7 +41,7 @@ type InvoiceTab =
   | "cashflow";
 
 const tabFiltersConfig: FilterConfig<FilterValues>[] = [
-  { label: "UHID", valueKey: "uhid", type: "text" },
+  { label: "Patient UHID", valueKey: "uhid", type: "text" },
   { label: "Billing Period", valueKey: "createdAt", type: "dateRange" },
 ];
 
@@ -239,7 +239,7 @@ const FinanceBilling = () => {
                 </div>
               }
             />
-            <div className="text-[10px]">{patient.uhid}</div>
+            <div className="text-[10px]">{patient.id}</div>
           </div>
         );
       },
@@ -433,7 +433,7 @@ const FinanceBilling = () => {
                         ...(values.invoiceId
                           ? { invoiceId: values.invoiceId }
                           : {}),
-                        ...(values.uhid ? { uhid: values.uhid } : {}),
+                        ...(values.uhid ? { uhid: Number(values.uhid) } : {}),
                         ...(values.billingPeriod?.from ||
                         values.billingPeriod?.to
                           ? {
@@ -449,7 +449,7 @@ const FinanceBilling = () => {
                     })}
                     className="space-y-3"
                   >
-                    <div className="grid grid-cols-2 space-y-3 gap-x-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 space-y-3 gap-x-2">
                       <div>
                         <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                           <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
@@ -478,7 +478,7 @@ const FinanceBilling = () => {
                       <div>
                         <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                           <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
-                            UHID
+                            Patient UHID
                           </Label>
                           <div className="col-span-3">
                             <FormField<InvoiceSearchForm>

@@ -119,13 +119,13 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
     },
 
     {
-      accessorKey: "uhid",
+      accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<OPDType> label="UHID No" column={column} />;
+        return <SortableHeader<OPDType> label="Patient UHID" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
-      cell: ({ row }) => row.original.patient.uhid,
+      cell: ({ row }) => row.original.patient.id,
     },
     {
       accessorKey: "date",
@@ -173,7 +173,7 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
                   name="name"
                 />
                 <FormField
-                  label="UHID No"
+                  label="Patient UHID"
                   type="text"
                   control={form.control}
                   name="uhid"

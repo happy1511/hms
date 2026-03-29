@@ -761,7 +761,6 @@ model PatientIdentification {
 
 model Patient {
   id                 Int            @id @default(autoincrement())
-  uhid               String         @unique @default(uuid())
   title              NameTitle
   firstName          String
   middleName         String?
@@ -799,7 +798,6 @@ model Patient {
 
   @@index([createdAt])
   @@index([createdBy])
-  @@index([uhid])
 }
 
 // -------------------- Facility Management --------------------

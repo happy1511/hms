@@ -155,8 +155,8 @@ const OpdConsultationExport = ({
               <p className="font-semibold">OPD CONSULTATION</p>
             </div>
             <InfoRow
-              label1="UHID"
-              value1={valueOrDash(data.patient?.uhid)}
+              label1="Patient UHID"
+              value1={valueOrDash(data.patient?.id)}
               label2="Date"
               value2={formatDateOrDash(data.createdAt, true)}
             />

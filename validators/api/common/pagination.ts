@@ -39,7 +39,12 @@ const paginationValidator = z.object({
     .optional(),
   appointmentStatus: z.enum(AppointmentStatus).optional(),
   doctorType: z.enum(DoctorType).optional(),
-  uhid: z.string().optional(),
+  uhid: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .transform((t) => (t ? Number(t) : undefined)),
   contactNo: z.string().optional(),
   roomId: z.coerce
     .number()

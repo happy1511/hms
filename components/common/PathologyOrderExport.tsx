@@ -5,7 +5,8 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const flag = (value: number | string, range: string) => {
-  if (!range || value === "" || value === null || value === undefined) return "";
+  if (!range || value === "" || value === null || value === undefined)
+    return "";
   const [low, high] = range.split("-").map(Number);
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return "";
@@ -49,13 +50,21 @@ const PathologyOrderExport = ({ data }: any) => (
         <div className="space-y-1">
           <InfoLine label="Patient" value={data.patient.name} />
           <InfoLine label="Gender" value={data.patient.gender} />
-          <InfoLine label="Patient ID" value={data.patient.patientId} />
+          <InfoLine label="Patient UHID" value={data.patient.patientId} />
           <InfoLine label="Referred By" value={data.doctor.name} />
         </div>
         <div className="space-y-1 text-right">
           <InfoLine label="Age" value={data.patient.age ?? "-"} align="right" />
-          <InfoLine label="Phone" value={data.patient.phone ?? "-"} align="right" />
-          <InfoLine label="Email" value={data.patient.email ?? "-"} align="right" />
+          <InfoLine
+            label="Phone"
+            value={data.patient.phone ?? "-"}
+            align="right"
+          />
+          <InfoLine
+            label="Email"
+            value={data.patient.email ?? "-"}
+            align="right"
+          />
         </div>
       </div>
 
@@ -85,7 +94,10 @@ const PathologyOrderExport = ({ data }: any) => (
             {data.tests.map((group: any, gi: number) => (
               <React.Fragment key={`group-${gi}`}>
                 <tr>
-                  <Cell colSpan={5} className="bg-[#f7f7f7] font-semibold text-left">
+                  <Cell
+                    colSpan={5}
+                    className="bg-[#f7f7f7] font-semibold text-left"
+                  >
                     {group.category}
                   </Cell>
                 </tr>

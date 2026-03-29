@@ -26,7 +26,7 @@ const CustomerInfo = ({ customer, invoice }: Props) => {
     <table className="w-full border-collapse">
       <tbody>
         <InfoRow
-          leftLabel="UHID"
+          leftLabel="Patient UHID"
           leftValue={customer.uhid || "-"}
           rightLabel="Date"
           rightValue={invoice.date}

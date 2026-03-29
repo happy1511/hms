@@ -34,7 +34,7 @@ const CustomTabs = ({
       {...(onValueChange ? { onValueChange } : {})}
     >
       <div className="border-b border-primary flex justify-between items-end">
-        <TabsList className="bg-white">
+        <TabsList className="bg-white flex-wrap h-auto!">
           {tabs.map((tab, i) => (
             <TabsTrigger
               className="rounded-t-3xl text-tiny data-[state=active]:text-white data-[state=active]:bg-linear-to-b from-primary to-primary/80 "

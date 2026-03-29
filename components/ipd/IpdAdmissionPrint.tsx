@@ -75,7 +75,7 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
     return [p?.firstName, p?.lastName].filter(Boolean).join(" ");
   }, [data]);
 
-  const patientUhid = (data.patient as any)?.uhid;
+  const patientUhid = (data.patient as any)?.id;
 
   const contact = useMemo(() => {
     const contacts: any[] = ((data.patient as any)?.contacts ?? []) as any[];
@@ -165,7 +165,7 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
                 </Cell>
                 <Cell className="w-[42%]">
                   {valueOrDash(patientName)}{" "}
-                  {patientUhid ? `- UHID: ${patientUhid}` : ""}
+                  {patientUhid ? `- Patient UHID: ${patientUhid}` : ""}
                 </Cell>
                 <Cell className="w-[18%] bg-[#f2f2f2] font-semibold">
                   IPD Number:

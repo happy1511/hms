@@ -19,7 +19,7 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const contactNo = query.contactNo ?? "";
-      const uhid = query.uhid ?? "";
+      const patientId = query.uhid ? Number(query.uhid) : undefined;
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -34,8 +34,8 @@ export const getAPI = async (req: Request) => {
         );
       }
 
-      if (uhid) {
-        and.push({ uhid: { equals: uhid } });
+      if (patientId !== undefined) {
+        and.push({ id: { equals: patientId } });
       }
 
       if (contactNo) {
@@ -78,7 +78,6 @@ export const getAPI = async (req: Request) => {
             firstName: true,
             lastName: true,
             middleName: true,
-            uhid: true,
             id: true,
 
             contacts: {
@@ -115,7 +114,7 @@ export const getDocumentsAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const contactNo = query.contactNo ?? "";
-      const uhid = query.uhid ?? "";
+      const patientId = query.uhid ? Number(query.uhid) : undefined;
       const documentType = query.documentType ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
@@ -133,8 +132,8 @@ export const getDocumentsAPI = async (req: Request) => {
         });
       }
 
-      if (uhid) {
-        and.push({ patient: { uhid: { equals: uhid } } });
+      if (patientId !== undefined) {
+        and.push({ patient: { id: { equals: patientId } } });
       }
 
       if (contactNo) {
@@ -192,7 +191,6 @@ export const getDocumentsAPI = async (req: Request) => {
                 firstName: true,
                 lastName: true,
                 middleName: true,
-                uhid: true,
                 id: true,
               },
             },
@@ -250,7 +248,6 @@ export const getDetailsAPI = async (
         where: { id: id },
         select: {
           id: true,
-          uhid: true,
           firstName: true,
           middleName: true,
           lastName: true,

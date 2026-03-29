@@ -137,7 +137,6 @@ export const getAvailabilityAPI = async (req: Request) => {
                 createdAt: true,
                 patient: {
                   select: {
-                    uhid: true,
                     firstName: true,
                     middleName: true,
                     lastName: true,

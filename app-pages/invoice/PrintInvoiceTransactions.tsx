@@ -149,7 +149,7 @@ const PrintInvoiceTransactions = () => {
           <TransactionReceiptExport
             customer={{
               name: `${patient?.firstName} ${patient?.lastName}`,
-              uhid: patient?.uhid || "",
+              uhid: String(patient?.id || ""),
               genderAge,
               address: formatPatientAddress(patient),
               phone: patient?.contacts?.[0]?.value || "",

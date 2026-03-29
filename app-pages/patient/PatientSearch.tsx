@@ -78,7 +78,10 @@ const PatientSearch = () => {
   });
 
   const handleSubmit = (values: FindPatientValidatorType) => {
-    setFilters(values);
+    setFilters({
+      ...values,
+      uhid: values.uhid as number,
+    });
   };
 
   const handleClearFilters = () => {
@@ -146,9 +149,9 @@ const PatientSearch = () => {
     },
 
     {
-      accessorKey: "uhid",
+      accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<Patient> label="UHID No" column={column} />;
+        return <SortableHeader<Patient> label="Patient ID" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
@@ -197,7 +200,7 @@ const PatientSearch = () => {
               name="name"
             />
             <FormField
-              label="UHID No"
+              label="Patient ID"
               type="text"
               control={form.control}
               name="uhid"

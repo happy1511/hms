@@ -78,7 +78,7 @@ const PrintPathologyOrder = () => {
             name: `${patient.firstName} ${patient.lastName}`,
             age: "",
             gender: patient.gender,
-            patientId: patient.uhid,
+            patientId: patient.id,
           },
 
           doctor: {

@@ -76,7 +76,7 @@ export const InvoicePrintDayWise = ({
           }}
           customer={{
             name: `${patient?.firstName} ${patient?.lastName}`,
-            uhid: patient?.uhid || "",
+            uhid: String(patient?.id || ""),
             age: patientAge,
             gender: patientGender,
             relation: patientRelation,

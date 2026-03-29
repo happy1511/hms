@@ -261,7 +261,7 @@ export interface FilterValues {
   nonOccupied?: boolean;
   createdAt?: string | { from?: Date; to?: Date };
   mlcDeclarationDate?: string | { from?: Date; to?: Date };
-  uhid?: string;
+  uhid?: number;
   contactNo?: string;
   doctorType?: DoctorType;
   doctorId?: number;
@@ -640,7 +640,6 @@ export type OPDType = Prisma.OpdGetPayload<{
     patient: {
       select: {
         id: true;
-        uhid: true;
         title: true;
         lastName: true;
         firstName: true;
@@ -689,7 +688,6 @@ export type IPDType = Prisma.IpdGetPayload<{
     patient: {
       select: {
         id: true;
-        uhid: true;
         lastName: true;
         firstName: true;
         middleName: true;
@@ -1179,7 +1177,6 @@ export interface RadiologyTestOrderWithResults {
   }>;
   patient: {
     id: number;
-    uhid: string;
     firstName: string;
     lastName: string;
     dob: string;
@@ -1224,7 +1221,6 @@ export interface PathologyTestOrderWithResults {
   }>;
   patient: {
     id: number;
-    uhid: string;
     firstName: string;
     lastName: string;
     dob: string;
@@ -1312,7 +1308,7 @@ export type BedAvailability = Prisma.RoomGetPayload<{
             createdAt: true;
             patient: {
               select: {
-                uhid: true;
+                id: true;
                 firstName: true;
                 middleName: true;
                 lastName: true;
@@ -1345,7 +1341,7 @@ export type AvailableBed = Prisma.BedGetPayload<{
         createdAt: true;
         patient: {
           select: {
-            uhid: true;
+            id: true;
             firstName: true;
             middleName: true;
             lastName: true;

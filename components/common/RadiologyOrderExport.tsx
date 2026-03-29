@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 
 const sanitizeInline = (html: string) => {
@@ -13,8 +12,9 @@ const sanitizeInline = (html: string) => {
 
 const RadiologyReportPDF = ({ data }: any) => {
   const patient = data.patient;
-  const reportHtml =
-    sanitizeInline(data.results?.[0]?.value || data.test?.template?.content || "");
+  const reportHtml = sanitizeInline(
+    data.results?.[0]?.value || data.test?.template?.content || "",
+  );
 
   return (
     <div className="w-full bg-white text-[11px] text-black print:bg-white">
@@ -36,9 +36,12 @@ const RadiologyReportPDF = ({ data }: any) => {
         <div className="border border-black p-3 text-xs">
           <p className="font-semibold text-sm mb-2">Patient Information</p>
           <div className="grid grid-cols-2 gap-2">
-            <InfoLine label="Name" value={`${patient.firstName} ${patient.lastName}`} />
+            <InfoLine
+              label="Name"
+              value={`${patient.firstName} ${patient.lastName}`}
+            />
             <InfoLine label="Gender" value={patient.gender} />
-            <InfoLine label="UHID" value={patient.uhid} />
+            <InfoLine label="Patient UHID" value={String(patient.id)} />
             <InfoLine label="Age" value={patient.age ?? "-"} />
           </div>
         </div>

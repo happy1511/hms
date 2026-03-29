@@ -102,7 +102,7 @@ const PatientDocuments = () => {
       header: ({ column }) => {
         return (
           <SortableHeader<PatientDocumentType>
-            label="Patient ID"
+            label="Patient UHID"
             column={column}
           />
         );

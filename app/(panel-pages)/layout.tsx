@@ -1,12 +1,22 @@
+"use client";
+
+import CommonLoader from "@/components/common/CommonLoader";
 import CustomHeader from "@/components/common/CustomHeader";
 import { CustomSidebar } from "@/components/common/CustomSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useProfile } from "@/hooks/query/auth";
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { isLoading } = useProfile();
+
+  if (isLoading) {
+    return <CommonLoader fullScreen label="Loading your workspace" />;
+  }
+
   return (
     <SidebarProvider className="flex min-h-screen flex-col">
       <main>

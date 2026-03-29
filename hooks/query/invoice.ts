@@ -45,7 +45,7 @@ const getInvoiceList = createRequest<
     limit: number;
     invoiceType?: "opd" | "ipd" | "daycare" | "discharged";
     invoiceId?: number;
-    uhid?: string;
+    uhid?: number;
     createdAt?: string | { from?: Date; to?: Date };
   }
 >(INVOICE_LIST, "GET");
@@ -72,7 +72,9 @@ export const useInvoiceDetails = (filters: FilterValues) => {
 };
 
 export const useInvoiceList = (
-  filters: FilterValues & { invoiceType?: "opd" | "ipd" | "daycare" | "discharged" },
+  filters: FilterValues & {
+    invoiceType?: "opd" | "ipd" | "daycare" | "discharged";
+  },
   page: number,
   limit: number,
   enabled = true,

@@ -205,7 +205,9 @@ const ResultEntry = () => {
             <p className="font-semibold">
               {data.patient.firstName} {data.patient.lastName}
             </p>
-            <p className="text-muted-foreground">UHID: {data.patient.uhid}</p>
+            <p className="text-muted-foreground">
+              Patient UHID: {data.patient.id}
+            </p>
             <p className="text-muted-foreground">
               {data.patient.gender} • DOB:{" "}
               {new Date(data.patient.dob).toLocaleDateString()}

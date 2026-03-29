@@ -177,7 +177,6 @@ export const getAPI = async (req: Request, user: User) => {
             patient: {
               select: {
                 id: true,
-                uhid: true,
                 lastName: true,
                 firstName: true,
                 middleName: true,
@@ -230,7 +229,6 @@ export const getAdmissionPrintAPI = async (
             patient: {
               select: {
                 id: true,
-                uhid: true,
                 firstName: true,
                 lastName: true,
                 dob: true,
@@ -473,7 +471,6 @@ export const getIpdDischargePrintAPI = async (
             patient: {
               select: {
                 id: true,
-                uhid: true,
                 firstName: true,
                 lastName: true,
                 dob: true,
