@@ -770,6 +770,7 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
 
 export type InvoiceListRowType = {
   id: number;
+  ipdId?: number | null;
   createdAt: Date | string;
   invoiceFor: "OPD" | "IPD" | "UNKNOWN";
   rate: number;
@@ -779,6 +780,7 @@ export type InvoiceListRowType = {
   total: number;
   isPaid: boolean;
   isFree: boolean;
+  isDischarged?: boolean | null;
   paidAmount: number;
   patient: PatientType | null;
   consultantDoctorName: string | null;

@@ -152,6 +152,11 @@ const FinanceBilling = () => {
     ModuleType.FINANCE_BILLING,
     ActionType.VIEW,
   );
+  const canCreateDischarge = hasActionPermission(
+    profile.data,
+    ModuleType.DISCHARGE_PATIENT,
+    ActionType.CREATE,
+  );
 
   const getPermissionModule = (row: InvoiceListRowType) => {
     if (row.invoiceFor === "OPD") return ModuleType.OPD_BILL;
@@ -168,6 +173,17 @@ const FinanceBilling = () => {
     );
 
     return [
+      ...(row.invoiceFor === "IPD" &&
+      row.ipdId &&
+      !row.isDischarged &&
+      canCreateDischarge
+        ? [
+            {
+              label: "Discharge Patient",
+              onClick: () => router.push(`/ipd/discharge/${row.ipdId}`),
+            },
+          ]
+        : []),
       ...(canUpdate
         ? [
             {

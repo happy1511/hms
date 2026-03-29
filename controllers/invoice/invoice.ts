@@ -571,6 +571,7 @@ export const getInvoiceListAPI = async (req: Request) => {
 
         return {
           id: invoice.id,
+          ipdId: invoice.ipd?.id ?? null,
           createdAt: invoice.createdAt,
           invoiceFor: invoice.opd ? "OPD" : invoice.ipd ? "IPD" : "UNKNOWN",
           rate: invoice.rate,
@@ -580,6 +581,7 @@ export const getInvoiceListAPI = async (req: Request) => {
           total: invoice.total,
           isPaid: invoice.isPaid,
           isFree: invoice.isFree,
+          isDischarged: invoice.ipd?.isDischarged ?? null,
           paidAmount,
           patient,
           consultantDoctorName,
