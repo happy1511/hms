@@ -5,11 +5,16 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import CreateSupplierModal from "@/components/pharmacy/CreateSupplierModal";
 import { Form } from "@/components/ui/form";
-import { DrugSupplier } from "@/generated/prisma/client";
+import {
+  Drug,
+  DrugBillingCategory,
+  DrugSupplier,
+} from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
-import { useProfile } from "@/hooks/query/auth";
 import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
+import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
 import { useInfiniteDrugSupplierList } from "@/hooks/query/drugSupplier";
@@ -18,347 +23,426 @@ import {
   useGetPurchaseOrder,
   useUpdatePurchaseOrder,
 } from "@/hooks/query/pharmacyPurchaseOrder";
-import { PaginatedResponse } from "@/lib/type";
 import {
-  purchaseOrderValidator,
-  purchaseOrderValidatorType,
-} from "@/validators/api/masters/pharmacyPurchase";
+  calculatePurchaseOrderLine,
+  calculatePurchaseOrderSummary,
+} from "@/lib/pharmacyPurchaseOrder";
+import { PaginatedResponse } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Path, useFieldArray, useForm, UseFormReturn } from "react-hook-form";
+import {
+  Path,
+  useFieldArray,
+  useForm,
+  UseFormReturn,
+  useWatch,
+} from "react-hook-form";
+import {
+  purchaseOrderValidator,
+  purchaseOrderValidatorType,
+} from "@/validators/api/masters/pharmacyPurchase";
 
-type Props = {
-  form: UseFormReturn<purchaseOrderValidatorType>;
-};
+type PurchaseOrderData = PurchaseOrderGetPayload<{
+  include: {
+    supplier: true;
+    items: { include: { category: true; drug: true } };
+  };
+}>;
 
-type ServiceRowProps = {
-  index: number;
-  form: UseFormReturn<purchaseOrderValidatorType>;
-};
+type PurchaseOrderItemForm = purchaseOrderValidatorType["items"][number];
+
+const normalizeItems = (items: purchaseOrderValidatorType["items"] = []) =>
+  items.map((item) => ({
+    quantity: Number(item?.quantity || 0),
+    rate: Number(item?.rate || 0),
+    discountPercentage: Number(item?.discountPercentage || 0),
+    drug: item?.drug
+      ? {
+          gstPercentage: Number(item.drug.gstPercentage || 0),
+          cGstPercentage: Number(item.drug.cGstPercentage || 0),
+          sGstPercentage: Number(item.drug.sGstPercentage || 0),
+          iGstPercentage: Number(item.drug.iGstPercentage || 0),
+        }
+      : undefined,
+  }));
+
+const money = (value: number) => Number(value || 0).toFixed(2);
+
+const getEmptyItem = (): PurchaseOrderItemForm => ({
+  quantity: 1,
+  discountPercentage: 0,
+  rate: 0,
+  total: 0,
+  hsnSacCode: undefined,
+  drug: {
+    id: undefined as unknown as number,
+    name: "",
+    hsnCode: 0,
+    gstPercentage: 0,
+    cGstPercentage: 0,
+    sGstPercentage: 0,
+    iGstPercentage: 0,
+  },
+  category: undefined,
+});
 
 const getInitialValues = (
-  data?: PurchaseOrderGetPayload<{
-    include: {
-      supplier: true;
-      items: { include: { category: true; drug: true } };
-    };
-  }>,
-): purchaseOrderValidatorType => {
-  return {
-    supplier: data?.supplier ?? { id: undefined },
-    orderDate: data?.orderDate ?? new Date(),
-    remarks: data?.remarks ?? "",
-    items: data?.items ?? [
-      {
-        quantity: 1,
-        discountPercentage: 0,
-        rate: 0,
-        total: 0,
+  data?: PurchaseOrderData,
+): purchaseOrderValidatorType => ({
+  supplier: data?.supplier ?? { id: undefined as unknown as number },
+  orderDate: data?.orderDate ?? new Date(),
+  remarks: data?.remarks ?? "",
+  termsAndConditions: data?.termsAndConditions ?? "",
+  packingForwarding: data?.packingForwarding ?? 0,
+  tcsAmount: data?.tcsAmount ?? 0,
+  roundOffAmount: data?.roundOffAmount ?? 0,
+  items: data?.items?.length
+    ? data.items.map((item) => ({
+        quantity: item.quantity,
+        discountPercentage: item.discountPercentage,
+        rate: item.rate,
+        total: item.total,
+        hsnSacCode: item.hsnSacCode ?? item.drug.hsnCode ?? undefined,
         drug: {
-          id: undefined,
-          gstPercentage: 0,
-          cGstPercentage: 0,
-          sGstPercentage: 0,
-          iGstPercentage: 0,
+          id: item.drug.id,
+          name: item.drug.name,
+          hsnCode: item.drug.hsnCode,
+          gstPercentage: item.drug.gstPercentage,
+          cGstPercentage: item.drug.cGstPercentage,
+          sGstPercentage: item.drug.sGstPercentage,
+          iGstPercentage: item.drug.iGstPercentage,
         },
-        category: { id: undefined },
-      },
-    ],
-  };
-};
+        category: item.category ?? undefined,
+      }))
+    : [getEmptyItem()],
+});
 
-const ServiceRow = ({ index, form }: ServiceRowProps) => {
+const SummaryField = ({ label, value }: { label: string; value: string }) => (
+  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
+    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
+      {label}
+    </div>
+    <div className="bg-white px-2 py-1 text-right text-tiny">{value}</div>
+  </div>
+);
+
+const SummaryInput = ({
+  label,
+  name,
+  form,
+}: {
+  label: string;
+  name: Path<purchaseOrderValidatorType>;
+  form: UseFormReturn<purchaseOrderValidatorType>;
+}) => (
+  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
+    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
+      {label}
+    </div>
+    <div className="bg-white px-1 py-1">
+      <FormField<purchaseOrderValidatorType>
+        type="number"
+        name={name}
+        control={form.control}
+        hideError
+        className="h-6 px-1 text-right shadow-none"
+      />
+    </div>
+  </div>
+);
+
+const PurchaseOrderRow = ({
+  index,
+  form,
+  onRemove,
+}: {
+  index: number;
+  form: UseFormReturn<purchaseOrderValidatorType>;
+  onRemove: (index: number) => void;
+}) => {
   const [drugSearch, setDrugSearch] = useState("");
-  const [billingCategorySearch, setBillingCategorySearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
   const drugsQuery = useInfiniteDrugList(
-    { name: drugSearch, status: Status["active"] },
+    { name: drugSearch, status: Status.active },
     10,
   );
-  const billingCategoryQuery = useInfiniteDrugBillingCategoryList(
-    { name: billingCategorySearch, status: Status["active"] },
+  const categoryQuery = useInfiniteDrugBillingCategoryList(
+    { name: categorySearch, status: Status.active },
     10,
   );
 
-  const { control, watch, setValue, getValues } = form;
-  const { remove } = useFieldArray({
-    control,
-    name: "items",
-  });
-
-  const rowPath = `items.${index}` as Path<purchaseOrderValidatorType>;
-
-  const quantity = watch(
-    `${rowPath}.quantity` as Path<purchaseOrderValidatorType>,
+  const rowPath = `items.${index}` as const;
+  const item = useWatch({
+    control: form.control,
+    name: rowPath as Path<purchaseOrderValidatorType>,
+  }) as PurchaseOrderItemForm | undefined;
+  const line = calculatePurchaseOrderLine(
+    normalizeItems(item ? [item] : [])[0] || {},
   );
-  const drug = watch(`${rowPath}.drug` as Path<purchaseOrderValidatorType>) as
-    | purchaseOrderValidatorType["items"][number]["drug"]
-    | undefined;
-  const rate = watch(`${rowPath}.rate` as Path<purchaseOrderValidatorType>);
-  const discountPercentage = watch(
-    `${rowPath}.discountPercentage` as Path<purchaseOrderValidatorType>,
-  );
-  const total = watch(`${rowPath}.total` as Path<purchaseOrderValidatorType>);
 
   useEffect(() => {
-    const q = Number(quantity) || 0;
-    const r = Number(rate) || 0;
-    const d = Number(discountPercentage) || 0;
-
-    if (!q || !r) {
-      setValue(`${rowPath}.total` as Path<purchaseOrderValidatorType>, 0);
-      return;
-    }
-
-    const gross = q * r;
-    const discount = (gross * d) / 100;
-    const finalTotal = +(gross - discount).toFixed(2);
-
-    const currentTotal = getValues(
-      `${rowPath}.total` as Path<purchaseOrderValidatorType>,
+    const currentHsnSacCode = form.getValues(
+      `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
     );
 
-    if (currentTotal !== finalTotal) {
-      setValue(
-        `${rowPath}.total` as Path<purchaseOrderValidatorType>,
-        finalTotal,
-        {
-          shouldValidate: false,
-          shouldDirty: true,
-        },
+    if (
+      (currentHsnSacCode === undefined ||
+        currentHsnSacCode === null ||
+        currentHsnSacCode === 0) &&
+      item?.drug?.hsnCode
+    ) {
+      form.setValue(
+        `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
+        Number(item.drug.hsnCode),
+        { shouldDirty: true, shouldValidate: false },
       );
     }
-  }, [quantity, rate, discountPercentage, getValues, setValue, rowPath]);
+  }, [form, item?.drug?.hsnCode, rowPath]);
+
+  useEffect(() => {
+    const currentTotal = Number(
+      form.getValues(`${rowPath}.total` as Path<purchaseOrderValidatorType>) ||
+        0,
+    );
+
+    if (currentTotal !== line.lineTotal) {
+      form.setValue(
+        `${rowPath}.total` as Path<purchaseOrderValidatorType>,
+        line.lineTotal,
+        { shouldDirty: true, shouldValidate: false },
+      );
+    }
+  }, [form, line.lineTotal, rowPath]);
 
   return (
-    <tr className="border-t align-top">
-      <td>
-        <div className="px-2 py-1">{index + 1}</div>
-      </td>
-
-      {/* SERVICE */}
-      <td>
-        <div className="px-2 py-1">
-          <FormInfiniteSelect
-            control={control}
-            name={`${rowPath}.drug` as Path<purchaseOrderValidatorType>}
-            query={drugsQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.id)}
-            labelKey={(i) => i.name}
-            search={drugSearch}
-            onSearchChange={setDrugSearch}
-            placeholder="Drug"
-            hideError
-          />
-        </div>
-      </td>
-
-      <td>
-        <div className="px-2 py-1">
-          <FormInfiniteSelect
-            control={control}
-            name={`${rowPath}.category` as Path<purchaseOrderValidatorType>}
-            query={billingCategoryQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.id)}
-            labelKey={(i) => i.name}
-            search={billingCategorySearch}
-            onSearchChange={setBillingCategorySearch}
-            placeholder="Drug"
-            hideError
-          />
-        </div>
-      </td>
-
-      {/* QTY */}
-      <td>
-        <div className="px-2 py-1 min-w-24">
-          <FormField
-            type="number"
-            name={`${rowPath}.quantity` as Path<purchaseOrderValidatorType>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-
-      {/* RATE */}
-      <td>
-        <div className="px-2 py-1 min-w-28">
-          <FormField
-            type="number"
-            name={`${rowPath}.rate` as Path<purchaseOrderValidatorType>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-
-      {/* DISC TYPE */}
-      <td>
-        <div className="px-2 py-1 min-w-30">
-          <FormField
-            type="number"
-            name={
-              `${rowPath}.discountPercentage` as Path<purchaseOrderValidatorType>
-            }
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-
-      {/* RATE */}
-      <td>
-        <div className="px-2 py-1 text-center min-w-28">
-          <p>{(drug?.gstPercentage as number) ?? 0}</p>
-        </div>
-      </td>
-
-      {/* RATE */}
-      <td>
-        <div className="px-2 py-1 text-center min-w-28">
-          <p>{(drug?.cGstPercentage as number) ?? 0}</p>
-        </div>
-      </td>
-
-      {/* RATE */}
-      <td>
-        <div className="px-2 py-1 text-center min-w-28">
-          <p>{(drug?.sGstPercentage as number) ?? 0}</p>
-        </div>
-      </td>
-
-      {/* RATE */}
-      <td>
-        <div className="px-2 py-1 text-center min-w-28">
-          <p>{(drug?.iGstPercentage as number) ?? 0}</p>
-        </div>
-      </td>
-
-      {/* TOTAL */}
-      <td className="font-semibold min-w-28">
-        <div className="px-2 py-1 text-center">₹ {Number(total)}</div>
-      </td>
-
-      {/* REMOVE */}
-      <td className="w-10">
-        <div className="px-2 py-1">
-          <button type="button" onClick={() => remove(index)}>
-            <Trash2 className="size-2 text-destructive" />
+    <tr className="border-t border-black/20 bg-white align-top">
+      <td className="border-r border-black/20 px-2 py-1 min-w-22">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex min-w-5 items-center justify-center rounded-sm border border-black/15 px-1 py-0.5 text-[11px] font-semibold">
+            {index + 1}
+          </span>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-sm border border-destructive/20 p-1 text-destructive transition hover:bg-destructive/5"
+            onClick={() => onRemove(index)}
+            aria-label={`Remove item ${index + 1}`}
+          >
+            <Trash2 className="size-3" />
           </button>
         </div>
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-56">
+        <FormInfiniteSelect<
+          Drug,
+          PaginatedResponse<Drug>,
+          string,
+          purchaseOrderValidatorType
+        >
+          name={`${rowPath}.drug` as Path<purchaseOrderValidatorType>}
+          control={form.control}
+          query={drugsQuery}
+          getItems={(page) => page?.data}
+          valueKey={(drug) => String(drug.id)}
+          labelKey={(drug) => drug.name}
+          search={drugSearch}
+          onSearchChange={setDrugSearch}
+          placeholder="Select Item"
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-36">
+        <FormInfiniteSelect<
+          DrugBillingCategory,
+          PaginatedResponse<DrugBillingCategory>,
+          string,
+          purchaseOrderValidatorType
+        >
+          name={`${rowPath}.category` as Path<purchaseOrderValidatorType>}
+          control={form.control}
+          query={categoryQuery}
+          getItems={(page) => page?.data}
+          valueKey={(category) => String(category.id)}
+          labelKey={(category) => category.name}
+          search={categorySearch}
+          onSearchChange={setCategorySearch}
+          placeholder="Select Category"
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-24">
+        <FormField<purchaseOrderValidatorType>
+          type="number"
+          name={`${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>}
+          control={form.control}
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-18">
+        <FormField<purchaseOrderValidatorType>
+          type="number"
+          name={`${rowPath}.quantity` as Path<purchaseOrderValidatorType>}
+          control={form.control}
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-24">
+        <FormField<purchaseOrderValidatorType>
+          type="number"
+          name={`${rowPath}.rate` as Path<purchaseOrderValidatorType>}
+          control={form.control}
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-1 py-1 min-w-20">
+        <FormField<purchaseOrderValidatorType>
+          type="number"
+          name={
+            `${rowPath}.discountPercentage` as Path<purchaseOrderValidatorType>
+          }
+          control={form.control}
+          hideError
+        />
+      </td>
+
+      <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
+        {Number(item?.drug?.gstPercentage || 0)}%
+      </td>
+
+      <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
+        {Number(item?.drug?.cGstPercentage || 0)}%
+      </td>
+
+      <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
+        {Number(item?.drug?.sGstPercentage || 0)}%
+      </td>
+
+      <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
+        {Number(item?.drug?.iGstPercentage || 0)}%
+      </td>
+
+      <td className="border-r border-black/20 px-2 py-2 text-right min-w-24">
+        {money(line.taxableAmount)}
+      </td>
+
+      <td className="px-2 py-2 text-right font-semibold min-w-24">
+        {money(line.lineTotal)}
       </td>
     </tr>
   );
 };
 
-const BillingItemsTable = ({ form }: Props) => {
-  const { control } = form;
-
-  const { fields, append } = useFieldArray({
-    control,
+const PurchaseOrderItemsTable = ({
+  form,
+}: {
+  form: UseFormReturn<purchaseOrderValidatorType>;
+}) => {
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
     name: "items",
   });
 
-  return (
-    <div className="space-y-3 p-2 h-full flex flex-col">
-      {/* Add Row */}
-      <div className="flex w-full justify-between items-center">
-        <button
-          className="flex gap-1 items-center  text-tiny"
-          type="button"
-          onClick={() =>
-            append({
-              quantity: 1,
-              discountPercentage: 0,
-              rate: 0,
-              total: 0,
-              drug: {
-                id: undefined,
-                gstPercentage: 0,
-                cGstPercentage: 0,
-                sGstPercentage: 0,
-                iGstPercentage: 0,
-              },
-              category: { id: undefined },
-            })
-          }
-        >
-          <PlusIcon className="size-2 text-black" /> <p>Add New Item</p>
-        </button>
-      </div>
+  const items = (useWatch({
+    control: form.control,
+    name: "items",
+  }) || []) as purchaseOrderValidatorType["items"];
+  const packingForwarding = useWatch({
+    control: form.control,
+    name: "packingForwarding",
+  });
+  const tcsAmount = useWatch({
+    control: form.control,
+    name: "tcsAmount",
+  });
+  const roundOffAmount = useWatch({
+    control: form.control,
+    name: "roundOffAmount",
+  });
+  const normalizedItems = normalizeItems(items);
+  const summary = calculatePurchaseOrderSummary(normalizedItems, {
+    packingForwarding: Number(packingForwarding || 0),
+    tcsAmount: Number(tcsAmount || 0),
+    roundOffAmount: Number(roundOffAmount || 0),
+  });
 
-      <div className="w-full overflow-x-auto pb-20">
-        <table className="w-full border min-w-300 text-tiny">
-          <thead className="bg-muted">
-            <tr>
-              <th className="min-w-10">
-                <div className="px-2 py-1">#</div>
+  return (
+    <div className="rounded-sm border border-black/20">
+      <div className="overflow-x-auto">
+        <table className="min-w-[1750px] w-full text-tiny">
+          <thead className="bg-background/50">
+            <tr className="border-b border-black/20 text-left">
+              <th className="border-r border-black/20 px-2 py-2">Actions</th>
+              <th className="border-r border-black/20 px-2 py-2">Item</th>
+              <th className="border-r border-black/20 px-2 py-2">Category</th>
+              <th className="border-r border-black/20 px-2 py-2">HSN/SAC</th>
+              <th className="border-r border-black/20 px-2 py-2">Qty.</th>
+              <th className="border-r border-black/20 px-2 py-2">Rate</th>
+              <th className="border-r border-black/20 px-2 py-2">Disc. %</th>
+              <th className="border-r border-black/20 px-2 py-2">GST%</th>
+              <th className="border-r border-black/20 px-2 py-2">CGST%</th>
+              <th className="border-r border-black/20 px-2 py-2">SGST%</th>
+              <th className="border-r border-black/20 px-2 py-2">IGST%</th>
+              <th className="border-r border-black/20 px-2 py-2 text-right">
+                Taxable
               </th>
-              <th className="w-62.5">
-                <div className="px-2 py-1">Drug</div>
-              </th>
-              <th className="w-62.5">
-                <div className="px-2 py-1">Category</div>
-              </th>
-              <th className="min-w-24">
-                <div className="px-2 py-1">Qty</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">Rate</div>
-              </th>
-              <th className="min-w-30">
-                <div className="px-2 py-1">Discount (%)</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">GST (%)</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">cGST (%)</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">sGST (%)</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">iGST (%)</div>
-              </th>
-              <th className="min-w-28">
-                <div className="px-2 py-1">Total</div>
-              </th>
-              <th className="min-w-10"></th>
+              <th className="px-2 py-2 text-right">Total</th>
             </tr>
           </thead>
 
           <tbody>
             {fields.map((field, index) => (
-              <ServiceRow key={field.id} index={index} form={form} />
+              <PurchaseOrderRow
+                key={field.id}
+                index={index}
+                form={form}
+                onRemove={remove}
+              />
             ))}
           </tbody>
+
+          <tfoot className="bg-background/50">
+            <tr className="border-t border-black/20 font-semibold">
+              <td colSpan={12} className="px-3 py-2 text-right">
+                Totals: {summary.itemCount} Items / Qty {summary.quantityTotal}
+              </td>
+              <td className="px-3 py-2 text-right">
+                {money(summary.itemsTotal)}
+              </td>
+            </tr>
+          </tfoot>
         </table>
+
+        <div className="border-t border-black/20 px-3 py-2">
+          <button
+            className="inline-flex items-center gap-1 rounded-sm border border-black/20 bg-white px-3 py-1 text-tiny transition hover:bg-slate-50"
+            type="button"
+            onClick={() => append(getEmptyItem())}
+          >
+            <PlusIcon className="size-3" />
+            Add New Item
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-const UpdateCreateForm = ({
-  data,
-}: {
-  data?: PurchaseOrderGetPayload<{
-    include: {
-      supplier: true;
-      items: { include: { category: true; drug: true } };
-    };
-  }>;
-}) => {
+const UpdateCreateForm = ({ data }: { data?: PurchaseOrderData }) => {
   const [supplierSearchValue, setSupplierSearchValue] = useState("");
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const { data: profile } = useProfile(false);
   const { mutateAsync: create, isPending: creating } = useCreatePurchaseOrder();
   const { mutateAsync: update, isPending: updating } = useUpdatePurchaseOrder();
   const supplierQuery = useInfiniteDrugSupplierList(
-    { name: supplierSearchValue, status: Status["active"] },
+    { name: supplierSearchValue, status: Status.active },
     10,
   );
 
@@ -367,58 +451,176 @@ const UpdateCreateForm = ({
     resolver: zodResolver(purchaseOrderValidator),
   });
 
+  useEffect(() => {
+    form.reset(getInitialValues(data));
+  }, [data, form]);
+
+  const items = (useWatch({
+    control: form.control,
+    name: "items",
+  }) || []) as purchaseOrderValidatorType["items"];
+  const packingForwarding = useWatch({
+    control: form.control,
+    name: "packingForwarding",
+  });
+  const tcsAmount = useWatch({
+    control: form.control,
+    name: "tcsAmount",
+  });
+  const roundOffAmount = useWatch({
+    control: form.control,
+    name: "roundOffAmount",
+  });
+  const summary = calculatePurchaseOrderSummary(normalizeItems(items), {
+    packingForwarding: Number(packingForwarding || 0),
+    tcsAmount: Number(tcsAmount || 0),
+    roundOffAmount: Number(roundOffAmount || 0),
+  });
+
+  const canCreateSupplier = Boolean(
+    profile?.data &&
+    hasActionPermission(
+      profile.data,
+      ModuleType.PHARMACY_SUPPLIER,
+      ActionType.CREATE,
+    ),
+  );
+
   const onSubmit = (values: purchaseOrderValidatorType) => {
     if (data) {
       update({ orderId: Number(data.id), ...values });
-    } else {
-      create(values);
+      return;
     }
+
+    create(values);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-2 gap-x-2">
-          <FormField<purchaseOrderValidatorType>
-            label="Name"
-            type="date"
-            name="orderDate"
-            control={form.control}
-            required
-          />
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <FormInfiniteSelect<
+                DrugSupplier,
+                PaginatedResponse<DrugSupplier>,
+                string,
+                purchaseOrderValidatorType
+              >
+                label="Supplier"
+                name="supplier"
+                control={form.control}
+                query={supplierQuery}
+                getItems={(page) => page?.data}
+                valueKey={(supplier) => String(supplier.id)}
+                labelKey={(supplier) => supplier.name}
+                search={supplierSearchValue}
+                onSearchChange={setSupplierSearchValue}
+                required
+              />
+              {canCreateSupplier && (
+                <button
+                  type="button"
+                  className="text-tiny border py-1 px-2 text-black/60 rounded-md font-medium transition hover:text-blue-700"
+                  onClick={() => setSupplierModalOpen(true)}
+                >
+                  + Add New Supplier
+                </button>
+              )}
+            </div>
+            <div>
+              <FormField<purchaseOrderValidatorType>
+                label="PO Date"
+                type="date"
+                name="orderDate"
+                control={form.control}
+                required
+              />
+            </div>
+          </div>
 
-          <FormInfiniteSelect<
-            DrugSupplier,
-            PaginatedResponse<DrugSupplier>,
-            string,
-            purchaseOrderValidatorType
-          >
-            label="Supplier"
-            name="supplier"
-            control={form.control}
-            query={supplierQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i?.id)}
-            labelKey={(i) => i?.name}
-            search={supplierSearchValue}
-            onSearchChange={setSupplierSearchValue}
-            required
-          />
-        </div>
+          <PurchaseOrderItemsTable form={form} />
 
-        <BillingItemsTable form={form} />
+          <div className="grid gap-3 lg:grid-cols-[1fr_260px]">
+            <div className="space-y-3">
+              <FormField<purchaseOrderValidatorType>
+                label="Remarks"
+                type="textarea"
+                name="remarks"
+                control={form.control}
+              />
+              <FormField<purchaseOrderValidatorType>
+                label="Terms & Conditions"
+                type="textarea"
+                name="termsAndConditions"
+                control={form.control}
+              />
+            </div>
 
-        <FormField<purchaseOrderValidatorType>
-          label="Remarks"
-          type="textarea"
-          name="remarks"
-          control={form.control}
-        />
-        <CustomButton disabled={creating || updating} type="submit">
-          Submit
-        </CustomButton>
-      </form>
-    </Form>
+            <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
+              <SummaryField
+                label="Items Count"
+                value={String(summary.itemCount)}
+              />
+              <SummaryField
+                label="Total Qty."
+                value={String(summary.quantityTotal)}
+              />
+              <SummaryField
+                label="Taxable Amt."
+                value={money(summary.taxableAmount)}
+              />
+              <SummaryInput
+                label="P&F Amt."
+                name="packingForwarding"
+                form={form}
+              />
+              <SummaryField
+                label="CGST Amt."
+                value={money(summary.cGstAmount)}
+              />
+              <SummaryField
+                label="SGST Amt."
+                value={money(summary.sGstAmount)}
+              />
+              <SummaryField
+                label="IGST Amt."
+                value={money(summary.iGstAmount)}
+              />
+              <SummaryInput label="TCS Amt." name="tcsAmount" form={form} />
+              <SummaryField
+                label="Discount Amt."
+                value={money(summary.discountAmount)}
+              />
+              <SummaryInput
+                label="Round Off"
+                name="roundOffAmount"
+                form={form}
+              />
+              <SummaryField label="Total" value={money(summary.grandTotal)} />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <CustomButton disabled={creating || updating} type="submit">
+              {creating || updating ? "Saving..." : "Save"}
+            </CustomButton>
+          </div>
+        </form>
+      </Form>
+
+      <CreateSupplierModal
+        open={supplierModalOpen}
+        onOpenChange={setSupplierModalOpen}
+        onCreated={(supplier) => {
+          form.setValue("supplier", supplier, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          setSupplierSearchValue(supplier.name);
+        }}
+      />
+    </>
   );
 };
 

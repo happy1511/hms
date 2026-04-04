@@ -1,15 +1,13 @@
 import PrintSaleInvoice from "@/app-pages/pharmacy/PrintSaleInvoice";
-import CustomHeader from "@/components/common/CustomHeader";
+import { Suspense } from "react";
 
 const page = () => {
   return (
-    <main>
-      <CustomHeader />
-
-      <div className="relative h-[calc(100dvh-48px)]">
+    <Suspense>
+      <main>
         <PrintSaleInvoice />
-      </div>
-    </main>
+      </main>
+    </Suspense>
   );
 };
 

@@ -17,9 +17,11 @@ const saleBillTransactionValidator = z.object({
 });
 
 const saleBillBaseValidator = z.object({
-    name: z.string().min(1, "Bill name is required"),
+    name: z.string().min(1, "Bill name is required").default("Walk-in Customer"),
+    customerId: z.coerce.number().min(1).optional(),
     patientId: z.coerce.number().min(1).optional(),
     doctorId: z.coerce.number().min(1).optional(),
+    isWholesaleBill: z.coerce.boolean().default(false),
     billingType: z.enum(PaymentCategory).default(PaymentCategory.SELF_PAY),
     discountType: z.enum(DiscountType).default(DiscountType.VALUE),
     discountValue: z.coerce.number().default(0),

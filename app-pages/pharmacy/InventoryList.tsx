@@ -53,70 +53,93 @@ const InventoryList = () => {
     {
       accessorKey: "id",
       header: ({ column }) => (
-        <SortableHeader<InventoryData> label="ID" column={column} />
+        <SortableHeader<InventoryData> label="Item Code" column={column} />
       ),
-      cell: ({ row }) => <span>#{row.original.id}</span>,
-      headerClassName: "min-w-15 max-w-20",
-      cellClassName: "min-w-15 max-w-20",
+      cell: ({ row }) => <span>{row.original.id}</span>,
+      headerClassName: "min-w-20",
+      cellClassName: "min-w-20",
     },
     {
-      accessorKey: "drug",
+      accessorKey: "item",
       header: ({ column }) => (
-        <SortableHeader<InventoryData> label="Drug" column={column} />
+        <SortableHeader<InventoryData> label="Item" column={column} />
       ),
       cell: ({ row }) => row.original.drug.name,
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
     {
-      accessorKey: "supplier",
+      accessorKey: "manufacturer",
       header: ({ column }) => (
-        <SortableHeader<InventoryData> label="Supplier" column={column} />
+        <SortableHeader<InventoryData> label="Mfg" column={column} />
       ),
-      cell: ({ row }) => row.original.supplier.name,
-      headerClassName: "min-w-40",
-      cellClassName: "min-w-40",
+      cell: ({ row }) => row.original.drug.manufacturer,
+      headerClassName: "min-w-32",
+      cellClassName: "min-w-32",
+    },
+    {
+      accessorKey: "hsn",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData> label="HSN" column={column} />
+      ),
+      cell: ({ row }) => row.original.drug.hsnCode,
+      headerClassName: "min-w-16",
+      cellClassName: "min-w-16",
     },
     {
       accessorKey: "batchNo",
       header: ({ column }) => (
         <SortableHeader<InventoryData> label="Batch" column={column} />
       ),
-      headerClassName: "min-w-20 max-w-30",
-      cellClassName: "min-w-20 max-w-30",
-    },
-    {
-      accessorKey: "quantityInStock",
-      header: ({ column }) => (
-        <SortableHeader<InventoryData> label="In Stock" column={column} />
-      ),
-      headerClassName: "min-w-20 max-w-30",
-      cellClassName: "min-w-20 max-w-30",
-    },
-    {
-      accessorKey: "mrp",
-      header: ({ column }) => (
-        <SortableHeader<InventoryData> label="MRP" column={column} />
-      ),
-      headerClassName: "min-w-20 max-w-30",
-      cellClassName: "min-w-20 max-w-30",
-    },
-    {
-      accessorKey: "sellingPrice",
-      header: ({ column }) => (
-        <SortableHeader<InventoryData> label="Selling" column={column} />
-      ),
-      headerClassName: "min-w-20 max-w-30",
-      cellClassName: "min-w-20 max-w-30",
+      headerClassName: "min-w-20",
+      cellClassName: "min-w-20",
     },
     {
       accessorKey: "expiryDate",
       header: ({ column }) => (
-        <SortableHeader<InventoryData> label="Expiry" column={column} />
+        <SortableHeader<InventoryData> label="Exp" column={column} />
       ),
-      cell: ({ row }) => format(row.original.expiryDate, "MMM dd, yyyy"),
-      headerClassName: "min-w-30 max-w-40",
-      cellClassName: "min-w-30 max-w-40",
+      cell: ({ row }) => format(row.original.expiryDate, "MM/yy"),
+      headerClassName: "min-w-16",
+      cellClassName: "min-w-16",
+    },
+    {
+      accessorKey: "pack",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData> label="Pack" column={column} />
+      ),
+      cell: ({ row }) => row.original.drug.unit,
+      headerClassName: "min-w-16",
+      cellClassName: "min-w-16",
+    },
+    {
+      accessorKey: "quantityInStock",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData> label="Qty" column={column} />
+      ),
+      headerClassName: "min-w-20",
+      cellClassName: "min-w-20",
+    },
+    {
+      accessorKey: "sellingPrice",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData> label="Selling Price" column={column} />
+      ),
+      cell: ({ row }) => Number(row.original.sellingPrice || 0).toFixed(2),
+      headerClassName: "min-w-24",
+      cellClassName: "min-w-24",
+    },
+    {
+      accessorKey: "wholeSalePrice",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData>
+          label="Whole Sale Price"
+          column={column}
+        />
+      ),
+      cell: ({ row }) => Number(row.original.wholeSalePrice || 0).toFixed(2),
+      headerClassName: "min-w-28",
+      cellClassName: "min-w-28",
     },
   ];
 

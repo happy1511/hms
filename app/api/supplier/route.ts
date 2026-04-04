@@ -17,7 +17,12 @@ export async function POST(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType["BED_MASTER"], action: ActionType["CREATE"] }],
+      [
+        {
+          module: ModuleType["PHARMACY_SUPPLIER"],
+          action: ActionType["CREATE"],
+        },
+      ],
       (req, user) => createAPI(req, user),
     ),
   );

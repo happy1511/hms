@@ -1,6 +1,11 @@
 import { GRNGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_GRN } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  PharmacyGrnType,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import { grnValidatorType } from "@/validators/api/masters/pharmacyGRN";
@@ -36,6 +41,11 @@ const getGrns = createRequest<
     status?: string;
   }
 >(PHARMACY_GRN, "GET");
+
+const getGrn = createRequest<ApiResponse<PharmacyGrnType>, undefined, { id: string }>(
+  (p) => `${PHARMACY_GRN}/${p.id}`,
+  "GET",
+);
 
 export const useGrnList = (
   filters: FilterValues,
@@ -97,8 +107,30 @@ export const useCreateGrn = () => {
       queryClient.invalidateQueries({
         queryKey: ["grns"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["purchase-orders"],
+      });
       router.back();
     },
     onError: showError,
+  });
+};
+
+export const useGetGrn = (id?: string) => {
+  return useQuery<
+    ApiResponse<PharmacyGrnType>,
+    AxiosError<ApiResponse<null>>,
+    PharmacyGrnType,
+    [string, string | undefined]
+  >({
+    queryKey: ["grn", id],
+    queryFn: () =>
+      getGrn({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (data) => data.data,
+    enabled: !!id,
   });
 };

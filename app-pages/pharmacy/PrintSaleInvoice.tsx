@@ -1,6 +1,6 @@
 "use client";
 
-import SaleInvoiceExport from "@/components/common/SaleInvoiceExport";
+import SalePrintExport from "@/components/pharmacy/SalePrintExport";
 import { useGetSaleBill } from "@/hooks/query/pharmacySaleBill";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -20,13 +20,14 @@ const PrintSaleInvoice = () => {
   if (!data) return <div />;
 
   return (
-    <SaleInvoiceExport
+    <SalePrintExport
       billNo={`SB-${data.id}`}
-      billDate={new Date(data.invoice.createdAt).toLocaleDateString()}
+      billDate={data.invoice.createdAt}
       patientName={
-        data.patient
+        data.customer?.name ??
+        (data.patient
           ? `${data.patient.firstName} ${data.patient.lastName}`
-          : "Walk-in Customer"
+          : "Walk-in Customer")
       }
       doctorName={data.doctor?.user?.name ?? undefined}
       lines={data.saleItems.map((item) => ({

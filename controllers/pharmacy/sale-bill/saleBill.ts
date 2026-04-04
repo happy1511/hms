@@ -40,6 +40,7 @@ export const getAPI = async (req: Request) => {
         and.push({
           OR: [
             { name: { contains: search } },
+            { customer: { name: { contains: search } } },
             { patient: { firstName: { contains: search } } },
             { patient: { lastName: { contains: search } } },
           ],
@@ -68,6 +69,7 @@ export const getAPI = async (req: Request) => {
           where,
           include: {
             patient: true,
+            customer: { include: { patient: true } },
             doctor: { include: { user: true } },
             invoice: {
               include: {
@@ -116,6 +118,7 @@ export const getDetailsAPI = async (
         },
         include: {
           patient: true,
+          customer: { include: { patient: true } },
           doctor: { include: { user: true } },
           invoice: {
             include: {
@@ -171,6 +174,20 @@ export const createAPI = async (req: Request, user: User) => {
           }
         }
 
+        if (body.customerId) {
+          const customer = await tx.pharmacyCustomer.findUnique({
+            where: { id: body.customerId },
+            select: { id: true, isDeleted: true },
+          });
+
+          if (!customer || customer.isDeleted) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Customer not found",
+            });
+          }
+        }
+
         if (body.doctorId) {
           const doctor = await tx.doctor.findUnique({
             where: { userId: body.doctorId },
@@ -213,7 +230,12 @@ export const createAPI = async (req: Request, user: User) => {
 
         const preparedItems = body.items.map((item) => {
           const inventory = inventoryById.get(item.inventoryItem.id)!;
-          const rate = Number(item.rate ?? inventory.sellingPrice);
+          const rate = Number(
+            item.rate ??
+              (body.isWholesaleBill
+                ? inventory.wholeSalePrice
+                : inventory.sellingPrice),
+          );
           const gross = rate * item.quantity;
           const discount =
             item.discountType === "PERCENTAGE"
@@ -303,8 +325,10 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             name: body.name,
             patientId: body.patientId,
+            customerId: body.customerId,
             doctorId: body.doctorId,
             invoiceId: invoice.id,
+            isWholesaleBill: body.isWholesaleBill,
             createdBy: user.id ,
             updatedBy: user.id ,
             saleItems: {
@@ -314,6 +338,7 @@ export const createAPI = async (req: Request, user: User) => {
           include: {
             invoice: true,
             patient: true,
+            customer: { include: { patient: true } },
             doctor: { include: { user: true } },
             saleItems: { include: { inventoryItem: { include: { drug: true } } } },
           },
@@ -391,6 +416,20 @@ export const updateAPI = async (
           }
         }
 
+        if (body.customerId) {
+          const customer = await tx.pharmacyCustomer.findUnique({
+            where: { id: body.customerId },
+            select: { id: true, isDeleted: true },
+          });
+
+          if (!customer || customer.isDeleted) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "Customer not found",
+            });
+          }
+        }
+
         if (body.doctorId) {
           const doctor = await tx.doctor.findUnique({
             where: { userId: body.doctorId },
@@ -439,7 +478,12 @@ export const updateAPI = async (
 
         const preparedItems = items.map((item) => {
           const inventory = inventoryById.get(item.inventoryItem.id)!;
-          const rate = Number(item.rate ?? inventory.sellingPrice);
+          const rate = Number(
+            item.rate ??
+              ((body.isWholesaleBill ?? existingBill.isWholesaleBill)
+                ? inventory.wholeSalePrice
+                : inventory.sellingPrice),
+          );
           const gross = rate * item.quantity;
           const discount =
             item.discountType === "PERCENTAGE"
@@ -545,7 +589,10 @@ export const updateAPI = async (
           data: {
             name: body.name ?? existingBill.name,
             patientId: body.patientId,
+            customerId: body.customerId,
             doctorId: body.doctorId,
+            isWholesaleBill:
+              body.isWholesaleBill ?? existingBill.isWholesaleBill,
             updatedBy: user.id ,
             saleItems: {
               create: preparedItems,
@@ -571,6 +618,7 @@ export const updateAPI = async (
           where: { id: existingBill.id },
           include: {
             patient: true,
+            customer: { include: { patient: true } },
             doctor: { include: { user: true } },
             invoice: { include: { transactions: true } },
             saleItems: {

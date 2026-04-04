@@ -118,7 +118,7 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
     { type: "OPD", value: data.patients.opd },
     { type: "IPD", value: data.patients.ipd },
     { type: "DayCare", value: data.patients.dayCare },
-    { type: "Ipd Census", value: data.patients.ipdCensus },
+    { type: "Total Patients", value: data.patients.dayCare+data.patients.ipd+data.patients.opd },
   ];
 
   const collectionRows = [
@@ -157,8 +157,8 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
       <TableCard
         title="Patients"
         rows={patientRows}
-        totalLabel="Total Patients"
-        totalValue={patientRows.reduce((sum, row) => sum + row.value, 0)}
+        totalLabel="Ipd Census"
+        totalValue={data.patients.ipdCensus}
         valueHeader="Count"
       />
       <TableCard

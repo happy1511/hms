@@ -35,6 +35,7 @@ interface SaleInvoiceExportProps {
     amount: number;
   }[];
   className?: string;
+  fontSize?: number;
 }
 
 const money = (value: number) => value.toFixed(2);
@@ -51,6 +52,7 @@ const SaleInvoiceExport = ({
   includeRemarks = false,
   transactions = [],
   className = "",
+  fontSize = 11,
 }: SaleInvoiceExportProps) => {
   const taxableSubTotal = lines.reduce((sum, l) => sum + l.taxableAmount, 0);
   const gstTotal = lines.reduce((sum, l) => sum + l.gstAmount, 0);
@@ -60,8 +62,9 @@ const SaleInvoiceExport = ({
 
   return (
     <div
+      style={{ fontSize }}
       className={cn(
-        "w-full bg-white text-[11px] text-black",
+        "w-full bg-white text-black",
         "print:bg-white print:text-black",
         className,
       )}
@@ -69,8 +72,8 @@ const SaleInvoiceExport = ({
       <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
         <CompanyPrintHeader />
         {/* Header */}
-        <div className="border border-black">
-          <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
+        <div>
+          <div className="flex items-center justify-center bg-[#dedede] px-3 py-2">
             <p className="font-semibold">PHARMACY SALE INVOICE</p>
           </div>
           <InfoRow
@@ -88,7 +91,7 @@ const SaleInvoiceExport = ({
         </div>
 
         {/* Items table */}
-        <div className="overflow-hidden border border-black">
+        <div className="overflow-hidden">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#dedede]">
@@ -131,7 +134,9 @@ const SaleInvoiceExport = ({
                   <Cell className="text-right">{line.batchNo}</Cell>
                   <Cell className="text-right">{line.qty}</Cell>
                   <Cell className="text-right">{money(line.rate)}</Cell>
-                  <Cell className="text-right">{money(line.taxableAmount)}</Cell>
+                  <Cell className="text-right">
+                    {money(line.taxableAmount)}
+                  </Cell>
                   <Cell className="text-right">{money(line.cGstAmount)}</Cell>
                   <Cell className="text-right">{money(line.sGstAmount)}</Cell>
                   <Cell className="text-right">{money(line.iGstAmount)}</Cell>
@@ -153,7 +158,7 @@ const SaleInvoiceExport = ({
 
         {/* Payment history */}
         {includePaymentHistory && (
-          <div className="overflow-hidden border border-black">
+          <div className="overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-[#dedede]">
@@ -183,16 +188,10 @@ const SaleInvoiceExport = ({
                       <Cell className="text-left">{txn.date}</Cell>
                       <Cell className="text-left">{txn.mode}</Cell>
                       {includeRemarks && (
-                        <Cell className="text-left">
-                          {txn.remarks || "-"}
-                        </Cell>
+                        <Cell className="text-left">{txn.remarks || "-"}</Cell>
                       )}
-                      <Cell className="text-left">
-                        {txn.receivedBy || "-"}
-                      </Cell>
-                      <Cell className="text-right">
-                        {money(txn.amount)}
-                      </Cell>
+                      <Cell className="text-left">{txn.receivedBy || "-"}</Cell>
+                      <Cell className="text-right">{money(txn.amount)}</Cell>
                     </tr>
                   ))
                 ) : (
@@ -211,7 +210,7 @@ const SaleInvoiceExport = ({
         )}
 
         {/* Summary */}
-        <div className="ml-auto w-full max-w-xl overflow-hidden border border-black">
+        <div className="ml-auto w-full max-w-xl overflow-hidden ">
           <table className="w-full border-collapse">
             <tbody>
               <SummaryRow

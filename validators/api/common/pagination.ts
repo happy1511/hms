@@ -92,6 +92,15 @@ const paginationValidator = z.object({
     .number()
     .optional()
     .transform((id) => Number(id)),
+  supplierId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((id) => Number(id)),
+  withoutGrn: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
   isMlcPatient: z
     .string()
     .optional()

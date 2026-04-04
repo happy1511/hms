@@ -2,9 +2,9 @@ import { z } from "zod";
 
 const supplierValidator = z.object({
   name: z.string().min(1, "Name is required"),
-  gstIn: z.number().optional(),
+  gstIn: z.coerce.number().optional(),
   email: z.string().optional(),
-  phone: z.number(),
+  phone: z.coerce.number().optional().default(0),
 });
 
 const partialSupplierValidator = supplierValidator.partial().extend({

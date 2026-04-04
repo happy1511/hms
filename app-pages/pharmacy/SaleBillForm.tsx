@@ -1,9 +1,18 @@
 "use client";
 
 import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
-import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import FormField from "@/components/form-inputs/FormField";
+import CreatePharmacyCustomerModal from "@/components/pharmacy/sale-bill/CreatePharmacyCustomerModal";
+import SaleBillItemsTable from "@/components/pharmacy/sale-bill/SaleBillItemsTable";
+import SelectHospitalPatientModal from "@/components/pharmacy/sale-bill/SelectHospitalPatientModal";
+import StoreDirectoryModal from "@/components/pharmacy/sale-bill/StoreDirectoryModal";
+import {
+  SaleBillFormValues,
+  SaleBillInventoryItem,
+} from "@/components/pharmacy/sale-bill/types";
 import { Form } from "@/components/ui/form";
 import {
   ActionType,
@@ -13,11 +22,10 @@ import {
   PaymentMode,
   Status,
 } from "@/generated/prisma/enums";
+import { DrugBillGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
-import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useInfiniteInventoryItems } from "@/hooks/query/pharmacyInventory";
-import { useInfinitePatientsList } from "@/hooks/query/patient";
+import { useInfinitePharmacyCustomers } from "@/hooks/query/pharmacyCustomer";
 import {
   useCreateSaleBill,
   useGetSaleBill,
@@ -28,53 +36,37 @@ import {
   FilterValues,
   PaginatedResponse,
   PatientType,
+  PharmacyCustomerType,
 } from "@/lib/type";
-import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
-import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
+import { hasActionPermission } from "@/lib/utils";
+import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import {
-  Path,
-  useFieldArray,
-  useForm,
-  UseFormReturn,
-  useWatch,
-} from "react-hook-form";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import CustomLayout from "@/components/common/CustomLayout";
 
-type InventoryItem = InventoryItemsGetPayload<{
+type SaleBillData = DrugBillGetPayload<{
   include: {
-    drug: true;
-    supplier: true;
+    patient: true;
+    customer: { include: { patient: true } };
+    doctor: { include: { user: true } };
+    invoice: {
+      include: {
+        transactions: true;
+      };
+    };
+    saleItems: {
+      include: {
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+          };
+        };
+      };
+    };
   };
 }>;
-
-type SaleBillFormValues = {
-  name: string;
-  patient?: PatientType | null;
-  doctor?: Doctor | null;
-  billingType: PaymentCategory;
-  discountType: DiscountType;
-  discountValue: number;
-  isFree: boolean;
-  createdAt: Date;
-  items: {
-    inventoryItem?: InventoryItem | null;
-    quantity: number;
-    rate: number;
-    discountType: DiscountType;
-    discountValue: number;
-    taxableAmount?: number;
-    gstAmount?: number;
-    total: number;
-  }[];
-  transactions: {
-    amount: number;
-    mode: PaymentMode;
-    remarks?: string | null;
-  }[];
-};
 
 const toValidDate = (value: unknown) => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
@@ -85,701 +77,437 @@ const toValidDate = (value: unknown) => {
   return new Date();
 };
 
-const getInitialValues = (data?: any): SaleBillFormValues => {
+const emptyItem = () => ({
+  inventoryItem: null,
+  quantity: 1,
+  rate: 0,
+  discountType: DiscountType.VALUE,
+  discountValue: 0,
+  taxableAmount: 0,
+  gstAmount: 0,
+  cGstAmount: 0,
+  sGstAmount: 0,
+  iGstAmount: 0,
+  total: 0,
+});
+
+const getPatientDisplayName = (patient?: PatientType | null) =>
+  patient
+    ? [`${patient.title}.`, patient.firstName, patient.lastName].join(" ")
+    : "";
+
+const money = (value: number) => Number(value || 0).toFixed(2);
+
+const SummaryField = ({ label, value }: { label: string; value: string }) => (
+  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
+    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
+      {label}
+    </div>
+    <div className="bg-white px-2 py-1 text-right text-tiny">{value}</div>
+  </div>
+);
+
+const SummaryInput = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) => (
+  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
+    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
+      {label}
+    </div>
+    <div className="bg-white px-2 py-1 text-right text-tiny">{value}</div>
+  </div>
+);
+
+const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
   if (!data) {
     return {
-      name: "",
+      billDate: new Date(),
+      customer: null,
       patient: null,
       doctor: null,
+      isWholesaleBill: false,
       billingType: PaymentCategory.SELF_PAY,
       discountType: DiscountType.VALUE,
       discountValue: 0,
       isFree: false,
-      createdAt: new Date(),
-      items: [
-        {
-          inventoryItem: null,
-          quantity: 1,
-          rate: 0,
-          discountType: DiscountType.VALUE,
-          discountValue: 0,
-          taxableAmount: 0,
-          gstAmount: 0,
-          total: 0,
-        },
-      ],
-      transactions: [
-        {
-          amount: 0,
-          mode: PaymentMode.CASH,
-          remarks: "",
-        },
-      ],
+      items: [emptyItem()],
+      paymentAmount: 0,
+      paymentMode: PaymentMode.CASH,
+      paymentRemarks: "",
     };
   }
 
+  const firstTransaction = data.invoice?.transactions?.[0];
+  const transactionTotal = (data.invoice?.transactions || []).reduce(
+    (sum, txn) => sum + Number(txn.amount || 0),
+    0,
+  );
+
   return {
-    name: data.name,
-    patient: data.patient ?? null,
-    doctor: data.doctor ?? null,
+    billDate: toValidDate(data.invoice?.createdAt),
+    customer: data.customer ?? null,
+    patient: (data.patient as unknown as PatientType) ?? null,
+    doctor: (data.doctor as unknown as Doctor) ?? null,
+    isWholesaleBill: Boolean(data.isWholesaleBill),
     billingType: data.invoice?.billingType ?? PaymentCategory.SELF_PAY,
     discountType: data.invoice?.discountType ?? DiscountType.VALUE,
-    discountValue: data.invoice?.discountValue ?? 0,
-    isFree: data.invoice?.isFree ?? false,
-    createdAt: toValidDate(data.invoice?.createdAt),
-    items:
-      data.saleItems?.map((item: any) => ({
-        inventoryItem: item.inventoryItem,
-        quantity: item.quantity,
-        rate: item.rate,
-        discountType: item.discountType,
-        discountValue: item.discountValue,
-        taxableAmount: item.taxableAmount,
-        gstAmount: item.gstAmount,
-        total: item.total,
-      })) ?? [],
-    transactions:
-      data.invoice?.transactions?.map((t: any) => ({
-        amount: t.amount,
-        mode: t.mode,
-        remarks: t.remarks,
-      })) ?? [],
+    discountValue: Number(data.invoice?.discountValue || 0),
+    isFree: Boolean(data.invoice?.isFree),
+    items: data.saleItems?.map((item) => ({
+      inventoryItem: item.inventoryItem as SaleBillInventoryItem,
+      quantity: Number(item.quantity),
+      rate: Number(item.rate),
+      discountType: item.discountType,
+      discountValue: Number(item.discountValue || 0),
+      taxableAmount: Number(item.taxableAmount || 0),
+      gstAmount: Number(item.gstAmount || 0),
+        cGstAmount: Number(item.cGstAmount || 0),
+        sGstAmount: Number(item.sGstAmount || 0),
+        iGstAmount: Number(item.iGstAmount || 0),
+        total: Number(item.total || 0),
+      })) ?? [emptyItem()],
+    paymentAmount: transactionTotal,
+    paymentMode: firstTransaction?.mode ?? PaymentMode.CASH,
+    paymentRemarks: firstTransaction?.remarks ?? "",
   };
 };
 
-const SaleItemRow = ({
-  index,
-  form,
-}: {
-  index: number;
-  form: UseFormReturn<SaleBillFormValues>;
-}) => {
-  const [inventorySearch, setInventorySearch] = useState("");
-  const inventoryQuery = useInfiniteInventoryItems(
-    { name: inventorySearch, status: Status["active"] } as FilterValues,
-    10,
-  );
-  const { control, setValue, getValues } = form;
-  const { remove } = useFieldArray({
-    control,
-    name: "items",
-  });
-
-  const rowPath = `items.${index}` as Path<SaleBillFormValues>;
-  const inventoryItem = useWatch({
-    control,
-    name: `${rowPath}.inventoryItem` as Path<SaleBillFormValues>,
-  }) as InventoryItem | null | undefined;
-  const quantity = useWatch({
-    control,
-    name: `${rowPath}.quantity` as Path<SaleBillFormValues>,
-  });
-  const rate = useWatch({
-    control,
-    name: `${rowPath}.rate` as Path<SaleBillFormValues>,
-  });
-  const discountType = useWatch({
-    control,
-    name: `${rowPath}.discountType` as Path<SaleBillFormValues>,
-  });
-  const discountValue = useWatch({
-    control,
-    name: `${rowPath}.discountValue` as Path<SaleBillFormValues>,
-  });
-  const gstAmount = Number(
-    useWatch({
-      control,
-      name: `${rowPath}.gstAmount` as Path<SaleBillFormValues>,
-    }) || 0,
-  );
-  const rowTotal = Number(
-    useWatch({
-      control,
-      name: `${rowPath}.total` as Path<SaleBillFormValues>,
-    }) || 0,
-  );
-  const isOverStock =
-    inventoryItem &&
-    Number(quantity || 0) > Number(inventoryItem.quantityInStock);
-
-  useEffect(() => {
-    if (!inventoryItem) return;
-    const currentRate = Number(
-      getValues(`${rowPath}.rate` as Path<SaleBillFormValues>),
-    );
-    const currentQty = Number(
-      getValues(`${rowPath}.quantity` as Path<SaleBillFormValues>),
-    );
-
-    if (!currentRate) {
-      setValue(
-        `${rowPath}.rate` as Path<SaleBillFormValues>,
-        inventoryItem.sellingPrice as never,
-      );
-    }
-    if (!currentQty) {
-      setValue(`${rowPath}.quantity` as Path<SaleBillFormValues>, 1 as never);
-    }
-  }, [inventoryItem, getValues, rowPath, setValue]);
-
-  useEffect(() => {
-    const q = Number(quantity) || 0;
-    const r = Number(rate) || 0;
-    const d = Number(discountValue) || 0;
-    const gross = q * r;
-    const discount =
-      discountType === DiscountType.PERCENTAGE ? (gross * d) / 100 : d;
-    const net = Math.max(Number((gross - discount).toFixed(2)), 0);
-    const gstPct = Number(inventoryItem?.drug?.gstPercentage ?? 0);
-    const cPct = Number(inventoryItem?.drug?.cGstPercentage ?? 0);
-    const sPct = Number(inventoryItem?.drug?.sGstPercentage ?? 0);
-    const iPct = Number(inventoryItem?.drug?.iGstPercentage ?? 0);
-    const explicitTax =
-      (net * cPct) / 100 + (net * sPct) / 100 + (net * iPct) / 100;
-    const fallbackTax = (net * gstPct) / 100;
-    const tax = Number(
-      (explicitTax > 0 ? explicitTax : fallbackTax).toFixed(2),
-    );
-    const finalTotal = Number((net + tax).toFixed(2));
-
-    const currentTaxable = Number(
-      getValues(`${rowPath}.taxableAmount` as Path<SaleBillFormValues>),
-    );
-    if (currentTaxable !== net) {
-      setValue(
-        `${rowPath}.taxableAmount` as Path<SaleBillFormValues>,
-        net as never,
-        {
-          shouldValidate: false,
-          shouldDirty: true,
-        },
-      );
-    }
-    const currentTax = Number(
-      getValues(`${rowPath}.gstAmount` as Path<SaleBillFormValues>),
-    );
-    if (currentTax !== tax) {
-      setValue(
-        `${rowPath}.gstAmount` as Path<SaleBillFormValues>,
-        tax as never,
-        {
-          shouldValidate: false,
-          shouldDirty: true,
-        },
-      );
-    }
-
-    const currentTotal = Number(
-      getValues(`${rowPath}.total` as Path<SaleBillFormValues>),
-    );
-    if (currentTotal !== finalTotal) {
-      setValue(
-        `${rowPath}.total` as Path<SaleBillFormValues>,
-        finalTotal as never,
-        {
-          shouldValidate: false,
-          shouldDirty: true,
-        },
-      );
-    }
-  }, [
-    quantity,
-    rate,
-    discountType,
-    discountValue,
-    inventoryItem,
-    getValues,
-    rowPath,
-    setValue,
-  ]);
-
-  return (
-    <tr className="border-t align-top">
-      <td>
-        <div className="px-2 py-2">{index + 1}</div>
-      </td>
-      <td>
-        <div className="px-2 py-1">
-          <FormInfiniteSelect<
-            InventoryItem,
-            PaginatedResponse<InventoryItem>,
-            string,
-            SaleBillFormValues
-          >
-            control={control}
-            name={`${rowPath}.inventoryItem` as Path<SaleBillFormValues>}
-            query={inventoryQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.id)}
-            labelKey={(i) =>
-              `${i.drug.name} | Batch ${i.batchNo} | Stock ${i.quantityInStock}`
-            }
-            search={inventorySearch}
-            onSearchChange={setInventorySearch}
-            placeholder="Select Inventory Drug"
-            hideError
-          />
-          {inventoryItem && (
-            <div className="text-[10px] text-muted-foreground mt-1">
-              Stock: {inventoryItem.quantityInStock} | Supplier:{" "}
-              {inventoryItem.supplier.name}
-            </div>
-          )}
-          {inventoryItem && (
-            <div className="text-[10px] text-muted-foreground">
-              GST: {inventoryItem.drug.gstPercentage}% | CGST:{" "}
-              {inventoryItem.drug.cGstPercentage}% | SGST:{" "}
-              {inventoryItem.drug.sGstPercentage}% | IGST:{" "}
-              {inventoryItem.drug.iGstPercentage}%
-            </div>
-          )}
-          {isOverStock && (
-            <div className="text-[10px] text-destructive mt-1">
-              Quantity exceeds available stock
-            </div>
-          )}
-        </div>
-      </td>
-      <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={`${rowPath}.quantity` as Path<SaleBillFormValues>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-      <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={`${rowPath}.rate` as Path<SaleBillFormValues>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-      <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="select"
-            options={getDiscountTypeOptions()}
-            name={`${rowPath}.discountType` as Path<SaleBillFormValues>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-      <td>
-        <div className="px-2 py-1">
-          <FormField
-            type="number"
-            name={`${rowPath}.discountValue` as Path<SaleBillFormValues>}
-            control={control}
-            hideError
-          />
-        </div>
-      </td>
-      <td className="font-medium">
-        <div className="px-2 py-2 text-center">Rs. {gstAmount.toFixed(2)}</div>
-      </td>
-      <td className="font-semibold">
-        <div className="px-2 py-2 text-center">Rs. {rowTotal.toFixed(2)}</div>
-      </td>
-      <td className="w-10">
-        <div className="px-2 py-2">
-          <button type="button" onClick={() => remove(index)}>
-            <Trash2 className="size-2 text-destructive" />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-};
-
-const SaleItemsTable = ({
-  form,
-}: {
-  form: UseFormReturn<SaleBillFormValues>;
-}) => {
-  const { control } = form;
-  const { fields, append } = useFieldArray({
-    control,
-    name: "items",
-  });
-
-  return (
-    <div className="space-y-3 p-2 h-full flex flex-col">
-      <div className="flex w-full justify-between items-center">
-        <button
-          className="flex gap-1 items-center text-tiny"
-          type="button"
-          onClick={() =>
-            append({
-              inventoryItem: null,
-              quantity: 1,
-              rate: 0,
-              discountType: DiscountType.VALUE,
-              discountValue: 0,
-              taxableAmount: 0,
-              gstAmount: 0,
-              total: 0,
-            })
-          }
-        >
-          <PlusIcon className="size-2 text-black" />
-          <p>Add Drug Item</p>
-        </button>
-      </div>
-
-      <div className="w-full flex-1">
-        <table className="w-full border text-tiny">
-          <thead className="bg-muted">
-            <tr>
-              <th>
-                <div className="px-2 py-1">#</div>
-              </th>
-              <th className="w-[380px]">
-                <div className="px-2 py-1">Drug (Inventory)</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Qty</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Rate</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Discount Type</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Discount</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Tax</div>
-              </th>
-              <th>
-                <div className="px-2 py-1">Total</div>
-              </th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {fields.map((field, index) => (
-              <SaleItemRow key={field.id} index={index} form={form} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-const TransactionRows = ({
-  form,
-}: {
-  form: UseFormReturn<SaleBillFormValues>;
-}) => {
-  const { control } = form;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "transactions",
-  });
-
-  return (
-    <div className="space-y-2 p-2">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">Transactions</p>
-        <button
-          className="flex gap-1 items-center text-tiny"
-          type="button"
-          onClick={() =>
-            append({
-              amount: 0,
-              mode: PaymentMode.CASH,
-              remarks: "",
-            })
-          }
-        >
-          <PlusIcon className="size-2 text-black" />
-          <p>Add Transaction</p>
-        </button>
-      </div>
-      {fields.map((field, index) => {
-        const rowPath = `transactions.${index}` as Path<SaleBillFormValues>;
-        return (
-          <div key={field.id} className="grid grid-cols-12 gap-2 items-end">
-            <div className="col-span-3">
-              <FormField
-                label="Amount"
-                type="number"
-                name={`${rowPath}.amount` as Path<SaleBillFormValues>}
-                control={control}
-              />
-            </div>
-            <div className="col-span-3">
-              <FormField
-                label="Mode"
-                type="select"
-                options={Object.values(PaymentMode).map((m) => ({
-                  value: m,
-                  label: m,
-                }))}
-                name={`${rowPath}.mode` as Path<SaleBillFormValues>}
-                control={control}
-              />
-            </div>
-            <div className="col-span-5">
-              <FormField
-                label="Remarks"
-                type="text"
-                name={`${rowPath}.remarks` as Path<SaleBillFormValues>}
-                control={control}
-              />
-            </div>
-            <div className="col-span-1 pb-2">
-              <button type="button" onClick={() => remove(index)}>
-                <Trash2 className="size-2 text-destructive" />
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const UpdateCreateForm = ({ data }: { data?: any }) => {
+const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
   const [doctorSearch, setDoctorSearch] = useState("");
-  const [patientSearch, setPatientSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [patientModalOpen, setPatientModalOpen] = useState(false);
+  const [storeDirectoryOpen, setStoreDirectoryOpen] = useState(false);
   const { mutateAsync: create, isPending: creating } = useCreateSaleBill();
   const { mutateAsync: update, isPending: updating } = useUpdateSaleBill();
   const params: { billId: string } = useParams();
+
   const doctorQuery = useInfiniteDoctorList(
-    { name: doctorSearch, status: Status["active"] },
+    { name: doctorSearch, status: Status.active },
     10,
   );
-  const patientQuery = useInfinitePatientsList({ name: patientSearch }, 10);
+  const customerQuery = useInfinitePharmacyCustomers(
+    { name: customerSearch } as FilterValues,
+    10,
+  );
 
   const form = useForm<SaleBillFormValues>({
     defaultValues: getInitialValues(data),
   });
 
   useEffect(() => {
-    if (data) {
-      form.reset(getInitialValues(data));
-    }
+    form.reset(getInitialValues(data));
   }, [data, form]);
 
-  const watchedItems = useWatch({
+  const items = useWatch({
     control: form.control,
     name: "items",
   });
-  const items = useMemo(() => watchedItems ?? [], [watchedItems]);
-  const invoiceDiscountType = useWatch({
-    control: form.control,
-    name: "discountType",
-  });
-  const invoiceDiscountValue = Number(
+  const isWholesaleBill = Boolean(
     useWatch({
       control: form.control,
-      name: "discountValue",
-    }) || 0,
-  );
-  const isFree = Boolean(
-    useWatch({
-      control: form.control,
-      name: "isFree",
+      name: "isWholesaleBill",
     }),
   );
+  const selectedPatient = useWatch({
+    control: form.control,
+    name: "patient",
+  }) as PatientType | null | undefined;
+  const paymentAmount = Number(
+    useWatch({
+      control: form.control,
+      name: "paymentAmount",
+    }) || 0,
+  );
 
-  const subTotal = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.total || 0), 0),
+  const subtotal = useMemo(
+    () => (items || []).reduce((sum, item) => sum + Number(item.total || 0), 0),
     [items],
   );
-  const taxableSubTotal = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.taxableAmount || 0), 0),
+  const totalDiscount = useMemo(
+    () =>
+      (items || []).reduce(
+        (sum, item) => sum + Number(item.discountValue || 0),
+        0,
+      ),
     [items],
   );
-  const taxTotal = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.gstAmount || 0), 0),
+  const totalTax = useMemo(
+    () =>
+      (items || []).reduce((sum, item) => sum + Number(item.gstAmount || 0), 0),
     [items],
   );
-  const invoiceDiscount =
-    invoiceDiscountType === DiscountType.PERCENTAGE
-      ? (subTotal * invoiceDiscountValue) / 100
-      : invoiceDiscountValue;
-  const grandTotal = isFree ? 0 : Math.max(subTotal - invoiceDiscount, 0);
+  const dueAmount = Math.max(subtotal - paymentAmount, 0);
 
-  const onSubmit = (values: SaleBillFormValues) => {
-    if (!values.items.length) {
-      toast.error("Add at least one sale item");
+  const onSubmit = async (values: SaleBillFormValues) => {
+    const validItems = values.items.filter((item) => item.inventoryItem?.id);
+    if (!validItems.length) {
+      toast.error("Add at least one drug item");
       return;
     }
 
-    const hasInvalidInventory = values.items.some(
-      (item) => !item.inventoryItem?.id,
-    );
-    if (hasInvalidInventory) {
-      toast.error("Select inventory item for all rows");
-      return;
-    }
-
-    const hasOverStock = values.items.some(
+    const hasOverStock = validItems.some(
       (item) =>
-        Number(item.quantity) >
-        Number(item.inventoryItem?.quantityInStock ?? 0),
+        Number(item.quantity || 0) >
+        Number(item.inventoryItem?.quantityInStock || 0),
     );
     if (hasOverStock) {
       toast.error("One or more rows exceed available stock");
       return;
     }
 
+    const selectedCustomerName =
+      values.customer?.name ||
+      (values.patient
+        ? `${values.patient.firstName} ${values.patient.lastName}`
+        : "Walk-in Customer");
+
     const payload = {
-      name: values.name,
+      name: selectedCustomerName,
+      customerId: values.customer?.id ? Number(values.customer.id) : undefined,
       patientId: values.patient?.id ? Number(values.patient.id) : undefined,
       doctorId: values.doctor?.userId
         ? Number(values.doctor.userId)
         : undefined,
+      isWholesaleBill: Boolean(values.isWholesaleBill),
       billingType: values.billingType,
       discountType: values.discountType,
       discountValue: Number(values.discountValue || 0),
-      isFree: Boolean(values.isFree),
-      createdAt: toValidDate(values.createdAt),
-      items: values.items.map((item) => ({
+      isFree: false,
+      createdAt: toValidDate(values.billDate),
+      items: validItems.map((item) => ({
         inventoryItem: { id: Number(item.inventoryItem?.id) },
         quantity: Number(item.quantity),
-        rate: Number(item.rate),
+        rate: Number(item.rate || 0),
         discountType: item.discountType,
         discountValue: Number(item.discountValue || 0),
         total: Number(item.total || 0),
       })),
-      transactions: values.isFree
-        ? []
-        : values.transactions.map((t) => ({
-            amount: Number(t.amount),
-            mode: t.mode,
-            remarks: t.remarks ?? null,
-          })),
+      transactions: Number(values.paymentAmount || 0)
+        ? [
+            {
+              amount: Number(values.paymentAmount || 0),
+              mode: values.paymentMode,
+              remarks: values.paymentRemarks || undefined,
+            },
+          ]
+        : [],
     };
 
     if (params?.billId) {
-      update({
+      await update({
         billId: Number(params.billId),
         ...payload,
       });
-    } else {
-      create(payload);
+      return;
     }
+
+    await create(payload);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
-          <FormField<SaleBillFormValues>
-            label="Sale Bill Name"
-            type="text"
-            name="name"
-            control={form.control}
-            required
-          />
-          <FormField<SaleBillFormValues>
-            label="Bill Date"
-            type="date"
-            name="createdAt"
-            control={form.control}
-            required
-          />
-          <FormField<SaleBillFormValues>
-            label="Billing Type"
-            type="select"
-            options={Object.values(PaymentCategory).map((b) => ({
-              value: b,
-              label: b,
-            }))}
-            name="billingType"
-            control={form.control}
-            required
-          />
-          <FormInfiniteSelect<
-            PatientType,
-            PaginatedResponse<PatientType>,
-            string,
-            SaleBillFormValues
-          >
-            label="Patient (Optional)"
-            name="patient"
-            control={form.control}
-            query={patientQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.id)}
-            labelKey={(i) => `${i.id} | ${i.firstName} ${i.lastName}`}
-            search={patientSearch}
-            onSearchChange={setPatientSearch}
-            placeholder="Search patient by name/ID"
-          />
-          <FormInfiniteSelect<
-            Doctor,
-            PaginatedResponse<Doctor>,
-            string,
-            SaleBillFormValues
-          >
-            label="Doctor (Optional)"
-            name="doctor"
-            control={form.control}
-            query={doctorQuery}
-            getItems={(p) => p?.data}
-            valueKey={(i) => String(i.userId)}
-            labelKey={(i) => i.user?.name ?? ""}
-            search={doctorSearch}
-            onSearchChange={setDoctorSearch}
-          />
-          <FormField<SaleBillFormValues>
-            label="Free Bill"
-            type="checkbox"
-            name="isFree"
-            control={form.control}
-          />
-        </div>
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div>
+                <FormField<SaleBillFormValues>
+                  label="Bill Date"
+                  type="date"
+                  name="billDate"
+                  control={form.control}
+                  required
+                />
+              </div>
+              <div>
+                <FormInfiniteSelect<
+                  PharmacyCustomerType,
+                  PaginatedResponse<PharmacyCustomerType>,
+                  string,
+                  SaleBillFormValues
+                >
+                  label="Customer Name"
+                  name="customer"
+                  control={form.control}
+                  query={customerQuery}
+                  getItems={(page) => page?.data}
+                  valueKey={(item) => String(item.id)}
+                  labelKey={(item) =>
+                    [
+                      item.name,
+                      item.contact || "No contact",
+                      item.gstNumber || "No GST",
+                    ].join(" | ")
+                  }
+                  search={customerSearch}
+                  onSearchChange={setCustomerSearch}
+                  placeholder="Select customer"
+                />
+                <div className="-mt-1">
+                  <CustomButton
+                    type="button"
+                    onClick={() => setCustomerModalOpen(true)}
+                  >
+                    Add Customer
+                  </CustomButton>
+                </div>
+              </div>
+              <div>
+                <FormInfiniteSelect<
+                  Doctor,
+                  PaginatedResponse<Doctor>,
+                  string,
+                  SaleBillFormValues
+                >
+                  label="Doctor"
+                  name="doctor"
+                  control={form.control}
+                  query={doctorQuery}
+                  getItems={(page) => page?.data}
+                  valueKey={(item) => String(item.userId)}
+                  labelKey={(item) => item.user?.name ?? ""}
+                  search={doctorSearch}
+                  onSearchChange={setDoctorSearch}
+                  placeholder="Select doctor"
+                />
+              </div>
+            </div>
 
-        <SaleItemsTable form={form} />
+            <div className="flex flex-wrap items-end gap-2 rounded-sm border border-black/20 bg-background/40 px-3 py-2">
+              <div className="space-y-1">
+                <div className="text-tiny font-semibold">Hospital Patient</div>
+                <CustomButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setPatientModalOpen(true)}
+                >
+                  Select Hospital Patient
+                </CustomButton>
+              </div>
+              {selectedPatient && (
+                <>
+                  <div className="min-w-[320px] flex-1 rounded border border-black/15 bg-white px-2 py-2 text-tiny">
+                    {`${selectedPatient.id} | ${getPatientDisplayName(selectedPatient)}`}
+                  </div>
+                  <CustomButton
+                    type="button"
+                    variant="outline"
+                    className="bg-white text-black"
+                    onClick={() =>
+                      form.setValue("patient", null, { shouldDirty: true })
+                    }
+                  >
+                    Clear
+                  </CustomButton>
+                </>
+              )}
+            </div>
 
-        <div className="grid grid-cols-5 gap-2">
-          <FormField<SaleBillFormValues>
-            label="Invoice Discount Type"
-            type="select"
-            options={getDiscountTypeOptions()}
-            name="discountType"
-            control={form.control}
-          />
-          <FormField<SaleBillFormValues>
-            label="Invoice Discount Value"
-            type="number"
-            name="discountValue"
-            control={form.control}
-          />
-          <div className="rounded border px-3 py-2 text-sm">
-            <p className="text-muted-foreground">Taxable Subtotal</p>
-            <p className="font-semibold">Rs. {taxableSubTotal.toFixed(2)}</p>
+            <div className="w-full flex justify-between items-center">
+              <FormField<SaleBillFormValues>
+                label="Wholesale Bill"
+                type="checkbox"
+                name="isWholesaleBill"
+                control={form.control}
+              />
+              <CustomButton
+                type="button"
+                variant="secondary"
+                onClick={() => setStoreDirectoryOpen(true)}
+              >
+                Store Directory
+              </CustomButton>
+            </div>
+            <SaleBillItemsTable form={form} isWholesaleBill={isWholesaleBill} />
+
+            <div className="grid gap-3 lg:grid-cols-[1fr_260px_260px]">
+              <div />
+
+              <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
+                <SummaryField label="Discount" value={money(totalDiscount)} />
+                <SummaryField label="Tax" value={money(totalTax)} />
+                <SummaryField label="Total" value={money(subtotal)} />
+                <SummaryField label="Paid" value={money(paymentAmount)} />
+                <SummaryField label="Due" value={money(dueAmount)} />
+              </div>
+
+              <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
+                <SummaryInput
+                  label="Amount"
+                  value={
+                    <FormField<SaleBillFormValues>
+                      type="number"
+                      name="paymentAmount"
+                      control={form.control}
+                      className="h-7 border-0 px-0 text-right shadow-none focus-visible:ring-0"
+                    />
+                  }
+                />
+                <SummaryInput
+                  label="Mode"
+                  value={
+                    <FormField<SaleBillFormValues>
+                      type="select"
+                      name="paymentMode"
+                      control={form.control}
+                      options={Object.values(PaymentMode).map((mode) => ({
+                        label: mode,
+                        value: mode,
+                      }))}
+                      className="h-7 border-0 px-0 text-right shadow-none focus-visible:ring-0"
+                    />
+                  }
+                />
+                <SummaryInput
+                  label="Remarks"
+                  value={
+                    <FormField<SaleBillFormValues>
+                      type="text"
+                      name="paymentRemarks"
+                      control={form.control}
+                      className="h-7 border-0 px-0 text-right shadow-none focus-visible:ring-0"
+                    />
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <CustomButton disabled={creating || updating} type="submit">
+                {params?.billId ? "Update Sale Bill" : "Payment & Save Sale Bill"}
+              </CustomButton>
+            </div>
           </div>
-          <div className="rounded border px-3 py-2 text-sm">
-            <p className="text-muted-foreground">Tax Total</p>
-            <p className="font-semibold">Rs. {taxTotal.toFixed(2)}</p>
-          </div>
-          <div className="rounded border px-3 py-2 text-sm">
-            <p className="text-muted-foreground">Grand Total</p>
-            <p className="font-semibold">Rs. {grandTotal.toFixed(2)}</p>
-          </div>
-        </div>
+        </form>
+      </Form>
 
-        {!isFree && <TransactionRows form={form} />}
+      <CreatePharmacyCustomerModal
+        open={customerModalOpen}
+        onOpenChange={setCustomerModalOpen}
+        selectedPatient={selectedPatient}
+        onCreated={(customer) => {
+          form.setValue("customer", customer, { shouldDirty: true });
+        }}
+      />
 
-        <CustomButton disabled={creating || updating} type="submit">
-          {params?.billId ? "Update Sale Bill" : "Create Sale Bill"}
-        </CustomButton>
-      </form>
-    </Form>
+      <SelectHospitalPatientModal
+        open={patientModalOpen}
+        onOpenChange={setPatientModalOpen}
+        onSelect={(patient) => {
+          form.setValue("patient", patient, { shouldDirty: true });
+        }}
+      />
+
+      <StoreDirectoryModal
+        open={storeDirectoryOpen}
+        onOpenChange={setStoreDirectoryOpen}
+      />
+    </>
   );
 };
 
@@ -828,7 +556,7 @@ const SaleBillForm = () => {
   }
 
   return (
-    <CustomLayout title="Sale">
+    <CustomLayout title="Customer Sale">
       <UpdateCreateForm data={data} />
     </CustomLayout>
   );

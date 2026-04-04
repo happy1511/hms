@@ -2,6 +2,7 @@ import { prisma } from "@/services/prisma";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { apiResponse } from "@/lib/apiResponse";
+import { calculatePurchaseOrderSummary } from "@/lib/pharmacyPurchaseOrder";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { Prisma, User } from "@/generated/prisma/client";
 import {
@@ -17,6 +18,8 @@ export const getAPI = async (req: Request) => {
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
+      const supplierId = query.supplierId ? Number(query.supplierId) : undefined;
+      const withoutGrn = query.withoutGrn;
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -28,6 +31,15 @@ export const getAPI = async (req: Request) => {
           supplier: { name: { contains: search }, isDeleted: false },
         });
       }
+
+      if (supplierId) {
+        and.push({ supplierId });
+      }
+
+      if (withoutGrn) {
+        and.push({ grnId: null });
+      }
+
       and.push({ isDeleted: false });
 
       if (createdAtFrom || createdAtTo) {
@@ -110,22 +122,45 @@ export const createAPI = async (req: Request, user: User) => {
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
         const { items, supplier, ...rest } = body;
+        const summary = calculatePurchaseOrderSummary(items, {
+          packingForwarding: rest.packingForwarding,
+          tcsAmount: rest.tcsAmount,
+          roundOffAmount: rest.roundOffAmount,
+        });
         const data = await tx.purchaseOrder.create({
           data: {
-            ...rest,
             supplierId: supplier.id,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            remarks: rest.remarks,
+            termsAndConditions: rest.termsAndConditions,
+            orderDate: rest.orderDate,
+            taxableAmount: summary.taxableAmount,
+            packingForwarding: summary.packingForwarding,
+            cGstAmount: summary.cGstAmount,
+            sGstAmount: summary.sGstAmount,
+            iGstAmount: summary.iGstAmount,
+            tcsAmount: summary.tcsAmount,
+            discountAmount: summary.discountAmount,
+            roundOffAmount: summary.roundOffAmount,
+            grandTotal: summary.grandTotal,
+            createdBy: user.id,
+            updatedBy: user.id,
             items: {
-              create: items.map((i) => ({
-                categoryId: i.category.id,
-                drugId: i.drug.id,
-                quantity: i.quantity,
-                rate: i.rate,
-                total: i.total,
-                discountPercentage: i.discountPercentage,
-              })),
+              createMany: {
+                data: items.map((i) => ({
+                  categoryId: i.category?.id ?? undefined,
+                  drugId: i.drug.id,
+                  hsnSacCode: i.hsnSacCode ?? i.drug.hsnCode ?? null,
+                  quantity: i.quantity,
+                  rate: i.rate,
+                  total: i.total,
+                  discountPercentage: i.discountPercentage,
+                })),
+              },
             },
+          },
+          include: {
+            supplier: true,
+            items: { include: { category: true, drug: true } },
           },
         });
         return apiResponse({
@@ -164,13 +199,29 @@ export const updateAPI = async (
           });
         }
 
+        const summary = calculatePurchaseOrderSummary(body.items || [], {
+          packingForwarding: body.packingForwarding,
+          tcsAmount: body.tcsAmount,
+          roundOffAmount: body.roundOffAmount,
+        });
+
         const updatedOrder = await tx.purchaseOrder.update({
           where: { id: orderId },
           data: {
             supplierId: body.supplier?.id,
             remarks: body.remarks,
+            termsAndConditions: body.termsAndConditions,
             orderDate: body.orderDate,
-            updatedBy: user.id ,
+            taxableAmount: summary.taxableAmount,
+            packingForwarding: summary.packingForwarding,
+            cGstAmount: summary.cGstAmount,
+            sGstAmount: summary.sGstAmount,
+            iGstAmount: summary.iGstAmount,
+            tcsAmount: summary.tcsAmount,
+            discountAmount: summary.discountAmount,
+            roundOffAmount: summary.roundOffAmount,
+            grandTotal: summary.grandTotal,
+            updatedBy: user.id,
           },
         });
 
@@ -183,7 +234,8 @@ export const updateAPI = async (
             data: body.items.map((item) => ({
               purchaseOrderId: orderId,
               drugId: item.drug.id,
-              categoryId: item.category.id,
+              hsnSacCode: item.hsnSacCode ?? item.drug.hsnCode ?? null,
+              categoryId: item.category?.id ?? undefined,
               quantity: item.quantity,
               discountPercentage: item.discountPercentage,
               rate: item.rate,
@@ -229,8 +281,8 @@ export const deleteAPI = async (
           where: { id: data.orderId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 

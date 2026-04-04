@@ -79,6 +79,9 @@ export const getAPI = async (req: Request) => {
             lastName: true,
             middleName: true,
             id: true,
+            title: true,
+            gender: true,
+            dob: true,
 
             contacts: {
               where: {
@@ -303,8 +306,8 @@ export const createAPI = async (req: Request, user: User) => {
       const patient = await prisma.patient.create({
         data: {
           ...rest,
-          createdBy: user.id ,
-          updatedBy: user.id ,
+          createdBy: user.id,
+          updatedBy: user.id,
           contacts: {
             create: contacts,
           },
@@ -387,7 +390,7 @@ export const updateAPI = async (
         where: { id: data.patientId },
         data: {
           ...rest,
-          updatedBy: user.id ,
+          updatedBy: user.id,
 
           addresses: addresses
             ? {
@@ -507,4 +510,3 @@ export const updateAPI = async (
     },
   });
 };
-

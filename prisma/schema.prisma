@@ -630,6 +630,9 @@ model User {
   createdDrugBills           DrugBill[]               @relation("DrugBillCreatedBy")
   updatedDrugBills           DrugBill[]               @relation("DrugBillUpdatedBy")
   deletedDrugBills           DrugBill[]               @relation("DrugBillDeletedBy")
+  createdPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerCreatedBy")
+  updatedPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerUpdatedBy")
+  deletedPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerDeletedBy")
 
   @@index([isDeleted])
   @@index([createdAt])
@@ -800,6 +803,7 @@ model Patient {
   radiologyTestOrders RadiologyTestOrder[]
   beds                Bed[]
   drugBills           DrugBill[]
+  pharmacyCustomers   PharmacyCustomer[]
 
   @@index([createdAt])
   @@index([createdBy])
@@ -1781,8 +1785,10 @@ model DrugBill {
   id        Int     @id @default(autoincrement())
   name      String
   patientId Int?
+  customerId Int?
   doctorId  Int?
   invoiceId Int     @unique
+  isWholesaleBill Boolean @default(false)
   isDeleted Boolean @default(false)
   createdBy Int?
   updatedBy Int?
@@ -1790,6 +1796,7 @@ model DrugBill {
 
   invoice       Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   patient       Patient?       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  customer      PharmacyCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   doctor        Doctor?        @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
   createdByUser User?          @relation("DrugBillCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User?          @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
@@ -1798,7 +1805,34 @@ model DrugBill {
 
   @@index([invoiceId])
   @@index([patientId])
+  @@index([customerId])
   @@index([doctorId])
+}
+
+model PharmacyCustomer {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  address            String?
+  contact            String?
+  isBusinessCustomer Boolean  @default(false)
+  dlNumber           String?
+  gstNumber          String?
+  patientId          Int?
+  isDeleted          Boolean  @default(false)
+  createdBy          Int?
+  updatedBy          Int?
+  deletedBy          Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  patient       Patient?    @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  drugBills     DrugBill[]
+  createdByUser User?       @relation("PharmacyCustomerCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?       @relation("PharmacyCustomerUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?       @relation("PharmacyCustomerDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([name])
+  @@index([patientId])
 }
 
 model DrugBillingCategory {
@@ -1939,11 +1973,24 @@ model GRNItems {
 }
 
 model GRN {
-  id        Int  @id @default(autoincrement())
-  orderId   Int  @unique
-  createdBy Int?
-  updatedBy Int?
-  deletedBy Int?
+  id                Int      @id @default(autoincrement())
+  orderId           Int      @unique
+  invoiceNumber     String
+  invoiceDate       DateTime
+  discountAmount    Float    @default(0)
+  taxableAmount     Float    @default(0)
+  cGstAmount        Float    @default(0)
+  sGstAmount        Float    @default(0)
+  iGstAmount        Float    @default(0)
+  tcsAmount         Float    @default(0)
+  packingForwarding Float    @default(0)
+  roundOffAmount    Float    @default(0)
+  grandTotal        Float    @default(0)
+  cnAmount          Float    @default(0)
+  cnRef             String?
+  createdBy         Int?
+  updatedBy         Int?
+  deletedBy         Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -1958,32 +2005,43 @@ model GRN {
 model PurchaseItem {
   id                 Int   @id @default(autoincrement())
   drugId             Int
+  hsnSacCode         Int?
   quantity           Int
-  categoryId         Int
+  categoryId         Int?
   discountPercentage Float @default(0)
   rate               Float @default(0)
   total              Float @default(0)
   purchaseOrderId    Int
 
-  category      DrugBillingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category      DrugBillingCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   drug          Drug                @relation(fields: [drugId], references: [id], onDelete: Cascade)
   purchaseOrder PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id])
   grnItems      GRNItems[]
 }
 
 model PurchaseOrder {
-  id         Int                 @id @default(autoincrement())
-  supplierId Int
-  grnId      Int?                @unique
-  remarks    String?
-  orderDate  DateTime            @default(now())
-  status     PurchaseOrderStatus @default(draft)
-  isDeleted  Boolean             @default(false)
-  createdBy  Int?
-  updatedBy  Int?
-  deletedBy  Int?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @default(now()) @updatedAt
+  id                 Int                 @id @default(autoincrement())
+  supplierId         Int
+  grnId              Int?                @unique
+  remarks            String?
+  termsAndConditions String?
+  orderDate          DateTime            @default(now())
+  taxableAmount      Float               @default(0)
+  packingForwarding  Float               @default(0)
+  cGstAmount         Float               @default(0)
+  sGstAmount         Float               @default(0)
+  iGstAmount         Float               @default(0)
+  tcsAmount          Float               @default(0)
+  discountAmount     Float               @default(0)
+  roundOffAmount     Float               @default(0)
+  grandTotal         Float               @default(0)
+  status             PurchaseOrderStatus @default(draft)
+  isDeleted          Boolean             @default(false)
+  createdBy          Int?
+  updatedBy          Int?
+  deletedBy          Int?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
 
   supplier      DrugSupplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   items         PurchaseItem[]

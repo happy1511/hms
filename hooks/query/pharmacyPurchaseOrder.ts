@@ -71,6 +71,8 @@ const getPurchaseOrders = createRequest<
     name?: string;
     limit: number;
     createdAt?: string | { from?: Date; to?: Date };
+    supplierId?: number;
+    withoutGrn?: boolean;
   }
 >(PHARMACY_PURCHASE_ORDER, "GET");
 
@@ -107,6 +109,10 @@ export const usePurchaseOrderList = (
           limit,
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
+          ...(filters.supplierId && {
+            supplierId: Number(filters.supplierId),
+          }),
+          ...(filters.withoutGrn && { withoutGrn: true }),
         },
       }),
   });
@@ -256,6 +262,10 @@ export const useInfinitePurchaseOrderList = (
           limit,
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
+          ...(filters.supplierId && {
+            supplierId: Number(filters.supplierId),
+          }),
+          ...(filters.withoutGrn && { withoutGrn: true }),
         },
       }),
 

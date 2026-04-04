@@ -4,11 +4,17 @@ import {
   User,
 } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
+import { calculateGrnSummary } from "@/lib/pharmacyGrn";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { grnValidator } from "@/validators/api/masters/pharmacyGRN";
+import z from "zod";
+
+const grnDetailsParamsValidator = z.object({
+  grnId: z.coerce.number().min(1, "GRN Id is required"),
+});
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -65,10 +71,28 @@ export const createAPI = async (req: Request, user: User) => {
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
-        const { orderId, grnItems } = body;
+        const {
+          orderId,
+          grnItems,
+          invoiceDate,
+          invoiceNumber,
+          discountAmount,
+          tcsAmount,
+          packingForwarding,
+          roundOffAmount,
+          cnAmount,
+          cnRef,
+        } = body;
         let resolvedOrderId = orderId;
         let supplierId: number | undefined;
         const purchaseItemIdByItemIndex = new Map<number, number>();
+        const summary = calculateGrnSummary(grnItems, {
+          discountAmount,
+          tcsAmount,
+          packingForwarding,
+          roundOffAmount,
+          cnAmount,
+        });
 
         if (resolvedOrderId) {
           const existingOrder = await tx.purchaseOrder.findFirst({
@@ -96,8 +120,8 @@ export const createAPI = async (req: Request, user: User) => {
             data: {
               supplierId: body.supplier.id,
               status: PurchaseOrderStatus.draft,
-              createdBy: user.id ,
-              updatedBy: user.id ,
+              createdBy: user.id,
+              updatedBy: user.id,
             },
           });
 
@@ -109,11 +133,14 @@ export const createAPI = async (req: Request, user: User) => {
               data: {
                 purchaseOrderId: createdOrder.id,
                 drugId: item.drug.id,
-                categoryId: item.category.id,
+                hsnSacCode: item.hsnSacCode ?? item.drug.hsnCode ?? null,
+                categoryId: item.category?.id ?? undefined,
                 quantity: item.quantity,
                 discountPercentage: 0,
                 rate: item.purchasePrice,
-                total: item.purchasePrice * item.quantity,
+                total:
+                  summary.lines[index]?.lineTotal ??
+                  item.purchasePrice * item.quantity,
               },
             });
             purchaseItemIdByItemIndex.set(index, purchaseItem.id);
@@ -133,8 +160,21 @@ export const createAPI = async (req: Request, user: User) => {
         const data = await tx.gRN.create({
           data: {
             orderId: resolvedOrderId,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            invoiceNumber,
+            invoiceDate,
+            discountAmount: summary.discountAmount,
+            taxableAmount: summary.taxableAmount,
+            cGstAmount: summary.cGstAmount,
+            sGstAmount: summary.sGstAmount,
+            iGstAmount: summary.iGstAmount,
+            tcsAmount: summary.tcsAmount,
+            packingForwarding: summary.packingForwarding,
+            roundOffAmount: summary.roundOffAmount,
+            grandTotal: summary.grandTotal,
+            cnAmount: summary.cnAmount,
+            cnRef: cnRef?.trim() || null,
+            createdBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -154,7 +194,7 @@ export const createAPI = async (req: Request, user: User) => {
               where: { id: existingInventory.id },
               data: {
                 quantityInStock: {
-                  increment: i.quantity,
+                  increment: i.quantity + Number(i.freeQuantity || 0),
                 },
                 expiryDate: i.expiryDate,
                 manufacturingDate: i.manufacturingDate,
@@ -162,7 +202,7 @@ export const createAPI = async (req: Request, user: User) => {
                 mrp: i.mrp,
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
-                updatedBy: user.id ,
+                updatedBy: user.id,
               },
             });
             inventoryItemId = updatedInventory.id;
@@ -177,16 +217,19 @@ export const createAPI = async (req: Request, user: User) => {
                 mrp: i.mrp,
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
-                quantityInStock: i.quantity,
+                quantityInStock: i.quantity + Number(i.freeQuantity || 0),
                 supplierId: supplierId!,
-                createdBy: user.id ,
-                updatedBy: user.id ,
+                createdBy: user.id,
+                updatedBy: user.id,
               },
             });
             inventoryItemId = newInventory.id;
           }
 
-          const purchaseItemId = resolvedOrderId === orderId ? i.id : purchaseItemIdByItemIndex.get(index);
+          const purchaseItemId =
+            resolvedOrderId === orderId
+              ? i.id
+              : purchaseItemIdByItemIndex.get(index);
 
           if (!purchaseItemId) {
             return apiResponse({
@@ -209,7 +252,7 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             grnId: data.id,
             status: PurchaseOrderStatus.received,
-            updatedBy: user.id ,
+            updatedBy: user.id,
           },
         });
 
@@ -218,6 +261,69 @@ export const createAPI = async (req: Request, user: User) => {
           message: "GRN Created Successfully",
           data: data,
         });
+      });
+    },
+  });
+};
+
+export const getDetailsAPI = async (
+  req: Request,
+  { params }: { params: { grnId: string } },
+) => {
+  return validateRequest({
+    paramsSchema: grnDetailsParamsValidator,
+    params,
+    req,
+    onSuccess: async ({ params }) => {
+      const grn = await prisma.gRN.findFirst({
+        where: {
+          id: params.grnId,
+          order: { is: { isDeleted: false } },
+        },
+        include: {
+          order: {
+            include: {
+              supplier: true,
+            },
+          },
+          createdByUser: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          grnItems: {
+            include: {
+              purchaseItem: {
+                include: {
+                  drug: true,
+                  category: true,
+                },
+              },
+              inventoryItem: {
+                include: {
+                  drug: true,
+                },
+              },
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+        },
+      });
+
+      if (!grn) {
+        return apiResponse({
+          status: RESPONSE_STATUS.NOT_FOUND,
+          message: "GRN not found",
+        });
+      }
+
+      return apiResponse({
+        status: RESPONSE_STATUS.SUCCESS,
+        message: "GRN fetched successfully",
+        data: grn,
       });
     },
   });

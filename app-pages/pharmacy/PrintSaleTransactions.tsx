@@ -35,7 +35,7 @@ const PrintSaleTransactions = () => {
       customer={{
         name: data.patient
           ? `${data.patient.firstName} ${data.patient.lastName}`
-          : "Walk-in Customer",
+          : data.customer?.name || "Walk-in Customer",
         phone: "",
         address: "",
       }}

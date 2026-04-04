@@ -30,9 +30,11 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
     return {
       billNo: `SB-${data.id}`,
       billDate: format(new Date(data.invoice.createdAt), "dd/MM/yy hh:mm a"),
-      patientName: data.patient
-        ? `${data.patient.firstName} ${data.patient.lastName}`
-        : "Walk-in Customer",
+      patientName:
+        data.customer?.name ??
+        (data.patient
+          ? `${data.patient.firstName} ${data.patient.lastName}`
+          : "Walk-in Customer"),
       doctorName: data.doctor?.user?.name ?? undefined,
       lines: data.saleItems.map((item) => ({
         name: item.inventoryItem.drug.name,

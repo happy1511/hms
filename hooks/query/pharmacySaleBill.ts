@@ -21,6 +21,7 @@ import { toast } from "sonner";
 type SaleBillPayload = DrugBillGetPayload<{
   include: {
     patient: true;
+    customer: { include: { patient: true } };
     doctor: { include: { user: true } };
     invoice: {
       include: {

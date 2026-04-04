@@ -205,6 +205,24 @@ export interface FormDatePickerProps<T extends FieldValues> {
   hideError?: boolean;
 }
 
+export interface FormMonthYearPickerProps<T extends FieldValues> {
+  name: FieldPath<T>;
+  control: Control<T>;
+  label?: string;
+  className?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  minDate?: Date;
+  maxDate?: Date;
+  formItemClassName?: string;
+  rules?: Omit<
+    RegisterOptions<T, Path<T>>,
+    "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
+  >;
+  hideError?: boolean;
+}
+
 export interface FormDateTimePickerProps<T extends FieldValues> {
   name: FieldPath<T>;
   control: Control<T>;
@@ -259,6 +277,7 @@ export interface FilterValues {
   name?: string;
   status?: string;
   isInvoiceOnly?: boolean;
+  withoutGrn?: boolean;
   nonOccupied?: boolean;
   createdAt?: string | { from?: Date; to?: Date };
   mlcDeclarationDate?: string | { from?: Date; to?: Date };
@@ -282,6 +301,7 @@ export interface FilterValues {
   testStatus?: PathologyOrderStatus[];
   opdId?: number;
   invoiceId?: number;
+  supplierId?: number;
 }
 
 // ----------------------------------
@@ -490,6 +510,12 @@ export interface PatientType extends Patient {
   emergencyContacts: emergencyContact[];
   notes: PatientNotes[];
 }
+
+export type PharmacyCustomerType = Prisma.PharmacyCustomerGetPayload<{
+  include: {
+    patient: true;
+  };
+}>;
 
 export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
   include: {
@@ -1266,6 +1292,37 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
 export interface OpdInvoiceDetails extends OPDType {
   billingItems: InvoiceBillingItem[];
 }
+
+export type PharmacyGrnType = Prisma.GRNGetPayload<{
+  include: {
+    order: {
+      include: {
+        supplier: true;
+      };
+    };
+    createdByUser: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+    grnItems: {
+      include: {
+        purchaseItem: {
+          include: {
+            drug: true;
+            category: true;
+          };
+        };
+        inventoryItem: {
+          include: {
+            drug: true;
+          };
+        };
+      };
+    };
+  };
+}>;
 
 export interface DashboardType {
   patients: {

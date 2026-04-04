@@ -92,6 +92,14 @@ export const useGetDrugSupplier = (id?: string) => {
 };
 
 export const useCreateDrugSupplier = () => {
+  return useCreateDrugSupplierMutation(true);
+};
+
+export const useCreateDrugSupplierInline = () => {
+  return useCreateDrugSupplierMutation(false);
+};
+
+const useCreateDrugSupplierMutation = (navigateOnSuccess: boolean) => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
@@ -106,7 +114,9 @@ export const useCreateDrugSupplier = () => {
       queryClient.invalidateQueries({
         queryKey: ["drug-suppliers"],
       });
-      router.back();
+      if (navigateOnSuccess) {
+        router.back();
+      }
     },
     onError: showError,
   });

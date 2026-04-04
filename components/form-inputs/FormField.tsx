@@ -3,6 +3,7 @@ import { FormInput } from "./FormInput";
 import {
   FormCheckboxProps,
   FormDatePickerProps,
+  FormMonthYearPickerProps,
   FormDateRangePickerProps,
   FormDateTimePickerProps,
   FormInputProps,
@@ -15,6 +16,7 @@ import { FormSelect } from "./FormSelect";
 import { FormCheckbox } from "./FormCheckBox";
 import { FormRadioGroup } from "./FormRadioGroup";
 import { FormDatePicker } from "./FormDatePicker";
+import { FormMonthYearPicker } from "./FormMonthYearPicker";
 import { FormDateRangePicker } from "./FormDateRange";
 import { FormDateTime } from "./FormDateTime";
 import { FormMultiSelect } from "./FormMultiSelect";
@@ -28,6 +30,7 @@ export type Props<T extends FieldValues> =
   | ({ type: "checkbox" } & FormCheckboxProps<T>)
   | ({ type: "radio" } & FormRadioGroupProps<T>)
   | ({ type: "date" } & FormDatePickerProps<T>)
+  | ({ type: "monthYear" } & FormMonthYearPickerProps<T>)
   | ({ type: "dateTime" } & FormDateTimePickerProps<T>)
   | ({ type: "dateRange" } & FormDateRangePickerProps<T>)
   | ({ type: "multiSelect" } & FormSelectProps<T>)
@@ -62,6 +65,11 @@ const FormField = <T extends FieldValues>({ type, ...props }: Props<T>) => {
 
     case "date":
       return <FormDatePicker {...(props as FormDatePickerProps<T>)} />;
+
+    case "monthYear":
+      return (
+        <FormMonthYearPicker {...(props as FormMonthYearPickerProps<T>)} />
+      );
 
     case "dateTime":
       return <FormDateTime {...(props as FormDateTimePickerProps<T>)} />;
