@@ -197,6 +197,7 @@ export const getAPI = async (req: Request) => {
         prisma.ipd.count({
           where: {
             isDayCare: false,
+            isDischarged: false,
           },
         }),
       ]);
