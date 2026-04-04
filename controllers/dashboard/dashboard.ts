@@ -1,5 +1,6 @@
 import { IpdCareType } from "@/generated/prisma/client";
 import { PaymentMode, TransactionType } from "@/generated/prisma/enums";
+import { InvoiceWhereInput } from "@/generated/prisma/models";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -46,6 +47,12 @@ export const getAPI = async (req: Request) => {
         ...(createdAtFilter && { createdAt: createdAtFilter }),
       } as const;
 
+      const clinicalInvoiceWhere: InvoiceWhereInput = {
+        isDeleted: false,
+        ...(createdAtFilter && { createdAt: createdAtFilter }),
+        OR: [{ opd: { isNot: null } }, { ipd: { isNot: null } }],
+      };
+
       const [
         opdPatients,
         ipdPatients,
@@ -57,6 +64,8 @@ export const getAPI = async (req: Request) => {
         opdRefundsAgg,
         ipdPaymentsAgg,
         ipdRefundsAgg,
+        dayCarePaymentsAgg,
+        dayCareRefundsAgg,
         otherIncomeAgg,
         expenseAgg,
         cashPaymentsAgg,
@@ -128,6 +137,22 @@ export const getAPI = async (req: Request) => {
             invoice: { is: ipdInvoiceWhere },
           },
         }),
+        prisma.transaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            transactionType: TransactionType.PAYMENT,
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
+            invoice: { is: dayCareInvoiceWhere },
+          },
+        }),
+        prisma.transaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            transactionType: TransactionType.REFUND,
+            ...(createdAtFilter && { createdAt: createdAtFilter }),
+            invoice: { is: dayCareInvoiceWhere },
+          },
+        }),
         prisma.income.aggregate({
           _sum: { amount: true },
           where: {
@@ -148,7 +173,7 @@ export const getAPI = async (req: Request) => {
             mode: PaymentMode.CASH,
             transactionType: TransactionType.PAYMENT,
             ...(createdAtFilter && { createdAt: createdAtFilter }),
-            invoice: { is: { isDeleted: false } },
+            invoice: { is: clinicalInvoiceWhere },
           },
         }),
         prisma.transaction.aggregate({
@@ -157,25 +182,25 @@ export const getAPI = async (req: Request) => {
             mode: PaymentMode.CASH,
             transactionType: TransactionType.REFUND,
             ...(createdAtFilter && { createdAt: createdAtFilter }),
-            invoice: { is: { isDeleted: false } },
+            invoice: { is: clinicalInvoiceWhere },
           },
         }),
         prisma.transaction.aggregate({
           _sum: { amount: true },
           where: {
-            mode: PaymentMode.DIGITAL_WALLET,
+            mode: { not: PaymentMode.CASH },
             transactionType: TransactionType.PAYMENT,
             ...(createdAtFilter && { createdAt: createdAtFilter }),
-            invoice: { is: { isDeleted: false } },
+            invoice: { is: clinicalInvoiceWhere },
           },
         }),
         prisma.transaction.aggregate({
           _sum: { amount: true },
           where: {
-            mode: PaymentMode.DIGITAL_WALLET,
+            mode: { not: PaymentMode.CASH },
             transactionType: TransactionType.REFUND,
             ...(createdAtFilter && { createdAt: createdAtFilter }),
-            invoice: { is: { isDeleted: false } },
+            invoice: { is: clinicalInvoiceWhere },
           },
         }),
         prisma.ipd.count({
@@ -211,8 +236,10 @@ export const getAPI = async (req: Request) => {
         opdRefundsAgg._sum.amount,
       );
       const ipdCollections = getSignedTotal(
-        ipdPaymentsAgg._sum.amount,
-        ipdRefundsAgg._sum.amount,
+        Number(ipdPaymentsAgg._sum.amount || 0) +
+          Number(dayCarePaymentsAgg._sum.amount || 0),
+        Number(ipdRefundsAgg._sum.amount || 0) +
+          Number(dayCareRefundsAgg._sum.amount || 0),
       );
       const totalClinicalCollections = roundAmount(
         opdCollections + ipdCollections,
@@ -222,15 +249,17 @@ export const getAPI = async (req: Request) => {
       const expenses = roundAmount(Number(expenseAgg._sum.amount || 0));
       const balance = roundAmount(totalIncome - expenses);
       const opdDue = roundAmount(Math.max(opdBilling - opdCollections, 0));
-      const ipdDue = roundAmount(Math.max(ipdBilling - ipdCollections, 0));
+      const ipdDue = roundAmount(
+        Math.max(ipdBilling + dayCareBilling - ipdCollections, 0),
+      );
 
       const cashAmount = getSignedTotal(
-        cashPaymentsAgg._sum.amount,
-        cashRefundsAgg._sum.amount,
+        cashPaymentsAgg._sum?.amount,
+        cashRefundsAgg._sum?.amount,
       );
       const digitalWalletAmount = getSignedTotal(
-        walletPaymentsAgg._sum.amount,
-        walletRefundsAgg._sum.amount,
+        walletPaymentsAgg._sum?.amount,
+        walletRefundsAgg._sum?.amount,
       );
       const paymentModesTotal = roundAmount(cashAmount + digitalWalletAmount);
 
