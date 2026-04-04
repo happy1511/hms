@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `pharmacycustomer` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `PharmacyCustomer` ALTER COLUMN `updatedAt` DROP DEFAULT;
