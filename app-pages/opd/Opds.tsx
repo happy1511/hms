@@ -194,7 +194,19 @@ const Actions = ({
   );
 };
 
-const OPDs = () => {
+interface OPDsProps {
+  externalFilters?: FilterValues;
+  hideFilters?: boolean;
+  embedded?: boolean;
+  title?: string;
+}
+
+const OPDs = ({
+  externalFilters,
+  hideFilters = false,
+  embedded = false,
+  title = "Patient OPD",
+}: OPDsProps) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({
@@ -213,6 +225,7 @@ const OPDs = () => {
   const [changeDoctorOpd, setChangeDoctorOpd] = useState<OPDType | null>(null);
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
   const [changeStatusOpd, setChangeStatusOpd] = useState<OPDType | null>(null);
+  const effectiveFilters = externalFilters ?? filters;
 
   const consultantQuery = useInfiniteDoctorList(
     {
@@ -222,7 +235,11 @@ const OPDs = () => {
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useOpdList(filters, page, limit);
+  const { data, isLoading, isError, error } = useOpdList(
+    effectiveFilters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <div />;
@@ -462,64 +479,76 @@ const OPDs = () => {
     },
   ];
 
+  const content = canView ? (
+    <>
+      {!hideFilters && (
+        <CustomFilters<FilterValues>
+          filters={neededFilters}
+          defaultValues={filters}
+          filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+          onSubmit={(values) => {
+            setFilters(values);
+            setPage(1);
+          }}
+        />
+      )}
+      <CustomTable
+        columns={columns}
+        data={data?.data || []}
+        page={page}
+        total={data?.total}
+        enableSorting
+        limit={limit}
+        handleChangePage={setPage}
+        isLoading={isLoading}
+        handleChangeLimit={setLimit}
+        isError={isError}
+        error={error}
+        getRowId={(row) => String(row.id)}
+      />
+      <PrintConsultationModal
+        open={printConsultOpen}
+        onOpenChange={(open) => {
+          setPrintConsultOpen(open);
+          if (!open) setPrintConsultOpd(null);
+        }}
+        opdId={printConsultOpd?.id ?? null}
+        currentConsultantName={
+          printConsultOpd?.consultantDoctor?.user?.name ?? null
+        }
+      />
+      <ChangeOpdDoctorModal
+        open={changeDoctorOpen}
+        onOpenChange={(open) => {
+          setChangeDoctorOpen(open);
+          if (!open) setChangeDoctorOpd(null);
+        }}
+        opd={changeDoctorOpd}
+        mode={changeDoctorMode}
+      />
+      <ChangeOpdStatusModal
+        open={changeStatusOpen}
+        onOpenChange={(open) => {
+          setChangeStatusOpen(open);
+          if (!open) setChangeStatusOpd(null);
+        }}
+        opd={changeStatusOpd}
+      />
+    </>
+  ) : (
+    <NoPermission />
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <CustomLayout
-      title="Patient OPD"
+      title={title}
       buttons={<Buttons canCreate={Boolean(canCreate)} />}
     >
-      {canView && (
-        <>
-          <CustomFilters<FilterValues>
-            filters={neededFilters}
-            defaultValues={filters}
-            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
-            onSubmit={setFilters}
-          />
-          <CustomTable
-            columns={columns}
-            data={data?.data || []}
-            page={page}
-            total={data?.total}
-            enableSorting
-            limit={limit}
-            handleChangePage={setPage}
-            isLoading={isLoading}
-            handleChangeLimit={setLimit}
-            isError={isError}
-            error={error}
-            getRowId={(row) => String(row.id)}
-          />
-          <PrintConsultationModal
-            open={printConsultOpen}
-            onOpenChange={(open) => {
-              setPrintConsultOpen(open);
-              if (!open) setPrintConsultOpd(null);
-            }}
-            opdId={printConsultOpd?.id ?? null}
-            currentConsultantName={
-              printConsultOpd?.consultantDoctor?.user?.name ?? null
-            }
-          />
-          <ChangeOpdDoctorModal
-            open={changeDoctorOpen}
-            onOpenChange={(open) => {
-              setChangeDoctorOpen(open);
-              if (!open) setChangeDoctorOpd(null);
-            }}
-            opd={changeDoctorOpd}
-            mode={changeDoctorMode}
-          />
-          <ChangeOpdStatusModal
-            open={changeStatusOpen}
-            onOpenChange={(open) => {
-              setChangeStatusOpen(open);
-              if (!open) setChangeStatusOpd(null);
-            }}
-            opd={changeStatusOpd}
-          />
-        </>
-      )}
-      {!canView && <NoPermission />}
+      {content}
     </CustomLayout>
   );
 };

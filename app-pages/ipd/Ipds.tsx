@@ -301,13 +301,23 @@ const Actions = ({
   );
 };
 
+interface IPDsProps {
+  discharged?: boolean;
+  dayCare?: boolean;
+  externalFilters?: FilterValues;
+  hideFilters?: boolean;
+  embedded?: boolean;
+  title?: string;
+}
+
 const IPDs = ({
   discharged = false,
   dayCare = false,
-}: {
-  discharged?: boolean;
-  dayCare?: boolean;
-}) => {
+  externalFilters,
+  hideFilters = false,
+  embedded = false,
+  title,
+}: IPDsProps) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>(() => ({
@@ -327,6 +337,7 @@ const IPDs = ({
   const [changeBillingTypeOpen, setChangeBillingTypeOpen] = useState(false);
   const [changeBillingTypeIpd, setChangeBillingTypeIpd] =
     useState<IPDType | null>(null);
+  const effectiveFilters = externalFilters ?? filters;
 
   const consultantQuery = useInfiniteDoctorList(
     {
@@ -337,7 +348,7 @@ const IPDs = ({
   );
   const { data: profile } = useProfile(false);
   const { data, isLoading, isError, error } = useIpdList(
-    { ...filters, isDischarged: !!discharged, isDayCare: dayCare },
+    { ...effectiveFilters, isDischarged: !!discharged, isDayCare: dayCare },
     page,
     limit,
   );
@@ -719,15 +730,70 @@ const IPDs = ({
     },
   ];
 
+  const layoutTitle =
+    title ??
+    (dayCare
+      ? "Day Care"
+      : discharged
+        ? "Discharged Patients"
+        : "Patient IPD");
+
+  const content = canView ? (
+    <>
+      {!hideFilters && (
+        <CustomFilters<FilterValues>
+          filters={neededFilters}
+          defaultValues={filters}
+          onSubmit={(values) => {
+            setFilters(values);
+            setPage(1);
+          }}
+          filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+        />
+      )}
+      <CustomTable
+        columns={columns}
+        data={data?.data || []}
+        page={page}
+        total={data?.total}
+        enableSorting
+        limit={limit}
+        handleChangePage={setPage}
+        isLoading={isLoading}
+        handleChangeLimit={setLimit}
+        isError={isError}
+        error={error}
+        getRowId={(row) => String(row.id)}
+      />
+      <ChangeIpdDoctorModal
+        open={changeDoctorOpen}
+        onOpenChange={(open) => {
+          setChangeDoctorOpen(open);
+          if (!open) setChangeDoctorIpd(null);
+        }}
+        ipd={changeDoctorIpd}
+        mode={changeDoctorMode}
+      />
+      <ChangeIpdBillingTypeModal
+        open={changeBillingTypeOpen}
+        onOpenChange={(open) => {
+          setChangeBillingTypeOpen(open);
+          if (!open) setChangeBillingTypeIpd(null);
+        }}
+        ipd={changeBillingTypeIpd}
+      />
+    </>
+  ) : (
+    <NoPermission />
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <CustomLayout
-      title={
-        dayCare
-          ? "Day Care"
-          : discharged
-            ? "Discharged Patients"
-            : "Patient IPD"
-      }
+      title={layoutTitle}
       buttons={
         <Buttons
           canCreateIpd={Boolean(canCreateIpd)}
@@ -736,48 +802,7 @@ const IPDs = ({
         />
       }
     >
-      {canView && (
-        <>
-          <CustomFilters<FilterValues>
-            filters={neededFilters}
-            defaultValues={filters}
-            onSubmit={setFilters}
-            filtersContainerClassName="grid-cols-1 md:grid-cols-2"
-          />
-          <CustomTable
-            columns={columns}
-            data={data?.data || []}
-            page={page}
-            total={data?.total}
-            enableSorting
-            limit={limit}
-            handleChangePage={setPage}
-            isLoading={isLoading}
-            handleChangeLimit={setLimit}
-            isError={isError}
-            error={error}
-            getRowId={(row) => String(row.id)}
-          />
-          <ChangeIpdDoctorModal
-            open={changeDoctorOpen}
-            onOpenChange={(open) => {
-              setChangeDoctorOpen(open);
-              if (!open) setChangeDoctorIpd(null);
-            }}
-            ipd={changeDoctorIpd}
-            mode={changeDoctorMode}
-          />
-          <ChangeIpdBillingTypeModal
-            open={changeBillingTypeOpen}
-            onOpenChange={(open) => {
-              setChangeBillingTypeOpen(open);
-              if (!open) setChangeBillingTypeIpd(null);
-            }}
-            ipd={changeBillingTypeIpd}
-          />
-        </>
-      )}
-      {!canView && <NoPermission />}
+      {content}
     </CustomLayout>
   );
 };

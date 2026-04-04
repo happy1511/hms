@@ -42,7 +42,7 @@ import { cn, hasModulePermission } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
-import { ModuleType } from "@/generated/prisma/enums";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import PatientSearchModal from "../patient/PatientSearchModal";
 import BedAvailabilityModal from "../bed/BedAvailabilityModal";
 import { OPDType } from "@/lib/type";
@@ -54,6 +54,7 @@ interface SidebarItem {
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
   module: ModuleType[];
+  requireViewPermission?: boolean;
 }
 
 const opdItems: SidebarItem[] = [
@@ -111,6 +112,40 @@ const ipdItems = [
   },
   // { title: "PATIENT DOCUMENTS", url: "/ipd/documents", icon: FolderOpen },
 ];
+
+const patientCareItem: SidebarItem = {
+  title: "PATIENT CARE",
+  url: "/patient/care-overview",
+  icon: Stethoscope,
+  module: [
+    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
+    ModuleType.DAY_CARE_IPD,
+  ],
+  requireViewPermission: true,
+};
+
+const canAccessSidebarItem = (data: any, item: SidebarItem) => {
+  if (!item.requireViewPermission) {
+    return hasModulePermission(data, item.module);
+  }
+
+  const modules = Array.isArray(item.module) ? item.module : [item.module];
+  const permissionMap: Partial<Record<ModuleType, ActionType[]>> =
+    data.permissions.reduce(
+      (acc: Partial<Record<ModuleType, ActionType[]>>, permission: any) => {
+        acc[permission.module.name as ModuleType] = permission.actions.map(
+          (action: any) => action.name,
+        );
+        return acc;
+      },
+      {} as Partial<Record<ModuleType, ActionType[]>>,
+    ) ?? {};
+
+  return modules.some((module) =>
+    permissionMap[module]?.includes(ActionType.VIEW),
+  );
+};
 
 const pharmacyItems = [
   {
@@ -354,8 +389,9 @@ export function CustomSidebar() {
   const visibleLabMasters = labMasters.filter((item) =>
     hasModulePermission(data.data, item.module),
   );
+  const canViewPatientCare = canAccessSidebarItem(data.data, patientCareItem);
   const visibleOpd = opdItems.filter((item) =>
-    hasModulePermission(data.data, item.module),
+    canAccessSidebarItem(data.data, item),
   );
   const visibleIpd = ipdItems.filter((item) =>
     hasModulePermission(data.data, item.module),
@@ -420,6 +456,27 @@ export function CustomSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-0 bg-primary/10">
+        {canViewPatientCare && (
+          <SidebarGroup className="p-0">
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(patientCareItem.url)}
+                    className="px-4 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-sidebar-foreground"
+                  >
+                    <Link href={patientCareItem.url}>
+                      <patientCareItem.icon />
+                      <span>{patientCareItem.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* OPD Section */}
         {showOpdSection && (
           <Collapsible open={opdOpen} onOpenChange={setOpdOpen}>
