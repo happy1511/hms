@@ -1,13 +1,12 @@
 import { DiscountType, Prisma } from "@/generated/prisma/client";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import { SYSTEM_BILLING_SECTION_KEYS } from "@/lib/systemBillingConstants";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import {
-  ensureConsultingDoctorService,
   getLockedBillingItemTotal,
   upsertRoomChargeService,
   upsertSystemBillingSection,
 } from "@/lib/systemBilling";
+import { SYSTEM_BILLING_SECTION_KEYS } from "@/lib/systemBillingConstants";
 
 const getChargeableDays = (fromDate: Date, toDate?: Date | null) => {
   const start = startOfDay(new Date(fromDate));
@@ -85,17 +84,8 @@ export const syncIpdLockedBillingItems = async (
     return syncIpdLockedBillingItems(tx, { ipdId, actingUserId, now });
   }
 
-  const consultationSection = await upsertSystemBillingSection(tx, {
-    key: SYSTEM_BILLING_SECTION_KEYS.CONSULTATION_CHARGES,
-    actingUserId,
-  });
   const roomSection = await upsertSystemBillingSection(tx, {
     key: SYSTEM_BILLING_SECTION_KEYS.ROOM_CHARGES,
-    actingUserId,
-  });
-
-  const consultationService = await ensureConsultingDoctorService(tx, {
-    doctorId: ipd.consultantDoctorId,
     actingUserId,
   });
 
@@ -116,21 +106,6 @@ export const syncIpdLockedBillingItems = async (
     },
   });
 
-  const consultationInvoiceSection =
-    invoiceSections.find(
-      (section) => section.billingSectionId === consultationSection.id,
-    ) ??
-    (await tx.invoiceBillingSection.create({
-      data: {
-        invoiceId: ipd.invoiceId,
-        billingSectionId: consultationSection.id,
-        discountType: DiscountType.VALUE,
-        discountValue: 0,
-        createdBy: actingUserId,
-        updatedBy: actingUserId,
-      },
-    }));
-
   const roomInvoiceSection =
     invoiceSections.find((section) => section.billingSectionId === roomSection.id) ??
     (await tx.invoiceBillingSection.create({
@@ -145,58 +120,6 @@ export const syncIpdLockedBillingItems = async (
     }));
 
   const allItems = invoiceSections.flatMap((section) => section.items);
-  const consultationItems = allItems.filter(
-    (item) => item.isLocked && item.service.consultingDoctorId,
-  );
-
-  const currentConsultationItem = consultationItems[0];
-  const consultationTotal = getLockedBillingItemTotal({
-    quantity: 1,
-    rate: consultationService.price,
-  });
-
-  if (currentConsultationItem) {
-    await tx.invoiceBillingItem.update({
-      where: { id: currentConsultationItem.id },
-      data: {
-        billingSectionId: consultationSection.id,
-        invoiceBillingSectionId: consultationInvoiceSection.id,
-        serviceId: consultationService.id,
-        quantity: 1,
-        rate: consultationService.price,
-        discountType: DiscountType.VALUE,
-        discountValue: 0,
-        total: consultationTotal,
-        createdAt: ipd.ipdDateTime,
-        updatedBy: actingUserId,
-        isLocked: true,
-      },
-    });
-  } else {
-    await tx.invoiceBillingItem.create({
-      data: {
-        invoiceId: ipd.invoiceId,
-        billingSectionId: consultationSection.id,
-        invoiceBillingSectionId: consultationInvoiceSection.id,
-        serviceId: consultationService.id,
-        quantity: 1,
-        rate: consultationService.price,
-        discountType: DiscountType.VALUE,
-        discountValue: 0,
-        total: consultationTotal,
-        createdAt: ipd.ipdDateTime,
-        createdBy: actingUserId,
-        updatedBy: actingUserId,
-        isLocked: true,
-      },
-    });
-  }
-
-  if (consultationItems.length > 1) {
-    await tx.invoiceBillingItem.deleteMany({
-      where: { id: { in: consultationItems.slice(1).map((item) => item.id) } },
-    });
-  }
 
   const roomItemsByAllocationId = new Map(
     allItems

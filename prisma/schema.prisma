@@ -1295,16 +1295,17 @@ model RadiologyTemplate {
 
 // -------------------- Service Management --------------------
 model BillingSection {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  systemKey   String? @unique
-  isOtherCharges Boolean @default(false)
-  description String?
-  status      Status  @default(active)
-  isDeleted   Boolean @default(false)
-  createdBy   Int?
-  updatedBy   Int?
-  deletedBy   Int?
+  id                          Int     @id @default(autoincrement())
+  name                        String  @unique
+  systemKey                   String? @unique
+  isOtherCharges              Boolean @default(false)
+  isDoctorConsultationCharges Boolean @default(false)
+  description                 String?
+  status                      Status  @default(active)
+  isDeleted                   Boolean @default(false)
+  createdBy                   Int?
+  updatedBy                   Int?
+  deletedBy                   Int?
 
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt

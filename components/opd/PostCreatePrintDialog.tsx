@@ -41,6 +41,18 @@ const PostCreatePrintDialog = ({
             variant="outline"
             onClick={() => {
               if (invoiceId) {
+                window.open(`/invoice/${invoiceId}`, "_blank");
+              }
+            }}
+            disabled={!invoiceId}
+          >
+            View Invoice
+          </CustomButton>
+          <CustomButton
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (invoiceId) {
                 window.open(`/invoice/print/${invoiceId}`, "_blank");
               }
             }}
@@ -85,4 +97,3 @@ const PostCreatePrintDialog = ({
 };
 
 export default PostCreatePrintDialog;
-

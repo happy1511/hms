@@ -4,6 +4,10 @@ import {
   NameTitle,
   PrismaClient,
 } from "@/generated/prisma/client";
+import {
+  SYSTEM_BILLING_SECTION_KEYS,
+  SYSTEM_BILLING_SECTION_NAMES,
+} from "@/lib/systemBillingConstants";
 import { MODULE_ACTION_MATRIX } from "@/lib/permissionMatrix";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import data from "./india-locations.json";
@@ -191,6 +195,50 @@ const locations = async () => {
   console.log("✅ Seeding complete");
 };
 
+const seedSystemBillingSections = async () => {
+  console.log("---- Seeding System Billing Sections -----");
+
+  await prisma.billingSection.upsert({
+    where: {
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.CONSULTATION_CHARGES,
+    },
+    update: {
+      name: SYSTEM_BILLING_SECTION_NAMES.CONSULTATION_CHARGES,
+      description: "Consultation Charges system section",
+      status: "active",
+      isDeleted: false,
+      isDoctorConsultationCharges: true,
+    },
+    create: {
+      name: SYSTEM_BILLING_SECTION_NAMES.CONSULTATION_CHARGES,
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.CONSULTATION_CHARGES,
+      description: "Consultation Charges system section",
+      status: "active",
+      isDoctorConsultationCharges: true,
+    },
+  });
+
+  await prisma.billingSection.upsert({
+    where: {
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.ROOM_CHARGES,
+    },
+    update: {
+      name: SYSTEM_BILLING_SECTION_NAMES.ROOM_CHARGES,
+      description: "Room Charges system section",
+      status: "active",
+      isDeleted: false,
+      isDoctorConsultationCharges: false,
+    },
+    create: {
+      name: SYSTEM_BILLING_SECTION_NAMES.ROOM_CHARGES,
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.ROOM_CHARGES,
+      description: "Room Charges system section",
+      status: "active",
+      isDoctorConsultationCharges: false,
+    },
+  });
+};
+
 /* ---------------------------------- */
 /* Main                               */
 /* ---------------------------------- */
@@ -202,6 +250,7 @@ async function main() {
   const admin = await createAdminUser();
   await assignAdminPermissions(admin.id);
   await locations();
+  await seedSystemBillingSections();
   console.log("---- Seeding Completed Successfully -----");
 }
 

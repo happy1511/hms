@@ -36,8 +36,8 @@ import { useCreateOpd } from "@/hooks/query/opd";
 import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
 import {
-  useConsultingDoctorService,
   useInfiniteServicesList,
+  useConsultingDoctorService,
 } from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
@@ -46,6 +46,7 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
+import { SYSTEM_BILLING_SECTION_NAMES } from "@/lib/systemBillingConstants";
 import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
 import {
   billingItemValidator,
@@ -219,7 +220,6 @@ const Actions = ({
 const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
-  const lastAutoAddedConsultingServiceId = useRef<number | null>(null);
 
   const { append, update, remove } = useFieldArray({
     name: "invoice.billingItems",
@@ -252,18 +252,38 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     { name: billingItemSearch, status: Status["active"] },
     10,
   );
+  const consultationBillingSectionQuery = useInfiniteBillingSectionsList(
+    {
+      name: SYSTEM_BILLING_SECTION_NAMES.CONSULTATION_CHARGES,
+      status: Status["active"],
+    },
+    10,
+  );
 
   const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, status: Status["active"] },
     10,
   );
 
-  const consultantDoctor = form.watch("consultantDoctor");
-  const consultantDoctorId = (
-    consultantDoctor as { userId?: number } | undefined
-  )?.userId;
+  const consultantDoctor = form.watch("consultantDoctor") as Doctor | null;
+  const consultantDoctorId = consultantDoctor?.userId
+    ? Number(consultantDoctor.userId)
+    : undefined;
   const { data: consultingDoctorService } =
     useConsultingDoctorService(consultantDoctorId);
+  const consultantDoctorCharges = Number(
+    consultantDoctor?.consultationCharges ??
+      consultingDoctorService?.price ??
+      0,
+  );
+  const consultationBillingSection = useMemo(
+    () =>
+      consultationBillingSectionQuery.data?.pages
+        .flatMap((page) => page.data)
+        .find((section) => section.isDoctorConsultationCharges) ??
+      null,
+    [consultationBillingSectionQuery.data],
+  );
 
   const flatServices = useMemo(
     () =>
@@ -274,71 +294,80 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   );
 
   useEffect(() => {
-    const autoServiceId = lastAutoAddedConsultingServiceId.current;
-
-    const removeAutoServiceIfPresent = () => {
-      if (!autoServiceId) return;
-      const index = (addedBillingItems || []).findIndex(
-        (item) => Number(item?.service?.id) === autoServiceId,
-      );
-      if (index >= 0) {
-        remove(index);
-      }
-      lastAutoAddedConsultingServiceId.current = null;
-    };
+    const existingConsultationIndex = (addedBillingItems || []).findIndex(
+      (item) => Boolean(item?.billingSection?.isDoctorConsultationCharges),
+    );
+    const existingConsultationItem =
+      existingConsultationIndex >= 0
+        ? addedBillingItems?.[existingConsultationIndex]
+        : null;
 
     if (!consultantDoctorId) {
-      removeAutoServiceIfPresent();
+      if (existingConsultationIndex >= 0) {
+        remove(existingConsultationIndex);
+      }
       return;
     }
 
-    if (!consultingDoctorService?.id) return;
-
-    if (autoServiceId && autoServiceId !== consultingDoctorService.id) {
-      removeAutoServiceIfPresent();
-    }
-
-    const alreadyAdded = (addedBillingItems || []).some(
-      (item) => Number(item?.service?.id) === consultingDoctorService.id,
-    );
-
-    if (alreadyAdded) {
-      lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+    if (!consultationBillingSection?.id || !consultingDoctorService?.id) {
       return;
     }
 
-    const preferredBillingSection =
-      (addedBillingItems || [])?.[0]?.billingSection ??
-      billingItemQuery.data?.pages?.[0]?.data?.[0];
-
-    if (!preferredBillingSection?.id) return;
-
-    append({
+    const nextItem = {
       billingSection: {
-        id: Number(preferredBillingSection.id),
-        name: preferredBillingSection.name,
+        id: Number(consultationBillingSection.id),
+        name: consultationBillingSection.name,
+        isOtherCharges: consultationBillingSection.isOtherCharges,
+        isDoctorConsultationCharges:
+          consultationBillingSection.isDoctorConsultationCharges,
       },
       service: {
         id: consultingDoctorService.id,
         name: consultingDoctorService.name,
         maxDiscount: consultingDoctorService.maxDiscount ?? 0,
       },
-      createdAt: new Date(),
+      createdAt: existingConsultationItem?.createdAt ?? new Date(),
       quantity: 1,
-      rate: consultingDoctorService.price,
+      rate: consultantDoctorCharges,
       discountType: DiscountType.VALUE,
       discountValue: 0,
-      total: consultingDoctorService.price,
-    } as any);
+      total: consultantDoctorCharges,
+    } satisfies Partial<billingItemValidatorType>;
 
-    lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
+    if (
+      existingConsultationItem &&
+      Number(existingConsultationItem.billingSection?.id) ===
+        Number(nextItem.billingSection.id) &&
+      Number(existingConsultationItem.service?.id) ===
+        Number(nextItem.service.id) &&
+      Number(existingConsultationItem.rate) === Number(nextItem.rate) &&
+      Number(existingConsultationItem.quantity) === Number(nextItem.quantity) &&
+      existingConsultationItem.discountType === nextItem.discountType &&
+      Number(existingConsultationItem.discountValue) ===
+        Number(nextItem.discountValue) &&
+      Number(existingConsultationItem.total) === Number(nextItem.total)
+    ) {
+      return;
+    }
+
+    if (existingConsultationIndex >= 0) {
+      update(existingConsultationIndex, {
+        ...existingConsultationItem,
+        ...nextItem,
+      } as billingItemValidatorType);
+      return;
+    }
+
+    append(nextItem as billingItemValidatorType);
   }, [
     addedBillingItems,
     append,
-    billingItemQuery.data,
+    consultationBillingSection,
     consultantDoctorId,
+    consultantDoctorCharges,
     consultingDoctorService,
     remove,
+    update,
   ]);
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [

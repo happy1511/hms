@@ -118,6 +118,7 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
     { type: "OPD", value: data.patients.opd },
     { type: "IPD", value: data.patients.ipd },
     { type: "DayCare", value: data.patients.dayCare },
+    { type: "Ipd Census", value: data.patients.ipdCensus },
   ];
 
   const collectionRows = [
@@ -137,7 +138,6 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
     },
     { type: "IPD Due", value: data.collections.ipdDue },
     { type: "OPD Due", value: data.collections.opdDue },
-   
   ];
 
   const totalBillingRows = [{ type: "OPD", value: data.billing.opd }];
@@ -165,9 +165,11 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
         title="Collections"
         rows={collectionRows}
         totalLabel="Net"
-        totalValue={data.collections.balance -
-        data.paymentModes.digitalWallet -
-        (data.collections.ipdDue + data.collections.opdDue)}
+        totalValue={
+          data.collections.balance -
+          data.paymentModes.digitalWallet -
+          (data.collections.ipdDue + data.collections.opdDue)
+        }
       />
       <TableCard
         title="Total Billing"

@@ -45,10 +45,7 @@ import { useCreateIpd } from "@/hooks/query/ipd";
 import { useInfiniteLocationsList } from "@/hooks/query/locations";
 import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
-import {
-  useConsultingDoctorService,
-  useInfiniteServicesList,
-} from "@/hooks/query/service";
+import { useInfiniteServicesList } from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -237,7 +234,6 @@ const Actions = ({
 const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const [billingItemSearch, setBillingItemSearch] = useState("");
   const [serviceSearch, setServiceSearch] = useState("");
-  const lastAutoAddedConsultingServiceId = useRef<number | null>(null);
 
   const { append, update, remove } = useFieldArray({
     name: "invoice.billingItems",
@@ -276,13 +272,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
     10,
   );
 
-  const consultantDoctor = form.watch("consultantDoctor");
-  const consultantDoctorId = (
-    consultantDoctor as { userId?: number } | undefined
-  )?.userId;
-  const { data: consultingDoctorService } =
-    useConsultingDoctorService(consultantDoctorId);
-
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
@@ -290,74 +279,6 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
       ),
     [servicesQuery.data],
   );
-
-  useEffect(() => {
-    const autoServiceId = lastAutoAddedConsultingServiceId.current;
-
-    const removeAutoServiceIfPresent = () => {
-      if (!autoServiceId) return;
-      const index = (addedBillingItems || []).findIndex(
-        (item) => Number(item?.service?.id) === autoServiceId,
-      );
-      if (index >= 0) {
-        remove(index);
-      }
-      lastAutoAddedConsultingServiceId.current = null;
-    };
-
-    if (!consultantDoctorId) {
-      removeAutoServiceIfPresent();
-      return;
-    }
-
-    if (!consultingDoctorService?.id) return;
-
-    if (autoServiceId && autoServiceId !== consultingDoctorService.id) {
-      removeAutoServiceIfPresent();
-    }
-
-    const alreadyAdded = (addedBillingItems || []).some(
-      (item) => Number(item?.service?.id) === consultingDoctorService.id,
-    );
-
-    if (alreadyAdded) {
-      lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
-      return;
-    }
-
-    const preferredBillingSection =
-      (addedBillingItems || [])?.[0]?.billingSection ??
-      billingItemQuery.data?.pages?.[0]?.data?.[0];
-
-    if (!preferredBillingSection?.id) return;
-
-    append({
-      billingSection: {
-        id: Number(preferredBillingSection.id),
-        name: preferredBillingSection.name,
-      },
-      service: {
-        id: consultingDoctorService.id,
-        name: consultingDoctorService.name,
-        maxDiscount: consultingDoctorService.maxDiscount ?? 0,
-      },
-      createdAt: new Date(),
-      quantity: 1,
-      rate: consultingDoctorService.price,
-      discountType: DiscountType.VALUE,
-      discountValue: 0,
-      total: consultingDoctorService.price,
-    } as any);
-
-    lastAutoAddedConsultingServiceId.current = consultingDoctorService.id;
-  }, [
-    addedBillingItems,
-    append,
-    billingItemQuery.data,
-    consultantDoctorId,
-    consultingDoctorService,
-    remove,
-  ]);
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
     {
@@ -1427,6 +1348,18 @@ const IpdBillForm = () => {
               disabled={!createdInvoiceId}
             >
               Print Invoice
+            </CustomButton>
+            <CustomButton
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (createdInvoiceId) {
+                  window.open(`/invoice/${createdInvoiceId}`, "_blank");
+                }
+              }}
+              disabled={!createdInvoiceId}
+            >
+              View Invoice
             </CustomButton>
             <CustomButton
               type="button"

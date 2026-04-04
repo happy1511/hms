@@ -1239,6 +1239,7 @@ export type InvoiceBillingItem = Prisma.BillingSectionGetPayload<{
     id: true;
     name: true;
     isOtherCharges: true;
+    isDoctorConsultationCharges: true;
     invoiceBillingItems: {
       select: {
         isLocked: true;
@@ -1271,6 +1272,7 @@ export interface DashboardType {
     opd: number;
     ipd: number;
     dayCare: number;
+    ipdCensus: number;
   };
   collections: {
     opd: number;

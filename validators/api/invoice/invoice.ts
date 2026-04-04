@@ -16,6 +16,7 @@ const billingItemValidator = z
       id: z.coerce.number().min(1),
       name: z.string(),
       isOtherCharges: z.coerce.boolean().optional().default(false),
+      isDoctorConsultationCharges: z.coerce.boolean().optional().default(false),
     }),
     service: z
       .object({

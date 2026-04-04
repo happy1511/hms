@@ -65,6 +65,7 @@ export const getAPI = async (req: Request) => {
         walletRefundsAgg,
         surgicalCurrentIpdPatients,
         medicalCurrentIpdPatients,
+        ipdCensus,
       ] = await prisma.$transaction([
         prisma.opd.count({
           where: {
@@ -193,6 +194,11 @@ export const getAPI = async (req: Request) => {
             ...(createdAtFilter && { createdAt: createdAtFilter }),
           },
         }),
+        prisma.ipd.count({
+          where: {
+            isDayCare: false,
+          },
+        }),
       ]);
 
       const opdBilling = Number(opdBillingAgg._sum.total || 0);
@@ -207,7 +213,9 @@ export const getAPI = async (req: Request) => {
         ipdPaymentsAgg._sum.amount,
         ipdRefundsAgg._sum.amount,
       );
-      const totalClinicalCollections = roundAmount(opdCollections + ipdCollections);
+      const totalClinicalCollections = roundAmount(
+        opdCollections + ipdCollections,
+      );
       const otherIncome = roundAmount(Number(otherIncomeAgg._sum.amount || 0));
       const totalIncome = roundAmount(totalClinicalCollections + otherIncome);
       const expenses = roundAmount(Number(expenseAgg._sum.amount || 0));
@@ -233,6 +241,7 @@ export const getAPI = async (req: Request) => {
             opd: opdPatients,
             ipd: ipdPatients,
             dayCare: dayCarePatients,
+            ipdCensus: ipdCensus,
           },
           collections: {
             opd: opdCollections,
