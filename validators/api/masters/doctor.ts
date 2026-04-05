@@ -1,8 +1,15 @@
-import { Days, DoctorType, NameTitle, Status } from "@/generated/prisma/enums";
+import {
+  Days,
+  DoctorType,
+  Gender,
+  NameTitle,
+  Status,
+} from "@/generated/prisma/enums";
 import { z } from "zod";
 import { userValidator } from "./user";
 
 const optionalText = z.string().optional().or(z.literal(""));
+const importOptionalNumberText = z.string().optional().default("");
 const optionalPhone = z
   .string()
   .regex(/^\d{10}$/, "Phone Number must be exactly 10 digits")
@@ -132,8 +139,46 @@ const partialDoctorValidator = doctorBaseValidator.partial().extend({
   userId: z.coerce.number().min(1, "Doctor Id is required"),
 });
 
+const doctorImportRowValidator = z.object({
+  title: z.enum(NameTitle).optional().default(NameTitle.DR),
+  firstName: z.string().min(1, "firstName is required"),
+  middleName: optionalText,
+  lastName: z.string().min(1, "lastName is required"),
+  preferredName: z.string().min(1, "preferredName is required"),
+  gender: z.enum(Gender),
+  dob: optionalText,
+  address: optionalText,
+  city: optionalText,
+  country: optionalText,
+  state: optionalText,
+  postcode: optionalText,
+  contactNumber: z
+    .string()
+    .regex(/^\d{10}$/, "contactNumber must be exactly 10 digits"),
+  email: optionalText,
+  password: optionalText,
+  status: z.enum(Status).optional().default(Status.active),
+  licenseNumber: optionalText,
+  specialization: optionalText,
+  qualifications: optionalText,
+  department: optionalText,
+  yearsExperience: importOptionalNumberText,
+  designation: optionalText,
+  doctorType: z.enum(DoctorType),
+  consultationCharges: importOptionalNumberText,
+  emergencyContact: optionalText,
+  availableDays: optionalText,
+  consultationStartingTime: optionalText,
+  consultationEndingTime: optionalText,
+});
+
 type DoctorValidatorType = z.input<typeof doctorValidator>;
 type PartialDoctorValidatorType = z.output<typeof partialDoctorValidator>;
+type DoctorImportRow = z.infer<typeof doctorImportRowValidator>;
 
-export { doctorValidator, partialDoctorValidator };
-export type { DoctorValidatorType, PartialDoctorValidatorType };
+export { doctorValidator, partialDoctorValidator, doctorImportRowValidator };
+export type {
+  DoctorValidatorType,
+  PartialDoctorValidatorType,
+  DoctorImportRow,
+};

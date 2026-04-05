@@ -6,6 +6,8 @@ import {
 import { paginationValidator } from "@/validators/api/common/pagination";
 import { z } from "zod";
 
+const importOptionalText = z.string().optional().default("");
+
 const serviceValidator = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
@@ -33,8 +35,35 @@ const serviceListValidator = paginationValidator.extend({
   isInvoiceOnly: z.coerce.boolean().optional(),
 });
 
+const serviceImportRowValidator = z.object({
+  name: z.string().min(1, "name is required"),
+  description: z.string().min(1, "description is required"),
+  isInvoiceOnly: importOptionalText,
+  type: z.enum(ServiceType),
+  price: z.coerce.number().min(0, "price must be greater than or equal to 0"),
+  discountAvailable: importOptionalText,
+  maxDiscount: z.coerce.number().optional().default(0),
+  applicableOn: z
+    .enum(ServiceApplicableOn)
+    .optional()
+    .default(ServiceApplicableOn.BOTH),
+  status: z.enum(Status).optional().default(Status.active),
+  connectedLabTests: importOptionalText,
+  connectedRadiologyTests: importOptionalText,
+});
+
 type ServiceValidatorType = z.input<typeof serviceValidator>;
 type PartialServiceValidatorType = z.input<typeof partialServiceValidator>;
+type ServiceImportRow = z.infer<typeof serviceImportRowValidator>;
 
-export { serviceValidator, partialServiceValidator, serviceListValidator };
-export type { ServiceValidatorType, PartialServiceValidatorType };
+export {
+  serviceValidator,
+  partialServiceValidator,
+  serviceListValidator,
+  serviceImportRowValidator,
+};
+export type {
+  ServiceValidatorType,
+  PartialServiceValidatorType,
+  ServiceImportRow,
+};
