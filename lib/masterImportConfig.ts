@@ -1,8 +1,11 @@
 import {
+  ContainerType,
   DoctorType,
   Gender,
   ModuleType,
   NameTitle,
+  PathologyTestSection,
+  SampleType,
   ServiceApplicableOn,
   ServiceType,
   Status,
@@ -17,7 +20,8 @@ export type MasterImportKey =
   | "room-type"
   | "room"
   | "bed"
-  | "service";
+  | "service"
+  | "pathology-test";
 
 export type MasterImportMode = "append" | "replace";
 
@@ -178,5 +182,41 @@ export const MASTER_IMPORT_CONFIG: Record<
       { key: "connectedRadiologyTests", example: "Chest X-Ray" },
     ],
   },
+  "pathology-test": {
+    title: "Pathology Tests",
+    module: ModuleType.PATHOLOGY_TEST_MASTER,
+    queryKey: "pathology-tests",
+    columns: [
+      { key: "name", required: true, example: "CBC" },
+      { key: "alias", required: true, example: "Complete Blood Count" },
+      {
+        key: "section",
+        required: true,
+        example: PathologyTestSection.HAEMATOLOGY,
+      },
+      {
+        key: "container",
+        required: true,
+        example: ContainerType.EDTA,
+      },
+      {
+        key: "sampleType",
+        required: true,
+        example: SampleType.WHOLE_BLOOD,
+      },
+      { key: "footerNotes", example: "Correlate clinically" },
+      { key: "status", example: Status.active },
+      { key: "price", required: true, example: "450" },
+      {
+        key: "headers",
+        example:
+          '[{"name":"Complete Blood Count","note":"","displayOrder":0,"parameters":[{"name":"Hemoglobin","displayOrder":0,"isDescriptiveOnly":false,"referenceRanges":[{"applicableGender":"Both","lowerAgeDay":null,"upperAgeDay":null,"lowerAgeMonth":null,"upperAgeMonth":null,"lowerAgeYear":null,"upperAgeYear":null,"lowerRange":12,"upperRange":16,"unit":"g/dL"}],"parameterOptions":[]}]}]',
+      },
+      {
+        key: "parameters",
+        example:
+          '[{"name":"Remarks","displayOrder":0,"isDescriptiveOnly":true,"referenceRanges":[],"parameterOptions":[]}]',
+      },
+    ],
+  },
 };
-

@@ -13,11 +13,16 @@ import { useImportMasterData } from "@/hooks/query/masterImport";
 import { DownloadIcon, UploadIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const csvEscape = (value: string) => {
-  if (value.includes(",") || value.includes("\"") || value.includes("\n")) {
-    return `"${value.replaceAll("\"", "\"\"")}"`;
+const csvEscape = (value: string | number | boolean | null | undefined) => {
+  const normalized = value === null || value === undefined ? "" : String(value);
+  if (
+    normalized.includes(",") ||
+    normalized.includes("\"") ||
+    normalized.includes("\n")
+  ) {
+    return `"${normalized.replaceAll("\"", "\"\"")}"`;
   }
-  return value;
+  return normalized;
 };
 
 const downloadExampleFile = (master: MasterImportKey) => {

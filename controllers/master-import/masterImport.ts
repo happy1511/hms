@@ -12,6 +12,7 @@ import { departmentImportRowValidator } from "@/validators/api/masters/departmen
 import { doctorImportRowValidator } from "@/validators/api/masters/doctor";
 import { drugImportRowValidator } from "@/validators/api/masters/drug";
 import { appendReplaceModeValidator } from "@/validators/api/masters/masterImport";
+import { pathologyTestImportRowValidator } from "@/validators/api/masters/pathologyTest";
 import { roomImportRowValidator } from "@/validators/api/masters/room";
 import { roomTypeImportRowValidator } from "@/validators/api/masters/roomType";
 import { serviceImportRowValidator } from "@/validators/api/masters/service";
@@ -36,6 +37,7 @@ const rowSchemaMap: Record<MasterImportKey, z.ZodTypeAny> = {
   room: roomImportRowValidator,
   bed: bedImportRowValidator,
   service: serviceImportRowValidator,
+  "pathology-test": pathologyTestImportRowValidator,
 };
 
 type ValidatedImportRow = {
@@ -106,7 +108,6 @@ export const createAPI = async (
 
   const content = await file.text();
   const rawRows = await parseCsvToJson(content);
-  console.log(rawRows);
 
   if (!rawRows.length) {
     return apiResponse({

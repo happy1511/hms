@@ -10,6 +10,7 @@ import CreatePathologyTestModal from "./pathology/CreatePathologyTestModal";
 import CustomButton from "@/components/common/CustomButton";
 import RadiologyTestForm from "./radiology/RadiologyTestForm";
 import NoPermission from "@/components/common/NoPermission";
+import MasterImportModal from "@/components/common/MasterImportModal";
 
 const Buttons = () => {
   const { data: profile } = useProfile(false);
@@ -22,6 +23,11 @@ const Buttons = () => {
     profile?.data,
     ModuleType.PATHOLOGY_TEST_MASTER,
     ActionType.CREATE,
+  );
+  const canDeletePathology = hasActionPermission(
+    profile?.data,
+    ModuleType.PATHOLOGY_TEST_MASTER,
+    ActionType.DELETE,
   );
   const canCreateRadiology = hasActionPermission(
     profile?.data,
@@ -41,6 +47,11 @@ const Buttons = () => {
           trigger={<CustomButton>Add Radiology Test</CustomButton>}
         />
       )}
+
+      <MasterImportModal
+        master="pathology-test"
+        allowReplace={!!canDeletePathology}
+      />
     </div>
   );
 };

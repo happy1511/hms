@@ -1,16 +1,29 @@
-import { Days, DoctorType, Prisma, Status } from "@/generated/prisma/client";
+import {
+  Days,
+  DoctorType,
+  Prisma,
+  ServiceApplicableOn,
+  ServiceType,
+  Status,
+} from "@/generated/prisma/client";
 import { MasterImportKey, MasterImportMode } from "@/lib/masterImportConfig";
 import {
   upsertConsultingDoctorService,
   upsertRoomChargeService,
 } from "@/lib/systemBilling";
 import { buildUserName, trimOptionalString } from "@/lib/user";
+import { toDays } from "@/lib/utils";
 import { prisma } from "@/services/prisma";
 import type { BedImportRow } from "@/validators/api/masters/bed";
 import type { BillingSectionImportRow } from "@/validators/api/masters/billingSection";
 import type { DepartmentImportRow } from "@/validators/api/masters/department";
 import type { DoctorImportRow } from "@/validators/api/masters/doctor";
 import type { DrugImportRow } from "@/validators/api/masters/drug";
+import {
+  pathologyTestHeaderValidator,
+  pathologyTestParameterValidator,
+} from "@/validators/api/masters/pathologyTest";
+import type { PathologyTestImportRow } from "@/validators/api/masters/pathologyTest";
 import type { RoomImportRow } from "@/validators/api/masters/room";
 import type { RoomTypeImportRow } from "@/validators/api/masters/roomType";
 import type { ServiceImportRow } from "@/validators/api/masters/service";
@@ -87,6 +100,36 @@ const splitList = (value: string | undefined) =>
     ?.split("|")
     .map((item) => item.trim())
     .filter(Boolean) || [];
+
+const parseJsonArray = <T>(
+  value: string | undefined,
+  validator: { safeParse: (input: unknown) => { success: boolean; data: T; error?: { issues?: { message?: string }[] } } },
+  field: string,
+  rowNumber: string,
+) => {
+  if (!value?.trim()) return [] as T[];
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(value);
+  } catch {
+    throw new Error(`Row ${rowNumber}: "${field}" must be valid JSON`);
+  }
+
+  if (!Array.isArray(parsedJson)) {
+    throw new Error(`Row ${rowNumber}: "${field}" must be a JSON array`);
+  }
+
+  return parsedJson.map((item, index) => {
+    const parsed = validator.safeParse(item);
+    if (!parsed.success) {
+      throw new Error(
+        `Row ${rowNumber}: "${field}" item ${index + 1} ${parsed.error?.issues?.[0]?.message || "is invalid"}`,
+      );
+    }
+    return parsed.data;
+  });
+};
 
 const deleteSuffix = (id: number) => `__deleted__${id}_${Date.now()}`;
 
@@ -304,6 +347,43 @@ const archiveDoctors = async (tx: typeof prisma, userId: number) => {
   }
 
   return doctors.length;
+};
+
+const archivePathologyTests = async (tx: typeof prisma, userId: number) => {
+  const tests = await tx.pathologyTest.findMany({
+    where: { isDeleted: false },
+    select: { id: true },
+  });
+  const testIds = tests.map((test) => test.id);
+
+  if (testIds.length) {
+    await tx.service.updateMany({
+      where: {
+        pathologyTests: {
+          some: {
+            testId: { in: testIds },
+          },
+        },
+        isDeleted: false,
+      },
+      data: {
+        isDeleted: true,
+        deletedBy: userId,
+        updatedBy: userId,
+      },
+    });
+  }
+
+  await tx.pathologyTest.updateMany({
+    where: { isDeleted: false },
+    data: {
+      isDeleted: true,
+      deletedBy: userId,
+      updatedBy: userId,
+    },
+  });
+
+  return tests.length;
 };
 
 const toNullableString = (value: string | undefined) =>
@@ -999,6 +1079,244 @@ const importServices = async (
   return { created, updated, deleted };
 };
 
+const importPathologyTests = async (
+  rows: (PathologyTestImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archivePathologyTests(tx as typeof prisma, userId);
+    }
+
+    for (const row of rows) {
+      const headers = parseJsonArray(
+        row.headers,
+        pathologyTestHeaderValidator,
+        "headers",
+        getRowNumber(row),
+      );
+      const parameters = parseJsonArray(
+        row.parameters,
+        pathologyTestParameterValidator,
+        "parameters",
+        getRowNumber(row),
+      );
+
+      const existing =
+        mode === "append"
+          ? await tx.pathologyTest.findFirst({
+              where: { name: row.name },
+              include: {
+                services: {
+                  select: { serviceId: true },
+                },
+              },
+            })
+          : null;
+
+      const test = existing
+        ? await tx.pathologyTest.update({
+            where: { id: existing.id },
+            data: {
+              name: row.name,
+              alias: row.alias,
+              price: row.price,
+              status: row.status,
+              section: row.section,
+              container: row.container,
+              sampleType: row.sampleType,
+              footerNotes: toNullableString(row.footerNotes),
+              isDeleted: false,
+              updatedBy: userId,
+            },
+          })
+        : await tx.pathologyTest.create({
+            data: {
+              name: row.name,
+              alias: row.alias,
+              price: row.price,
+              status: row.status,
+              section: row.section,
+              container: row.container,
+              sampleType: row.sampleType,
+              footerNotes: toNullableString(row.footerNotes),
+              isDeleted: false,
+              createdBy: userId,
+              updatedBy: userId,
+            },
+          });
+
+      await tx.pathologyTestHeader.deleteMany({
+        where: { testId: test.id },
+      });
+      await tx.pathologyTestParameter.deleteMany({
+        where: { testId: test.id },
+      });
+
+      for (const header of headers) {
+        const createdHeader = await tx.pathologyTestHeader.create({
+          data: {
+            testId: test.id,
+            name: header.name,
+            note: trimOptionalString(header.note || ""),
+            displayOrder: header.displayOrder,
+            createdBy: userId,
+            updatedBy: userId,
+          },
+        });
+
+        for (const parameter of header.parameters || []) {
+          const createdParameter = await tx.pathologyTestParameter.create({
+            data: {
+              testId: test.id,
+              headerId: createdHeader.id,
+              name: parameter.name,
+              displayOrder: parameter.displayOrder,
+              isDescriptiveOnly: parameter.isDescriptiveOnly,
+              createdBy: userId,
+              updatedBy: userId,
+            },
+          });
+
+          if (parameter.referenceRanges?.length) {
+            await tx.referenceRange.createMany({
+              data: parameter.referenceRanges.map((range) => ({
+                testParameterId: createdParameter.id,
+                applicableGender: range.applicableGender,
+                lowerAgeDay: range.lowerAgeDay,
+                upperAgeDay: range.upperAgeDay,
+                lowerAgeMonth: range.lowerAgeMonth,
+                upperAgeMonth: range.upperAgeMonth,
+                lowerAgeYear: range.lowerAgeYear,
+                upperAgeYear: range.upperAgeYear,
+                lowerAgeInDays: toDays(
+                  range.lowerAgeDay,
+                  range.lowerAgeMonth,
+                  range.lowerAgeYear,
+                ),
+                upperAgeInDays: toDays(
+                  range.upperAgeDay,
+                  range.upperAgeMonth,
+                  range.upperAgeYear,
+                ),
+                lowerRange: range.lowerRange,
+                upperRange: range.upperRange,
+                unit: trimOptionalString(range.unit || ""),
+                createdBy: userId,
+                updatedBy: userId,
+              })),
+            });
+          }
+
+          if (parameter.parameterOptions?.length) {
+            await tx.parameterOptions.createMany({
+              data: parameter.parameterOptions.map((option) => ({
+                testParameterId: createdParameter.id,
+                value: option.value,
+              })),
+            });
+          }
+        }
+      }
+
+      for (const parameter of parameters) {
+        const createdParameter = await tx.pathologyTestParameter.create({
+          data: {
+            testId: test.id,
+            name: parameter.name,
+            displayOrder: parameter.displayOrder,
+            isDescriptiveOnly: parameter.isDescriptiveOnly,
+            createdBy: userId,
+            updatedBy: userId,
+          },
+        });
+
+        if (parameter.referenceRanges?.length) {
+          await tx.referenceRange.createMany({
+            data: parameter.referenceRanges.map((range) => ({
+              testParameterId: createdParameter.id,
+              applicableGender: range.applicableGender,
+              lowerAgeDay: range.lowerAgeDay,
+              upperAgeDay: range.upperAgeDay,
+              lowerAgeMonth: range.lowerAgeMonth,
+              upperAgeMonth: range.upperAgeMonth,
+              lowerAgeYear: range.lowerAgeYear,
+              upperAgeYear: range.upperAgeYear,
+              lowerAgeInDays: toDays(
+                range.lowerAgeDay,
+                range.lowerAgeMonth,
+                range.lowerAgeYear,
+              ),
+              upperAgeInDays: toDays(
+                range.upperAgeDay,
+                range.upperAgeMonth,
+                range.upperAgeYear,
+              ),
+              lowerRange: range.lowerRange,
+              upperRange: range.upperRange,
+              unit: trimOptionalString(range.unit || ""),
+              createdBy: userId,
+              updatedBy: userId,
+            })),
+          });
+        }
+
+        if (parameter.parameterOptions?.length) {
+          await tx.parameterOptions.createMany({
+            data: parameter.parameterOptions.map((option) => ({
+              testParameterId: createdParameter.id,
+              value: option.value,
+            })),
+          });
+        }
+      }
+
+      const serviceData = {
+        name: row.name,
+        description: row.alias,
+        type: ServiceType.LAB_TEST,
+        price: row.price,
+        applicableOn: ServiceApplicableOn.BOTH,
+        status: row.status,
+        isDeleted: false,
+        updatedBy: userId,
+      };
+
+      if (existing?.services[0]?.serviceId) {
+        await tx.service.update({
+          where: { id: existing.services[0].serviceId },
+          data: serviceData,
+        });
+      } else {
+        await tx.service.create({
+          data: {
+            ...serviceData,
+            createdBy: userId,
+            pathologyTests: {
+              create: {
+                testId: test.id,
+              },
+            },
+          },
+        });
+      }
+
+      if (existing) {
+        updated += 1;
+      } else {
+        created += 1;
+      }
+    }
+  });
+
+  return { created, updated, deleted };
+};
+
 const importDoctors = async (
   rows: (DoctorImportRow & ImportRowMeta)[],
   mode: MasterImportMode,
@@ -1200,6 +1518,12 @@ const importByMaster = async (
     case "service":
       return importServices(
         rows as (ServiceImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "pathology-test":
+      return importPathologyTests(
+        rows as (PathologyTestImportRow & ImportRowMeta)[],
         mode,
         userId,
       );

@@ -59,6 +59,19 @@ const pathologyTestValidator = z.object({
   parameters: z.array(pathologyTestParameterValidator).optional(),
 });
 
+const pathologyTestImportRowValidator = z.object({
+  name: z.string().min(1, "name is required"),
+  alias: z.string().min(1, "alias is required"),
+  section: z.enum(PathologyTestSection),
+  container: z.enum(ContainerType),
+  sampleType: z.enum(SampleType),
+  footerNotes: z.string().optional().nullable().default(""),
+  status: z.enum(Status).optional().default(Status.active),
+  price: z.coerce.number().min(0, "price must be a positive number"),
+  headers: z.string().optional().default(""),
+  parameters: z.string().optional().default(""),
+});
+
 const partialPathologyTestValidator = pathologyTestValidator.partial().extend({
   testId: z.coerce.number().min(1, "Service Id is required"),
 });
@@ -147,6 +160,7 @@ const pathologyResultsEntry = z.object({
 
 // ----------- Pathology Test ------------
 type PathologyTestValidatorType = z.input<typeof pathologyTestValidator>;
+type PathologyTestImportRow = z.infer<typeof pathologyTestImportRowValidator>;
 type PartialPathologyTestValidatorType = z.input<
   typeof partialPathologyTestValidator
 >;
@@ -193,6 +207,9 @@ type PathologyResultEntryValidatorType = z.input<typeof pathologyResultsEntry>;
 
 export {
   pathologyTestValidator,
+  pathologyTestImportRowValidator,
+  pathologyTestHeaderValidator,
+  pathologyTestParameterValidator,
   partialPathologyTestValidator,
   addParameterToTestValidator,
   updateParameterToTestValidator,
@@ -212,6 +229,7 @@ export {
 };
 export type {
   PathologyTestValidatorType,
+  PathologyTestImportRow,
   PartialPathologyTestValidatorType,
   AddParameterToTestValidatorType,
   UpdateParameterToTestValidatorType,

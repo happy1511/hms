@@ -1,8 +1,10 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
+import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import CreatePathologyTestModal from "./CreatePathologyTestModal";
 import { Button } from "@/components/ui/button";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -20,6 +22,21 @@ import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+
+const Buttons = ({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) => {
+  return canCreate ? (
+    <div className="flex items-center gap-4">
+      <CreatePathologyTestModal trigger={<Button>New Pathology Test</Button>} />
+      <MasterImportModal master="pathology-test" allowReplace={canDelete} />
+    </div>
+  ) : null;
+};
 
 const Actions = ({
   data,
