@@ -148,6 +148,7 @@ const invoiceValidator = invoiceBaseValidator
     return {
       ...data,
       billingItems,
+      rate: subTotal,
       total,
     };
   })
