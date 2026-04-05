@@ -34,6 +34,11 @@ type ImportRowMeta = {
   __rowNumber?: string;
 };
 
+const IMPORT_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 60_000,
+} as const;
+
 const getRowNumber = (row: ImportRowMeta) => row.__rowNumber || "?";
 
 const required = (row: Record<string, string>, key: string) => {
@@ -508,7 +513,7 @@ const importBillingSections = async (
       });
       created += 1;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -579,7 +584,7 @@ const importDepartments = async (
       await tx.department.createMany({ data: rowsToCreate });
       created = rowsToCreate.length;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -664,7 +669,7 @@ const importRoomTypes = async (
       await tx.roomType.createMany({ data: rowsToCreate });
       created = rowsToCreate.length;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -720,7 +725,7 @@ const importRooms = async (
       if (existing) updated += 1;
       else created += 1;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -814,7 +819,7 @@ const importBeds = async (
       await tx.bed.createMany({ data: rowsToCreate });
       created = rowsToCreate.length;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -912,7 +917,7 @@ const importDrugs = async (
       await tx.drug.createMany({ data: rowsToCreate });
       created = rowsToCreate.length;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -987,7 +992,7 @@ const importSuppliers = async (
       await tx.drugSupplier.createMany({ data: rowsToCreate });
       created = rowsToCreate.length;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -1047,7 +1052,7 @@ const importServices = async (
             })
           : null;
 
-      const data = {
+      const baseData = {
         name: row.name,
         description: row.description,
         isInvoiceOnly: parseBoolean(row.isInvoiceOnly),
@@ -1059,6 +1064,10 @@ const importServices = async (
         status: row.status,
         isDeleted: false,
         updatedBy: userId,
+      };
+
+      const updateData = {
+        ...baseData,
         pathologyTests: {
           deleteMany: {},
           create: pathologyTests.map((test) => ({ testId: test.id })),
@@ -1069,13 +1078,24 @@ const importServices = async (
         },
       };
 
+      const createData = {
+        ...baseData,
+        createdBy: userId,
+        pathologyTests: {
+          create: pathologyTests.map((test) => ({ testId: test.id })),
+        },
+        radiologyTests: {
+          create: radiologyTests.map((test) => ({ testId: test.id })),
+        },
+      };
+
       const record = existing
-        ? await tx.service.update({ where: { id: existing.id }, data })
-        : await tx.service.create({ data: { ...data, createdBy: userId } });
+        ? await tx.service.update({ where: { id: existing.id }, data: updateData })
+        : await tx.service.create({ data: createData });
       if (existing) updated += 1;
       else created += 1;
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -1315,7 +1335,7 @@ const importPathologyTests = async (
         created += 1;
       }
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
@@ -1462,7 +1482,7 @@ const importDoctors = async (
         });
       }
     }
-  });
+  }, IMPORT_TRANSACTION_OPTIONS);
 
   return { created, updated, deleted };
 };
