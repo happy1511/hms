@@ -347,7 +347,7 @@ const IPDs = ({
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useIpdList(
+  const { data, isLoading, isFetching, refetch, isError, error } = useIpdList(
     { ...effectiveFilters, isDischarged: !!discharged, isDayCare: dayCare },
     page,
     limit,
@@ -744,6 +744,9 @@ const IPDs = ({
         <CustomFilters<FilterValues>
           filters={neededFilters}
           defaultValues={filters}
+          onRefresh={refetch}
+          isLoading={isLoading || isFetching}
+          isRefreshing={isFetching}
           onSubmit={(values) => {
             setFilters(values);
             setPage(1);

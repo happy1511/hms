@@ -31,7 +31,8 @@ const InventoryList = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useInventoryItemsList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useInventoryItemsList(
     filters,
     page,
     limit,
@@ -150,6 +151,9 @@ const InventoryList = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable

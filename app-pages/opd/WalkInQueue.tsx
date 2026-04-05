@@ -73,7 +73,8 @@ const WalkInQueue = () => {
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useOpdQueueList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useOpdQueueList(
     filters,
     page,
     limit,
@@ -204,6 +205,9 @@ const WalkInQueue = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable

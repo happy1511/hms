@@ -1,10 +1,9 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
+import CustomButton from "@/components/common/CustomButton";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
-import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
-import CreatePathologyTestModal from "./CreatePathologyTestModal";
 import { Button } from "@/components/ui/button";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -23,19 +22,24 @@ import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-const Buttons = ({
-  canCreate,
-  canDelete,
+const RefreshButton = ({
+  onRefresh,
+  isRefreshing,
 }: {
-  canCreate: boolean;
-  canDelete: boolean;
+  onRefresh: () => Promise<unknown> | unknown;
+  isRefreshing: boolean;
 }) => {
-  return canCreate ? (
-    <div className="flex items-center gap-4">
-      <CreatePathologyTestModal trigger={<Button>New Pathology Test</Button>} />
-      <MasterImportModal master="pathology-test" allowReplace={canDelete} />
-    </div>
-  ) : null;
+  return (
+    <CustomButton
+      type="button"
+      variant="outline"
+      className="bg-white text-primary shadow-none"
+      onClick={onRefresh}
+      isLoading={isRefreshing}
+    >
+      Refresh
+    </CustomButton>
+  );
 };
 
 const Actions = ({
@@ -102,7 +106,8 @@ const PathologyTests = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = usePathologyTestsList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    usePathologyTestsList(
     filters,
     page,
     limit,
@@ -116,11 +121,6 @@ const PathologyTests = () => {
     profile?.data,
     ModuleType.PATHOLOGY_TEST_MASTER,
     ActionType.VIEW,
-  );
-  const canCreate = hasActionPermission(
-    profile?.data,
-    ModuleType.PATHOLOGY_TEST_MASTER,
-    ActionType.CREATE,
   );
   const canUpdate = hasActionPermission(
     profile?.data,
@@ -254,22 +254,30 @@ const PathologyTests = () => {
     },
   ];
   return (
-    <CustomTable
-      columns={columns}
-      data={data?.data || []}
-      page={page}
-      total={data?.total}
-      enableSorting
-      limit={limit}
-      handleChangePage={setPage}
-      isLoading={isLoading}
-      handleChangeLimit={setLimit}
-      isError={isError}
-      error={error}
-      enableGrouping
-      grouping={["section"]}
-      getRowId={(data) => String(data.id)}
-    />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <RefreshButton
+          onRefresh={refetch}
+          isRefreshing={isFetching}
+        />
+      </div>
+      <CustomTable
+        columns={columns}
+        data={data?.data || []}
+        page={page}
+        total={data?.total}
+        enableSorting
+        limit={limit}
+        handleChangePage={setPage}
+        isLoading={isLoading}
+        handleChangeLimit={setLimit}
+        isError={isError}
+        error={error}
+        enableGrouping
+        grouping={["section"]}
+        getRowId={(data) => String(data.id)}
+      />
+    </div>
   );
 };
 

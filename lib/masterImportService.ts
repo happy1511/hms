@@ -28,6 +28,7 @@ import type { RoomImportRow } from "@/validators/api/masters/room";
 import type { RoomTypeImportRow } from "@/validators/api/masters/roomType";
 import type { ServiceImportRow } from "@/validators/api/masters/service";
 import type { SupplierImportRow } from "@/validators/api/masters/supplier";
+import { z } from "zod";
 
 type ImportRowMeta = {
   __rowNumber?: string;
@@ -103,7 +104,7 @@ const splitList = (value: string | undefined) =>
 
 const parseJsonArray = <T>(
   value: string | undefined,
-  validator: { safeParse: (input: unknown) => { success: boolean; data: T; error?: { issues?: { message?: string }[] } } },
+  validator: z.ZodType<T>,
   field: string,
   rowNumber: string,
 ) => {
@@ -386,7 +387,7 @@ const archivePathologyTests = async (tx: typeof prisma, userId: number) => {
   return tests.length;
 };
 
-const toNullableString = (value: string | undefined) =>
+const toNullableString = (value: string | null | undefined) =>
   trimOptionalString(value || "");
 
 const mapStatus = (value: string | undefined, defaultValue = Status.active) =>
@@ -1130,7 +1131,7 @@ const importPathologyTests = async (
               section: row.section,
               container: row.container,
               sampleType: row.sampleType,
-              footerNotes: toNullableString(row.footerNotes),
+              footerNotes: toNullableString(row.footerNotes || undefined),
               isDeleted: false,
               updatedBy: userId,
             },
@@ -1144,7 +1145,7 @@ const importPathologyTests = async (
               section: row.section,
               container: row.container,
               sampleType: row.sampleType,
-              footerNotes: toNullableString(row.footerNotes),
+              footerNotes: toNullableString(row.footerNotes || undefined),
               isDeleted: false,
               createdBy: userId,
               updatedBy: userId,
@@ -1158,7 +1159,7 @@ const importPathologyTests = async (
         where: { testId: test.id },
       });
 
-      for (const header of headers) {
+      for (const header of (headers || [])) {
         const createdHeader = await tx.pathologyTestHeader.create({
           data: {
             testId: test.id,
@@ -1224,55 +1225,57 @@ const importPathologyTests = async (
         }
       }
 
-      for (const parameter of parameters) {
-        const createdParameter = await tx.pathologyTestParameter.create({
-          data: {
-            testId: test.id,
-            name: parameter.name,
-            displayOrder: parameter.displayOrder,
-            isDescriptiveOnly: parameter.isDescriptiveOnly,
-            createdBy: userId,
-            updatedBy: userId,
-          },
-        });
-
-        if (parameter.referenceRanges?.length) {
-          await tx.referenceRange.createMany({
-            data: parameter.referenceRanges.map((range) => ({
-              testParameterId: createdParameter.id,
-              applicableGender: range.applicableGender,
-              lowerAgeDay: range.lowerAgeDay,
-              upperAgeDay: range.upperAgeDay,
-              lowerAgeMonth: range.lowerAgeMonth,
-              upperAgeMonth: range.upperAgeMonth,
-              lowerAgeYear: range.lowerAgeYear,
-              upperAgeYear: range.upperAgeYear,
-              lowerAgeInDays: toDays(
-                range.lowerAgeDay,
-                range.lowerAgeMonth,
-                range.lowerAgeYear,
-              ),
-              upperAgeInDays: toDays(
-                range.upperAgeDay,
-                range.upperAgeMonth,
-                range.upperAgeYear,
-              ),
-              lowerRange: range.lowerRange,
-              upperRange: range.upperRange,
-              unit: trimOptionalString(range.unit || ""),
+      for (const parameter of (parameters || [])) {
+        if (parameter) {
+          const createdParameter = await tx.pathologyTestParameter.create({
+            data: {
+              testId: test.id,
+              name: parameter.name,
+              displayOrder: parameter.displayOrder,
+              isDescriptiveOnly: parameter.isDescriptiveOnly,
               createdBy: userId,
               updatedBy: userId,
-            })),
+            },
           });
-        }
 
-        if (parameter.parameterOptions?.length) {
-          await tx.parameterOptions.createMany({
-            data: parameter.parameterOptions.map((option) => ({
-              testParameterId: createdParameter.id,
-              value: option.value,
-            })),
-          });
+          if (parameter.referenceRanges?.length) {
+            await tx.referenceRange.createMany({
+              data: parameter.referenceRanges.map((range) => ({
+                testParameterId: createdParameter.id,
+                applicableGender: range.applicableGender,
+                lowerAgeDay: range.lowerAgeDay,
+                upperAgeDay: range.upperAgeDay,
+                lowerAgeMonth: range.lowerAgeMonth,
+                upperAgeMonth: range.upperAgeMonth,
+                lowerAgeYear: range.lowerAgeYear,
+                upperAgeYear: range.upperAgeYear,
+                lowerAgeInDays: toDays(
+                  range.lowerAgeDay,
+                  range.lowerAgeMonth,
+                  range.lowerAgeYear,
+                ),
+                upperAgeInDays: toDays(
+                  range.upperAgeDay,
+                  range.upperAgeMonth,
+                  range.upperAgeYear,
+                ),
+                lowerRange: range.lowerRange,
+                upperRange: range.upperRange,
+                unit: trimOptionalString(range.unit || ""),
+                createdBy: userId,
+                updatedBy: userId,
+              })),
+            });
+          }
+
+          if (parameter?.parameterOptions?.length) {
+            await tx.parameterOptions.createMany({
+              data: parameter.parameterOptions.map((option) => ({
+                testParameterId: createdParameter.id,
+                value: option.value,
+              })),
+            });
+          }
         }
       }
 

@@ -13,11 +13,15 @@ import { useState } from "react";
 interface PatientCareFiltersProps {
   defaultValues?: FilterValues;
   onSubmit: (values: FilterValues) => void;
+  onRefresh?: () => Promise<unknown> | unknown;
+  isRefreshing?: boolean;
 }
 
 const PatientCareFilters = ({
   defaultValues,
   onSubmit,
+  onRefresh,
+  isRefreshing,
 }: PatientCareFiltersProps) => {
   const [consultantValue, setConsultantValue] = useState("");
 
@@ -50,6 +54,8 @@ const PatientCareFilters = ({
       filters={filters}
       defaultValues={defaultValues}
       onSubmit={onSubmit}
+      onRefresh={onRefresh}
+      isRefreshing={isRefreshing}
       filtersContainerClassName="grid-cols-1 md:grid-cols-2"
     />
   );

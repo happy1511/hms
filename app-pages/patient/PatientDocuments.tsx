@@ -58,7 +58,8 @@ const PatientDocuments = () => {
   >({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = usePatientDocumentsList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    usePatientDocumentsList(
     { ...filters, uhid: filters?.uhid },
     page,
     limit,
@@ -235,6 +236,9 @@ const PatientDocuments = () => {
             <CustomFilters<FilterValues>
               filters={neededFilters}
               onSubmit={setFilters}
+              onRefresh={refetch}
+              isLoading={isLoading || isFetching}
+              isRefreshing={isFetching}
               filtersContainerClassName="grid-cols-1 md:grid-cols-2"
             />
             <CustomTable

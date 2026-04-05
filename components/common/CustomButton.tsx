@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { MouseEventHandler } from "react";
+import { Loader2 } from "lucide-react";
 
 interface Props {
   className?: HTMLDivElement["className"];
@@ -17,6 +18,7 @@ interface Props {
     | null
     | undefined;
   disabled?: boolean;
+  isLoading?: boolean;
 }
 const CustomButton = ({
   className,
@@ -25,10 +27,11 @@ const CustomButton = ({
   type = "button",
   onClick,
   disabled = false,
+  isLoading = false,
 }: Props) => {
   return (
     <Button
-      disabled={disabled}
+      disabled={disabled || isLoading}
       variant={variant}
       type={type}
       className={cn(
@@ -37,7 +40,7 @@ const CustomButton = ({
       )}
       onClick={onClick}
     >
-      {children}
+      {isLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : children}
     </Button>
   );
 };

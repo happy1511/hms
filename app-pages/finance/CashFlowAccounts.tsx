@@ -88,6 +88,9 @@ const CashFlowSummary = () => {
         filters={summaryFiltersConfig}
         defaultToday={false}
         defaultValues={filters as any}
+        onRefresh={summaryQuery.refetch}
+        isLoading={summaryQuery.isLoading || summaryQuery.isFetching}
+        isRefreshing={summaryQuery.isFetching}
         onSubmit={(values) => setFilters({ createdAt: values.createdAt })}
         filtersContainerClassName="grid-cols-1"
         actionsContainerClassName="w-fit"
@@ -191,4 +194,3 @@ const CashFlowAccounts = () => {
 };
 
 export default CashFlowAccounts;
-

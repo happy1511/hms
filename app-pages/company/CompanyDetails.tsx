@@ -26,7 +26,7 @@ type FormValues = z.infer<typeof schema>;
 
 const CompanyDetails = () => {
   const { data: profile } = useProfile(false);
-  const { data, isLoading } = useCompanyDetails();
+  const { data, isLoading, isFetching, refetch } = useCompanyDetails();
   const { mutateAsync, isPending } = useUpdateCompanyDetails();
 
   const form = useForm<FormValues>({
@@ -73,7 +73,20 @@ const CompanyDetails = () => {
   };
 
   return (
-    <CustomLayout title="Company Details" buttons={<div />}>
+    <CustomLayout
+      title="Company Details"
+      buttons={
+        <CustomButton
+          type="button"
+          variant="outline"
+          className="bg-white text-primary shadow-none"
+          onClick={() => refetch()}
+          isLoading={isFetching}
+        >
+          Refresh
+        </CustomButton>
+      }
+    >
       {isLoading ? (
         <div className="flex justify-center items-center h-full">
           <LoaderIcon className="animate-spin size-4" />

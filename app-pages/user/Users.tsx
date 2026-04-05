@@ -126,7 +126,7 @@ const Users = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useUsersList(
+  const { data, isLoading, isFetching, refetch, isError, error } = useUsersList(
     filters,
     page,
     limit,
@@ -261,6 +261,9 @@ const Users = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />

@@ -65,6 +65,8 @@ const PatientCareButtons = ({
 
 const PatientCareOverview = () => {
   const [activeTab, setActiveTab] = useState<PatientCareTab>("opd");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
     createdAt: {
       from: startOfDay(new Date()),
@@ -72,7 +74,7 @@ const PatientCareOverview = () => {
     },
   });
   const { data: profile } = useProfile(false);
-  const filterKey = JSON.stringify(filters);
+  const filterKey = JSON.stringify({ filters, refreshKey });
 
   const tabs = !profile?.data
     ? []
@@ -154,6 +156,14 @@ const PatientCareOverview = () => {
     ActionType.CREATE,
   );
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshKey((previous) => previous + 1);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
+
   return (
     <CustomLayout
       title="Patient Care Overview"
@@ -171,6 +181,8 @@ const PatientCareOverview = () => {
           <PatientCareFilters
             defaultValues={filters}
             onSubmit={(values) => setFilters(values)}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
           />
           <CustomTabs
             value={selectedTab}

@@ -29,7 +29,11 @@ const MlcPatients = () => {
   });
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useIpdList(filters, page, limit);
+  const { data, isLoading, isFetching, refetch, isError, error } = useIpdList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) return <div />;
 
@@ -125,6 +129,9 @@ const MlcPatients = () => {
       <CustomFilters<FilterValues>
         filters={neededFilters}
         defaultValues={filters}
+        onRefresh={refetch}
+        isLoading={isLoading || isFetching}
+        isRefreshing={isFetching}
         onSubmit={setFilters}
         filtersContainerClassName="grid-cols-1"
       />

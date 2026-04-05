@@ -130,7 +130,7 @@ const Rooms = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useRoomsList(
+  const { data, isLoading, isFetching, refetch, isError, error } = useRoomsList(
     filters,
     page,
     limit,
@@ -311,6 +311,9 @@ const Rooms = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />

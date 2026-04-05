@@ -175,7 +175,7 @@ const Services = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useServicesList(
+  const { data, isLoading, isFetching, refetch, isError, error } = useServicesList(
     filters,
     page,
     limit,
@@ -373,6 +373,9 @@ const Services = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />

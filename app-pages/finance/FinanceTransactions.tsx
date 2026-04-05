@@ -226,6 +226,7 @@ const FinanceTransactions = () => {
   ];
 
   const isLoading = opdQuery.isLoading || ipdQuery.isLoading;
+  const isFetching = opdQuery.isFetching || ipdQuery.isFetching;
   const isError = opdQuery.isError || ipdQuery.isError;
   const error = opdQuery.error || ipdQuery.error || null;
 
@@ -237,6 +238,9 @@ const FinanceTransactions = () => {
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={() => Promise.all([opdQuery.refetch(), ipdQuery.refetch()])}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
           />
           <CustomTable
             columns={columns}

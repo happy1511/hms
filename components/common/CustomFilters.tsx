@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, FieldValues, Path, DefaultValues } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
@@ -12,29 +12,39 @@ import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
 import { cn } from "@/lib/utils";
 import { endOfToday, startOfToday } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { useIsFetching } from "@tanstack/react-query";
 
 interface CustomFiltersProps<T extends FieldValues> {
   filters: FilterConfig<T>[];
   onSubmit: (values: T) => void;
+  onRefresh?: () => Promise<unknown> | unknown;
   defaultValues?: DefaultValues<T>;
   className?: string;
   filtersContainerClassName?: string;
   actionsContainerClassName?: string;
   defaultToday?: boolean;
   autoSubmitDefaultToday?: boolean;
+  isLoading?: boolean;
+  isRefreshing?: boolean;
 }
 
 const CustomFilters = <T extends FieldValues>({
   filters,
   onSubmit,
+  onRefresh,
   defaultValues,
   className,
   filtersContainerClassName,
   actionsContainerClassName,
   defaultToday = true,
   autoSubmitDefaultToday = true,
+  isLoading,
+  isRefreshing,
 }: CustomFiltersProps<T>) => {
   const hasAutoSubmitted = useRef(false);
+  const [filterTriggered, setFilterTriggered] = useState(false);
+  const [refreshTriggered, setRefreshTriggered] = useState(false);
+  const fetchingCount = useIsFetching();
 
   const todayRange = useMemo<DateRange>(
     () => ({
@@ -69,6 +79,10 @@ const CustomFilters = <T extends FieldValues>({
     defaultValues: effectiveDefaultValues,
   });
 
+  const applyButtonLoading = filterTriggered && (isLoading ?? fetchingCount > 0);
+  const refreshButtonLoading =
+    refreshTriggered && (isRefreshing ?? isLoading ?? fetchingCount > 0);
+
   useEffect(() => {
     if (effectiveDefaultValues) {
       form.reset(effectiveDefaultValues);
@@ -93,11 +107,30 @@ const CustomFilters = <T extends FieldValues>({
     onSubmit,
   ]);
 
+  useEffect(() => {
+    if (!applyButtonLoading && filterTriggered) {
+      setFilterTriggered(false);
+    }
+  }, [applyButtonLoading, filterTriggered]);
+
+  useEffect(() => {
+    if (!refreshButtonLoading && refreshTriggered) {
+      setRefreshTriggered(false);
+    }
+  }, [refreshButtonLoading, refreshTriggered]);
+
   const handleReset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFilterTriggered(true);
     const clearedValues = {} as DefaultValues<T>;
     form.reset(clearedValues);
     onSubmit(clearedValues as T);
+  };
+
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    setRefreshTriggered(true);
+    await onRefresh();
   };
 
   const renderFilter = (filter: FilterConfig<T>) => {
@@ -225,7 +258,10 @@ const CustomFilters = <T extends FieldValues>({
     <Form {...form}>
       <form
         onReset={handleReset}
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit((values) => {
+          setFilterTriggered(true);
+          onSubmit(values);
+        })}
         className={cn("mb-3", className)}
       >
         <div
@@ -240,8 +276,15 @@ const CustomFilters = <T extends FieldValues>({
         </div>
 
         <div className={cn("w-fit", actionsContainerClassName)}>
-          <div className="grid grid-cols-2 space-x-2">
-            <CustomButton type="submit">Apply Filters</CustomButton>
+          <div
+            className={cn(
+              "grid gap-2",
+              onRefresh ? "grid-cols-3" : "grid-cols-2",
+            )}
+          >
+            <CustomButton type="submit" isLoading={applyButtonLoading}>
+              Apply Filters
+            </CustomButton>
 
             <CustomButton
               type="reset"
@@ -250,6 +293,18 @@ const CustomFilters = <T extends FieldValues>({
             >
               Clear Filters
             </CustomButton>
+
+            {onRefresh ? (
+              <CustomButton
+                type="button"
+                variant="outline"
+                className="bg-white text-primary shadow-none"
+                onClick={handleRefresh}
+                isLoading={refreshButtonLoading}
+              >
+                Refresh
+              </CustomButton>
+            ) : null}
           </div>
         </div>
       </form>

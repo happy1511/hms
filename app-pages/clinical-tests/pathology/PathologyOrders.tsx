@@ -227,7 +227,8 @@ const PathologyOrders = ({
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = usePathologyOrdersList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    usePathologyOrdersList(
     {
       ...filters,
       cancelled,
@@ -387,6 +388,9 @@ const PathologyOrders = ({
       <CustomFilters<FilterValues>
         filters={neededFilters}
         onSubmit={setFilters}
+        onRefresh={refetch}
+        isLoading={isLoading || isFetching}
+        isRefreshing={isFetching}
         filtersContainerClassName="grid-cols-1 md:grid-cols-2"
       />
       <div className="flex gap-4 items-center text-xs font-medium mb-2">

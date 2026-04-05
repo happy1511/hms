@@ -135,7 +135,8 @@ const DrugSupplierList = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useDrugSupplierList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useDrugSupplierList(
     filters,
     page,
     limit,
@@ -279,6 +280,9 @@ const DrugSupplierList = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />

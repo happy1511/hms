@@ -112,7 +112,8 @@ const PurchaseOrders = () => {
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = usePurchaseOrderList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    usePurchaseOrderList(
     filters,
     page,
     limit,
@@ -304,6 +305,9 @@ const PurchaseOrders = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable

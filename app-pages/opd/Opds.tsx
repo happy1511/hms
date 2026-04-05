@@ -235,7 +235,7 @@ const OPDs = ({
     10,
   );
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useOpdList(
+  const { data, isLoading, isFetching, refetch, isError, error } = useOpdList(
     effectiveFilters,
     page,
     limit,
@@ -485,6 +485,9 @@ const OPDs = ({
         <CustomFilters<FilterValues>
           filters={neededFilters}
           defaultValues={filters}
+          onRefresh={refetch}
+          isLoading={isLoading || isFetching}
+          isRefreshing={isFetching}
           filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           onSubmit={(values) => {
             setFilters(values);

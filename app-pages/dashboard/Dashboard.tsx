@@ -118,7 +118,10 @@ const DashboardTables = ({ data }: { data: DashboardType }) => {
     { type: "OPD", value: data.patients.opd },
     { type: "IPD", value: data.patients.ipd },
     { type: "DayCare", value: data.patients.dayCare },
-    { type: "Total Patients", value: data.patients.dayCare+data.patients.ipd+data.patients.opd },
+    {
+      type: "Total Patients",
+      value: data.patients.dayCare + data.patients.ipd + data.patients.opd,
+    },
   ];
 
   const collectionRows = [
@@ -202,7 +205,7 @@ const Dashboard = () => {
     },
   });
   const { data: profile } = useProfile(false);
-  const { data, isPending, isFetching } = useDashboard(filters);
+  const { data, isPending, isFetching, refetch } = useDashboard(filters);
 
   const neededFilters: FilterConfig<FilterValues>[] = [
     { label: "Date Range", valueKey: "createdAt", type: "dateRange" },
@@ -263,6 +266,9 @@ const Dashboard = () => {
         <CustomFilters<FilterValues>
           filters={neededFilters}
           defaultValues={filters}
+          onRefresh={refetch}
+          isLoading={isPending || isFetching}
+          isRefreshing={isFetching}
           filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           onSubmit={setFilters}
         />

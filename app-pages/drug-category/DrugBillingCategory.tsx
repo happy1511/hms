@@ -123,7 +123,8 @@ const DrugBillingCategoryList = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useDrugBillingCategoryList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useDrugBillingCategoryList(
     filters,
     page,
     limit,
@@ -256,6 +257,9 @@ const DrugBillingCategoryList = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />

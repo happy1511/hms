@@ -89,7 +89,11 @@ const Grns = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useGrnList(filters, page, limit);
+  const { data, isLoading, isFetching, refetch, isError, error } = useGrnList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <div />;
@@ -263,6 +267,9 @@ const Grns = () => {
           <CustomFilters<FilterValues>
             filters={neededFilters}
             onSubmit={setFilters}
+            onRefresh={refetch}
+            isLoading={isLoading || isFetching}
+            isRefreshing={isFetching}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable

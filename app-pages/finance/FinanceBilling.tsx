@@ -568,6 +568,9 @@ const FinanceBilling = () => {
               <div className="space-y-3">
                 <CustomFilters<FilterValues>
                   filters={tabFiltersConfig}
+                  onRefresh={opdQuery.refetch}
+                  isLoading={opdQuery.isLoading || opdQuery.isFetching}
+                  isRefreshing={opdQuery.isFetching}
                   onSubmit={(values) => {
                     setTabFilters((prev) => ({ ...prev, opd: values }));
                     setPage(1);
@@ -585,6 +588,9 @@ const FinanceBilling = () => {
               <div className="space-y-3">
                 <CustomFilters<FilterValues>
                   filters={tabFiltersConfig}
+                  onRefresh={dayCareQuery.refetch}
+                  isLoading={dayCareQuery.isLoading || dayCareQuery.isFetching}
+                  isRefreshing={dayCareQuery.isFetching}
                   onSubmit={(values) => {
                     setTabFilters((prev) => ({ ...prev, daycare: values }));
                     setPage(1);
@@ -602,6 +608,9 @@ const FinanceBilling = () => {
               <div className="space-y-3">
                 <CustomFilters<FilterValues>
                   filters={tabFiltersConfig}
+                  onRefresh={ipdQuery.refetch}
+                  isLoading={ipdQuery.isLoading || ipdQuery.isFetching}
+                  isRefreshing={ipdQuery.isFetching}
                   onSubmit={(values) => {
                     setTabFilters((prev) => ({ ...prev, ipd: values }));
                     setPage(1);
@@ -619,6 +628,11 @@ const FinanceBilling = () => {
               <div className="space-y-3">
                 <CustomFilters<FilterValues>
                   filters={tabFiltersConfig}
+                  onRefresh={dischargedQuery.refetch}
+                  isLoading={
+                    dischargedQuery.isLoading || dischargedQuery.isFetching
+                  }
+                  isRefreshing={dischargedQuery.isFetching}
                   onSubmit={(values) => {
                     setTabFilters((prev) => ({ ...prev, discharged: values }));
                     setPage(1);

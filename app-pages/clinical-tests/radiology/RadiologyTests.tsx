@@ -1,4 +1,5 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
+import CustomButton from "@/components/common/CustomButton";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import NoPermission from "@/components/common/NoPermission";
@@ -87,7 +88,8 @@ const RadiologyTests = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isError, error } = useRadiologyTestsList(
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useRadiologyTestsList(
     filters,
     page,
     limit,
@@ -209,22 +211,35 @@ const RadiologyTests = () => {
     },
   ];
   return (
-    <CustomTable
-      columns={columns}
-      data={data?.data || []}
-      page={page}
-      total={data?.total}
-      enableSorting
-      limit={limit}
-      handleChangePage={setPage}
-      isLoading={isLoading}
-      handleChangeLimit={setLimit}
-      isError={isError}
-      error={error}
-      enableGrouping
-      grouping={["section"]}
-      getRowId={(data) => String(data.id)}
-    />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <CustomButton
+          type="button"
+          variant="outline"
+          className="bg-white text-primary shadow-none"
+          onClick={() => refetch()}
+          isLoading={isFetching}
+        >
+          Refresh
+        </CustomButton>
+      </div>
+      <CustomTable
+        columns={columns}
+        data={data?.data || []}
+        page={page}
+        total={data?.total}
+        enableSorting
+        limit={limit}
+        handleChangePage={setPage}
+        isLoading={isLoading}
+        handleChangeLimit={setLimit}
+        isError={isError}
+        error={error}
+        enableGrouping
+        grouping={["section"]}
+        getRowId={(data) => String(data.id)}
+      />
+    </div>
   );
 };
 
