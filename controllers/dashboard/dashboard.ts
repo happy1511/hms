@@ -75,6 +75,7 @@ export const getAPI = async (req: Request) => {
         surgicalCurrentIpdPatients,
         medicalCurrentIpdPatients,
         ipdCensus,
+        otherCashPaymentsAgg,
       ] = await prisma.$transaction([
         prisma.opd.count({
           where: {
@@ -225,6 +226,14 @@ export const getAPI = async (req: Request) => {
             isDischarged: false,
           },
         }),
+        prisma.income.aggregate({
+          _sum: { amount: true },
+          where: {
+            isDeleted: false,
+            mode: PaymentMode.CASH,
+            ...(createdAtFilter && { collectedOn: createdAtFilter }),
+          },
+        }),
       ]);
 
       const opdBilling = Number(opdBillingAgg._sum.total || 0);
@@ -253,14 +262,21 @@ export const getAPI = async (req: Request) => {
         Math.max(ipdBilling + dayCareBilling - ipdCollections, 0),
       );
 
-      const cashAmount = getSignedTotal(
+      const cashPayments = getSignedTotal(
         cashPaymentsAgg._sum?.amount,
         cashRefundsAgg._sum?.amount,
       );
-      const digitalWalletAmount = getSignedTotal(
-        walletPaymentsAgg._sum?.amount,
-        walletRefundsAgg._sum?.amount,
+      const otherNoCashIncome = getSignedTotal(
+        otherIncomeAgg._sum?.amount,
+        otherCashPaymentsAgg._sum?.amount,
       );
+      const cashAmount =
+        cashPayments + (otherCashPaymentsAgg._sum?.amount || 0);
+      const digitalWalletAmount =
+        getSignedTotal(
+          walletPaymentsAgg._sum?.amount,
+          walletRefundsAgg._sum?.amount,
+        ) + otherNoCashIncome;
       const paymentModesTotal = roundAmount(cashAmount + digitalWalletAmount);
 
       return apiResponse({
