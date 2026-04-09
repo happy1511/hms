@@ -132,7 +132,7 @@ const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
         style={{ fontSize }}
         className="w-full bg-white text-black overflow-auto"
       >
-        <div className="mx-auto min-w-200 max-w-6xl bg-white p-4 print:max-w-none print:p-0">
+        <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <CompanyPrintHeader />
 
           <div className="bg-white text-black">

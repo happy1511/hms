@@ -30,7 +30,10 @@ import {
 } from "@/validators/api/masters/pathologyTest";
 import { differenceInDays } from "date-fns";
 import { toDays } from "@/lib/utils";
-import { deletePublicDocument, savePublicDocument } from "@/services/documentStore";
+import {
+  deletePublicDocument,
+  savePublicDocument,
+} from "@/services/documentStore";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -1318,8 +1321,6 @@ export const addReferenceRangeAPI = async (req: Request) => {
         const lowerAgeInDays = toDays(lowerAgeDay, lowerAgeMonth, lowerAgeYear);
         const upperAgeInDays = toDays(upperAgeDay, upperAgeMonth, upperAgeYear);
 
-        console.log(lowerAgeInDays, upperAgeInDays, body);
-
         const createdHeader = await tx.referenceRange.create({
           data: {
             ...rest,
@@ -1837,8 +1838,6 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
               (!range.lowerAgeInDays || range.lowerAgeInDays <= ageInDays) &&
               (!range.upperAgeInDays || range.upperAgeInDays >= ageInDays),
           );
-
-          console.log(ageInDays, allReferenceRanges, gender);
 
           return {
             ...result,

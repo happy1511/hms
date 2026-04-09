@@ -1238,7 +1238,7 @@ const OpdBillForm = () => {
     setConfirmCreateOpen(false);
     setPendingSubmission(null);
   };
-  console.log(form.formState.errors);
+
   useEffect(() => {
     if (patient) {
       form.reset(getInitialValues(patient));

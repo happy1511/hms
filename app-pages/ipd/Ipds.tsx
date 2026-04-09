@@ -36,7 +36,7 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { endOfDay, format, startOfDay } from "date-fns";
+import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -321,10 +321,6 @@ const IPDs = ({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>(() => ({
-    createdAt: {
-      from: startOfDay(new Date()),
-      to: endOfDay(new Date()),
-    },
     isDayCare: dayCare,
   }));
   const [consultantValue, setConsultantValue] = useState("");
@@ -732,11 +728,7 @@ const IPDs = ({
 
   const layoutTitle =
     title ??
-    (dayCare
-      ? "Day Care"
-      : discharged
-        ? "Discharged Patients"
-        : "Patient IPD");
+    (dayCare ? "Day Care" : discharged ? "Discharged Patients" : "Patient IPD");
 
   const content = canView ? (
     <>
@@ -745,6 +737,7 @@ const IPDs = ({
           filters={neededFilters}
           defaultValues={filters}
           onRefresh={refetch}
+          defaultToday={false}
           isLoading={isLoading || isFetching}
           isRefreshing={isFetching}
           onSubmit={(values) => {

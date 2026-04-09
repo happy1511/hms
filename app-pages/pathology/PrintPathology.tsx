@@ -26,7 +26,7 @@ const PrintPathology = () => {
     <>
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
       <div style={{ fontSize }} className="overflow-auto">
-        <div className="min-w-200 ">
+        <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <PathologyPrintBody data={data.data} />
         </div>
       </div>

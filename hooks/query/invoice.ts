@@ -152,6 +152,7 @@ export const useCreateInvoiceBillingItem = () => {
 };
 
 export const useUpdateInvoice = () => {
+  const queryClient = useQueryClient();
   return useMutation<
     ApiResponse<InvoiceGroupedBySection>,
     AxiosError<ApiResponse<null>>,
@@ -163,6 +164,9 @@ export const useUpdateInvoice = () => {
         body: data,
       }),
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["invoice-details"],
+      });
       toast.success("Invoice Updated Successfully");
     },
     onError: showError,

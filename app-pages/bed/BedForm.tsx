@@ -43,8 +43,6 @@ const CreateForm = () => {
     create(values);
   };
 
-  console.log(form.getValues());
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -104,8 +102,6 @@ const UpdateForm = ({
   const onSubmit = (values: PartialBedValidatorType) => {
     update({ ...values, bedId: Number(data.id) });
   };
-
-  console.log(form.getValues());
 
   return (
     <Form {...form}>

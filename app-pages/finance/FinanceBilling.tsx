@@ -611,6 +611,7 @@ const FinanceBilling = () => {
                   onRefresh={ipdQuery.refetch}
                   isLoading={ipdQuery.isLoading || ipdQuery.isFetching}
                   isRefreshing={ipdQuery.isFetching}
+                  defaultToday={false}
                   onSubmit={(values) => {
                     setTabFilters((prev) => ({ ...prev, ipd: values }));
                     setPage(1);

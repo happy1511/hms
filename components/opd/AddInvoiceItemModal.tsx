@@ -139,7 +139,6 @@ const AddInvoiceItemModal = ({
     }
   }, [quantity, rate, discountType, discountValue, service]);
 
-  console.log(billingItemForm.formState.errors);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>

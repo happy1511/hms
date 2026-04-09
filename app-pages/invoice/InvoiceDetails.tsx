@@ -55,6 +55,7 @@ import {
   LoaderIcon,
   Menu,
   Plus,
+  Trash2Icon,
   User,
 } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -67,6 +68,7 @@ import {
   useWatch,
   UseFormReturn,
   Controller,
+  UseFieldArrayRemove,
 } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -292,6 +294,7 @@ type ServiceRowProps = {
   form: UseFormReturn<updateInvoiceValidatorType>;
   fieldName: Path<updateInvoiceValidatorType>;
   initialItemsMap: Map<number, BillingItemSnapshot>;
+  remove?: UseFieldArrayRemove;
 };
 
 const ServiceRow = ({
@@ -299,6 +302,7 @@ const ServiceRow = ({
   form,
   fieldName,
   initialItemsMap,
+  remove,
 }: ServiceRowProps) => {
   const { control, watch, setValue, getValues } = form;
   const [reasonOpen, setReasonOpen] = useState(false);
@@ -322,6 +326,9 @@ const ServiceRow = ({
   );
   const isLocked = Boolean(
     watch(`${rowPath}.isLocked` as Path<updateInvoiceValidatorType>),
+  );
+  const isNewlyAdded = Boolean(
+    watch(`${rowPath}.isNewlyAdded` as Path<updateInvoiceValidatorType>),
   );
   const quantity = watch(
     `${rowPath}.quantity` as Path<updateInvoiceValidatorType>,
@@ -676,6 +683,19 @@ const ServiceRow = ({
           Rs. {Number(total).toFixed(2)}
         </div>
       </td>
+      <td className="font-semibold">
+        <div className="px-2 py-1 flex justify-end">
+          {isNewlyAdded && (
+            <button
+              onClick={() => remove?.(index)}
+              className="px-2 py-1 cursor-pointer bg-red-100 mx-2 border-red-500 rounded text-red-500 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:bg-red-100 disabled:text-red-500 disabled:hover:bg-red-100 disabled:hover:text-red-500"
+              disabled={!remove || isLocked}
+            >
+              <Trash2Icon className="size-3" />
+            </button>
+          )}
+        </div>
+      </td>
     </tr>
   );
 };
@@ -693,7 +713,7 @@ const InvoiceBillingTable = ({
   const fieldName =
     `billingSections.${selectedIndex}.billingItems` as ArrayPath<updateInvoiceValidatorType>;
 
-  const { fields, append } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: fieldName,
   });
@@ -738,6 +758,7 @@ const InvoiceBillingTable = ({
               onClick={() =>
                 append({
                   quantity: 1,
+                  isNewlyAdded: true,
                   discountType: DiscountType.VALUE,
                   discountValue: 0,
                   total: 0,
@@ -786,6 +807,9 @@ const InvoiceBillingTable = ({
               <th>
                 <div className="px-2 py-1 min-w-20">Total</div>
               </th>
+              <th>
+                <div className="px-2 py-1"></div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -796,6 +820,7 @@ const InvoiceBillingTable = ({
                 form={form}
                 fieldName={fieldName}
                 initialItemsMap={initialItemsMap}
+                remove={canUpdateInvoice ? remove : undefined}
               />
             ))}
           </tbody>
@@ -1265,7 +1290,7 @@ const InvoiceDetails = () => {
       </div>
     </div>
   );
-  console.log(form.formState.errors);
+
   return (
     <>
       <Form {...form}>

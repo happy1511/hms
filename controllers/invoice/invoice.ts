@@ -239,7 +239,9 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
                 },
               },
             },
-            transactions: { include: { receivedBy: { select: { name: true } } } },
+            transactions: {
+              include: { receivedBy: { select: { name: true } } },
+            },
             opd: {
               include: {
                 consultantDoctor: {
@@ -302,7 +304,9 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
                   },
                 },
               },
-              transactions: { include: { receivedBy: { select: { name: true } } } },
+              transactions: {
+                include: { receivedBy: { select: { name: true } } },
+              },
               opd: {
                 include: {
                   consultantDoctor: {
@@ -367,8 +371,6 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
           section,
         ]),
       );
-
-      console.log(existingInvoice, "existingInvoice");
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
@@ -505,7 +507,9 @@ export const getInvoiceListAPI = async (req: Request) => {
             and.push({ ipd: { is: { isDischarged: true } } });
             break;
           case "ipd":
-            and.push({ ipd: { is: { isDayCare: false, isDischarged: false } } });
+            and.push({
+              ipd: { is: { isDayCare: false, isDischarged: false } },
+            });
             break;
         }
       }
@@ -522,8 +526,12 @@ export const getInvoiceListAPI = async (req: Request) => {
             transactions: { select: { amount: true, transactionType: true } },
             opd: {
               include: {
-                consultantDoctor: { select: { user: { select: { name: true } } } },
-                referringDoctor: { select: { user: { select: { name: true } } } },
+                consultantDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
                 patient: {
                   include: {
                     addresses: { include: { location: true } },
@@ -535,8 +543,12 @@ export const getInvoiceListAPI = async (req: Request) => {
             },
             ipd: {
               include: {
-                consultantDoctor: { select: { user: { select: { name: true } } } },
-                referringDoctor: { select: { user: { select: { name: true } } } },
+                consultantDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
+                referringDoctor: {
+                  select: { user: { select: { name: true } } },
+                },
                 patient: {
                   include: {
                     addresses: { include: { location: true } },
@@ -733,7 +745,11 @@ export const updateInvoiceAPI = async (req: Request, user: User) => {
         }
 
         for (const item of incomingItems) {
-          const resolvedService = await resolveInvoiceItemService(tx, item, user.id);
+          const resolvedService = await resolveInvoiceItemService(
+            tx,
+            item,
+            user.id,
+          );
 
           if (item.itemId) {
             const previousItem = existingItemsById.get(item.itemId);
@@ -1052,7 +1068,9 @@ export const addTransactionAPI = async (req: Request, user: User) => {
           });
         }
 
-        const currentNetPaid = getNetInvoicePaidAmount(existingInvoice.transactions);
+        const currentNetPaid = getNetInvoicePaidAmount(
+          existingInvoice.transactions,
+        );
         const currentDue = Math.max(
           Number(existingInvoice.total || 0) - currentNetPaid,
           0,

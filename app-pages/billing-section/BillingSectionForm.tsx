@@ -51,8 +51,6 @@ const UpdateCreateForm = ({ data }: { data?: BillingSection }) => {
     }
   };
 
-  console.log(form.getValues());
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -138,7 +136,9 @@ const BillingSectionForm = () => {
 
   if ((sectionId && !canUpdate) || (!sectionId && !canCreate)) {
     return (
-      <CustomLayout title={sectionId ? "Edit Billing Section" : "Create Billing Section"}>
+      <CustomLayout
+        title={sectionId ? "Edit Billing Section" : "Create Billing Section"}
+      >
         <NoPermission />
       </CustomLayout>
     );

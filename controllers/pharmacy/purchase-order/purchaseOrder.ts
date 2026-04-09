@@ -18,7 +18,9 @@ export const getAPI = async (req: Request) => {
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
-      const supplierId = query.supplierId ? Number(query.supplierId) : undefined;
+      const supplierId = query.supplierId
+        ? Number(query.supplierId)
+        : undefined;
       const withoutGrn = query.withoutGrn;
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
@@ -98,7 +100,6 @@ export const getDetailsAPI = async (
         },
       });
 
-      console.log(details);
       if (!details) {
         return apiResponse({
           status: RESPONSE_STATUS.NOT_FOUND,
@@ -295,4 +296,3 @@ export const deleteAPI = async (
     },
   });
 };
-

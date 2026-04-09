@@ -67,8 +67,6 @@ const PatientFormTabs = ({ data }: { data?: PatientType }) => {
     }
   };
 
-  console.log(form.formState.errors, form.getValues());
-
   const goNext = () => {
     setActiveTab((pre) => (Number(pre) + 1).toString());
   };

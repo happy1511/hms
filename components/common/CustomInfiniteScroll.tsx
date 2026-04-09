@@ -39,7 +39,6 @@ export default function InfiniteScroll({
 
       observer.current = new IntersectionObserver(
         (entries) => {
-          console.log(hasMore, entries[0].isIntersecting);
           if (entries[0].isIntersecting && hasMore) {
             next();
           }

@@ -38,8 +38,6 @@ const SelectHospitalPatientModal = ({
     limit,
   );
 
-  console.log(data);
-
   const columns: ColumnDefWithClass<PatientType>[] = [
     {
       accessorKey: "id",

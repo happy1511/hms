@@ -69,7 +69,7 @@ const SaleInvoiceExport = ({
         className,
       )}
     >
-      <div className="mx-auto max-w-5xl space-y-4 bg-white p-4 print:max-w-none print:p-0">
+      <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
         <CompanyPrintHeader />
         {/* Header */}
         <div>

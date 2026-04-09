@@ -10,13 +10,6 @@ import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { BillingSection, Location } from "@/generated/prisma/client";
 import { BedGetPayload } from "@/generated/prisma/models";
 import {
@@ -73,6 +66,7 @@ import {
   useForm,
   UseFormReturn,
 } from "react-hook-form";
+import PostCreateIPDPrintDialog from "@/components/ipd/PostCreateIPDPrintDialog";
 
 type IpdBed = BedGetPayload<{
   include: {
@@ -1094,6 +1088,7 @@ const IpdBillForm = () => {
     useState<ipdValidatorType | null>(null);
   const [postCreatePrintOpen, setPostCreatePrintOpen] = useState(false);
   const [createdInvoiceId, setCreatedInvoiceId] = useState<number | null>(null);
+  const [createdIpdId, setCreatedIpdId] = useState<number | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1103,8 +1098,12 @@ const IpdBillForm = () => {
     navigateBackOnSuccess: false,
     onSuccess: (response) => {
       const invoiceId = Number((response.data as any)?.id || 0);
+      const ipdId = Number((response.data as any)?.ipd.id || 0);
       if (invoiceId) {
         setCreatedInvoiceId(invoiceId);
+      }
+      if (ipdId) {
+        setCreatedIpdId(ipdId);
       }
       setPostCreatePrintOpen(true);
     },
@@ -1320,74 +1319,16 @@ const IpdBillForm = () => {
         pending={isPending}
         handleConfirm={handleConfirmedCreate}
       />
-      <Dialog
-        open={postCreatePrintOpen}
-        onOpenChange={(open) => {
-          setPostCreatePrintOpen(open);
-          if (!open) {
-            router.push("/ipd/patients");
-          }
+      <PostCreateIPDPrintDialog
+        invoiceId={createdInvoiceId}
+        ipdId={createdIpdId}
+        onDone={() => {
+          setPostCreatePrintOpen(false);
+          router.push("/ipd/patients");
         }}
-      >
-        <DialogContent className="max-w-lg border-secondary border-4 bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-sm text-black/70">
-              IPD Created Successfully
-            </DialogTitle>
-            <DialogDescription>Print invoice before closing.</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end">
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdInvoiceId) {
-                  window.open(`/invoice/print/${createdInvoiceId}`, "_blank");
-                }
-              }}
-              disabled={!createdInvoiceId}
-            >
-              Print Invoice
-            </CustomButton>
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdInvoiceId) {
-                  window.open(`/invoice/${createdInvoiceId}`, "_blank");
-                }
-              }}
-              disabled={!createdInvoiceId}
-            >
-              View Invoice
-            </CustomButton>
-            <CustomButton
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (createdInvoiceId) {
-                  window.open(
-                    `/invoice/transactions/${createdInvoiceId}`,
-                    "_blank",
-                  );
-                }
-              }}
-              disabled={!createdInvoiceId}
-            >
-              Print Transaction Receipt
-            </CustomButton>
-            <CustomButton
-              type="button"
-              onClick={() => {
-                setPostCreatePrintOpen(false);
-                router.push("/ipd/patients");
-              }}
-            >
-              Done
-            </CustomButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setPostCreatePrintOpen}
+        open={postCreatePrintOpen}
+      />
     </Form>
   );
 };

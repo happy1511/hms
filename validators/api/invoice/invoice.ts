@@ -12,6 +12,7 @@ const billingItemValidator = z
     index: z.coerce.string().optional(),
     itemId: z.coerce.number().optional(),
     isLocked: z.coerce.boolean().optional().default(false),
+    isNewlyAdded: z.coerce.boolean().optional().default(false),
     billingSection: z.object({
       id: z.coerce.number().min(1),
       name: z.string(),
@@ -65,9 +66,7 @@ const transactionsValidator = z.object({
   index: z.coerce.number().optional(),
   amount: z.coerce.number(),
   mode: z.enum(PaymentMode).default(PaymentMode.CASH),
-  transactionType: z
-    .enum(TransactionType)
-    .default(TransactionType.PAYMENT),
+  transactionType: z.enum(TransactionType).default(TransactionType.PAYMENT),
   remarks: z.string().max(500).nullable().optional(),
 });
 
@@ -158,9 +157,7 @@ const invoiceValidator = invoiceBaseValidator
     const transactionSum = data.transactions.reduce(
       (sum, t) =>
         sum +
-        (t.transactionType === TransactionType.REFUND
-          ? -t.amount
-          : t.amount),
+        (t.transactionType === TransactionType.REFUND ? -t.amount : t.amount),
       0,
     );
 

@@ -30,7 +30,6 @@ const SectionPickerModal = ({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  console.log(allIds, sections);
   const handleToggle = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);

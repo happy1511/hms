@@ -63,7 +63,7 @@
   --popover-foreground: oklch(0.35 0.04 255);
 
   /* Primary – medical calm blue */
-  --primary:  #09336b;
+  --primary: #09336b;
   --primary-foreground: oklch(0.985 0 0);
 
   /* Secondary – lavender gray */
@@ -75,7 +75,7 @@
   --muted-foreground: oklch(0.55 0.03 255);
 
   /* Accent – soft blush pink */
-  --accent: #F7F5EB;
+  --accent: #f7f5eb;
   --accent-foreground: oklch(0.45 0.05 255);
 
   /* Feedback */
@@ -167,6 +167,30 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0mm;
+  }
+
+  table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+
+  td,
+  th {
+    word-break: break-word;
+  }
+  
+  html,
+  body {
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
   }
 }
 

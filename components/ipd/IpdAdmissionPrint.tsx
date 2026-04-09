@@ -146,9 +146,9 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
       <div
         style={{ fontSize }}
-        className="w-full bg-white text-black overflow-auto"
+        className="w-full bg-white text-black print:overflow-hidden"
       >
-        <div className="mx-auto min-w-200 max-w-6xl bg-white p-4 print:max-w-none print:p-0">
+        <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <CompanyPrintHeader className="mb-2" />
           <table className="w-full border border-black border-collapse">
             <thead>
@@ -160,17 +160,15 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
             </thead>
             <tbody>
               <tr>
-                <Cell className="w-[18%] bg-[#f2f2f2] font-semibold">
+                <Cell className="bg-[#f2f2f2] font-semibold">
                   Patient Name:
                 </Cell>
-                <Cell className="w-[42%]">
+                <Cell>
                   {valueOrDash(patientName)}{" "}
                   {patientUhid ? `- Patient UHID: ${patientUhid}` : ""}
                 </Cell>
-                <Cell className="w-[18%] bg-[#f2f2f2] font-semibold">
-                  IPD Number:
-                </Cell>
-                <Cell className="w-[22%]">{valueOrDash(data.id)}</Cell>
+                <Cell className="bg-[#f2f2f2] font-semibold">IPD Number:</Cell>
+                <Cell>{valueOrDash(data.id)}</Cell>
               </tr>
               <tr>
                 <Cell className="bg-[#f2f2f2] font-semibold">Age/Sex:</Cell>

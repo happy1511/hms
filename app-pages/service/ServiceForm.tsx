@@ -93,8 +93,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     }
   };
 
-  console.log(form.getValues());
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>

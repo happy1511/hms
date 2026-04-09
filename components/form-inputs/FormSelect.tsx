@@ -56,7 +56,6 @@ export function FormSelect<T extends FieldValues>({
             <Select
               value={field.value ? String(field.value) : ""}
               onValueChange={(value) => {
-                console.log(value);
                 field.onChange(value);
               }}
               disabled={readonly}
