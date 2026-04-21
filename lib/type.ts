@@ -197,6 +197,7 @@ export interface FormDatePickerProps<T extends FieldValues> {
   disabled?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  allowFutureDates?: boolean;
   formItemClassName?: string;
   rules?: Omit<
     RegisterOptions<T, Path<T>>,
@@ -215,6 +216,7 @@ export interface FormMonthYearPickerProps<T extends FieldValues> {
   disabled?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  allowFutureDates?: boolean;
   formItemClassName?: string;
   rules?: Omit<
     RegisterOptions<T, Path<T>>,
@@ -233,6 +235,7 @@ export interface FormDateTimePickerProps<T extends FieldValues> {
   disabled?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  allowFutureDates?: boolean;
   formItemClassName?: string;
   rules?: Omit<
     RegisterOptions<T, Path<T>>,
@@ -645,7 +648,11 @@ export type OPDType = Prisma.OpdGetPayload<{
     arrivalState: true;
     status: true;
     opdDateTime: true;
-    invoice: { include: { transactions: true } };
+    invoice: {
+      include: {
+        transactions: { include: { receivedBy: { select: { name: true } } } };
+      };
+    };
     consultantDoctor: {
       select: {
         user: {
@@ -1466,3 +1473,13 @@ export type Transaction = {
   remarks?: string;
   receivedBy?: string;
 };
+
+export type PaymentTransaction = Prisma.TransactionGetPayload<{
+  include: {
+    receivedBy: {
+      select: {
+        name: true;
+      };
+    };
+  };
+}>;

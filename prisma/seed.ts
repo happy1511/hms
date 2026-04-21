@@ -1,5 +1,6 @@
 import {
   ActionType,
+  FinanceCategoryType,
   ModuleType,
   NameTitle,
   PrismaClient,
@@ -239,6 +240,36 @@ const seedSystemBillingSections = async () => {
   });
 };
 
+const seedFinanceCategories = async () => {
+  console.log("---- Seeding Finance Categories -----");
+
+  const defaults: Array<{
+    name: string;
+    type: FinanceCategoryType;
+  }> = [
+    { name: "OUT pr dressing", type: FinanceCategoryType.INCOME },
+    { name: "OUT PT ECG", type: FinanceCategoryType.INCOME },
+    { name: "Account deposit", type: FinanceCategoryType.EXPENSE },
+    { name: "Salary payment", type: FinanceCategoryType.EXPENSE },
+    { name: "Other expenses", type: FinanceCategoryType.EXPENSE },
+  ];
+
+  for (const item of defaults) {
+    const existing = await prisma.financeCategory.findFirst({
+      where: {
+        name: item.name,
+        type: item.type,
+      },
+    });
+
+    if (!existing) {
+      await prisma.financeCategory.create({
+        data: item,
+      });
+    }
+  }
+};
+
 /* ---------------------------------- */
 /* Main                               */
 /* ---------------------------------- */
@@ -251,6 +282,7 @@ async function main() {
   await assignAdminPermissions(admin.id);
   await locations();
   await seedSystemBillingSections();
+  await seedFinanceCategories();
   console.log("---- Seeding Completed Successfully -----");
 }
 

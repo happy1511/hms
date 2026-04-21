@@ -188,6 +188,12 @@ const financeItems: SidebarItem[] = [
     module: ["FINANCE_PAYMENTS" as ModuleType],
   },
   {
+    title: "CATEGORIES",
+    url: "/finance/categories",
+    icon: DollarSign,
+    module: [ModuleType.FINANCE_CATEGORY_MASTER],
+  },
+  {
     title: "INCOME",
     url: "/finance/income",
     icon: DollarSign,

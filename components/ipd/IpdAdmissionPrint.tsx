@@ -2,6 +2,7 @@
 
 import PrintToolbar from "@/components/common/PrintToolbar";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import { AddressType, ContactType } from "@/generated/prisma/enums";
 import { IPDType } from "@/lib/type";
 import { cn, formatAge } from "@/lib/utils";
@@ -164,11 +165,16 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
                   Patient Name:
                 </Cell>
                 <Cell>
-                  {valueOrDash(patientName)}{" "}
-                  {patientUhid ? `- Patient UHID: ${patientUhid}` : ""}
+                  <div>{valueOrDash(patientName)}</div>
+                  <div className="mt-1">
+                    <span className="font-semibold">Patient UHID:</span>
+                    <PrintBarcodeValue value={patientUhid} className="mt-1" />
+                  </div>
                 </Cell>
                 <Cell className="bg-[#f2f2f2] font-semibold">IPD Number:</Cell>
-                <Cell>{valueOrDash(data.id)}</Cell>
+                <Cell>
+                  <PrintBarcodeValue value={data.id} />
+                </Cell>
               </tr>
               <tr>
                 <Cell className="bg-[#f2f2f2] font-semibold">Age/Sex:</Cell>

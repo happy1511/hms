@@ -932,3 +932,26 @@ export const usePathologyOrderParameters = (orderId?: number) => {
     enabled: !!orderId,
   });
 };
+
+export const usePathologyOrderParametersList = (orderIds: number[]) => {
+  return useQuery<
+    PathologyTestResultType[],
+    AxiosError<ApiResponse<null>>,
+    PathologyTestResultType[],
+    [string, number[]]
+  >({
+    queryKey: ["pathology-order-parameters-list", orderIds],
+    queryFn: async () => {
+      const responses = await Promise.all(
+        orderIds.map((orderId) =>
+          getPathologyOrderParameters({
+            params: { orderId: String(orderId) },
+          }),
+        ),
+      );
+
+      return responses.map((response) => response.data);
+    },
+    enabled: orderIds.length > 0,
+  });
+};

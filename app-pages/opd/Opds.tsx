@@ -21,7 +21,7 @@ import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useOpdList } from "@/hooks/query/opd";
+import { useDeleteOpd, useOpdList } from "@/hooks/query/opd";
 import {
   ColumnDefWithClass,
   Doctor,
@@ -32,7 +32,7 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { endOfDay, format, startOfDay } from "date-fns";
+import { endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -52,11 +52,13 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 };
 
 const Actions = ({
+  canDelete,
   canPrint,
   canUpdate,
   data,
   onPrintConsultPage,
 }: {
+  canDelete: boolean;
   canPrint: boolean;
   canUpdate: boolean;
   data: OPDType;
@@ -68,7 +70,10 @@ const Actions = ({
   const [confirmNewOpdOpen, setConfirmNewOpdOpen] = useState(false);
   const [confirmAddToIpdOpen, setConfirmAddToIpdOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const router = useRouter();
+  const { mutateAsync: deleteOpd, isPending: deletePending } = useDeleteOpd();
+  const canDeleteToday = canDelete && isSameDay(new Date(data.createdAt), new Date());
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
@@ -122,6 +127,13 @@ const Actions = ({
     opdItems.push({
       label: "Print Consult Page",
       onClick: () => onPrintConsultPage(data),
+    });
+  }
+
+  if (canDeleteToday) {
+    opdItems.push({
+      label: "Delete OPD",
+      onClick: () => setDeleteOpen(true),
     });
   }
 
@@ -189,6 +201,19 @@ const Actions = ({
         iconType="confirm"
         confirmVariant="default"
         handleConfirm={() => router.push(`/ipd/bill/${data.patient.id}`)}
+      />
+      <CustomAlert
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        triggerButton={<div />}
+        title="Delete OPD?"
+        description="This will soft delete the OPD and linked invoice, transactions, pathology orders and radiology orders."
+        cancelText="Cancel"
+        confirmText="Delete"
+        iconType="delete"
+        confirmVariant="destructive"
+        pending={deletePending}
+        handleConfirm={() => deleteOpd({ opdId: data.id })}
       />
     </>
   );
@@ -265,6 +290,11 @@ const OPDs = ({
     profile?.data,
     ModuleType.OPD_BILL,
     ActionType.PRINT,
+  );
+  const canDelete = hasActionPermission(
+    profile?.data,
+    ModuleType.OPD_BILL,
+    ActionType.DELETE,
   );
 
   const columns: ColumnDefWithClass<OPDType>[] = [
@@ -451,6 +481,7 @@ const OPDs = ({
       header: "Actions",
       cell: ({ row }) => (
         <Actions
+          canDelete={Boolean(canDelete)}
           canPrint={Boolean(canPrint)}
           canUpdate={Boolean(canUpdate)}
           data={row.original}

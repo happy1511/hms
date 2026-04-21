@@ -1,4 +1,4 @@
-import { createAPI, getAPI } from "@/controllers/opd/opd";
+import { createAPI, deleteAPI, getAPI } from "@/controllers/opd/opd";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { withErrorHandling } from "@/lib/errorHandler";
 import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
@@ -19,6 +19,16 @@ export async function POST(request: Request) {
       request,
       [{ module: ModuleType["OPD_BILL"], action: ActionType["CREATE"] }],
       (req, user) => createAPI(req, user),
+    ),
+  );
+}
+
+export async function DELETE(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      [{ module: ModuleType.OPD_BILL, action: ActionType.DELETE }],
+      (req, user) => deleteAPI(req, user),
     ),
   );
 }

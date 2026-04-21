@@ -56,6 +56,7 @@ export type IpdDischargeSummaryResponse = {
   id?: number;
   ipdId: number;
   ipdDateTime?: string | Date | null;
+  dueAmount?: number;
   isUnfitForFurtherManagement?: boolean;
   diagnosis?: string | null;
   procedureDate?: string | Date | null;
@@ -114,6 +115,7 @@ const updateIpdBillingType = createRequest<ApiResponse<unknown>>(
 const updateIpdBed = createRequest<ApiResponse<unknown>>(IPD_BED, "PUT");
 const updateIpdDateTime = createRequest<ApiResponse<unknown>>(IPD_DATETIME, "PUT");
 const declareIpdMlc = createRequest<ApiResponse<unknown>>(IPD_MLC, "PUT");
+const deleteIpd = createRequest<ApiResponse<IPDType>>(IPD, "DELETE");
 
 const getIPDs = createRequest<
   PaginatedResponse<IPDType>,
@@ -406,6 +408,32 @@ export const useDeclareIpdMlc = () => {
     onSuccess: () => {
       toast.success("Patient marked as MLC successfully");
       queryClient.invalidateQueries({ queryKey: ["ipds"] });
+    },
+    onError: showError,
+  });
+};
+
+export const useDeleteIpd = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<IPDType>,
+    AxiosError<ApiResponse<null>>,
+    partialIpdValidatorType
+  >({
+    mutationKey: ["delete-ipd"],
+    mutationFn: (data) => deleteIpd({ body: data }),
+    onSuccess: () => {
+      toast.success("IPD Deleted Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["ipds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["invoice-details"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["beds-infinite"],
+      });
     },
     onError: showError,
   });

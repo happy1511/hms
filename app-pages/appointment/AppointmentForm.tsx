@@ -133,6 +133,7 @@ const AppointmentForm = () => {
                     control={form.control}
                     required
                     minDate={new Date()}
+                    allowFutureDates
                     hideError
                   />
                 </div>

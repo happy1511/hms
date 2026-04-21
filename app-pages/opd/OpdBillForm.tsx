@@ -67,6 +67,7 @@ import {
   useForm,
   UseFormReturn,
 } from "react-hook-form";
+import { ErrorMessage } from "@hookform/error-message";
 
 const getInitialValues = (data?: PatientType): opdValidatorType => {
   // ---------------- CONTACT MAP (only required types) ----------------
@@ -280,18 +281,24 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     () =>
       consultationBillingSectionQuery.data?.pages
         .flatMap((page) => page.data)
-        .find((section) => section.isDoctorConsultationCharges) ??
-      null,
+        .find((section) => section.isDoctorConsultationCharges) ?? null,
     [consultationBillingSectionQuery.data],
   );
 
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ ...f, label: f.name, value: f.id })),
+        p.data.flatMap((f) => ({
+          ...f,
+          isEditableRate: Boolean(f.isEditableRate),
+          label: f.name,
+          value: f.id,
+        })),
       ),
     [servicesQuery.data],
   );
+
+  const canEditRate = Boolean(service?.isEditableRate);
 
   useEffect(() => {
     const existingConsultationIndex = (addedBillingItems || []).findIndex(
@@ -325,6 +332,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         id: consultingDoctorService.id,
         name: consultingDoctorService.name,
         maxDiscount: consultingDoctorService.maxDiscount ?? 0,
+        isEditableRate: Boolean(consultingDoctorService.isEditableRate),
       },
       createdAt: existingConsultationItem?.createdAt ?? new Date(),
       quantity: 1,
@@ -667,6 +675,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             name="rate"
             type="number"
             required
+            disabled={!canEditRate}
           />
           <FormField
             control={billingItemForm.control}
@@ -1279,6 +1288,7 @@ const OpdBillForm = () => {
     );
   }
 
+  console.log(form.formState.errors);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -1355,13 +1365,19 @@ const OpdBillForm = () => {
             valueKey={(item) => String(item?.userId)}
             search={referringValue}
             onSearchChange={setReferringValue}
-            required
           />
         </CustomLayout>
         <BillingItems form={form} />
 
         <Transactions form={form} />
 
+        <ErrorMessage
+          errors={form.formState.errors}
+          name="invoice"
+          render={({ message }) => (
+            <p className="text-red-500 text-sm mt-1">{message}</p>
+          )}
+        />
         <CustomButton disabled={isPending} type="submit">
           Submit
         </CustomButton>

@@ -13,11 +13,12 @@ import { Form } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import {
   ActionType,
-  IncomeCategory,
+  FinanceCategoryType,
   ModuleType,
   PaymentMode,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
+import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
 import {
   IncomeWithCollector,
   useCreateIncome,
@@ -43,9 +44,18 @@ const CreateIncomeForm = () => {
   const { mutateAsync: createIncome, isPending: creating } = useCreateIncome();
   const { data: profile } = useProfile(false);
   const usersQuery = useUsersList({} as FilterValues, 1, 200);
+  const categoryQuery = useFinanceCategoryList(
+    { type: FinanceCategoryType.INCOME },
+    1,
+    100,
+  );
   const userOptions = (usersQuery.data?.data || []).map((u) => ({
     label: `${u.name || "Unknown"}`,
     value: String(u.id),
+  }));
+  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
+    label: category.name,
+    value: String(category.id),
   }));
 
   if (profile?.data?.id) {
@@ -61,7 +71,7 @@ const CreateIncomeForm = () => {
   const form = useForm<IncomeValidatorType>({
     defaultValues: {
       title: "",
-      category: IncomeCategory.OUT_PR_DRESSING,
+      categoryId: 0,
       mode: PaymentMode.CASH,
       amount: 0,
       collectedOn: new Date(),
@@ -75,7 +85,7 @@ const CreateIncomeForm = () => {
     await createIncome(values);
     form.reset({
       title: "",
-      category: IncomeCategory.OUT_PR_DRESSING,
+      categoryId: 0,
       mode: PaymentMode.CASH,
       amount: 0,
       collectedOn: new Date(),
@@ -120,22 +130,16 @@ const CreateIncomeForm = () => {
                 <div className="col-span-3">
                   <FormField<IncomeValidatorType>
                     type="select"
-                    name="category"
+                    name="categoryId"
                     control={form.control}
                     required
                     hideError
-                    options={[
-                      {
-                        label: "OUT pr dressing",
-                        value: IncomeCategory.OUT_PR_DRESSING,
-                      },
-                      { label: "OUT PT ECG", value: IncomeCategory.OUT_PT_ECG },
-                    ]}
+                    options={categoryOptions}
                   />
                 </div>
               </div>
               <ErrorMessage
-                name="category"
+                name="categoryId"
                 errors={form.formState.errors}
                 render={({ message }) => (
                   <p className="font-semibold text-tiny! ms-1">{message}</p>
@@ -242,7 +246,7 @@ const CreateIncomeForm = () => {
             <div className="relative">
               <div className="relative grid grid-cols-5 border border-black/15 rounded-[4px]">
                 <Label className="text-tiny col-span-2 border-r border-black/15 px-2 bg-pink-50">
-                  Collected By
+                  Remarks
                 </Label>
                 <div className="col-span-3">
                   <FormField<IncomeValidatorType>
@@ -264,7 +268,7 @@ const CreateIncomeForm = () => {
           </div>
           <CustomButton
             type="submit"
-            disabled={creating || usersQuery.isLoading}
+            disabled={creating || usersQuery.isLoading || categoryQuery.isLoading}
           >
             Create Income
           </CustomButton>
@@ -334,11 +338,7 @@ const Income = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useIncomeList(
-    filters,
-    page,
-    limit,
-  );
+    useIncomeList(filters, page, limit);
 
   if (!profile) return <div />;
 
@@ -362,12 +362,6 @@ const Income = () => {
     ModuleType.INCOME,
     ActionType.DELETE,
   );
-
-  const formatCategory = (value: string) =>
-    value
-      .split("_")
-      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-      .join(" ");
 
   const columns: ColumnDefWithClass<IncomeWithCollector>[] = [
     {
@@ -400,7 +394,7 @@ const Income = () => {
       header: ({ column }) => (
         <SortableHeader<IncomeWithCollector> label="Category" column={column} />
       ),
-      cell: ({ row }) => formatCategory(String(row.original.category || "")),
+      cell: ({ row }) => row.original.category?.name || "--",
       headerClassName: "min-w-35",
       cellClassName: "min-w-35",
     },

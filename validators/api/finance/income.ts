@@ -1,4 +1,4 @@
-import { IncomeCategory, PaymentMode } from "@/generated/prisma/enums";
+import { PaymentMode } from "@/generated/prisma/enums";
 import { z } from "zod";
 
 const incomeValidator = z.object({
@@ -8,7 +8,7 @@ const incomeValidator = z.object({
   collectedOn: z.coerce.date(),
   collectedById: z.coerce.number().min(1, "Collected By is required"),
   description: z.string().optional().nullable(),
-  category: z.enum(IncomeCategory, { message: "Category is required" }),
+  categoryId: z.coerce.number().min(1, "Category is required"),
 });
 
 const partialIncomeValidator = incomeValidator.partial().extend({

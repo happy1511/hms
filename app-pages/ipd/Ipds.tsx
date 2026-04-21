@@ -23,6 +23,7 @@ import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import {
   useCancelDischargeIpd,
+  useDeleteIpd,
   useDeclareIpdMlc,
   useIpdList,
 } from "@/hooks/query/ipd";
@@ -36,7 +37,7 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -106,6 +107,7 @@ const Buttons = ({
 const Actions = ({
   canCreateDischarge,
   canCancelDischarge,
+  canDelete,
   canPrint,
   canUpdate,
   canMarkMlc,
@@ -115,6 +117,7 @@ const Actions = ({
 }: {
   canCreateDischarge: boolean;
   canCancelDischarge: boolean;
+  canDelete: boolean;
   canPrint: boolean;
   canUpdate: boolean;
   canMarkMlc: boolean;
@@ -127,15 +130,25 @@ const Actions = ({
   const [addPaymentModal, setAddPaymentModal] = useState(false);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
   const [cancelDischargeModal, setCancelDischargeModal] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
   const [patientViewOpen, setPatientViewOpen] = useState(false);
 
   const { mutateAsync: declareMlc, isPending: declareMlcPending } =
     useDeclareIpdMlc();
+  const { mutateAsync: deleteIpd, isPending: deletePending } = useDeleteIpd();
 
   const { mutateAsync: cancelDischargeIpd, isPending: cancelDischargePending } =
     useCancelDischargeIpd();
+  const canCancelDischargeToday =
+    data.isDischarged &&
+    canCancelDischarge &&
+    isSameDay(new Date(data.ipdDateTime), new Date());
+  const canDeleteToday =
+    !dischargedList &&
+    canDelete &&
+    isSameDay(new Date(data.createdAt), new Date());
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
@@ -214,7 +227,7 @@ const Actions = ({
     });
   }
 
-  if (data.isDischarged && canCancelDischarge) {
+  if (canCancelDischargeToday) {
     ipdItems.push({
       label: "Cancel Discharge",
       onClick: () => setCancelDischargeModal(true),
@@ -223,8 +236,19 @@ const Actions = ({
 
   if (data.isDischarged && canPrint) {
     ipdItems.push({
+      label: "Print Discharge File",
+      onClick: () => window.open(`/ipd/discharge-print/${data.id}`, "_blank"),
+    });
+    ipdItems.push({
       label: "Print Admission",
       onClick: () => window.open(`/ipd/admission-print/${data.id}`, "_blank"),
+    });
+  }
+
+  if (canDeleteToday) {
+    ipdItems.push({
+      label: "Delete IPD",
+      onClick: () => setDeleteOpen(true),
     });
   }
 
@@ -284,6 +308,19 @@ const Actions = ({
         confirmText="Continue"
         handleConfirm={() => cancelDischargeIpd({ ipdId: data.id })}
         pending={cancelDischargePending}
+      />
+      <CustomAlert
+        triggerButton={<div />}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete IPD?"
+        description="This will soft delete the IPD and linked invoice, transactions, pathology orders and radiology orders."
+        cancelText="Cancel"
+        confirmText="Delete"
+        iconType="delete"
+        confirmVariant="destructive"
+        handleConfirm={() => deleteIpd({ ipdId: data.id })}
+        pending={deletePending}
       />
 
       <ReallocateIpdBedModal
@@ -380,6 +417,11 @@ const IPDs = ({
     moduleForList,
     ActionType.UPDATE,
   );
+  const canDelete = hasActionPermission(
+    profile?.data,
+    dayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+    ActionType.DELETE,
+  );
   const canPrint = hasActionPermission(
     profile?.data,
     moduleForList,
@@ -397,7 +439,7 @@ const IPDs = ({
   );
   const canCancelDischarge = hasActionPermission(
     profile?.data,
-    ModuleType.DISCHARGE_PATIENT,
+    ModuleType.CANCEL_DISCHARGE_PATIENT,
     ActionType.UPDATE,
   );
 
@@ -533,6 +575,7 @@ const IPDs = ({
             <Actions
               canCreateDischarge={Boolean(canCreateDischarge)}
               canCancelDischarge={Boolean(canCancelDischarge)}
+              canDelete={Boolean(canDelete)}
               canPrint={Boolean(canPrint)}
               canUpdate={Boolean(canUpdate)}
               canMarkMlc={Boolean(canMarkMlc)}
@@ -696,6 +739,7 @@ const IPDs = ({
             <Actions
               canCreateDischarge={Boolean(canCreateDischarge)}
               canCancelDischarge={Boolean(canCancelDischarge)}
+              canDelete={Boolean(canDelete)}
               canPrint={Boolean(canPrint)}
               canUpdate={Boolean(canUpdate)}
               canMarkMlc={Boolean(canMarkMlc)}

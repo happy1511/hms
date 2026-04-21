@@ -34,4 +34,7 @@ export const getInvoiceDueAmount = ({
 }: {
   total: number;
   transactions?: TransactionLike[];
-}) => roundAmount(Math.max(Number(total || 0) - getNetInvoicePaidAmount(transactions), 0));
+}) =>
+  roundAmount(
+    Number(total || 0) - getNetInvoicePaidAmount(transactions),
+  );

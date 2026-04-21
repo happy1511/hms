@@ -66,6 +66,7 @@ export const getAPI = async (req: Request) => {
             description: true,
             status: true,
             isInvoiceOnly: true,
+            isEditableRate: true,
             createdAt: true,
             updatedAt: true,
             type: true,
@@ -118,6 +119,7 @@ export const getDetailsAPI = async (
           description: true,
           status: true,
           isInvoiceOnly: true,
+          isEditableRate: true,
           price: true,
           roomId: true,
           consultingDoctorId: true,
@@ -201,6 +203,7 @@ export const createAPI = async (req: Request, user: User) => {
           connectedRadiologyTests,
           discountAvailable,
           isInvoiceOnly,
+          isEditableRate,
         } = data;
 
         if (connectedLabTests) {
@@ -242,6 +245,7 @@ export const createAPI = async (req: Request, user: User) => {
             name,
             description,
             isInvoiceOnly: Boolean(isInvoiceOnly),
+            isEditableRate: Boolean(isEditableRate),
             status,
             maxDiscount,
             price,
@@ -298,18 +302,12 @@ export const updateAPI = async (
           });
         }
 
-        if (isProtectedService(existingService)) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Protected services cannot be deleted",
-          });
-        }
-
         const {
           name,
           description,
           status,
           isInvoiceOnly,
+          isEditableRate,
           maxDiscount,
           price,
           applicableOn,
@@ -359,6 +357,7 @@ export const updateAPI = async (
             name,
             description,
             isInvoiceOnly,
+            isEditableRate,
             status,
             maxDiscount,
             price,
@@ -411,6 +410,13 @@ export const deleteAPI = async (
           return apiResponse({
             status: RESPONSE_STATUS.NOT_FOUND,
             message: "Service not found",
+          });
+        }
+
+        if (isProtectedService(existingService)) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Protected services cannot be deleted",
           });
         }
 

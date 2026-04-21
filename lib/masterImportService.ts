@@ -1056,6 +1056,7 @@ const importServices = async (
         name: row.name,
         description: row.description,
         isInvoiceOnly: parseBoolean(row.isInvoiceOnly),
+        isEditableRate: parseBoolean(row.isEditableRate),
         type: row.type,
         price: row.price,
         discountAvailable: parseBoolean(row.discountAvailable),

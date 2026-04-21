@@ -1,8 +1,7 @@
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
-import { Transaction } from "@/generated/prisma/client";
 import { useProfile } from "@/hooks/query/auth";
 import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
-import { ColumnDefWithClass } from "@/lib/type";
+import { ColumnDefWithClass, PaymentTransaction } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import Link from "next/link";
 import { Eye } from "lucide-react";
@@ -18,7 +17,7 @@ import { CustomTable } from "./CustomTable";
 import { SortableHeader } from "./SortableHeader";
 
 interface Props {
-  data: Transaction[];
+  data: PaymentTransaction[];
   patientName: string;
   billId: number;
   printModule?: ModuleType;
@@ -46,11 +45,13 @@ const TransactionsModal = ({
     ? hasActionPermission(profile?.data, printModule, ActionType.PRINT)
     : false;
 
-  const columns: ColumnDefWithClass<Transaction>[] = [
+  const columns: ColumnDefWithClass<PaymentTransaction>[] = [
     {
       accessorKey: "srn",
       header: ({ column }) => {
-        return <SortableHeader<Transaction> label="ID" column={column} />;
+        return (
+          <SortableHeader<PaymentTransaction> label="ID" column={column} />
+        );
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -60,20 +61,27 @@ const TransactionsModal = ({
       accessorKey: "id",
       header: ({ column }) => {
         return (
-          <SortableHeader<Transaction> label="Receipt Number" column={column} />
+          <SortableHeader<PaymentTransaction>
+            label="Receipt Number"
+            column={column}
+          />
         );
       },
     },
     {
       accessorKey: "transactionType",
       header: ({ column }) => {
-        return <SortableHeader<Transaction> label="Type" column={column} />;
+        return (
+          <SortableHeader<PaymentTransaction> label="Type" column={column} />
+        );
       },
     },
     {
       accessorKey: "payment",
       header: ({ column }) => {
-        return <SortableHeader<Transaction> label="Amount" column={column} />;
+        return (
+          <SortableHeader<PaymentTransaction> label="Amount" column={column} />
+        );
       },
       cell: ({ row }) =>
         `Rs. ${getSignedTransactionAmount(row.original).toFixed(2)}`,
@@ -86,7 +94,7 @@ const TransactionsModal = ({
       id: "receivedBy",
       header: "Received By",
       cell: ({ row }) => (
-        <span className="text-blue-500">{row.original.receivedById}</span>
+        <span className="text-blue-500">{row.original.receivedBy.name}</span>
       ),
     },
     {

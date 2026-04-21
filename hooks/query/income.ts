@@ -1,4 +1,4 @@
-import { Income } from "@/generated/prisma/client";
+import { FinanceCategory, Income } from "@/generated/prisma/client";
 import { INCOME } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export type IncomeWithCollector = Income & {
+  category?: Pick<FinanceCategory, "id" | "name" | "type">;
   collectedBy?: {
     id: number;
     name?: string | null;
@@ -147,4 +148,3 @@ export const useDeleteIncome = () => {
     onError: showError,
   });
 };
-

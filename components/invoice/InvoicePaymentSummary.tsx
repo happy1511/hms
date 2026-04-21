@@ -17,7 +17,7 @@ const InvoicePaymentSummary = ({
   );
   const finalTotal = Math.max(grossTotal - discount, 0);
 
-  const due = Math.max(finalTotal - paid, 0);
+  const due = finalTotal - paid;
 
   return (
     <div className="mt-4 ml-auto w-full max-w-130 overflow-hidden">

@@ -4,6 +4,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
+import DischargeDueConfirmModal from "@/components/ipd/DischargeDueConfirmModal";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
@@ -486,6 +487,7 @@ const IpdDischargeForm = () => {
   const { data, isLoading } = useGetIpdDischargeSummary(ipdId);
   const { mutateAsync: saveSummary, isPending: saving } = useUpsertIpdDischargeSummary();
   const { mutateAsync: dischargeIpd, isPending: discharging } = useDischargeIpd();
+  const [dueConfirmOpen, setDueConfirmOpen] = useState(false);
 
   const defaultValues = useMemo(
     () => normalizeSummaryToFormValues(numericIpdId, data),
@@ -526,15 +528,28 @@ const IpdDischargeForm = () => {
     await saveSummary(payload);
   };
 
+  const completeDischarge = async (values: ipdDischargeSummaryValidatorType) => {
+    await handleSave(values);
+    await dischargeIpd({ ipdId: numericIpdId });
+    setDueConfirmOpen(false);
+    router.back();
+  };
+
   const handlePrint = form.handleSubmit(async (values) => {
     await handleSave(values);
     window.open(`/ipd/discharge-print/${numericIpdId}`, "_blank");
   });
 
-  const handleDischarge = form.handleSubmit(async (values) => {
+  const handleOnlySave = form.handleSubmit(async (values) => {
     await handleSave(values);
-    await dischargeIpd({ ipdId: numericIpdId });
-    router.back();
+  });
+
+  const handleDischarge = form.handleSubmit(async (values) => {
+    if (Number(data?.dueAmount || 0) > 0) {
+      setDueConfirmOpen(true);
+      return;
+    }
+    await completeDischarge(values);
   });
 
   if (isLoading) {
@@ -655,11 +670,28 @@ const IpdDischargeForm = () => {
           >
             Print
           </CustomButton>
+          <CustomButton
+            type="button"
+            variant="outline"
+            onClick={handleOnlySave}
+            disabled={saving || discharging}
+          >
+            Save
+          </CustomButton>
           <CustomButton type="button" onClick={handleDischarge} disabled={saving || discharging}>
             Discharge
           </CustomButton>
         </div>
       </form>
+      <DischargeDueConfirmModal
+        open={dueConfirmOpen}
+        onOpenChange={setDueConfirmOpen}
+        dueAmount={Number(data?.dueAmount || 0)}
+        pending={saving || discharging}
+        onConfirm={form.handleSubmit(async (values) => {
+          await completeDischarge(values);
+        })}
+      />
     </Form>
   );
 };

@@ -33,11 +33,18 @@ export function FormDateTime<T extends FieldValues>({
   disabled = false,
   minDate,
   maxDate,
+  allowFutureDates = false,
   formItemClassName = "",
   rules,
   hideError = false,
 }: FormDateTimePickerProps<T>) {
   const id = useId();
+  const effectiveMaxDate =
+    allowFutureDates
+      ? maxDate
+      : maxDate && maxDate < new Date()
+        ? maxDate
+        : new Date();
 
   return (
     <FormField
@@ -120,7 +127,7 @@ export function FormDateTime<T extends FieldValues>({
                       initialFocus
                       disabled={(date) => {
                         if (minDate && date < minDate) return true;
-                        if (maxDate && date > maxDate) return true;
+                        if (effectiveMaxDate && date > effectiveMaxDate) return true;
                         return false;
                       }}
                     />

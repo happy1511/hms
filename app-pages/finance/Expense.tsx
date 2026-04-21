@@ -8,18 +8,19 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { Button } from "@/components/ui/button";
-import { Expense } from "@/generated/prisma/client";
 import { Form } from "@/components/ui/form";
 import {
   ActionType,
-  ExpenseCategory,
+  FinanceCategoryType,
   ModuleType,
   PaymentMode,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
+import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
 import {
   useCreateExpense,
   useDeleteExpense,
+  ExpenseWithCategory,
   useExpenseList,
 } from "@/hooks/query/expense";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
@@ -41,10 +42,19 @@ import { ErrorMessage } from "@hookform/error-message";
 const CreateExpenseForm = () => {
   const { mutateAsync: createExpense, isPending: creating } =
     useCreateExpense();
+  const categoryQuery = useFinanceCategoryList(
+    { type: FinanceCategoryType.EXPENSE },
+    1,
+    100,
+  );
+  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
+    label: category.name,
+    value: String(category.id),
+  }));
   const form = useForm<ExpenseValidatorType>({
     defaultValues: {
       title: "",
-      category: ExpenseCategory.OTHER_EXPENSES,
+      categoryId: 0,
       amount: 0,
       paymentMode: PaymentMode.CASH,
       dateTime: new Date(),
@@ -57,7 +67,7 @@ const CreateExpenseForm = () => {
     await createExpense(values);
     form.reset({
       title: "",
-      category: ExpenseCategory.OTHER_EXPENSES,
+      categoryId: 0,
       amount: 0,
       paymentMode: PaymentMode.CASH,
       dateTime: new Date(),
@@ -101,29 +111,16 @@ const CreateExpenseForm = () => {
                 <div className="col-span-3">
                   <FormField<ExpenseValidatorType>
                     type="select"
-                    name="category"
+                    name="categoryId"
                     control={form.control}
                     required
                     hideError
-                    options={[
-                      {
-                        label: "Account deposit",
-                        value: ExpenseCategory.ACCOUNT_DEPOSIT,
-                      },
-                      {
-                        label: "Salary payment",
-                        value: ExpenseCategory.SALARY_PAYMENT,
-                      },
-                      {
-                        label: "Other expenses",
-                        value: ExpenseCategory.OTHER_EXPENSES,
-                      },
-                    ]}
+                    options={categoryOptions}
                   />
                 </div>
               </div>
               <ErrorMessage
-                name="category"
+                name="categoryId"
                 errors={form.formState.errors}
                 render={({ message }) => (
                   <p className="font-semibold text-tiny! ms-1">{message}</p>
@@ -226,7 +223,7 @@ const CreateExpenseForm = () => {
               />
             </div>
           </div>
-          <CustomButton type="submit" disabled={creating}>
+          <CustomButton type="submit" disabled={creating || categoryQuery.isLoading}>
             Create Expense
           </CustomButton>
         </form>
@@ -250,7 +247,7 @@ const Actions = ({
   canDelete,
   canEdit,
 }: {
-  data: Expense;
+  data: ExpenseWithCategory;
   canEdit: boolean;
   canDelete: boolean;
 }) => {
@@ -324,17 +321,11 @@ const ExpensePage = () => {
     ActionType.DELETE,
   );
 
-  const formatCategory = (value: string) =>
-    value
-      .split("_")
-      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-      .join(" ");
-
-  const columns: ColumnDefWithClass<Expense>[] = [
+  const columns: ColumnDefWithClass<ExpenseWithCategory>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="ID" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="ID" column={column} />
       ),
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -343,7 +334,7 @@ const ExpensePage = () => {
     {
       accessorKey: "title",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Title" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Title" column={column} />
       ),
       cell: ({ row }) => (
         <Link
@@ -359,16 +350,16 @@ const ExpensePage = () => {
     {
       accessorKey: "category",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Category" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Category" column={column} />
       ),
-      cell: ({ row }) => formatCategory(String(row.original.category || "")),
+      cell: ({ row }) => row.original.category?.name || "--",
       headerClassName: "min-w-35",
       cellClassName: "min-w-35",
     },
     {
       accessorKey: "paymentMode",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Payment Mode" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Payment Mode" column={column} />
       ),
       headerClassName: "min-w-30",
       cellClassName: "min-w-30",
@@ -376,7 +367,7 @@ const ExpensePage = () => {
     {
       accessorKey: "amount",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Amount" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Amount" column={column} />
       ),
       cell: ({ row }) => `Rs. ${Number(row.original.amount || 0).toFixed(2)}`,
       headerClassName: "min-w-30",
@@ -385,7 +376,7 @@ const ExpensePage = () => {
     {
       accessorKey: "dateTime",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Date/Time" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Date/Time" column={column} />
       ),
       cell: ({ row }) =>
         format(new Date(row.original.dateTime), "dd/MM/yyyy - h:mma"),
@@ -395,7 +386,7 @@ const ExpensePage = () => {
     {
       accessorKey: "description",
       header: ({ column }) => (
-        <SortableHeader<Expense> label="Description" column={column} />
+        <SortableHeader<ExpenseWithCategory> label="Description" column={column} />
       ),
       cell: ({ row }) => row.original.description || "--",
       headerClassName: "min-w-40",

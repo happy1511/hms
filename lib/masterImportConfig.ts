@@ -169,6 +169,7 @@ export const MASTER_IMPORT_CONFIG: Record<
       { key: "name", required: true, example: "X-Ray Chest" },
       { key: "description", required: true, example: "Chest x-ray service" },
       { key: "isInvoiceOnly", example: "false" },
+      { key: "isEditableRate", example: "false" },
       { key: "type", required: true, example: ServiceType.RADIOLOGY_TEST },
       { key: "price", required: true, example: "500" },
       { key: "discountAvailable", example: "true" },

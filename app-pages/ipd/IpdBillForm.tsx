@@ -269,10 +269,17 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const flatServices = useMemo(
     () =>
       servicesQuery.data?.pages.flatMap((p) =>
-        p.data.flatMap((f) => ({ ...f, label: f.name, value: f.id })),
+        p.data.flatMap((f) => ({
+          ...f,
+          isEditableRate: Boolean(f.isEditableRate),
+          label: f.name,
+          value: f.id,
+        })),
       ),
     [servicesQuery.data],
   );
+
+  const canEditRate = Boolean(service?.isEditableRate);
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
     {
@@ -569,6 +576,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             name="rate"
             type="number"
             required
+            disabled={!canEditRate}
           />
           <FormField
             control={billingItemForm.control}

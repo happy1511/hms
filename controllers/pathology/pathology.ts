@@ -159,9 +159,15 @@ export const getOrdersAPI = async (req: Request) => {
     querySchema: paginationValidator,
     req,
     onSuccess: async ({ query }) => {
+      const { searchParams } = new URL(req.url);
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
-      const status = query.testStatus ?? "";
+      const rawStatuses =
+        searchParams.getAll("testStatus").length > 0
+          ? searchParams.getAll("testStatus")
+          : searchParams.getAll("testStatus[]").length > 0
+            ? searchParams.getAll("testStatus[]")
+            : (query.testStatus ?? "");
       const name = query.search ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
@@ -169,14 +175,37 @@ export const getOrdersAPI = async (req: Request) => {
       const cancelled = query.cancelled;
       const outsourced = query.outsourced;
       const opdId = query.opdId;
+      const shouldExcludeCompleted = cancelled !== true && outsourced !== true;
+      const requestedStatuses = (
+        Array.isArray(rawStatuses)
+          ? rawStatuses
+          : rawStatuses
+            ? [rawStatuses]
+            : []
+      ).filter((item): item is PathologyOrderStatus =>
+        Object.values(PathologyOrderStatus).includes(
+          item as PathologyOrderStatus,
+        ),
+      );
+      const orderBaseWhere: Prisma.PathologyTestOrderWhereInput = {
+        isDeleted: false,
+        isCancelled: cancelled === true ? true : false,
+        isOutSourced: outsourced === true ? true : false,
+        test: { isDeleted: false },
+        ...(requestedStatuses.length
+          ? { status: { in: requestedStatuses } }
+          : shouldExcludeCompleted
+            ? { status: { not: PathologyOrderStatus["COMPLETED"] } }
+            : {}),
+      };
 
       const skip = (page - 1) * limit;
       const and: Prisma.PatientWhereInput[] = [];
 
-      if (status) {
+      if (requestedStatuses.length) {
         and.push({
           pathologyTestOrders: {
-            some: { status: { in: status }, test: { isDeleted: false } },
+            some: orderBaseWhere,
           },
         });
       }
@@ -188,7 +217,7 @@ export const getOrdersAPI = async (req: Request) => {
       if (opdId) {
         and.push({
           pathologyTestOrders: {
-            some: { opdId: { equals: opdId }, test: { isDeleted: false } },
+            some: { ...orderBaseWhere, opdId: { equals: opdId } },
           },
         });
       }
@@ -197,7 +226,7 @@ export const getOrdersAPI = async (req: Request) => {
         and.push({
           pathologyTestOrders: {
             some: {
-              test: { isDeleted: false },
+              ...orderBaseWhere,
               createdAt: {
                 ...(createdAtFrom && { gte: createdAtFrom }),
                 ...(createdAtTo && { lte: createdAtTo }),
@@ -209,11 +238,7 @@ export const getOrdersAPI = async (req: Request) => {
 
       and.push({
         pathologyTestOrders: {
-          some: {
-            isCancelled: cancelled === true ? true : false,
-            isOutSourced: outsourced === true ? true : false,
-            test: { isDeleted: false },
-          },
+          some: orderBaseWhere,
         },
       });
 
@@ -228,9 +253,7 @@ export const getOrdersAPI = async (req: Request) => {
           include: {
             pathologyTestOrders: {
               where: {
-                isOutSourced: outsourced === true ? true : false,
-                isCancelled: cancelled === true ? true : false,
-                test: { isDeleted: false },
+                ...orderBaseWhere,
               },
               select: {
                 id: true,
@@ -329,7 +352,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       const result = await prisma.$transaction(async (tx) => {
         // Fetch order with patient data first
         const order = await tx.pathologyTestOrder.findFirst({
-          where: { id: orderId, test: { isDeleted: false } },
+          where: { id: orderId, isDeleted: false, test: { isDeleted: false } },
           include: {
             patient: true,
           },
@@ -348,7 +371,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
 
         // Now fetch full test data with proper reference ranges
         const data = await tx.pathologyTestOrder.findFirst({
-          where: { id: orderId, test: { isDeleted: false } },
+          where: { id: orderId, isDeleted: false, test: { isDeleted: false } },
           include: {
             opd: {
               include: {
@@ -443,7 +466,7 @@ export const updateOrderAPI = async (req: Request, user: User) => {
       const { results, orderId, ...rest } = body;
 
       const order = await prisma.pathologyTestOrder.findUnique({
-        where: { id: orderId },
+        where: { id: orderId, isDeleted: false },
       });
 
       if (!order) {
@@ -486,7 +509,7 @@ export const cancelOrderAPI = async (req: Request, user: User) => {
       const id = body.orderId;
 
       const order = await prisma.pathologyTestOrder.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!order) {
@@ -525,7 +548,7 @@ export const markOutsourceOrderAPI = async (req: Request, user: User) => {
       const id = body.orderId;
 
       const order = await prisma.pathologyTestOrder.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!order) {
@@ -575,7 +598,7 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
   }
 
   const order = await prisma.pathologyTestOrder.findUnique({
-    where: { id: orderId },
+    where: { id: orderId, isDeleted: false },
     select: {
       id: true,
       isOutSourced: true,
@@ -669,7 +692,11 @@ export const markAsSampleTakenOrderAPI = async (req: Request, user: User) => {
       const id = body.orderId;
 
       const order = await prisma.pathologyTestOrder.findUnique({
-        where: { id, status: PathologyOrderStatus["SAMPLE_PENDING"] },
+        where: {
+          id,
+          status: PathologyOrderStatus["SAMPLE_PENDING"],
+          isDeleted: false,
+        },
       });
 
       if (!order) {
@@ -1752,6 +1779,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
       const orders = await prisma.pathologyTestOrder.findMany({
         where: {
           opdId,
+          isDeleted: false,
           status: PathologyOrderStatus["COMPLETED"],
           test: { isDeleted: false },
         },

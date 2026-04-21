@@ -5,8 +5,9 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { ActionType, ExpenseCategory, ModuleType, PaymentMode } from "@/generated/prisma/enums";
+import { ActionType, FinanceCategoryType, ModuleType, PaymentMode } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
+import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
 import { useCreateExpense, useGetExpense, useUpdateExpense } from "@/hooks/query/expense";
 import { hasActionPermission } from "@/lib/utils";
 import {
@@ -29,7 +30,7 @@ const toDate = (value: unknown) => {
 
 const getInitialValues = (data?: Partial<ExpenseValidatorType>): ExpenseValidatorType => ({
   title: data?.title ?? "",
-  category: data?.category ?? ExpenseCategory.OTHER_EXPENSES,
+  categoryId: Number(data?.categoryId || 0),
   amount: Number(data?.amount || 0),
   paymentMode: data?.paymentMode ?? PaymentMode.CASH,
   dateTime: toDate(data?.dateTime) ?? new Date(),
@@ -40,6 +41,15 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
   const { mutateAsync: create, isPending: creating } = useCreateExpense();
   const { mutateAsync: update, isPending: updating } = useUpdateExpense();
   const { expenseId }: { expenseId?: string } = useParams();
+  const categoryQuery = useFinanceCategoryList(
+    { type: FinanceCategoryType.EXPENSE },
+    1,
+    100,
+  );
+  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
+    label: category.name,
+    value: String(category.id),
+  }));
 
   const form = useForm<ExpenseValidatorType>({
     defaultValues: getInitialValues(data),
@@ -68,14 +78,10 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
           <FormField<ExpenseValidatorType>
             label="Category"
             type="select"
-            name="category"
+            name="categoryId"
             control={form.control}
             required
-            options={[
-              { label: "Account deposit", value: ExpenseCategory.ACCOUNT_DEPOSIT },
-              { label: "Salary payment", value: ExpenseCategory.SALARY_PAYMENT },
-              { label: "Other expenses", value: ExpenseCategory.OTHER_EXPENSES },
-            ]}
+            options={categoryOptions}
           />
           <FormField<ExpenseValidatorType>
             label="Amount"
@@ -111,7 +117,7 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
             />
           </div>
         </div>
-        <CustomButton disabled={creating || updating} type="submit">
+        <CustomButton disabled={creating || updating || categoryQuery.isLoading} type="submit">
           Submit
         </CustomButton>
       </form>

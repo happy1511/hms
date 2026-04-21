@@ -492,14 +492,33 @@ export const getOrdersAPI = async (req: Request) => {
       const cancelled = query.cancelled;
       const outsourced = query.outsourced;
       const opdId = query.opdId;
+      const shouldExcludeCompleted =
+        cancelled !== true && outsourced !== true;
+      const requestedStatuses = Array.isArray(status) ? status : [];
+      const effectiveStatuses = shouldExcludeCompleted
+        ? requestedStatuses.filter(
+            (item) => item !== RadiologyOrderStatus["COMPLETED"],
+          )
+        : requestedStatuses;
+      const orderBaseWhere: Prisma.RadiologyTestOrderWhereInput = {
+        isDeleted: false,
+        isCancelled: cancelled === true ? true : false,
+        isOutSourced: outsourced === true ? true : false,
+        test: { isDeleted: false },
+        ...(effectiveStatuses.length
+          ? { status: { in: effectiveStatuses } }
+          : shouldExcludeCompleted
+            ? { status: { not: RadiologyOrderStatus["COMPLETED"] } }
+            : {}),
+      };
 
       const skip = (page - 1) * limit;
       const and: Prisma.PatientWhereInput[] = [];
 
-      if (status) {
+      if (effectiveStatuses.length) {
         and.push({
           radiologyTestOrders: {
-            some: { status: { in: status }, test: { isDeleted: false } },
+            some: orderBaseWhere,
           },
         });
       }
@@ -511,7 +530,7 @@ export const getOrdersAPI = async (req: Request) => {
       if (opdId) {
         and.push({
           radiologyTestOrders: {
-            some: { opdId: { equals: opdId }, test: { isDeleted: false } },
+            some: { ...orderBaseWhere, opdId: { equals: opdId } },
           },
         });
       }
@@ -520,7 +539,7 @@ export const getOrdersAPI = async (req: Request) => {
         and.push({
           radiologyTestOrders: {
             some: {
-              test: { isDeleted: false },
+              ...orderBaseWhere,
               createdAt: {
                 ...(createdAtFrom && { gte: createdAtFrom }),
                 ...(createdAtTo && { lte: createdAtTo }),
@@ -532,11 +551,7 @@ export const getOrdersAPI = async (req: Request) => {
 
       and.push({
         radiologyTestOrders: {
-          some: {
-            isCancelled: cancelled === true ? true : false,
-            isOutSourced: outsourced === true ? true : false,
-            test: { isDeleted: false },
-          },
+          some: orderBaseWhere,
         },
       });
 
@@ -551,9 +566,7 @@ export const getOrdersAPI = async (req: Request) => {
           include: {
             radiologyTestOrders: {
               where: {
-                isOutSourced: outsourced === true ? true : false,
-                isCancelled: cancelled === true ? true : false,
-                test: { isDeleted: false },
+                ...orderBaseWhere,
               },
               select: {
                 id: true,
@@ -648,7 +661,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       const { orderId } = query;
 
       const order = await prisma.radiologyTestOrder.findFirst({
-        where: { id: orderId, test: { isDeleted: false } },
+        where: { id: orderId, isDeleted: false, test: { isDeleted: false } },
         include: {
           patient: true,
         },
@@ -662,7 +675,7 @@ export const getOrderDetailsAPI = async (req: Request) => {
       }
 
       const data = await prisma.radiologyTestOrder.findFirst({
-        where: { id: orderId, test: { isDeleted: false } },
+        where: { id: orderId, isDeleted: false, test: { isDeleted: false } },
         include: {
           patient: true,
           results: true,
@@ -691,7 +704,7 @@ export const updateOrderAPI = async (req: Request, user: User) => {
       const { results, orderId, ...rest } = body;
 
       const order = await prisma.radiologyTestOrder.findUnique({
-        where: { id: orderId },
+        where: { id: orderId, isDeleted: false },
       });
 
       if (!order) {
@@ -732,7 +745,7 @@ export const cancelOrderAPI = async (req: Request, user: User) => {
       const id = body.orderId;
 
       const order = await prisma.radiologyTestOrder.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!order) {
@@ -771,7 +784,7 @@ export const markOutsourceOrderAPI = async (req: Request, user: User) => {
       const id = body.orderId;
 
       const order = await prisma.radiologyTestOrder.findUnique({
-        where: { id },
+        where: { id, isDeleted: false },
       });
 
       if (!order) {
@@ -821,7 +834,7 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
   }
 
   const order = await prisma.radiologyTestOrder.findUnique({
-    where: { id: orderId },
+    where: { id: orderId, isDeleted: false },
     select: {
       id: true,
       isOutSourced: true,
@@ -924,6 +937,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
       const orders = await prisma.radiologyTestOrder.findMany({
         where: {
           opdId,
+          isDeleted: false,
           status: RadiologyOrderStatus["COMPLETED"],
           test: { isDeleted: false },
         },

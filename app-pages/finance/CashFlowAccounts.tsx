@@ -17,13 +17,6 @@ const formatCurrency = (value: unknown) => {
   });
 };
 
-const toTitle = (value: string) =>
-  value
-    .toLowerCase()
-    .split("_")
-    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-    .join(" ");
-
 const summaryFiltersConfig: FilterConfig<FilterValues>[] = [
   { label: "Cash Flow Summary Period", valueKey: "createdAt", type: "dateRange" },
 ];
@@ -60,7 +53,7 @@ const CashFlowSummary = () => {
 
     data.income.byCategory.forEach((r) => {
       rows.push({
-        title: toTitle(String(r.category)),
+        title: String(r.category),
         amount: Number(r.amount || 0),
       });
     });
@@ -74,7 +67,7 @@ const CashFlowSummary = () => {
 
     data.expense.byCategory.forEach((r) => {
       rows.push({
-        title: toTitle(String(r.category)),
+        title: String(r.category),
         amount: Number(r.amount || 0),
       });
     });

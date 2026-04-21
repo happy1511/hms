@@ -7,7 +7,9 @@ import {
   Prisma,
   User,
 } from "@/generated/prisma/client";
+import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
+import { hasUserPermission } from "@/lib/serverPermission";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
@@ -21,6 +23,13 @@ import {
   partialOpdValidator,
   vitalsValidator,
 } from "@/validators/api/opd/opd";
+import { isSameDay } from "date-fns";
+
+const getOpdDeleteErrorResponse = () =>
+  apiResponse({
+    status: RESPONSE_STATUS.BAD_REQUEST,
+    message: "OPD can only be deleted on the same day it was created",
+  });
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -57,6 +66,8 @@ export const getAPI = async (req: Request) => {
         });
       }
 
+      and.push({ isDeleted: false });
+
       const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
 
       const [items, total] = await prisma.$transaction([
@@ -68,7 +79,13 @@ export const getAPI = async (req: Request) => {
           select: {
             id: true,
             arrivalState: true,
-            invoice: { include: { transactions: true } },
+            invoice: {
+              include: {
+                transactions: {
+                  include: { receivedBy: { select: { name: true } } },
+                },
+              },
+            },
             status: true,
             opdDateTime: true,
             consultantDoctor: {
@@ -158,6 +175,7 @@ export const getQueueAPI = async (req: Request) => {
       }
 
       and.push({ status: "IN_QUEUE" });
+      and.push({ isDeleted: false });
 
       const where: Prisma.OpdWhereInput = and.length ? { AND: and } : {};
 
@@ -242,7 +260,7 @@ export const getConsultationAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const consultation = await tx.opd.findUnique({
-          where: { id: opdId },
+          where: { id: opdId, isDeleted: false },
           select: {
             id: true,
             opdDateTime: true,
@@ -353,6 +371,7 @@ export const getConsultationAPI = async (
               where: {
                 patientId: consultation.patientId,
                 id: { not: opdId },
+                isDeleted: false,
               },
               orderBy: { createdAt: "desc" },
               select: {
@@ -478,29 +497,29 @@ export const createAPI = async (req: Request, user: User) => {
               if (!locationId || !addressLineOne) {
                 // Address is optional in billing forms
               } else {
-              await tx.patientAddress.upsert({
-                where: {
-                  type_patientId: {
-                    patientId: existingPatient.id,
-                    type: AddressType.HOME,
+                await tx.patientAddress.upsert({
+                  where: {
+                    type_patientId: {
+                      patientId: existingPatient.id,
+                      type: AddressType.HOME,
+                    },
                   },
-                },
-                create: {
-                  type: homeAddress.type,
-                  addressLineOne,
-                  addressLineTwo: homeAddress.addressLineTwo ?? null,
-                  addressLineThree: homeAddress.addressLineThree ?? null,
-                  locationId,
-                  patientId: existingPatient.id,
-                },
-                update: {
-                  type: homeAddress.type,
-                  addressLineOne,
-                  addressLineTwo: homeAddress.addressLineTwo ?? null,
-                  addressLineThree: homeAddress.addressLineThree ?? null,
-                  locationId,
-                },
-              });
+                  create: {
+                    type: homeAddress.type,
+                    addressLineOne,
+                    addressLineTwo: homeAddress.addressLineTwo ?? null,
+                    addressLineThree: homeAddress.addressLineThree ?? null,
+                    locationId,
+                    patientId: existingPatient.id,
+                  },
+                  update: {
+                    type: homeAddress.type,
+                    addressLineOne,
+                    addressLineTwo: homeAddress.addressLineTwo ?? null,
+                    addressLineThree: homeAddress.addressLineThree ?? null,
+                    locationId,
+                  },
+                });
               }
             }
 
@@ -603,7 +622,8 @@ export const createAPI = async (req: Request, user: User) => {
                 create: addresses
                   .filter(
                     (l) =>
-                      Boolean(l.addressLineOne?.trim()) && Boolean(l.location?.id),
+                      Boolean(l.addressLineOne?.trim()) &&
+                      Boolean(l.location?.id),
                   )
                   .map((l) => ({
                     addressLineOne: String(l.addressLineOne).trim(),
@@ -703,19 +723,19 @@ export const createAPI = async (req: Request, user: User) => {
             data: sectionItems
               .filter((item) => item.service?.id)
               .map((item) => ({
-              invoiceId: invoice.id,
-              invoiceBillingSectionId: invoiceBillingSection.id,
-              billingSectionId: item.billingSection.id,
-              serviceId: item.service!.id,
-              quantity: item.quantity,
-              rate: item.rate,
-              discountType: item.discountType,
-              discountValue: item.discountValue,
-              total: item.total,
-              createdBy: user.id,
-              updatedBy: user.id,
-              createdAt,
-            })),
+                invoiceId: invoice.id,
+                invoiceBillingSectionId: invoiceBillingSection.id,
+                billingSectionId: item.billingSection.id,
+                serviceId: item.service!.id,
+                quantity: item.quantity,
+                rate: item.rate,
+                discountType: item.discountType,
+                discountValue: item.discountValue,
+                total: item.total,
+                createdBy: user.id,
+                updatedBy: user.id,
+                createdAt,
+              })),
           });
         }
 
@@ -780,7 +800,7 @@ export const updateVitalsAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
+          where: { id: opdId, isDeleted: false },
         });
 
         if (!existingOpd) {
@@ -820,7 +840,7 @@ export const updateOpdDoctorsAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
+          where: { id: opdId, isDeleted: false },
           select: { id: true },
         });
 
@@ -900,7 +920,7 @@ export const updateOpdDateTimeAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
+          where: { id: opdId, isDeleted: false },
           select: { id: true, invoiceId: true },
         });
 
@@ -949,7 +969,7 @@ export const updateConsultationAPI = async (req: Request, user: User) => {
       // STEP 1: Validate OPD
       // -------------------------
       const existingOpd = await prisma.opd.findUnique({
-        where: { id: opdId },
+        where: { id: opdId, isDeleted: false },
       });
 
       if (!existingOpd) {
@@ -1119,7 +1139,7 @@ export const deleteQueueAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingOpd = await tx.opd.findUnique({
-          where: { id: data.opdId },
+          where: { id: data.opdId, isDeleted: false },
         });
 
         if (!existingOpd) {
@@ -1147,6 +1167,84 @@ export const deleteQueueAPI = async (req: Request, user: User) => {
   });
 };
 
+export const deleteAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialOpdValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const canDelete = await hasUserPermission(
+        user.id,
+        ModuleType.OPD_BILL,
+        ActionType.DELETE,
+      );
+
+      if (!canDelete) {
+        return apiResponse({
+          status: RESPONSE_STATUS.UNAUTHORIZED,
+          message: "Not Allowed to permit the action",
+        });
+      }
+
+      return prisma.$transaction(async (tx) => {
+        const existingOpd = await tx.opd.findFirst({
+          where: { id: body.opdId, isDeleted: false },
+          select: { id: true, invoiceId: true, createdAt: true },
+        });
+
+        if (!existingOpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Opd not found",
+          });
+        }
+
+        if (!isSameDay(existingOpd.createdAt, new Date())) {
+          return getOpdDeleteErrorResponse();
+        }
+
+        await tx.transaction.updateMany({
+          where: { invoiceId: existingOpd.invoiceId, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.pathologyTestOrder.updateMany({
+          where: { opdId: existingOpd.id, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.radiologyTestOrder.updateMany({
+          where: { opdId: existingOpd.id, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.invoice.update({
+          where: { id: existingOpd.invoiceId },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        const deletedOpd = await tx.opd.update({
+          where: { id: existingOpd.id },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Opd Deleted Successfully",
+          data: deletedOpd,
+        });
+      });
+    },
+  });
+};
+
 export const updateOpdStatusAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: opdStatusUpdateValidator,
@@ -1156,7 +1254,7 @@ export const updateOpdStatusAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingOpd = await tx.opd.findUnique({
-          where: { id: opdId },
+          where: { id: opdId, isDeleted: false },
           select: { id: true },
         });
 

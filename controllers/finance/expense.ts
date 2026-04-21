@@ -1,4 +1,4 @@
-import { ExpenseCategory, Prisma, User } from "@/generated/prisma/client";
+import { FinanceCategoryType, Prisma, User } from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
@@ -24,17 +24,10 @@ export const getAPI = async (req: Request) => {
       const and: Prisma.ExpenseWhereInput[] = [{ isDeleted: false }];
 
       if (search) {
-        const normalizedSearch = search.trim().toUpperCase().replace(/\s+/g, "_");
-        const categorySearch = Object.values(ExpenseCategory).includes(
-          normalizedSearch as ExpenseCategory,
-        )
-          ? (normalizedSearch as ExpenseCategory)
-          : undefined;
-
         and.push({
           OR: [
             { title: { contains: search } },
-            ...(categorySearch ? [{ category: { equals: categorySearch } }] : []),
+            { category: { name: { contains: search } } },
           ],
         });
       }
@@ -56,6 +49,15 @@ export const getAPI = async (req: Request) => {
           take: limit,
           orderBy: { dateTime: "desc" },
           where,
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+          },
         }),
         prisma.expense.count({ where }),
       ]);
@@ -81,6 +83,15 @@ export const getDetailsAPI = async (
     onSuccess: async ({ params }) => {
       const details = await prisma.expense.findFirst({
         where: { id: params.expenseId, isDeleted: false },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+        },
       });
 
       if (!details) {
@@ -105,11 +116,35 @@ export const createAPI = async (req: Request, user: User) => {
     req,
     user,
     onSuccess: async ({ body }) => {
+      const category = await prisma.financeCategory.findFirst({
+        where: {
+          id: body.categoryId,
+          type: FinanceCategoryType.EXPENSE,
+          isDeleted: false,
+        },
+      });
+
+      if (!category) {
+        return apiResponse({
+          status: RESPONSE_STATUS.BAD_REQUEST,
+          message: "Category not found",
+        });
+      }
+
       const data = await prisma.expense.create({
         data: {
           ...body,
           createdBy: user.id,
           updatedBy: user.id,
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
         },
       });
 
@@ -146,11 +181,37 @@ export const updateAPI = async (
         });
       }
 
+      if (rest.categoryId) {
+        const category = await prisma.financeCategory.findFirst({
+          where: {
+            id: rest.categoryId,
+            type: FinanceCategoryType.EXPENSE,
+            isDeleted: false,
+          },
+        });
+
+        if (!category) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Category not found",
+          });
+        }
+      }
+
       const data = await prisma.expense.update({
         where: { id: expenseId },
         data: {
           ...rest,
           updatedBy: user.id,
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
         },
       });
 

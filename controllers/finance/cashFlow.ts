@@ -55,18 +55,41 @@ export const getCashFlowSummaryAPI = async (req: Request) => {
             _sum: { amount: true },
           }),
           prisma.income.groupBy({
-            by: ["category"],
+            by: ["categoryId"],
             where: { isDeleted: false, collectedOn: { gte: from, lte: to } },
             _sum: { amount: true },
-            orderBy: { category: "asc" },
+            orderBy: { categoryId: "asc" },
           }),
           prisma.expense.groupBy({
-            by: ["category"],
+            by: ["categoryId"],
             where: { isDeleted: false, dateTime: { gte: from, lte: to } },
             _sum: { amount: true },
-            orderBy: { category: "asc" },
+            orderBy: { categoryId: "asc" },
           }),
         ]);
+
+      const categoryIds = Array.from(
+        new Set([
+          ...incomeByCategory.map((row) => row.categoryId),
+          ...expenseByCategory.map((row) => row.categoryId),
+        ]),
+      );
+
+      const categories = categoryIds.length
+        ? await prisma.financeCategory.findMany({
+            where: {
+              id: { in: categoryIds },
+            },
+            select: {
+              id: true,
+              name: true,
+            },
+          })
+        : [];
+
+      const categoryNameMap = new Map(
+        categories.map((category) => [category.id, category.name]),
+      );
 
       const opdCollections = Number(opdAgg._sum.amount || 0);
       const dayCareCollections = Number(dayCareAgg._sum.amount || 0);
@@ -74,11 +97,11 @@ export const getCashFlowSummaryAPI = async (req: Request) => {
       const pharmacyCollections = Number(pharmacyAgg._sum.amount || 0);
 
       const incomeCategoryRows = incomeByCategory.map((row) => ({
-        category: row.category,
+        category: categoryNameMap.get(row.categoryId) || `Category ${row.categoryId}`,
         amount: Number(row._sum?.amount || 0),
       }));
       const expenseCategoryRows = expenseByCategory.map((row) => ({
-        category: row.category,
+        category: categoryNameMap.get(row.categoryId) || `Category ${row.categoryId}`,
         amount: Number(row._sum?.amount || 0),
       }));
 

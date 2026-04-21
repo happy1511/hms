@@ -9,7 +9,7 @@ export async function PUT(request: Request) {
       request,
       [
         {
-          module: ModuleType.DISCHARGE_PATIENT,
+          module: ModuleType.CANCEL_DISCHARGE_PATIENT,
           action: ActionType["UPDATE"],
         },
       ],
@@ -17,4 +17,3 @@ export async function PUT(request: Request) {
     ),
   );
 }
-

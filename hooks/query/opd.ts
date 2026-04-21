@@ -83,6 +83,7 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
 const updateOpdDoctors = createRequest<ApiResponse<unknown>>(OPD_DOCTORS, "PUT");
 const updateOpdStatus = createRequest<ApiResponse<unknown>>(OPD_STATUS, "PUT");
 const updateOpdDateTime = createRequest<ApiResponse<unknown>>(OPD_DATETIME, "PUT");
+const deleteOpd = createRequest<ApiResponse<OPDType>>(OPD, "DELETE");
 const deleteBillingSection = createRequest<
   ApiResponse<null>,
   undefined,
@@ -422,6 +423,32 @@ export const useDeleteOpdQueue = () => {
       toast.success("Opd Removed Successfully");
       queryClient.invalidateQueries({
         queryKey: ["opd-queue"],
+      });
+    },
+    onError: showError,
+  });
+};
+
+export const useDeleteOpd = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<OPDType>,
+    AxiosError<ApiResponse<null>>,
+    partialOpdValidatorType
+  >({
+    mutationKey: ["delete-opd"],
+    mutationFn: (data) => deleteOpd({ body: data }),
+    onSuccess: () => {
+      toast.success("OPD Deleted Successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["opds"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["opd-queue"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["invoice-details"],
       });
     },
     onError: showError,

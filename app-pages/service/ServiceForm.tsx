@@ -43,6 +43,7 @@ const getInitialValues = (data?: ServiceDataType): ServiceValidatorType => ({
   description: data?.description ?? "",
   type: data?.type ?? ServiceType["LAB_TEST"],
   status: data?.status ?? Status["active"],
+  isEditableRate: data?.isEditableRate ?? false,
   maxDiscount: data?.maxDiscount ?? 0,
   discountAvailable: data?.discountAvailable ?? false,
   price: data?.price ?? 0,
@@ -133,6 +134,14 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             label="Price"
             type="number"
             name="price"
+            control={form.control}
+            required
+          />
+
+          <FormField<ServiceValidatorType>
+            label="Editable Rate"
+            type="checkbox"
+            name="isEditableRate"
             control={form.control}
             required
           />

@@ -65,14 +65,12 @@ const AddPaymentModal = ({
 
   const transactionType = transactionForm.watch("transactionType");
   const amount = Number(transactionForm.watch("amount") || 0);
-  const projectedDue = Math.max(
+  const projectedDue =
     Number(dueAmount || 0) -
-      getSignedTransactionAmount({
-        amount,
-        transactionType,
-      }),
-    0,
-  );
+    getSignedTransactionAmount({
+      amount,
+      transactionType,
+    });
 
   const onSubmit = async (values: addInvoiceTransactionValidatorType) => {
     await mutateAsync(values);

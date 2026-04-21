@@ -1,5 +1,6 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
+import CustomFilters from "@/components/common/CustomFilters";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import NoPermission from "@/components/common/NoPermission";
@@ -13,6 +14,7 @@ import {
 } from "@/hooks/query/pathology";
 import {
   ColumnDefWithClass,
+  FilterConfig,
   FilterValues,
   PathologyTestDataType,
 } from "@/lib/type";
@@ -88,8 +90,8 @@ const Actions = ({
               <Trash2 className="size-2.5 text-destructive" />
             </Button>
           }
-          title="Delete Ward?"
-          description="Are you sure you want to delete ward?"
+          title="Delete Pathology Test?"
+          description="Are you sure you want to delete test?"
           cancelText="Cancel"
           confirmText="Delete"
           handleConfirm={() => deleteBed({ testId: Number(data.id) })}
@@ -100,6 +102,15 @@ const Actions = ({
   );
 };
 
+const neededFilters: FilterConfig<FilterValues>[] = [
+  {
+    label: "Name",
+    valueKey: "name",
+    type: "text",
+    placeholder: "Search by name here.",
+  },
+];
+
 const PathologyTests = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -107,11 +118,7 @@ const PathologyTests = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    usePathologyTestsList(
-    filters,
-    page,
-    limit,
-  );
+    usePathologyTestsList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -158,7 +165,11 @@ const PathologyTests = () => {
       },
       cell: ({ row }) => (
         <Link
-          href={canUpdate ? `/beds/${row.original.id}` : "#"}
+          href={
+            canUpdate
+              ? `/clinical-tests/pathology-test/${row.original.id}`
+              : "#"
+          }
           className="hover:underline"
         >
           {row.original.name || "-"}
@@ -255,12 +266,15 @@ const PathologyTests = () => {
   ];
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <RefreshButton
-          onRefresh={refetch}
-          isRefreshing={isFetching}
-        />
-      </div>
+      <CustomFilters<FilterValues>
+        filters={neededFilters}
+        onSubmit={setFilters}
+        onRefresh={refetch}
+        isLoading={isLoading || isFetching}
+        isRefreshing={isFetching}
+        defaultToday={false}
+        filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+      />
       <CustomTable
         columns={columns}
         data={data?.data || []}

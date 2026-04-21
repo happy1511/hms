@@ -41,6 +41,7 @@ export function FormMonthYearPicker<T extends FieldValues>({
   disabled = false,
   minDate,
   maxDate,
+  allowFutureDates = false,
   formItemClassName = "",
   rules,
   hideError = false,
@@ -48,6 +49,12 @@ export function FormMonthYearPicker<T extends FieldValues>({
   const id = useId();
   const [open, setOpen] = useState(false);
   const [displayMonth, setDisplayMonth] = useState(new Date());
+  const effectiveMaxDate =
+    allowFutureDates
+      ? maxDate
+      : maxDate && maxDate < new Date()
+        ? maxDate
+        : new Date();
 
   const handleCalendarChange = (
     value: string | number,
@@ -160,7 +167,7 @@ export function FormMonthYearPicker<T extends FieldValues>({
                     month={displayMonth}
                     onMonthChange={setDisplayMonth}
                     startMonth={minDate}
-                    endMonth={maxDate}
+                    endMonth={effectiveMaxDate}
                     className="[&_.rdp-month_grid]:hidden [&_.rdp-weekdays]:hidden [&_.rdp-weeks]:hidden"
                   />
                   <div className="flex items-center justify-between border-t p-2">

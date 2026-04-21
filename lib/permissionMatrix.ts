@@ -13,6 +13,7 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.CREATE,
     ActionType.UPDATE,
     ActionType.VIEW,
+    ActionType.DELETE,
     ActionType.PRINT,
   ],
   [ModuleType.IPD_MLC]: [ActionType.VIEW, ActionType.UPDATE],
@@ -86,6 +87,7 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.CREATE,
     ActionType.UPDATE,
     ActionType.VIEW,
+    ActionType.DELETE,
     ActionType.PRINT,
   ],
   [ModuleType.DISCHARGE_PATIENT]: [
@@ -94,10 +96,12 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.VIEW,
     ActionType.PRINT,
   ],
+  [ModuleType.CANCEL_DISCHARGE_PATIENT]: [ActionType.UPDATE],
   [ModuleType.OPD_BILL]: [
     ActionType.CREATE,
     ActionType.UPDATE,
     ActionType.VIEW,
+    ActionType.DELETE,
     ActionType.PRINT,
   ],
   [ModuleType.CONSULTATION_FILE]: [
@@ -157,6 +161,12 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.VIEW,
     ActionType.DELETE,
     ActionType.PRINT,
+  ],
+  [ModuleType.FINANCE_CATEGORY_MASTER]: [
+    ActionType.CREATE,
+    ActionType.UPDATE,
+    ActionType.VIEW,
+    ActionType.DELETE,
   ],
   [ModuleType.INCOME]: [
     ActionType.CREATE,

@@ -1,12 +1,14 @@
 "use client";
 
 import CustomActionDropdown from "@/components/common/CustomActionDropdown";
+import CustomButton from "@/components/common/CustomButton";
 import DocumentUploadDialog from "@/components/common/DocumentUploadDialog";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import PathologyMultiPrintDialog from "@/components/pathology/PathologyMultiPrintDialog";
 import {
   ActionType,
   ModuleType,
@@ -225,26 +227,28 @@ const PathologyOrders = ({
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterValues>({});
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
+  const [multiPrintOpen, setMultiPrintOpen] = useState(false);
 
   const { data: profile } = useProfile(false);
+  const router = useRouter();
   const { data, isLoading, isFetching, refetch, isError, error } =
     usePathologyOrdersList(
-    {
-      ...filters,
-      cancelled,
-      outsourced,
-      testStatus:
-        forcedTestStatus ??
-        (!cancelled && !outsourced
-          ? [
-              PathologyOrderStatus["RESULT_PENDING"],
-              PathologyOrderStatus["SAMPLE_PENDING"],
-            ]
-          : []),
-    },
-    page,
-    limit,
-  );
+      {
+        ...filters,
+        cancelled,
+        outsourced,
+        testStatus:
+          forcedTestStatus ??
+          (!cancelled && !outsourced
+            ? [
+                PathologyOrderStatus["RESULT_PENDING"],
+                PathologyOrderStatus["SAMPLE_PENDING"],
+              ]
+            : []),
+      },
+      page,
+      limit,
+    );
 
   const effectiveSelectedPatient =
     selectedPatient ?? data?.data?.[0]?.id ?? null;
@@ -258,6 +262,14 @@ const PathologyOrders = ({
   const selectedPatientData = useMemo(
     () => data?.data.find((p) => p.id === effectiveSelectedPatient) || null,
     [effectiveSelectedPatient, data],
+  );
+  const isCompletedOnlyView = useMemo(
+    () =>
+      Boolean(forcedTestStatus?.length) &&
+      forcedTestStatus?.every(
+        (status) => status === PathologyOrderStatus["COMPLETED"],
+      ),
+    [forcedTestStatus],
   );
 
   if (!profile) {
@@ -478,6 +490,17 @@ const PathologyOrders = ({
             </div>
           )}
 
+          {canPrint && isCompletedOnlyView && selectedPatientData && (
+            <div className="flex justify-end">
+              <CustomButton
+                disabled={patientOrders.length === 0}
+                onClick={() => setMultiPrintOpen(true)}
+              >
+                Print Multiple
+              </CustomButton>
+            </div>
+          )}
+
           <CustomTable
             columns={columns}
             data={patientOrders}
@@ -488,6 +511,25 @@ const PathologyOrders = ({
           />
         </div>
       </div>
+      {multiPrintOpen && selectedPatientData && (
+        <PathologyMultiPrintDialog
+          open={multiPrintOpen}
+          onOpenChange={setMultiPrintOpen}
+          orders={patientOrders}
+          patientName={[
+            selectedPatientData.firstName,
+            selectedPatientData.lastName,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          onPrint={(orderIds) => {
+            router.push(
+              `/pathology-print/multiple?orderIds=${orderIds.join(",")}`,
+            );
+            setMultiPrintOpen(false);
+          }}
+        />
+      )}
     </CustomLayout>
   );
 };

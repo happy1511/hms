@@ -9,6 +9,7 @@ import {
 } from "@/generated/prisma/client";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
+import { getInvoiceDueAmount } from "@/lib/invoiceTransactions";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { hasUserPermission } from "@/lib/serverPermission";
 import { validateRequest } from "@/lib/validator";
@@ -25,6 +26,13 @@ import {
   ipdValidator,
   partialIpdValidator,
 } from "@/validators/api/ipd/ipd";
+import { isSameDay } from "date-fns";
+
+const getIpdDeleteErrorResponse = () =>
+  apiResponse({
+    status: RESPONSE_STATUS.BAD_REQUEST,
+    message: "IPD can only be deleted on the same day it was created",
+  });
 
 export const getAPI = async (req: Request, user: User) => {
   return validateRequest({
@@ -127,6 +135,8 @@ export const getAPI = async (req: Request, user: User) => {
         }
       }
 
+      and.push({ isDeleted: false });
+
       const where: Prisma.IpdWhereInput = and.length ? { AND: and } : {};
 
       const [items, total] = await prisma.$transaction([
@@ -136,7 +146,13 @@ export const getAPI = async (req: Request, user: User) => {
           orderBy: { createdAt: "desc" },
           where,
           include: {
-            invoice: { include: { transactions: true } },
+            invoice: {
+              include: {
+                transactions: {
+                  include: { receivedBy: { select: { name: true } } },
+                },
+              },
+            },
             mlcDeclaredByUser: {
               select: {
                 id: true,
@@ -218,7 +234,7 @@ export const getAdmissionPrintAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const ipd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: {
             id: true,
             ipdDateTime: true,
@@ -343,8 +359,22 @@ export const getIpdDischargeSummaryAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const ipd = await tx.ipd.findUnique({
-          where: { id: ipdId },
-          select: { id: true, ipdDateTime: true },
+          where: { id: ipdId, isDeleted: false },
+          select: {
+            id: true,
+            ipdDateTime: true,
+            invoice: {
+              select: {
+                total: true,
+                transactions: {
+                  select: {
+                    amount: true,
+                    transactionType: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (!ipd) {
@@ -356,7 +386,9 @@ export const getIpdDischargeSummaryAPI = async (
 
         const summary = await tx.ipdDischargeSummary.findUnique({
           where: { ipdId },
-          include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+          include: {
+            drugs: { orderBy: { id: "asc" }, include: { drug: true } },
+          },
         });
 
         if (!summary) {
@@ -366,6 +398,10 @@ export const getIpdDischargeSummaryAPI = async (
             data: {
               ipdId,
               ipdDateTime: ipd.ipdDateTime,
+              dueAmount: getInvoiceDueAmount({
+                total: Number(ipd.invoice?.total || 0),
+                transactions: ipd.invoice?.transactions || [],
+              }),
               drugs: [],
             },
           });
@@ -374,14 +410,23 @@ export const getIpdDischargeSummaryAPI = async (
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
           message: "Discharge summary fetched successfully",
-          data: summary,
+          data: {
+            ...summary,
+            dueAmount: getInvoiceDueAmount({
+              total: Number(ipd.invoice?.total || 0),
+              transactions: ipd.invoice?.transactions || [],
+            }),
+          },
         });
       });
     },
   });
 };
 
-export const upsertIpdDischargeSummaryAPI = async (req: Request, user: User) => {
+export const upsertIpdDischargeSummaryAPI = async (
+  req: Request,
+  user: User,
+) => {
   return validateRequest({
     bodySchema: ipdDischargeSummaryValidator,
     req,
@@ -391,7 +436,7 @@ export const upsertIpdDischargeSummaryAPI = async (req: Request, user: User) => 
 
       return prisma.$transaction(async (tx) => {
         const ipd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: { id: true },
         });
 
@@ -433,7 +478,9 @@ export const upsertIpdDischargeSummaryAPI = async (req: Request, user: User) => 
 
         const summary = await tx.ipdDischargeSummary.findUnique({
           where: { ipdId },
-          include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+          include: {
+            drugs: { orderBy: { id: "asc" }, include: { drug: true } },
+          },
         });
 
         return apiResponse({
@@ -461,7 +508,7 @@ export const getIpdDischargePrintAPI = async (
 
       return prisma.$transaction(async (tx) => {
         const ipd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: {
             id: true,
             ipdDateTime: true,
@@ -538,7 +585,9 @@ export const getIpdDischargePrintAPI = async (
               },
             },
             dischargeSummary: {
-              include: { drugs: { orderBy: { id: "asc" }, include: { drug: true } } },
+              include: {
+                drugs: { orderBy: { id: "asc" }, include: { drug: true } },
+              },
             },
           },
         });
@@ -658,29 +707,29 @@ export const createAPI = async (req: Request, user: User) => {
               if (!locationId || !addressLineOne) {
                 // Address is optional in billing forms
               } else {
-              await tx.patientAddress.upsert({
-                where: {
-                  type_patientId: {
-                    patientId: existingPatient.id,
-                    type: AddressType.HOME,
+                await tx.patientAddress.upsert({
+                  where: {
+                    type_patientId: {
+                      patientId: existingPatient.id,
+                      type: AddressType.HOME,
+                    },
                   },
-                },
-                create: {
-                  type: homeAddress.type,
-                  addressLineOne,
-                  addressLineTwo: homeAddress.addressLineTwo ?? null,
-                  addressLineThree: homeAddress.addressLineThree ?? null,
-                  locationId,
-                  patientId: existingPatient.id,
-                },
-                update: {
-                  type: homeAddress.type,
-                  addressLineOne,
-                  addressLineTwo: homeAddress.addressLineTwo ?? null,
-                  addressLineThree: homeAddress.addressLineThree ?? null,
-                  locationId,
-                },
-              });
+                  create: {
+                    type: homeAddress.type,
+                    addressLineOne,
+                    addressLineTwo: homeAddress.addressLineTwo ?? null,
+                    addressLineThree: homeAddress.addressLineThree ?? null,
+                    locationId,
+                    patientId: existingPatient.id,
+                  },
+                  update: {
+                    type: homeAddress.type,
+                    addressLineOne,
+                    addressLineTwo: homeAddress.addressLineTwo ?? null,
+                    addressLineThree: homeAddress.addressLineThree ?? null,
+                    locationId,
+                  },
+                });
               }
             }
 
@@ -783,7 +832,8 @@ export const createAPI = async (req: Request, user: User) => {
                 create: addresses
                   .filter(
                     (l) =>
-                      Boolean(l.addressLineOne?.trim()) && Boolean(l.location?.id),
+                      Boolean(l.addressLineOne?.trim()) &&
+                      Boolean(l.location?.id),
                   )
                   .map((l) => ({
                     addressLineOne: String(l.addressLineOne).trim(),
@@ -887,19 +937,19 @@ export const createAPI = async (req: Request, user: User) => {
             data: sectionItems
               .filter((item) => item.service?.id)
               .map((item) => ({
-              invoiceId: invoice.id,
-              invoiceBillingSectionId: invoiceBillingSection.id,
-              billingSectionId: item.billingSection.id,
-              serviceId: item.service!.id,
-              quantity: item.quantity,
-              rate: item.rate,
-              discountType: item.discountType,
-              discountValue: item.discountValue,
-              total: item.total,
-              createdBy: user.id,
-              updatedBy: user.id,
-              createdAt,
-            })),
+                invoiceId: invoice.id,
+                invoiceBillingSectionId: invoiceBillingSection.id,
+                billingSectionId: item.billingSection.id,
+                serviceId: item.service!.id,
+                quantity: item.quantity,
+                rate: item.rate,
+                discountType: item.discountType,
+                discountValue: item.discountValue,
+                total: item.total,
+                createdBy: user.id,
+                updatedBy: user.id,
+                createdAt,
+              })),
           });
         }
 
@@ -975,6 +1025,100 @@ export const createAPI = async (req: Request, user: User) => {
   });
 };
 
+export const deleteAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialIpdValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      return prisma.$transaction(async (tx) => {
+        const existingIpd = await tx.ipd.findFirst({
+          where: { id: body.ipdId, isDeleted: false },
+          select: {
+            id: true,
+            invoiceId: true,
+            bedId: true,
+            createdAt: true,
+            isDayCare: true,
+          },
+        });
+
+        if (!existingIpd) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Ipd not found",
+          });
+        }
+
+        const canDelete = await hasUserPermission(
+          user.id,
+          existingIpd.isDayCare ? ModuleType.DAY_CARE_IPD : ModuleType.IPD_BILL,
+          ActionType.DELETE,
+        );
+
+        if (!canDelete) {
+          return apiResponse({
+            status: RESPONSE_STATUS.UNAUTHORIZED,
+            message: "Not Allowed to permit the action",
+          });
+        }
+
+        if (!isSameDay(existingIpd.createdAt, new Date())) {
+          return getIpdDeleteErrorResponse();
+        }
+
+        await tx.transaction.updateMany({
+          where: { invoiceId: existingIpd.invoiceId, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.pathologyTestOrder.updateMany({
+          where: { ipdId: existingIpd.id, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.radiologyTestOrder.updateMany({
+          where: { ipdId: existingIpd.id, isDeleted: false },
+          data: { isDeleted: true },
+        });
+
+        await tx.ipdBedAllocation.updateMany({
+          where: { ipdId: existingIpd.id, toDateTime: null },
+          data: { toDateTime: new Date() },
+        });
+
+        await tx.bed.update({
+          where: { id: existingIpd.bedId },
+          data: { isOccupied: false, currentIpdId: null },
+        });
+
+        await tx.invoice.update({
+          where: { id: existingIpd.invoiceId },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        const deletedIpd = await tx.ipd.update({
+          where: { id: existingIpd.id },
+          data: {
+            isDeleted: true,
+            deletedBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Ipd Deleted Successfully",
+          data: deletedIpd,
+        });
+      });
+    },
+  });
+};
+
 export const dischargePatientAPI = async (req: Request, user: User) => {
   return validateRequest({
     bodySchema: partialIpdValidator,
@@ -985,7 +1129,7 @@ export const dischargePatientAPI = async (req: Request, user: User) => {
         const { ipdId } = body;
 
         const existingIPD = await tx.ipd.findFirst({
-          where: { id: ipdId, isDischarged: false },
+          where: { id: ipdId, isDischarged: false, isDeleted: false },
         });
 
         if (!existingIPD) {
@@ -1047,14 +1191,21 @@ export const cancelDischargePatientAPI = async (req: Request, user: User) => {
         const { ipdId } = body;
 
         const existingIPD = await tx.ipd.findFirst({
-          where: { id: ipdId, isDischarged: true },
-          select: { id: true, bedId: true },
+          where: { id: ipdId, isDischarged: true, isDeleted: false },
+          select: { id: true, bedId: true, ipdDateTime: true },
         });
 
         if (!existingIPD) {
           return apiResponse({
             status: RESPONSE_STATUS.BAD_REQUEST,
             message: "IPD Not Found",
+          });
+        }
+
+        if (!isSameDay(existingIPD.ipdDateTime, new Date())) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Discharge can only be cancelled for same day IPD",
           });
         }
 
@@ -1130,7 +1281,7 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: { id: true, isDayCare: true },
         });
 
@@ -1228,7 +1379,7 @@ export const updateIpdBillingTypeAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: { id: true, invoiceId: true, isDayCare: true },
         });
 
@@ -1277,7 +1428,7 @@ export const updateIpdBedAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: {
             id: true,
             bedId: true,
@@ -1400,7 +1551,7 @@ export const updateIpdDateTimeAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: { id: true, invoiceId: true, isDayCare: true },
         });
 
@@ -1471,7 +1622,7 @@ export const declareIpdMlcAPI = async (req: Request, user: User) => {
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
-          where: { id: ipdId },
+          where: { id: ipdId, isDeleted: false },
           select: { id: true, isDayCare: true, isMlcPatient: true },
         });
 

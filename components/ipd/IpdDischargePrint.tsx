@@ -1,6 +1,7 @@
 "use client";
 
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { IpdDischargePrintResponse } from "@/hooks/query/ipd";
 import { cn, formatAge } from "@/lib/utils";
@@ -71,7 +72,7 @@ const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
     const age = data.patient?.dob ? formatAge(data.patient.dob) : "--";
     const gender = valueOrDash(data.patient?.gender);
     return `${age}, ${gender}`;
-  }, [data.patient?.dob, data.patient?.gender]);
+  }, [data.patient]);
 
   const contact = useMemo(() => {
     const mobile =
@@ -145,11 +146,15 @@ const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
                 <tbody>
                   <tr>
                     <Cell className="bg-[#f2f2f2] font-semibold">IPD No:</Cell>
-                    <Cell>{valueOrDash(data.id)}</Cell>
+                    <Cell>
+                      <PrintBarcodeValue value={data.id} />
+                    </Cell>
                     <Cell className="bg-[#f2f2f2] font-semibold">
                       Patient UHID:
                     </Cell>
-                    <Cell>{valueOrDash(data.patient?.id)}</Cell>
+                    <Cell>
+                      <PrintBarcodeValue value={data.patient?.id} />
+                    </Cell>
                   </tr>
                   <tr>
                     <Cell className="bg-[#f2f2f2] font-semibold">Patient:</Cell>

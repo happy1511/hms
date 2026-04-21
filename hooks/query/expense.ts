@@ -1,4 +1,4 @@
-import { Expense } from "@/generated/prisma/client";
+import { Expense, FinanceCategory } from "@/generated/prisma/client";
 import { EXPENSE } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -12,21 +12,26 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createExpense = createRequest<ApiResponse<Expense>>(EXPENSE, "POST");
-const updateExpense = createRequest<ApiResponse<Expense>, undefined, { id: string }>(
-  (p) => `${EXPENSE}/${p.id}`,
-  "PUT",
-);
+export type ExpenseWithCategory = Expense & {
+  category?: Pick<FinanceCategory, "id" | "name" | "type">;
+};
+
+const createExpense = createRequest<ApiResponse<ExpenseWithCategory>>(EXPENSE, "POST");
+const updateExpense = createRequest<
+  ApiResponse<ExpenseWithCategory>,
+  undefined,
+  { id: string }
+>((p) => `${EXPENSE}/${p.id}`, "PUT");
 const deleteExpense = createRequest<ApiResponse<null>, undefined, { id: string }>(
   (p) => `${EXPENSE}/${p.id}`,
   "DELETE",
 );
-const getExpense = createRequest<ApiResponse<Expense>, undefined, { id: string }>(
+const getExpense = createRequest<ApiResponse<ExpenseWithCategory>, undefined, { id: string }>(
   (p) => `${EXPENSE}/${p.id}`,
   "GET",
 );
 const getExpenses = createRequest<
-  PaginatedResponse<Expense>,
+  PaginatedResponse<ExpenseWithCategory>,
   { limit: number; name?: string; createdAt?: string | { from?: Date; to?: Date } }
 >(EXPENSE, "GET");
 
@@ -36,9 +41,9 @@ export const useExpenseList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<Expense>,
+    PaginatedResponse<ExpenseWithCategory>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<Expense>,
+    PaginatedResponse<ExpenseWithCategory>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["expenses", filters, page, limit],
@@ -56,9 +61,9 @@ export const useExpenseList = (
 
 export const useGetExpense = (id?: string) => {
   return useQuery<
-    ApiResponse<Expense>,
+    ApiResponse<ExpenseWithCategory>,
     AxiosError<ApiResponse<null>>,
-    Expense,
+    ExpenseWithCategory,
     [string, string | undefined]
   >({
     queryKey: ["get-expense", id],
@@ -78,7 +83,7 @@ export const useCreateExpense = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<Expense>,
+    ApiResponse<ExpenseWithCategory>,
     AxiosError<ApiResponse<null>>,
     ExpenseValidatorType
   >({
@@ -98,7 +103,7 @@ export const useUpdateExpense = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<Expense>,
+    ApiResponse<ExpenseWithCategory>,
     AxiosError<ApiResponse<null>>,
     PartialExpenseValidatorType
   >({
@@ -137,4 +142,3 @@ export const useDeleteExpense = () => {
     onError: showError,
   });
 };
-

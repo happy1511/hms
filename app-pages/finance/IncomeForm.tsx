@@ -5,8 +5,9 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { ActionType, IncomeCategory, ModuleType, PaymentMode } from "@/generated/prisma/enums";
+import { ActionType, FinanceCategoryType, ModuleType, PaymentMode } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
+import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
 import { useCreateIncome, useGetIncome, useUpdateIncome } from "@/hooks/query/income";
 import { useUsersList } from "@/hooks/query/user";
 import { FilterValues } from "@/lib/type";
@@ -36,7 +37,7 @@ const getInitialValues = (data?: Partial<IncomeValidatorType>): IncomeValidatorT
   collectedOn: toDate(data?.collectedOn) ?? new Date(),
   collectedById: Number(data?.collectedById || 0),
   description: data?.description ?? "",
-  category: data?.category ?? IncomeCategory.OUT_PR_DRESSING,
+  categoryId: Number(data?.categoryId || 0),
 });
 
 const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => {
@@ -44,11 +45,20 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
   const { mutateAsync: update, isPending: updating } = useUpdateIncome();
   const { incomeId }: { incomeId?: string } = useParams();
   const { data: profile } = useProfile(false);
+  const categoryQuery = useFinanceCategoryList(
+    { type: FinanceCategoryType.INCOME },
+    1,
+    100,
+  );
 
   const usersQuery = useUsersList({} as FilterValues, 1, 200);
   const userOptions = (usersQuery.data?.data || []).map((u) => ({
     label: `${u.name || "Unknown"} (${u.loginId})`,
     value: String(u.id),
+  }));
+  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
+    label: category.name,
+    value: String(category.id),
   }));
 
   if (profile?.data?.id) {
@@ -88,13 +98,10 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
           <FormField<IncomeValidatorType>
             label="Category"
             type="select"
-            name="category"
+            name="categoryId"
             control={form.control}
             required
-            options={[
-              { label: "OUT pr dressing", value: IncomeCategory.OUT_PR_DRESSING },
-              { label: "OUT PT ECG", value: IncomeCategory.OUT_PT_ECG },
-            ]}
+            options={categoryOptions}
           />
           <FormField<IncomeValidatorType>
             label="Mode"
@@ -139,7 +146,12 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
           </div>
         </div>
 
-        <CustomButton disabled={creating || updating || usersQuery.isLoading} type="submit">
+        <CustomButton
+          disabled={
+            creating || updating || usersQuery.isLoading || categoryQuery.isLoading
+          }
+          type="submit"
+        >
           Submit
         </CustomButton>
       </form>

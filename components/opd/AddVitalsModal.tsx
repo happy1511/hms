@@ -67,7 +67,7 @@ const AddVitalsModal = ({
       <DialogContent className="max-w-xl! border-secondary border-4 bg-white">
         <DialogHeader>
           <DialogTitle className="text-black/60 text-sm">
-            Add Payment Transaction
+            Add Vitals Details
           </DialogTitle>
         </DialogHeader>
 

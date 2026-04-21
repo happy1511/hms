@@ -343,6 +343,11 @@ const ServiceRow = ({
   const maxDiscount = watch(
     `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
+  const isEditableRate = Boolean(
+    (watch(
+      `${rowPath}.service` as Path<updateInvoiceValidatorType>,
+    ) as billingItemValidatorType["service"])?.isEditableRate,
+  );
   const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
   const itemId = watch(`${rowPath}.itemId` as Path<updateInvoiceValidatorType>);
   const updateReason = watch(
@@ -357,6 +362,7 @@ const ServiceRow = ({
           name: item.name,
           price: item.price,
           maxDiscount: item.maxDiscount,
+          isEditableRate: Boolean(item.isEditableRate),
         })),
       ) || [],
     [servicesQuery.data],
@@ -445,6 +451,10 @@ const ServiceRow = ({
   ]);
 
   const gross = Number(quantity) * Number(rate);
+  const canEditRate =
+    !isLocked &&
+    (Boolean(isEditableRate) ||
+      (isOtherCharges && Boolean(String(manualServiceName || "").trim())));
   const maxAllowed =
     isOtherCharges && String(manualServiceName || "").trim()
       ? gross
@@ -591,6 +601,7 @@ const ServiceRow = ({
             control={control}
             name={`${rowPath}.createdAt` as Path<updateInvoiceValidatorType>}
             render={({ field }) => {
+              const today = format(new Date(), "yyyy-MM-dd");
               const value = field.value
                 ? (() => {
                     const d = new Date(field.value as any);
@@ -605,9 +616,14 @@ const ServiceRow = ({
                   className="w-full rounded border px-2 py-1 text-xs"
                   disabled={isLocked}
                   value={value}
+                  max={today}
                   onChange={(e) =>
                     field.onChange(
-                      e.target.value ? new Date(e.target.value) : null,
+                      e.target.value
+                        ? new Date(
+                            e.target.value > today ? today : e.target.value,
+                          )
+                        : null,
                     )
                   }
                   onBlur={field.onBlur}
@@ -634,7 +650,7 @@ const ServiceRow = ({
             type="number"
             name={`${rowPath}.rate` as Path<updateInvoiceValidatorType>}
             control={control}
-            disabled={isLocked}
+            disabled={!canEditRate}
             hideError
           />
         </div>
@@ -1094,10 +1110,11 @@ const InvoiceDetails = () => {
           total: item.total,
           discountType: item.discountType,
           discountValue: item.discountValue,
-          service: {
-            ...item.service,
-            maxDiscount: item.service.maxDiscount ?? 0,
-          },
+            service: {
+              ...item.service,
+              maxDiscount: item.service.maxDiscount ?? 0,
+              isEditableRate: Boolean(item.service.isEditableRate),
+            },
           manualServiceName: null,
           rate: item.rate,
           billingSection: {
@@ -1105,6 +1122,8 @@ const InvoiceDetails = () => {
             name: section.name,
             isOtherCharges: Boolean(section.isOtherCharges),
           },
+          maxDiscount: item.service.maxDiscount ?? 0,
+          isEditableRate: Boolean(item.service.isEditableRate),
           createdAt: new Date(item.createdAt),
           itemId: item.id,
           updateReason:

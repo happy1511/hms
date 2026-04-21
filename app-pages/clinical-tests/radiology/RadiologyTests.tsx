@@ -1,5 +1,4 @@
 import { CustomAlert } from "@/components/common/CustomAlert";
-import CustomButton from "@/components/common/CustomButton";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import NoPermission from "@/components/common/NoPermission";
@@ -12,12 +11,13 @@ import {
   useDeleteRadiologyTest,
   useRadiologyTestsList,
 } from "@/hooks/query/radiology";
-import { ColumnDefWithClass, FilterValues } from "@/lib/type";
+import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { EditIcon, Trash2 } from "lucide-react";
 import { useState } from "react";
 import RadiologyTestForm from "./RadiologyTestForm";
+import CustomFilters from "@/components/common/CustomFilters";
 
 const Actions = ({
   data,
@@ -82,6 +82,15 @@ const Actions = ({
   );
 };
 
+const neededFilters: FilterConfig<FilterValues>[] = [
+  {
+    label: "Name",
+    valueKey: "name",
+    type: "text",
+    placeholder: "Search by name here.",
+  },
+];
+
 const RadiologyTests = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -89,11 +98,7 @@ const RadiologyTests = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useRadiologyTestsList(
-    filters,
-    page,
-    limit,
-  );
+    useRadiologyTestsList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -212,17 +217,15 @@ const RadiologyTests = () => {
   ];
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <CustomButton
-          type="button"
-          variant="outline"
-          className="bg-white text-primary shadow-none"
-          onClick={() => refetch()}
-          isLoading={isFetching}
-        >
-          Refresh
-        </CustomButton>
-      </div>
+      <CustomFilters<FilterValues>
+        filters={neededFilters}
+        onSubmit={setFilters}
+        onRefresh={refetch}
+        isLoading={isLoading || isFetching}
+        isRefreshing={isFetching}
+        defaultToday={false}
+        filtersContainerClassName="grid-cols-1 md:grid-cols-2"
+      />
       <CustomTable
         columns={columns}
         data={data?.data || []}

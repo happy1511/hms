@@ -1,4 +1,4 @@
-import { createAPI, getAPI } from "@/controllers/ipd/ipd";
+import { createAPI, deleteAPI, getAPI } from "@/controllers/ipd/ipd";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { withErrorHandling } from "@/lib/errorHandler";
 import { checkPermission } from "@/middlewares/auth/checkUserPermissions";
@@ -26,6 +26,19 @@ export async function POST(request: Request) {
         { module: ModuleType.DAY_CARE_IPD, action: ActionType.CREATE },
       ],
       (req, user) => createAPI(req, user),
+    ),
+  );
+}
+
+export async function DELETE(request: Request) {
+  return withErrorHandling(() =>
+    checkPermission(
+      request,
+      [
+        { module: ModuleType.IPD_BILL, action: ActionType.DELETE },
+        { module: ModuleType.DAY_CARE_IPD, action: ActionType.DELETE },
+      ],
+      (req, user) => deleteAPI(req, user),
     ),
   );
 }

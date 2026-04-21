@@ -189,6 +189,7 @@ enum ModuleType {
   RADIOLOGY_TEST_MASTER
   IPD_BILL
   DISCHARGE_PATIENT
+  CANCEL_DISCHARGE_PATIENT
   OPD_BILL
   CONSULTATION_FILE
   OPD_QUEUE
@@ -205,6 +206,7 @@ enum ModuleType {
   PHARMACY_GRN
   PHARMACY_INVENTORY
   PHARMACY_SALE_BILL
+  FINANCE_CATEGORY_MASTER
   INCOME
   EXPENSE
 }
@@ -359,15 +361,9 @@ enum TransactionType {
   REFUND
 }
 
-enum IncomeCategory {
-  OUT_PR_DRESSING
-  OUT_PT_ECG
-}
-
-enum ExpenseCategory {
-  ACCOUNT_DEPOSIT
-  SALARY_PAYMENT
-  OTHER_EXPENSES
+enum FinanceCategoryType {
+  INCOME
+  EXPENSE
 }
 
 enum PathologyOrderStatus {
@@ -592,6 +588,9 @@ model User {
   createdExpenses            Expense[]                @relation("ExpenseCreatedBy")
   updatedExpenses            Expense[]                @relation("ExpenseUpdatedBy")
   deletedExpenses            Expense[]                @relation("ExpenseDeletedBy")
+  createdFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryCreatedBy")
+  updatedFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryUpdatedBy")
+  deletedFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryDeletedBy")
   createdInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemCreatedBy")
   updatedInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemUpdatedBy")
   deletedInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemDeletedBy")
@@ -1026,7 +1025,7 @@ model Income {
   amount        Float
   collectedOn   DateTime
   collectedById Int
-  category      IncomeCategory
+  categoryId    Int
   description   String?        @db.LongText
   isDeleted     Boolean        @default(false)
 
@@ -1037,16 +1036,19 @@ model Income {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  category      FinanceCategory @relation("IncomeFinanceCategory", fields: [categoryId], references: [id], onDelete: Restrict)
   collectedBy   User  @relation("CollectedIncome", fields: [collectedById], references: [id], onDelete: Cascade)
   createdByUser User? @relation("IncomeCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("IncomeUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("IncomeDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([categoryId])
 }
 
 model Expense {
   id          Int             @id @default(autoincrement())
   title       String
-  category    ExpenseCategory
+  categoryId  Int
   amount      Float
   paymentMode PaymentMode
   dateTime    DateTime
@@ -1060,9 +1062,35 @@ model Expense {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  category      FinanceCategory @relation("ExpenseFinanceCategory", fields: [categoryId], references: [id], onDelete: Restrict)
   createdByUser User? @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("ExpenseUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("ExpenseDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([categoryId])
+}
+
+model FinanceCategory {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  type        FinanceCategoryType
+  description String?             @db.LongText
+  isDeleted   Boolean             @default(false)
+
+  createdBy Int?
+  updatedBy Int?
+  deletedBy Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incomes       Income[]  @relation("IncomeFinanceCategory")
+  expenses      Expense[] @relation("ExpenseFinanceCategory")
+  createdByUser User?     @relation("FinanceCategoryCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?     @relation("FinanceCategoryUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?     @relation("FinanceCategoryDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([type])
 }
 
 model ReferenceRange {
@@ -1101,6 +1129,7 @@ model PathologyTestOrder {
   testId               Int
   invoiceBillingItemId Int?
   scannedReportDocumentId Int?
+  isDeleted            Boolean   @default(false)
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1133,6 +1162,7 @@ model PathologyTestOrder {
   @@index([testId])
   @@index([status])
   @@index([createdAt])
+  @@index([isDeleted])
   @@index([verifiedById])
   @@index([resultEnteredById])
   @@index([scannedReportDocumentId])
@@ -1168,6 +1198,7 @@ model RadiologyTestOrder {
   testId               Int
   invoiceBillingItemId Int?
   scannedReportDocumentId Int?
+  isDeleted            Boolean   @default(false)
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1199,6 +1230,7 @@ model RadiologyTestOrder {
   @@index([testId])
   @@index([status])
   @@index([createdAt])
+  @@index([isDeleted])
   @@index([ipdId])
   @@index([verifiedById])
   @@index([resultEnteredById])
@@ -1325,6 +1357,7 @@ model Service {
   name              String
   description       String?
   isInvoiceOnly     Boolean                @default(false)
+  isEditableRate    Boolean                @default(false)
   type              ServiceType
   price             Float
   discountAvailable Boolean                @default(false)
@@ -1390,6 +1423,7 @@ model Transaction {
   mode            PaymentMode
   transactionType TransactionType @default(PAYMENT)
   remarks         String?
+  isDeleted       Boolean         @default(false)
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -1400,6 +1434,7 @@ model Transaction {
   invoiceId  Int?
 
   @@index([invoiceId])
+  @@index([isDeleted])
 }
 
 model InvoiceBillingItem {
@@ -1603,6 +1638,7 @@ model Opd {
   consultantDoctorId Int
   referringDoctorId  Int?
   invoiceId          Int        @unique
+  isDeleted          Boolean    @default(false)
 
   createdBy Int?
   updatedBy Int?
@@ -1634,6 +1670,7 @@ model Opd {
   @@index([status])
   @@index([opdDateTime])
   @@index([createdAt])
+  @@index([isDeleted])
 }
 
 // -------------------- Ipd Management --------------------
@@ -1651,6 +1688,7 @@ model Ipd {
   isDischarged       Boolean     @default(false)
   isDayCare          Boolean     @default(false)
   isMlcPatient       Boolean     @default(false)
+  isDeleted          Boolean     @default(false)
   mlcDeclaredById    Int?
   mlcDeclarationDate DateTime?
   ipdDateTime        DateTime    @default(now())
@@ -1694,6 +1732,7 @@ model Ipd {
   @@index([ipdDateTime])
   @@index([dischargedAt])
   @@index([createdAt])
+  @@index([isDeleted])
 }
 
 model IpdBedAllocation {

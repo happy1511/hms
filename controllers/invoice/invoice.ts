@@ -1071,21 +1071,6 @@ export const addTransactionAPI = async (req: Request, user: User) => {
         const currentNetPaid = getNetInvoicePaidAmount(
           existingInvoice.transactions,
         );
-        const currentDue = Math.max(
-          Number(existingInvoice.total || 0) - currentNetPaid,
-          0,
-        );
-
-        if (
-          body.transactionType === "PAYMENT" &&
-          Number(body.amount || 0) > currentDue
-        ) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "Payment amount cannot exceed due amount",
-          });
-        }
-
         if (
           body.transactionType === "REFUND" &&
           Number(body.amount || 0) > currentNetPaid

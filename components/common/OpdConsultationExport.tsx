@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import PrintToolbar from "./PrintToolbar";
 import { useState } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 
 type PrescribedDrugLine = {
   name?: string;
@@ -114,12 +115,6 @@ const OpdConsultationExport = ({
   const patientName = [data.patient?.firstName, data.patient?.lastName]
     .filter(Boolean)
     .join(" ");
-  const mobile =
-    data.patient?.contacts?.find((contact) => contact.type === "MOBILE")
-      ?.value ||
-    data.patient?.contacts?.find((contact) => contact.type === "PHONE")
-      ?.value ||
-    "--";
   const address = (() => {
     const homeAddress = data.patient?.addresses?.[0];
     if (!homeAddress) return "--";
@@ -150,13 +145,13 @@ const OpdConsultationExport = ({
       >
         <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <CompanyPrintHeader />
-          <header className="border border-black">
+          <header className="border-x border-black">
             <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
               <p className="font-semibold">OPD CONSULTATION</p>
             </div>
             <InfoRow
               label1="Patient UHID"
-              value1={valueOrDash(data.patient?.id)}
+              value1={<PrintBarcodeValue value={data.patient?.id} />}
               label2="Date"
               value2={formatDateOrDash(data.createdAt, true)}
             />
@@ -164,7 +159,7 @@ const OpdConsultationExport = ({
               label1="Patient"
               value1={valueOrDash(patientName)}
               label2="OPD Number"
-              value2={valueOrDash(data.opdId)}
+              value2={<PrintBarcodeValue value={data.opdId} />}
             />
             <InfoRow
               label1="Gender"
@@ -172,12 +167,12 @@ const OpdConsultationExport = ({
               label2="Consultant"
               value2={valueOrDash(data.consultantDoctorName)}
             />
-            <InfoRow
+            {/* <InfoRow
               label1="Mobile No."
               value1={valueOrDash(mobile)}
               label2="Referred By"
               value2={valueOrDash(data.referringDoctorName)}
-            />
+            /> */}
             <InfoRow label1="Address" value1={valueOrDash(address)} />
           </header>
 
@@ -311,9 +306,9 @@ const InfoRow = ({
   value2,
 }: {
   label1: string;
-  value1: string;
+  value1: React.ReactNode;
   label2?: string;
-  value2?: string;
+  value2?: React.ReactNode;
 }) => (
   <table className="w-full border-collapse border-t border-black">
     <tbody>
@@ -339,7 +334,7 @@ const KV = ({ label, value }: { label: string; value?: unknown }) => (
 );
 
 const BodyRow = ({ label, value }: { label: string; value?: unknown }) => (
-  <div className="flex min-h-[40px] border-b border-black">
+  <div className="flex min-h-10 border-b border-black">
     <div className="flex w-[26%] items-center border-r border-black bg-[#f9f9f9] px-3 py-2 font-semibold">
       {label}:
     </div>

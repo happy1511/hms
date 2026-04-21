@@ -24,6 +24,7 @@ const billingItemValidator = z
         id: z.coerce.number().min(1),
         name: z.string(),
         maxDiscount: z.coerce.number().nullable().optional().default(0),
+        isEditableRate: z.coerce.boolean().optional().default(false),
       })
       .nullable()
       .optional(),
@@ -190,7 +191,7 @@ const invoiceValidator = invoiceBaseValidator
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Transactions should not exist for free OPD",
-          path: ["transactions"],
+          path: ["invoice"],
         });
       }
       return;
@@ -200,17 +201,10 @@ const invoiceValidator = invoiceBaseValidator
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Refund total cannot exceed collected amount",
-        path: ["transactions"],
+        path: ["invoice"],
       });
     }
 
-    if (transactionSum > total) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Transaction total (${transactionSum}) cannot exceed bill total (${total})`,
-        path: ["transactions"],
-      });
-    }
   });
 
 type invoiceValidatorType = z.input<typeof invoiceValidator>;

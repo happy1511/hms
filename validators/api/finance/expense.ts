@@ -1,9 +1,9 @@
-import { ExpenseCategory, PaymentMode } from "@/generated/prisma/enums";
+import { PaymentMode } from "@/generated/prisma/enums";
 import { z } from "zod";
 
 const expenseValidator = z.object({
   title: z.string().min(1, "Title is required"),
-  category: z.enum(ExpenseCategory, { message: "Category is required" }),
+  categoryId: z.coerce.number().min(1, "Category is required"),
   amount: z.coerce.number().positive("Amount should be greater than 0"),
   paymentMode: z.enum(PaymentMode),
   dateTime: z.coerce.date(),
