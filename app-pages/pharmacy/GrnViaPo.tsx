@@ -10,11 +10,14 @@ import PurchaseOrderItemsModal from "@/components/pharmacy/PurchaseOrderItemsMod
 import { Form } from "@/components/ui/form";
 import { DrugSupplier } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
-import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDrugSupplierList } from "@/hooks/query/drugSupplier";
 import { usePurchaseOrderList } from "@/hooks/query/pharmacyPurchaseOrder";
-import { ColumnDefWithClass, PaginatedResponse } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  PaginatedResponse,
+  PharmacyPurchaseOrderType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -31,12 +34,7 @@ const selectorValidator = z.object({
 
 type SelectorValues = z.infer<typeof selectorValidator>;
 
-type PurchaseOrderRow = PurchaseOrderGetPayload<{
-  include: {
-    supplier: true;
-    items: { include: { category: true; drug: true } };
-  };
-}>;
+type PurchaseOrderRow = PharmacyPurchaseOrderType;
 
 const money = (value: number) => Number(value || 0).toFixed(2);
 

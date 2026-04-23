@@ -1,4 +1,4 @@
-type GrnDrugLike = {
+type GrnTaxLike = {
   cGstPercentage?: number | null;
   sGstPercentage?: number | null;
   iGstPercentage?: number | null;
@@ -8,7 +8,7 @@ type GrnItemLike = {
   quantity?: number | null;
   freeQuantity?: number | null;
   purchasePrice?: number | null;
-  drug?: GrnDrugLike | null;
+  hsnSac?: GrnTaxLike | null;
 };
 
 export type GrnLineSummary = {
@@ -71,14 +71,15 @@ export const calculateGrnSummary = (
     const taxableAmount = round2(
       Math.max(grossLineAmount - grossLineAmount * discountRatio, 0),
     );
+    const taxSource = item.hsnSac;
     const cGstAmount = round2(
-      (taxableAmount * Number(item.drug?.cGstPercentage || 0)) / 100,
+      (taxableAmount * Number(taxSource?.cGstPercentage || 0)) / 100,
     );
     const sGstAmount = round2(
-      (taxableAmount * Number(item.drug?.sGstPercentage || 0)) / 100,
+      (taxableAmount * Number(taxSource?.sGstPercentage || 0)) / 100,
     );
     const iGstAmount = round2(
-      (taxableAmount * Number(item.drug?.iGstPercentage || 0)) / 100,
+      (taxableAmount * Number(taxSource?.iGstPercentage || 0)) / 100,
     );
 
     return {

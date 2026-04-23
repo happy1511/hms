@@ -1,6 +1,10 @@
-import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_PURCHASE_ORDER } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  PharmacyPurchaseOrderType,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
@@ -19,24 +23,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const createPurchaseOrder = createRequest<
-  ApiResponse<
-    PurchaseOrderGetPayload<{
-      include: {
-        supplier: true;
-        items: { include: { category: true; drug: true } };
-      };
-    }>
-  >
+  ApiResponse<PharmacyPurchaseOrderType>
 >(PHARMACY_PURCHASE_ORDER, "POST");
 const updatePurchaseOrder = createRequest<
-  ApiResponse<
-    PurchaseOrderGetPayload<{
-      include: {
-        supplier: true;
-        items: { include: { category: true; drug: true } };
-      };
-    }>
-  >,
+  ApiResponse<PharmacyPurchaseOrderType>,
   undefined,
   { id: string }
 >((p) => `${PHARMACY_PURCHASE_ORDER}/${p.id}`, "PUT");
@@ -46,27 +36,13 @@ const deletePurchaseOrder = createRequest<
   { id: string }
 >((p) => `${PHARMACY_PURCHASE_ORDER}/${p.id}`, "DELETE");
 const getPurchaseOrder = createRequest<
-  ApiResponse<
-    PurchaseOrderGetPayload<{
-      include: {
-        supplier: true;
-        items: { include: { category: true; drug: true } };
-      };
-    }>
-  >,
+  ApiResponse<PharmacyPurchaseOrderType>,
   undefined,
   { id: string }
 >((p) => `${PHARMACY_PURCHASE_ORDER}/${p.id}`, "GET");
 
 const getPurchaseOrders = createRequest<
-  PaginatedResponse<
-    PurchaseOrderGetPayload<{
-      include: {
-        supplier: true;
-        items: { include: { category: true; drug: true } };
-      };
-    }>
-  >,
+  PaginatedResponse<PharmacyPurchaseOrderType>,
   {
     name?: string;
     limit: number;
@@ -82,23 +58,9 @@ export const usePurchaseOrderList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<
-      PurchaseOrderGetPayload<{
-        include: {
-          supplier: true;
-          items: { include: { category: true; drug: true } };
-        };
-      }>
-    >,
+    PaginatedResponse<PharmacyPurchaseOrderType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<
-      PurchaseOrderGetPayload<{
-        include: {
-          supplier: true;
-          items: { include: { category: true; drug: true } };
-        };
-      }>
-    >,
+    PaginatedResponse<PharmacyPurchaseOrderType>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["purchase-orders", filters, page, limit],
@@ -120,21 +82,9 @@ export const usePurchaseOrderList = (
 
 export const useGetPurchaseOrder = (id?: string) => {
   return useQuery<
-    ApiResponse<
-      PurchaseOrderGetPayload<{
-        include: {
-          supplier: true;
-          items: { include: { category: true; drug: true } };
-        };
-      }>
-    >,
+    ApiResponse<PharmacyPurchaseOrderType>,
     AxiosError<ApiResponse<null>>,
-    PurchaseOrderGetPayload<{
-      include: {
-        supplier: true;
-        items: { include: { category: true; drug: true } };
-      };
-    }>,
+    PharmacyPurchaseOrderType,
     [string, string | undefined]
   >({
     queryKey: ["purchase-order", id],
@@ -153,14 +103,7 @@ export const useCreatePurchaseOrder = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<
-      PurchaseOrderGetPayload<{
-        include: {
-          supplier: true;
-          items: { include: { category: true; drug: true } };
-        };
-      }>
-    >,
+    ApiResponse<PharmacyPurchaseOrderType>,
     AxiosError<ApiResponse<null>>,
     purchaseOrderValidatorType
   >({
@@ -182,14 +125,7 @@ export const useUpdatePurchaseOrder = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<
-      PurchaseOrderGetPayload<{
-        include: {
-          supplier: true;
-          items: { include: { category: true; drug: true } };
-        };
-      }>
-    >,
+    ApiResponse<PharmacyPurchaseOrderType>,
     AxiosError<ApiResponse<null>>,
     partialPurchaseOrderValidatorType
   >({
@@ -238,19 +174,9 @@ export const useInfinitePurchaseOrderList = (
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<
-      PurchaseOrderGetPayload<{
-        include: { items: { include: { category: true; drug: true } } };
-      }>
-    >,
+    PaginatedResponse<PharmacyPurchaseOrderType>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<
-      PaginatedResponse<
-        PurchaseOrderGetPayload<{
-          include: { items: { include: { category: true; drug: true } } };
-        }>
-      >
-    >,
+    InfiniteData<PaginatedResponse<PharmacyPurchaseOrderType>>,
     [string, FilterValues, number]
   >({
     queryKey: ["drugs-infinite", filters, limit],

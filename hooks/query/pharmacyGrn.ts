@@ -1,4 +1,3 @@
-import { GRNGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_GRN } from "@/lib/apiDefinations";
 import {
   ApiResponse,
@@ -15,25 +14,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 const createGRN = createRequest<
-  ApiResponse<
-    GRNGetPayload<{
-      include: {
-        order: { include: { supplier: true } };
-        grnItems: true;
-      };
-    }>
-  >
+  ApiResponse<PharmacyGrnType>
 >(PHARMACY_GRN, "POST");
 
 const getGrns = createRequest<
-  PaginatedResponse<
-    GRNGetPayload<{
-      include: {
-        order: { include: { supplier: true } };
-        grnItems: true;
-      };
-    }>
-  >,
+  PaginatedResponse<PharmacyGrnType>,
   {
     limit: number;
     name?: string;
@@ -53,23 +38,9 @@ export const useGrnList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<
-      GRNGetPayload<{
-        include: {
-          order: { include: { supplier: true } };
-          grnItems: true;
-        };
-      }>
-    >,
+    PaginatedResponse<PharmacyGrnType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<
-      GRNGetPayload<{
-        include: {
-          order: { include: { supplier: true } };
-          grnItems: true;
-        };
-      }>
-    >,
+    PaginatedResponse<PharmacyGrnType>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["grns", filters, page, limit],
@@ -89,14 +60,7 @@ export const useCreateGrn = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<
-      GRNGetPayload<{
-        include: {
-          order: { include: { supplier: true } };
-          grnItems: true;
-        };
-      }>
-    >,
+    ApiResponse<PharmacyGrnType>,
     AxiosError<ApiResponse<null>>,
     grnValidatorType
   >({

@@ -25,7 +25,7 @@ import {
 
 const getInitialValues = (data?: DrugSupplier): supplierValidatorType => ({
   name: data?.name ?? "",
-  gstIn: data?.gstIn ?? undefined,
+  gstIn: data?.gstIn ?? "",
   email: data?.email ?? "",
   phone: data?.phone ?? 0,
 });
@@ -61,10 +61,9 @@ const UpdateCreateForm = ({ data }: { data?: DrugSupplier }) => {
 
           <FormField<supplierValidatorType>
             label="GSTIN"
-            type="number"
+            type="text"
             name="gstIn"
             control={form.control}
-            required
           />
 
           <FormField<supplierValidatorType>

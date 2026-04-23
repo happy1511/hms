@@ -10,6 +10,7 @@ export interface SalePrintLine {
   name: string;
   batchNo: number;
   qty: number;
+  quantityLabel?: string;
   rate: number;
   taxableAmount: number;
   gstAmount: number;

@@ -74,7 +74,7 @@ export const formatGrnNumber = (id: number, createdAt?: Date | string) => {
 
 export const mapGrnToPrintExportProps = (data: PharmacyGrnType) => ({
   grnNumber: formatGrnNumber(data.id, data.createdAt),
-  supplierName: data.order?.supplier?.name || "-",
+  supplierName: data.order?.supplier?.name || data.challan?.supplier?.name || "-",
   invoiceDate: data.invoiceDate,
   invoiceNumber: data.invoiceNumber,
   taxableAmount: Number(data.taxableAmount || 0),
@@ -89,33 +89,45 @@ export const mapGrnToPrintExportProps = (data: PharmacyGrnType) => ({
   createdBy: data.createdByUser?.name || "-",
   items: data.grnItems.map((item) => ({
     itemName:
-      item.purchaseItem?.drug?.name || item.inventoryItem?.drug?.name || "-",
-    categoryName: item.purchaseItem?.category?.name || "",
+      item.purchaseItem?.drug?.name ||
+      item.challanItem?.drug?.name ||
+      item.inventoryItem?.drug?.name ||
+      "-",
+    categoryName:
+      item.purchaseItem?.category?.name || item.challanItem?.category?.name || "",
     batchNo: item.inventoryItem?.batchNo ?? "-",
     expiryDate: item.inventoryItem?.expiryDate,
     hsnSacCode:
       item.purchaseItem?.hsnSacCode ??
-      item.purchaseItem?.drug?.hsnCode ??
-      item.inventoryItem?.drug?.hsnCode ??
+      item.challanItem?.hsnSacCode ??
+      item.purchaseItem?.hsnSac?.code ??
+      item.challanItem?.hsnSac?.code ??
+      item.inventoryItem?.hsnSac?.code ??
       "-",
-    quantity: Number(item.purchaseItem?.quantity || 0),
+    quantity: Number(item.purchaseItem?.quantity || item.challanItem?.quantity || 0),
     freeQuantity: 0,
     rate: Number(
-      item.purchaseItem?.rate || item.inventoryItem?.purchasePrice || 0,
+      item.purchaseItem?.rate ||
+        item.challanItem?.purchasePrice ||
+        item.inventoryItem?.purchasePrice ||
+        0,
     ),
     cGstPercentage: Number(
-      item.purchaseItem?.drug?.cGstPercentage ||
-        item.inventoryItem?.drug?.cGstPercentage ||
+      item.purchaseItem?.hsnSac?.cGstPercentage ||
+        item.challanItem?.hsnSac?.cGstPercentage ||
+        item.inventoryItem?.hsnSac?.cGstPercentage ||
         0,
     ),
     sGstPercentage: Number(
-      item.purchaseItem?.drug?.sGstPercentage ||
-        item.inventoryItem?.drug?.sGstPercentage ||
+      item.purchaseItem?.hsnSac?.sGstPercentage ||
+        item.challanItem?.hsnSac?.sGstPercentage ||
+        item.inventoryItem?.hsnSac?.sGstPercentage ||
         0,
     ),
     iGstPercentage: Number(
-      item.purchaseItem?.drug?.iGstPercentage ||
-        item.inventoryItem?.drug?.iGstPercentage ||
+      item.purchaseItem?.hsnSac?.iGstPercentage ||
+        item.challanItem?.hsnSac?.iGstPercentage ||
+        item.inventoryItem?.hsnSac?.iGstPercentage ||
         0,
     ),
     mrp: Number(item.inventoryItem?.mrp || 0),

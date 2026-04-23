@@ -8,6 +8,7 @@ interface SaleInvoiceLine {
   name: string;
   batchNo: number;
   qty: number;
+  quantityLabel?: string;
   rate: number;
   taxableAmount: number;
   gstAmount: number;
@@ -132,7 +133,9 @@ const SaleInvoiceExport = ({
                 <tr key={index}>
                   <Cell className="text-left">{line.name}</Cell>
                   <Cell className="text-right">{line.batchNo}</Cell>
-                  <Cell className="text-right">{line.qty}</Cell>
+                  <Cell className="text-right">
+                    {line.quantityLabel || line.qty}
+                  </Cell>
                   <Cell className="text-right">{money(line.rate)}</Cell>
                   <Cell className="text-right">
                     {money(line.taxableAmount)}

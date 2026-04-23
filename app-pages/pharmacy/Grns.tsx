@@ -10,21 +10,20 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import CustomButton from "@/components/common/CustomButton";
 import ViewGrnModal from "@/components/pharmacy/ViewGrnModal";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
-import { GRNGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useGrnList } from "@/hooks/query/pharmacyGrn";
-import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  FilterConfig,
+  FilterValues,
+  PharmacyGrnType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type GrnListRow = GRNGetPayload<{
-  include: {
-    order: { include: { supplier: true } };
-    grnItems: true;
-  };
-}>;
+type GrnListRow = PharmacyGrnType;
 
 const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
@@ -38,6 +37,11 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
         <div className="flex flex-wrap gap-2">
           <CustomButton onClick={() => router.push("/pharmacy/grn/create-via-po")}>
             Create GRN via PO
+          </CustomButton>
+          <CustomButton
+            onClick={() => router.push("/pharmacy/grn/create-via-challan")}
+          >
+            Create GRN via Challan
           </CustomButton>
           <CustomButton onClick={() => router.push("/pharmacy/grn/new")}>
             New GRN
@@ -127,7 +131,10 @@ const Grns = () => {
       header: ({ column }) => {
         return <SortableHeader<GrnListRow> label="Supplier" column={column} />;
       },
-      cell: ({ row }) => row.original.order?.supplier.name,
+      cell: ({ row }) =>
+        row.original.order?.supplier?.name ||
+        row.original.challan?.supplier?.name ||
+        "-",
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },
@@ -242,9 +249,9 @@ const Grns = () => {
     {
       id: "linkedPo",
       header: ({ column }) => (
-        <SortableHeader<any> label="Linked PO" column={column} />
+        <SortableHeader<any> label="Linked Source" column={column} />
       ),
-      cell: ({ row }) => row.original.order?.id || "-",
+      cell: ({ row }) => row.original.order?.id || row.original.challan?.id || "-",
       headerClassName: "min-w-22",
       cellClassName: "min-w-22",
     },

@@ -4,12 +4,17 @@ const purchaseItems = z.object({
   drug: z.object({
     id: z.coerce.number(),
     name: z.string().optional(),
-    hsnCode: z.coerce.number().optional(),
-    gstPercentage: z.coerce.number().default(0),
-    cGstPercentage: z.coerce.number().default(0),
-    sGstPercentage: z.coerce.number().default(0),
-    iGstPercentage: z.coerce.number().default(0),
   }),
+  hsnSac: z
+    .object({
+      id: z.coerce.number(),
+      code: z.coerce.number(),
+      cGstPercentage: z.coerce.number().default(0),
+      sGstPercentage: z.coerce.number().default(0),
+      iGstPercentage: z.coerce.number().default(0),
+    })
+    .nullable()
+    .optional(),
   quantity: z.coerce.number().min(1, "Invalid Quantity"),
   hsnSacCode: z.coerce.number().optional(),
   category: z.object({ id: z.coerce.number() }).optional(),

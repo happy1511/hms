@@ -40,6 +40,9 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
         name: item.inventoryItem.drug.name,
         batchNo: item.inventoryItem.batchNo,
         qty: item.quantity,
+        quantityLabel: item.isLooseQuantity
+          ? `${item.quantity} pcs`
+          : `${item.quantity} pack`,
         rate: item.rate,
         taxableAmount: item.taxableAmount ?? item.total,
         gstAmount: item.gstAmount ?? 0,

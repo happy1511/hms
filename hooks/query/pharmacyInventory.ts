@@ -1,19 +1,16 @@
-import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_INVENTORY } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  PharmacyInventoryItemType,
+} from "@/lib/type";
 import { createRequest } from "@/services/apiRequest";
 import { InfiniteData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 
-type InventoryItemType = InventoryItemsGetPayload<{
-  include: {
-    drug: true;
-    supplier: true;
-  };
-}>;
-
 const getInventoryItems = createRequest<
-  PaginatedResponse<InventoryItemType>,
+  PaginatedResponse<PharmacyInventoryItemType>,
   { limit: number; search?: string }
 >(PHARMACY_INVENTORY, "GET");
 
@@ -23,9 +20,9 @@ export const useInventoryItemsList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<InventoryItemType>,
+    PaginatedResponse<PharmacyInventoryItemType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<InventoryItemType>,
+    PaginatedResponse<PharmacyInventoryItemType>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["inventory-items", filters, page, limit],
@@ -45,9 +42,9 @@ export const useInfiniteInventoryItems = (
   limit: number,
 ) => {
   return useInfiniteQuery<
-    PaginatedResponse<InventoryItemType>,
+    PaginatedResponse<PharmacyInventoryItemType>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<InventoryItemType>>,
+    InfiniteData<PaginatedResponse<PharmacyInventoryItemType>>,
     [string, FilterValues, number]
   >({
     queryKey: ["inventory-items-infinite", filters, limit],

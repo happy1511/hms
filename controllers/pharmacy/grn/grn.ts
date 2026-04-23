@@ -37,7 +37,12 @@ export const getAPI = async (req: Request) => {
           },
         });
       }
-      and.push({ order: { is: { isDeleted: false } } });
+      and.push({
+        OR: [
+          { order: { is: { isDeleted: false } } },
+          { challan: { is: { isDeleted: false } } },
+        ],
+      });
 
       const where: Prisma.GRNWhereInput = and.length ? { AND: and } : {};
 
@@ -49,6 +54,7 @@ export const getAPI = async (req: Request) => {
           where,
           include: {
             order: { include: { supplier: true } },
+            challan: { include: { supplier: true } },
             grnItems: true,
           },
         }),
@@ -73,6 +79,7 @@ export const createAPI = async (req: Request, user: User) => {
       return prisma.$transaction(async (tx) => {
         const {
           orderId,
+          challanId,
           grnItems,
           invoiceDate,
           invoiceNumber,
@@ -84,8 +91,13 @@ export const createAPI = async (req: Request, user: User) => {
           cnRef,
         } = body;
         let resolvedOrderId = orderId;
+        let resolvedChallanId = challanId;
         let supplierId: number | undefined;
         const purchaseItemIdByItemIndex = new Map<number, number>();
+        const challanItemById = new Map<
+          number,
+          { id: number; inventoryItemId: number }
+        >();
         const summary = calculateGrnSummary(grnItems, {
           discountAmount,
           tcsAmount,
@@ -108,6 +120,34 @@ export const createAPI = async (req: Request, user: User) => {
           }
 
           supplierId = existingOrder.supplierId;
+        } else if (resolvedChallanId) {
+          const existingChallan = await tx.challan.findFirst({
+            where: { id: resolvedChallanId, isDeleted: false },
+            include: { items: true, grn: { select: { id: true } } },
+          });
+
+          if (!existingChallan) {
+            return apiResponse({
+              status: RESPONSE_STATUS.NOT_FOUND,
+              message: "Challan not found",
+            });
+          }
+
+          if (existingChallan.grn?.id) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "GRN already exists for this challan",
+            });
+          }
+
+          supplierId = existingChallan.supplierId;
+
+          for (const item of existingChallan.items) {
+            challanItemById.set(item.id, {
+              id: item.id,
+              inventoryItemId: item.inventoryItemId,
+            });
+          }
         } else {
           if (!body.supplier?.id) {
             return apiResponse({
@@ -133,7 +173,7 @@ export const createAPI = async (req: Request, user: User) => {
               data: {
                 purchaseOrderId: createdOrder.id,
                 drugId: item.drug.id,
-                hsnSacCode: item.hsnSacCode ?? item.drug.hsnCode ?? null,
+                hsnSacCode: item.hsnSacCode ?? item.hsnSac?.code ?? null,
                 categoryId: item.category?.id ?? undefined,
                 quantity: item.quantity,
                 discountPercentage: 0,
@@ -147,19 +187,34 @@ export const createAPI = async (req: Request, user: User) => {
           }
         }
 
-        const existingGrn = await tx.gRN.findUnique({
-          where: { orderId: resolvedOrderId },
-        });
-        if (existingGrn) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "GRN already exists for this order",
+        if (resolvedOrderId) {
+          const existingGrn = await tx.gRN.findUnique({
+            where: { orderId: resolvedOrderId },
           });
+          if (existingGrn) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "GRN already exists for this order",
+            });
+          }
+        }
+
+        if (resolvedChallanId) {
+          const existingGrn = await tx.gRN.findUnique({
+            where: { challanId: resolvedChallanId },
+          });
+          if (existingGrn) {
+            return apiResponse({
+              status: RESPONSE_STATUS.BAD_REQUEST,
+              message: "GRN already exists for this challan",
+            });
+          }
         }
 
         const data = await tx.gRN.create({
           data: {
-            orderId: resolvedOrderId,
+            ...(resolvedOrderId ? { orderId: resolvedOrderId } : {}),
+            ...(resolvedChallanId ? { challanId: resolvedChallanId } : {}),
             invoiceNumber,
             invoiceDate,
             discountAmount: summary.discountAmount,
@@ -179,6 +234,27 @@ export const createAPI = async (req: Request, user: User) => {
         });
 
         for (const [index, i] of grnItems.entries()) {
+          if (resolvedChallanId) {
+            const challanItemId = Number(i.id || 0);
+            const challanItem = challanItemById.get(challanItemId);
+
+            if (!challanItem) {
+              return apiResponse({
+                status: RESPONSE_STATUS.BAD_REQUEST,
+                message: "Challan item not found for GRN entry",
+              });
+            }
+
+            await tx.gRNItems.create({
+              data: {
+                grnId: data.id,
+                challanItemId: challanItem.id,
+                inventoryItemId: challanItem.inventoryItemId,
+              },
+            });
+            continue;
+          }
+
           const existingInventory = await tx.inventoryItems.findFirst({
             where: {
               drugId: i.drug.id,
@@ -186,6 +262,9 @@ export const createAPI = async (req: Request, user: User) => {
               batchNo: i.batchNo,
             },
           });
+          const receivedPieces =
+            (Number(i.quantity || 0) + Number(i.freeQuantity || 0)) *
+            Math.max(Number(i.itemsPerPack || 1), 1);
 
           let inventoryItemId = existingInventory?.id;
 
@@ -194,14 +273,16 @@ export const createAPI = async (req: Request, user: User) => {
               where: { id: existingInventory.id },
               data: {
                 quantityInStock: {
-                  increment: i.quantity + Number(i.freeQuantity || 0),
+                  increment: receivedPieces,
                 },
+                hsnSacCode: i.hsnSacCode ?? i.hsnSac?.code ?? null,
                 expiryDate: i.expiryDate,
                 manufacturingDate: i.manufacturingDate,
                 purchasePrice: i.purchasePrice,
                 mrp: i.mrp,
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
+                itemsPerPack: Math.max(Number(i.itemsPerPack || 1), 1),
                 updatedBy: user.id,
               },
             });
@@ -210,6 +291,7 @@ export const createAPI = async (req: Request, user: User) => {
             const newInventory = await tx.inventoryItems.create({
               data: {
                 drugId: i.drug.id,
+                hsnSacCode: i.hsnSacCode ?? i.hsnSac?.code ?? null,
                 batchNo: i.batchNo,
                 expiryDate: i.expiryDate,
                 manufacturingDate: i.manufacturingDate,
@@ -217,7 +299,8 @@ export const createAPI = async (req: Request, user: User) => {
                 mrp: i.mrp,
                 sellingPrice: i.sellingPrice,
                 wholeSalePrice: i.wholeSalePrice,
-                quantityInStock: i.quantity + Number(i.freeQuantity || 0),
+                itemsPerPack: Math.max(Number(i.itemsPerPack || 1), 1),
+                quantityInStock: receivedPieces,
                 supplierId: supplierId!,
                 createdBy: user.id,
                 updatedBy: user.id,
@@ -247,14 +330,16 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
-        await tx.purchaseOrder.update({
-          where: { id: data.orderId },
-          data: {
-            grnId: data.id,
-            status: PurchaseOrderStatus.received,
-            updatedBy: user.id,
-          },
-        });
+        if (resolvedOrderId) {
+          await tx.purchaseOrder.update({
+            where: { id: resolvedOrderId },
+            data: {
+              grnId: data.id,
+              status: PurchaseOrderStatus.received,
+              updatedBy: user.id,
+            },
+          });
+        }
 
         return apiResponse({
           status: RESPONSE_STATUS.CREATED,
@@ -278,10 +363,18 @@ export const getDetailsAPI = async (
       const grn = await prisma.gRN.findFirst({
         where: {
           id: params.grnId,
-          order: { is: { isDeleted: false } },
+          OR: [
+            { order: { is: { isDeleted: false } } },
+            { challan: { is: { isDeleted: false } } },
+          ],
         },
         include: {
           order: {
+            include: {
+              supplier: true,
+            },
+          },
+          challan: {
             include: {
               supplier: true,
             },
@@ -294,17 +387,26 @@ export const getDetailsAPI = async (
           },
           grnItems: {
             include: {
-              purchaseItem: {
-                include: {
-                  drug: true,
-                  category: true,
+                purchaseItem: {
+                  include: {
+                    drug: true,
+                    category: true,
+                    hsnSac: true,
+                  },
                 },
-              },
-              inventoryItem: {
-                include: {
-                  drug: true,
+                challanItem: {
+                  include: {
+                    drug: true,
+                    category: true,
+                    hsnSac: true,
+                  },
                 },
-              },
+                inventoryItem: {
+                  include: {
+                    drug: true,
+                    hsnSac: true,
+                  },
+                },
             },
             orderBy: {
               id: "asc",

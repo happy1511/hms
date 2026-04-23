@@ -35,12 +35,12 @@ const Buttons = ({
   return (
     <>
       {canCreate && (
-        <>
+        <div className="flex items-center gap-2">
           <CustomButton onClick={() => router.push("/drug-supplier/new")}>
             New Supplier
           </CustomButton>
           <MasterImportModal master="supplier" allowReplace={canDelete} />
-        </>
+        </div>
       )}
     </>
   );
@@ -136,11 +136,7 @@ const DrugSupplierList = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useDrugSupplierList(
-    filters,
-    page,
-    limit,
-  );
+    useDrugSupplierList(filters, page, limit);
 
   if (!profile) {
     return <div />;

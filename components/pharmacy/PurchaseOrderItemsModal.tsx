@@ -9,16 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
-import { ColumnDefWithClass } from "@/lib/type";
+import { ColumnDefWithClass, PharmacyPurchaseOrderType } from "@/lib/type";
 import { useRouter } from "next/navigation";
 
-type PurchaseOrderWithItems = PurchaseOrderGetPayload<{
-  include: {
-    supplier: true;
-    items: { include: { category: true; drug: true } };
-  };
-}>;
+type PurchaseOrderWithItems = PharmacyPurchaseOrderType;
 
 type PurchaseOrderItem = PurchaseOrderWithItems["items"][number];
 
@@ -51,7 +45,7 @@ const PurchaseOrderItemsModal = ({ open, onOpenChange, order }: Props) => {
     {
       accessorKey: "hsnSacCode",
       header: () => <button className="flex">HSNSAC</button>,
-      cell: ({ row }) => row.original.hsnSacCode ?? row.original.drug.hsnCode ?? "-",
+      cell: ({ row }) => row.original.hsnSacCode ?? row.original.hsnSac?.code ?? "-",
       headerClassName: "min-w-22",
       cellClassName: "min-w-22",
     },
@@ -70,30 +64,38 @@ const PurchaseOrderItemsModal = ({ open, onOpenChange, order }: Props) => {
       cellClassName: "min-w-18",
     },
     {
-      accessorKey: "drug.gstPercentage",
+      accessorKey: "gstPercentage",
       header: () => <button className="flex">GST(%)</button>,
-      cell: ({ row }) => row.original.drug.gstPercentage ?? 0,
+      cell: ({ row }) =>
+        Number(
+          (row.original.hsnSac?.cGstPercentage ?? 0) +
+            (row.original.hsnSac?.sGstPercentage ?? 0) +
+            (row.original.hsnSac?.iGstPercentage ?? 0),
+        ),
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
     {
-      accessorKey: "drug.cGstPercentage",
+      accessorKey: "cGstPercentage",
       header: () => <button className="flex">CGST(%)</button>,
-      cell: ({ row }) => row.original.drug.cGstPercentage ?? 0,
+      cell: ({ row }) =>
+        row.original.hsnSac?.cGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
     {
-      accessorKey: "drug.sGstPercentage",
+      accessorKey: "sGstPercentage",
       header: () => <button className="flex">SGST(%)</button>,
-      cell: ({ row }) => row.original.drug.sGstPercentage ?? 0,
+      cell: ({ row }) =>
+        row.original.hsnSac?.sGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
     {
-      accessorKey: "drug.iGstPercentage",
+      accessorKey: "iGstPercentage",
       header: () => <button className="flex">IGST(%)</button>,
-      cell: ({ row }) => row.original.drug.iGstPercentage ?? 0,
+      cell: ({ row }) =>
+        row.original.hsnSac?.iGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },

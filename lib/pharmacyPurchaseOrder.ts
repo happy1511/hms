@@ -1,5 +1,4 @@
-type PurchaseOrderDrugLike = {
-  gstPercentage?: number | null;
+type PurchaseOrderTaxLike = {
   cGstPercentage?: number | null;
   sGstPercentage?: number | null;
   iGstPercentage?: number | null;
@@ -9,7 +8,7 @@ type PurchaseOrderItemLike = {
   quantity?: number | null;
   rate?: number | null;
   discountPercentage?: number | null;
-  drug?: PurchaseOrderDrugLike | null;
+  hsnSac?: PurchaseOrderTaxLike | null;
 };
 
 export type PurchaseOrderLineSummary = {
@@ -51,14 +50,15 @@ export const calculatePurchaseOrderLine = (
   const grossAmount = round2(quantity * rate);
   const discountAmount = round2((grossAmount * discountPercentage) / 100);
   const taxableAmount = round2(Math.max(grossAmount - discountAmount, 0));
+  const taxSource = item.hsnSac;
   const cGstAmount = round2(
-    (taxableAmount * Number(item.drug?.cGstPercentage || 0)) / 100,
+    (taxableAmount * Number(taxSource?.cGstPercentage || 0)) / 100,
   );
   const sGstAmount = round2(
-    (taxableAmount * Number(item.drug?.sGstPercentage || 0)) / 100,
+    (taxableAmount * Number(taxSource?.sGstPercentage || 0)) / 100,
   );
   const iGstAmount = round2(
-    (taxableAmount * Number(item.drug?.iGstPercentage || 0)) / 100,
+    (taxableAmount * Number(taxSource?.iGstPercentage || 0)) / 100,
   );
   const lineTotal = round2(taxableAmount + cGstAmount + sGstAmount + iGstAmount);
 

@@ -5,68 +5,11 @@ import PrintToolbar from "./PrintToolbar";
 import { useState } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
-
-type PrescribedDrugLine = {
-  name?: string;
-  frequency?: unknown;
-  days?: unknown;
-  remarks?: string | null;
-};
+import { opdConsultationDetailsType } from "@/lib/type";
 
 type AdviceItem = {
   id?: unknown;
   name?: unknown;
-};
-
-type ConsultationExportData = {
-  opdId?: unknown;
-  createdAt?: unknown;
-  patient?: {
-    id?: number;
-    firstName?: string;
-    lastName?: string;
-    uhid?: string;
-    gender?: string;
-    contacts?: { type?: string; value?: string }[];
-    addresses?: {
-      addressLineOne?: string | null;
-      addressLineTwo?: string | null;
-      addressLineThree?: string | null;
-      location?: {
-        city?: string | null;
-        state?: string | null;
-        country?: string | null;
-        postcode?: string | null;
-      } | null;
-    }[];
-  };
-  consultantDoctorName?: string | null;
-  referringDoctorName?: string | null;
-  vitals?: {
-    height?: unknown;
-    weight?: unknown;
-    bpMm?: unknown;
-    bpHg?: unknown;
-    pulse?: unknown;
-    rbs?: unknown;
-    rr?: unknown;
-    spo2?: unknown;
-    temp?: unknown;
-  };
-  notes?: string | null;
-  generalExaminations?: string | null;
-  systemicExaminations?: string | null;
-  diagnosis?: string | null;
-  chronicIllness?: string | null;
-  advisedPathologyTests?: AdviceItem[] | null;
-  advisedRadiologyTests?: AdviceItem[] | null;
-  prescription?: {
-    drugs?: PrescribedDrugLine[];
-    followUpAfterDays?: unknown;
-    followUpDate?: unknown;
-    followUpAdvice?: string | null;
-    otherAdvice?: string | null;
-  };
 };
 
 const valueOrDash = (value?: unknown) => {
@@ -108,7 +51,7 @@ const OpdConsultationExport = ({
   data,
   patientOnly = false,
 }: {
-  data: ConsultationExportData;
+  data: opdConsultationDetailsType;
   patientOnly?: boolean;
 }) => {
   const [fontSize, setFontSize] = useState<number>(10);
@@ -159,7 +102,7 @@ const OpdConsultationExport = ({
               label1="Patient"
               value1={valueOrDash(patientName)}
               label2="OPD Number"
-              value2={<PrintBarcodeValue value={data.opdId} />}
+              value2={<PrintBarcodeValue value={data.opdId as number} />}
             />
             <InfoRow
               label1="Gender"

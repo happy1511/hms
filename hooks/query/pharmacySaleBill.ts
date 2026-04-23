@@ -1,6 +1,10 @@
-import { DrugBillGetPayload } from "@/generated/prisma/models";
 import { PHARMACY_SALE_BILL } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  PharmacySaleBillType,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
@@ -18,28 +22,7 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-type SaleBillPayload = DrugBillGetPayload<{
-  include: {
-    patient: true;
-    customer: { include: { patient: true } };
-    doctor: { include: { user: true } };
-    invoice: {
-      include: {
-        transactions: { include: { receivedBy: { select: { name: true } } } };
-      };
-    };
-    saleItems: {
-      include: {
-        inventoryItem: {
-          include: {
-            drug: true;
-            supplier: true;
-          };
-        };
-      };
-    };
-  };
-}>;
+type SaleBillPayload = PharmacySaleBillType;
 
 const createSaleBill = createRequest<ApiResponse<SaleBillPayload>>(
   PHARMACY_SALE_BILL,

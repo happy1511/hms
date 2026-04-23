@@ -97,11 +97,6 @@ export const MASTER_IMPORT_CONFIG: Record<
     columns: [
       { key: "name", required: true, example: "Paracetamol 500 MG" },
       { key: "description", example: "Pain relief tablet" },
-      { key: "hsnCode", required: true, example: "3004" },
-      { key: "gstPercentage", required: true, example: "12" },
-      { key: "cGstPercentage", required: true, example: "6" },
-      { key: "sGstPercentage", required: true, example: "6" },
-      { key: "iGstPercentage", required: true, example: "12" },
       { key: "manufacturer", required: true, example: "ABC Pharma" },
       { key: "unit", required: true, example: "Tablet" },
     ],

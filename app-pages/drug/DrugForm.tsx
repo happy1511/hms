@@ -11,27 +11,23 @@ import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   drugValidator,
   drugValidatorType,
 } from "@/validators/api/masters/drug";
 import { useCreateDrug, useGetDrug, useUpdateDrug } from "@/hooks/query/drug";
-import { Drug } from "@/generated/prisma/client";
+import { PharmacyDrugType } from "@/lib/type";
 
-const getInitialValues = (data?: Drug): drugValidatorType => ({
+const getInitialValues = (data?: PharmacyDrugType): drugValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
-  cGstPercentage: data?.cGstPercentage ?? 0,
-  sGstPercentage: data?.cGstPercentage ?? 0,
-  iGstPercentage: data?.cGstPercentage ?? 0,
-  gstPercentage: data?.gstPercentage ?? 0,
-  hsnCode: data?.hsnCode ?? 0,
   manufacturer: data?.manufacturer ?? "",
   unit: data?.unit ?? "",
 });
 
-const UpdateCreateForm = ({ data }: { data?: Drug }) => {
+const UpdateCreateForm = ({ data }: { data?: PharmacyDrugType }) => {
   const { mutateAsync: create, isPending: creating } = useCreateDrug();
   const { mutateAsync: update, isPending: updating } = useUpdateDrug();
 
@@ -39,6 +35,10 @@ const UpdateCreateForm = ({ data }: { data?: Drug }) => {
     defaultValues: getInitialValues(data),
     resolver: zodResolver(drugValidator),
   });
+
+  useEffect(() => {
+    form.reset(getInitialValues(data));
+  }, [data, form]);
 
   const onSubmit = (values: drugValidatorType) => {
     if (data) {
@@ -56,46 +56,6 @@ const UpdateCreateForm = ({ data }: { data?: Drug }) => {
             label="Name"
             type="text"
             name="name"
-            control={form.control}
-            required
-          />
-
-          <FormField<drugValidatorType>
-            label="HSN"
-            type="number"
-            name="hsnCode"
-            control={form.control}
-            required
-          />
-
-          <FormField<drugValidatorType>
-            label="GST (%)"
-            type="number"
-            name="gstPercentage"
-            control={form.control}
-            required
-          />
-
-          <FormField<drugValidatorType>
-            label="SGST (%)"
-            type="number"
-            name="sGstPercentage"
-            control={form.control}
-            required
-          />
-
-          <FormField<drugValidatorType>
-            label="CGST (%)"
-            type="number"
-            name="cGstPercentage"
-            control={form.control}
-            required
-          />
-
-          <FormField<drugValidatorType>
-            label="IGST (%)"
-            type="number"
-            name="iGstPercentage"
             control={form.control}
             required
           />

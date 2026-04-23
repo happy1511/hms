@@ -11,24 +11,20 @@ import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import ViewSaleInvoiceModal from "@/components/pharmacy/ViewSaleInvoiceModal";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
-import { DrugBillGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useSaleBillList } from "@/hooks/query/pharmacySaleBill";
-import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  FilterConfig,
+  FilterValues,
+  PharmacySaleBillType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type SaleBillData = DrugBillGetPayload<{
-  include: {
-    patient: true;
-    customer: { include: { patient: true } };
-    doctor: { include: { user: true } };
-    invoice: { include: { transactions: true } };
-    saleItems: { include: { inventoryItem: { include: { drug: true } } } };
-  };
-}>;
+type SaleBillData = PharmacySaleBillType;
 
 const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Search", valueKey: "name", type: "text" },
@@ -177,6 +173,15 @@ const SaleBills = () => {
         <SortableHeader<SaleBillData> label="Wholesale" column={column} />
       ),
       cell: ({ row }) => (row.original.isWholesaleBill ? "Yes" : "No"),
+      headerClassName: "min-w-20 max-w-30",
+      cellClassName: "min-w-20 max-w-30",
+    },
+    {
+      accessorKey: "isLooseBill",
+      header: ({ column }) => (
+        <SortableHeader<SaleBillData> label="Loose" column={column} />
+      ),
+      cell: ({ row }) => (row.original.isLooseBill ? "Yes" : "No"),
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },

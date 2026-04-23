@@ -840,11 +840,6 @@ const importDrugs = async (
         data: rows.map((row) => ({
           name: row.name,
           description: toNullableString(row.description),
-          hsnCode: row.hsnCode,
-          gstPercentage: row.gstPercentage,
-          cGstPercentage: row.cGstPercentage,
-          sGstPercentage: row.sGstPercentage,
-          iGstPercentage: row.iGstPercentage,
           manufacturer: row.manufacturer,
           unit: row.unit,
           isDeleted: false,
@@ -882,11 +877,6 @@ const importDrugs = async (
           data: {
             name: row.name,
             description: toNullableString(row.description),
-            hsnCode: row.hsnCode,
-            gstPercentage: row.gstPercentage,
-            cGstPercentage: row.cGstPercentage,
-            sGstPercentage: row.sGstPercentage,
-            iGstPercentage: row.iGstPercentage,
             manufacturer: row.manufacturer,
             unit: row.unit,
             isDeleted: false,
@@ -900,11 +890,6 @@ const importDrugs = async (
       rowsToCreate.push({
         name: row.name,
         description: toNullableString(row.description),
-        hsnCode: row.hsnCode,
-        gstPercentage: row.gstPercentage,
-        cGstPercentage: row.cGstPercentage,
-        sGstPercentage: row.sGstPercentage,
-        iGstPercentage: row.iGstPercentage,
         manufacturer: row.manufacturer,
         unit: row.unit,
         isDeleted: false,
@@ -937,7 +922,7 @@ const importSuppliers = async (
       await tx.drugSupplier.createMany({
         data: rows.map((row) => ({
           name: row.name,
-          gstIn: row.gstIn ? Number(row.gstIn) : null,
+          gstIn: toNullableString(row.gstIn),
           email: toNullableString(row.email),
           phone: row.phone,
           isDeleted: false,
@@ -966,7 +951,7 @@ const importSuppliers = async (
           where: { id: existing.id },
           data: {
             name: row.name,
-            gstIn: row.gstIn ? Number(row.gstIn) : null,
+            gstIn: toNullableString(row.gstIn),
             email: toNullableString(row.email),
             phone: row.phone,
             isDeleted: false,
@@ -979,7 +964,7 @@ const importSuppliers = async (
 
       rowsToCreate.push({
         name: row.name,
-        gstIn: row.gstIn ? Number(row.gstIn) : null,
+        gstIn: toNullableString(row.gstIn),
         email: toNullableString(row.email),
         phone: row.phone,
         isDeleted: false,

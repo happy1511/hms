@@ -201,9 +201,11 @@ enum ModuleType {
   FINANCE_PAYMENTS
   PHARMACY_SUPPLIER
   PHARMACY_DRUG_MASTER
+  PHARMACY_HSN_SAC_MASTER
   PHARMACY_DRUG_CATEGORY_MASTER
   PHARMACY_PURCHASE_ORDER
   PHARMACY_GRN
+  PHARMACY_CHALLAN
   PHARMACY_INVENTORY
   PHARMACY_SALE_BILL
   FINANCE_CATEGORY_MASTER
@@ -516,122 +518,128 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  permissions                UserPermission[]
-  transactions               Transaction[]
-  collectedIncomes           Income[]                 @relation("CollectedIncome")
-  verifiedPathology          PathologyTestOrder[]     @relation("verifiedPathology")
-  resultEnteredPathology     PathologyTestOrder[]     @relation("resultEnteredPathology")
-  sampleTakenPathology       PathologyTestOrder[]     @relation("sampleTakenPathology")
-  cancelledTakenPathology    PathologyTestOrder[]     @relation("cancelledTakenPathology")
-  verifiedRadiology          RadiologyTestOrder[]     @relation("verifiedRadiology")
-  resultEnteredRadiology     RadiologyTestOrder[]     @relation("resultEnteredRadiology")
-  sampleTakenRadiology       RadiologyTestOrder[]     @relation("sampleTakenRadiology")
-  cancelledTakenRadiology    RadiologyTestOrder[]     @relation("cancelledTakenRadiology")
-  createdDocuments           DocumentStore[]          @relation("DocumentStoreCreatedBy")
-  createdByUser              User?                    @relation("UserCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser              User?                    @relation("UserUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser              User?                    @relation("UserDeletedBy", fields: [deletedBy], references: [id])
-  createdUsers               User[]                   @relation("UserCreatedBy")
-  updatedUsers               User[]                   @relation("UserUpdatedBy")
-  deletedUsers               User[]                   @relation("UserDeletedBy")
-  createdLocations           Location[]               @relation("LocationCreatedBy")
-  updatedLocations           Location[]               @relation("LocationUpdatedBy")
-  deletedLocations           Location[]               @relation("LocationDeletedBy")
-  createdDoctors             Doctor[]                 @relation("DoctorCreatedBy")
-  updatedDoctors             Doctor[]                 @relation("DoctorUpdatedBy")
-  deletedDoctors             Doctor[]                 @relation("DoctorDeletedBy")
-  createdPatients            Patient[]                @relation("PatientCreatedBy")
-  updatedPatients            Patient[]                @relation("PatientUpdatedBy")
-  deletedPatients            Patient[]                @relation("PatientDeletedBy")
-  createdDepartments         Department[]             @relation("DepartmentCreatedBy")
-  updatedDepartments         Department[]             @relation("DepartmentUpdatedBy")
-  deletedDepartments         Department[]             @relation("DepartmentDeletedBy")
-  createdRoomTypes           RoomType[]               @relation("RoomTypeCreatedBy")
-  updatedRoomTypes           RoomType[]               @relation("RoomTypeUpdatedBy")
-  deletedRoomTypes           RoomType[]               @relation("RoomTypeDeletedBy")
-  createdRooms               Room[]                   @relation("RoomCreatedBy")
-  updatedRooms               Room[]                   @relation("RoomUpdatedBy")
-  deletedRooms               Room[]                   @relation("RoomDeletedBy")
-  createdBeds                Bed[]                    @relation("BedCreatedBy")
-  updatedBeds                Bed[]                    @relation("BedUpdatedBy")
-  deletedBeds                Bed[]                    @relation("BedDeletedBy")
-  createdAppointments        Appointment[]            @relation("AppointmentCreatedBy")
-  updatedAppointments        Appointment[]            @relation("AppointmentUpdatedBy")
-  deletedAppointments        Appointment[]            @relation("AppointmentDeletedBy")
-  createdPathologyTests      PathologyTest[]          @relation("PathologyTestCreatedBy")
-  updatedPathologyTests      PathologyTest[]          @relation("PathologyTestUpdatedBy")
-  deletedPathologyTests      PathologyTest[]          @relation("PathologyTestDeletedBy")
-  createdPathologyHeaders    PathologyTestHeader[]    @relation("PathologyTestHeaderCreatedBy")
-  updatedPathologyHeaders    PathologyTestHeader[]    @relation("PathologyTestHeaderUpdatedBy")
-  deletedPathologyHeaders    PathologyTestHeader[]    @relation("PathologyTestHeaderDeletedBy")
-  createdPathologyParameters PathologyTestParameter[] @relation("PathologyTestParameterCreatedBy")
-  updatedPathologyParameters PathologyTestParameter[] @relation("PathologyTestParameterUpdatedBy")
-  deletedPathologyParameters PathologyTestParameter[] @relation("PathologyTestParameterDeletedBy")
-  createdReferenceRanges     ReferenceRange[]         @relation("ReferenceRangeCreatedBy")
-  updatedReferenceRanges     ReferenceRange[]         @relation("ReferenceRangeUpdatedBy")
-  deletedReferenceRanges     ReferenceRange[]         @relation("ReferenceRangeDeletedBy")
-  createdRadiologyTests      RadiologyTest[]          @relation("RadiologyTestCreatedBy")
-  updatedRadiologyTests      RadiologyTest[]          @relation("RadiologyTestUpdatedBy")
-  deletedRadiologyTests      RadiologyTest[]          @relation("RadiologyTestDeletedBy")
-  createdRadiologyTemplates  RadiologyTemplate[]      @relation("RadiologyTemplateCreatedBy")
-  updatedRadiologyTemplates  RadiologyTemplate[]      @relation("RadiologyTemplateUpdatedBy")
-  deletedRadiologyTemplates  RadiologyTemplate[]      @relation("RadiologyTemplateDeletedBy")
-  createdBillingSections     BillingSection[]         @relation("BillingSectionCreatedBy")
-  updatedBillingSections     BillingSection[]         @relation("BillingSectionUpdatedBy")
-  deletedBillingSections     BillingSection[]         @relation("BillingSectionDeletedBy")
-  createdServices            Service[]                @relation("ServiceCreatedBy")
-  updatedServices            Service[]                @relation("ServiceUpdatedBy")
-  deletedServices            Service[]                @relation("ServiceDeletedBy")
-  createdIncomes             Income[]                 @relation("IncomeCreatedBy")
-  updatedIncomes             Income[]                 @relation("IncomeUpdatedBy")
-  deletedIncomes             Income[]                 @relation("IncomeDeletedBy")
-  createdExpenses            Expense[]                @relation("ExpenseCreatedBy")
-  updatedExpenses            Expense[]                @relation("ExpenseUpdatedBy")
-  deletedExpenses            Expense[]                @relation("ExpenseDeletedBy")
-  createdFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryCreatedBy")
-  updatedFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryUpdatedBy")
-  deletedFinanceCategories   FinanceCategory[]        @relation("FinanceCategoryDeletedBy")
-  createdInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemCreatedBy")
-  updatedInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemUpdatedBy")
-  deletedInvoiceItems        InvoiceBillingItem[]     @relation("InvoiceBillingItemDeletedBy")
-  createdInvoiceBillingSections InvoiceBillingSection[] @relation("InvoiceBillingSectionCreatedBy")
-  updatedInvoiceBillingSections InvoiceBillingSection[] @relation("InvoiceBillingSectionUpdatedBy")
-  deletedInvoiceBillingSections InvoiceBillingSection[] @relation("InvoiceBillingSectionDeletedBy")
-  createdInvoices            Invoice[]                @relation("InvoiceCreatedBy")
-  updatedInvoices            Invoice[]                @relation("InvoiceUpdatedBy")
-  deletedInvoices            Invoice[]                @relation("InvoiceDeletedBy")
-  createdOpds                Opd[]                    @relation("OpdCreatedBy")
-  updatedOpds                Opd[]                    @relation("OpdUpdatedBy")
-  deletedOpds                Opd[]                    @relation("OpdDeletedBy")
-  createdIpds                Ipd[]                    @relation("IpdCreatedBy")
-  updatedIpds                Ipd[]                    @relation("IpdUpdatedBy")
-  deletedIpds                Ipd[]                    @relation("IpdDeletedBy")
-  dischargedIpds             Ipd[]                    @relation("IpdDischargedBy")
-  mlcDeclaredIpds            Ipd[]                    @relation("IpdMlcDeclaredBy")
-  createdDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryCreatedBy")
-  updatedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryUpdatedBy")
-  deletedDrugCategories      DrugBillingCategory[]    @relation("DrugBillingCategoryDeletedBy")
-  createdDrugs               Drug[]                   @relation("DrugCreatedBy")
-  updatedDrugs               Drug[]                   @relation("DrugUpdatedBy")
-  deletedDrugs               Drug[]                   @relation("DrugDeletedBy")
-  createdDrugSuppliers       DrugSupplier[]           @relation("DrugSupplierCreatedBy")
-  updatedDrugSuppliers       DrugSupplier[]           @relation("DrugSupplierUpdatedBy")
-  deletedDrugSuppliers       DrugSupplier[]           @relation("DrugSupplierDeletedBy")
-  createdInventoryItems      InventoryItems[]         @relation("InventoryItemCreatedBy")
-  updatedInventoryItems      InventoryItems[]         @relation("InventoryItemUpdatedBy")
-  deletedInventoryItems      InventoryItems[]         @relation("InventoryItemDeletedBy")
-  createdGrns                GRN[]                    @relation("GRNCreatedBy")
-  updatedGrns                GRN[]                    @relation("GRNUpdatedBy")
-  deletedGrns                GRN[]                    @relation("GRNDeletedBy")
-  createdPurchaseOrders      PurchaseOrder[]          @relation("PurchaseOrderCreatedBy")
-  updatedPurchaseOrders      PurchaseOrder[]          @relation("PurchaseOrderUpdatedBy")
-  deletedPurchaseOrders      PurchaseOrder[]          @relation("PurchaseOrderDeletedBy")
-  createdDrugBills           DrugBill[]               @relation("DrugBillCreatedBy")
-  updatedDrugBills           DrugBill[]               @relation("DrugBillUpdatedBy")
-  deletedDrugBills           DrugBill[]               @relation("DrugBillDeletedBy")
-  createdPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerCreatedBy")
-  updatedPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerUpdatedBy")
-  deletedPharmacyCustomers   PharmacyCustomer[]       @relation("PharmacyCustomerDeletedBy")
+  permissions                   UserPermission[]
+  transactions                  Transaction[]
+  collectedIncomes              Income[]                 @relation("CollectedIncome")
+  verifiedPathology             PathologyTestOrder[]     @relation("verifiedPathology")
+  resultEnteredPathology        PathologyTestOrder[]     @relation("resultEnteredPathology")
+  sampleTakenPathology          PathologyTestOrder[]     @relation("sampleTakenPathology")
+  cancelledTakenPathology       PathologyTestOrder[]     @relation("cancelledTakenPathology")
+  verifiedRadiology             RadiologyTestOrder[]     @relation("verifiedRadiology")
+  resultEnteredRadiology        RadiologyTestOrder[]     @relation("resultEnteredRadiology")
+  sampleTakenRadiology          RadiologyTestOrder[]     @relation("sampleTakenRadiology")
+  cancelledTakenRadiology       RadiologyTestOrder[]     @relation("cancelledTakenRadiology")
+  createdDocuments              DocumentStore[]          @relation("DocumentStoreCreatedBy")
+  createdByUser                 User?                    @relation("UserCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser                 User?                    @relation("UserUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser                 User?                    @relation("UserDeletedBy", fields: [deletedBy], references: [id])
+  createdUsers                  User[]                   @relation("UserCreatedBy")
+  updatedUsers                  User[]                   @relation("UserUpdatedBy")
+  deletedUsers                  User[]                   @relation("UserDeletedBy")
+  createdLocations              Location[]               @relation("LocationCreatedBy")
+  updatedLocations              Location[]               @relation("LocationUpdatedBy")
+  deletedLocations              Location[]               @relation("LocationDeletedBy")
+  createdDoctors                Doctor[]                 @relation("DoctorCreatedBy")
+  updatedDoctors                Doctor[]                 @relation("DoctorUpdatedBy")
+  deletedDoctors                Doctor[]                 @relation("DoctorDeletedBy")
+  createdPatients               Patient[]                @relation("PatientCreatedBy")
+  updatedPatients               Patient[]                @relation("PatientUpdatedBy")
+  deletedPatients               Patient[]                @relation("PatientDeletedBy")
+  createdDepartments            Department[]             @relation("DepartmentCreatedBy")
+  updatedDepartments            Department[]             @relation("DepartmentUpdatedBy")
+  deletedDepartments            Department[]             @relation("DepartmentDeletedBy")
+  createdRoomTypes              RoomType[]               @relation("RoomTypeCreatedBy")
+  updatedRoomTypes              RoomType[]               @relation("RoomTypeUpdatedBy")
+  deletedRoomTypes              RoomType[]               @relation("RoomTypeDeletedBy")
+  createdRooms                  Room[]                   @relation("RoomCreatedBy")
+  updatedRooms                  Room[]                   @relation("RoomUpdatedBy")
+  deletedRooms                  Room[]                   @relation("RoomDeletedBy")
+  createdBeds                   Bed[]                    @relation("BedCreatedBy")
+  updatedBeds                   Bed[]                    @relation("BedUpdatedBy")
+  deletedBeds                   Bed[]                    @relation("BedDeletedBy")
+  createdAppointments           Appointment[]            @relation("AppointmentCreatedBy")
+  updatedAppointments           Appointment[]            @relation("AppointmentUpdatedBy")
+  deletedAppointments           Appointment[]            @relation("AppointmentDeletedBy")
+  createdPathologyTests         PathologyTest[]          @relation("PathologyTestCreatedBy")
+  updatedPathologyTests         PathologyTest[]          @relation("PathologyTestUpdatedBy")
+  deletedPathologyTests         PathologyTest[]          @relation("PathologyTestDeletedBy")
+  createdPathologyHeaders       PathologyTestHeader[]    @relation("PathologyTestHeaderCreatedBy")
+  updatedPathologyHeaders       PathologyTestHeader[]    @relation("PathologyTestHeaderUpdatedBy")
+  deletedPathologyHeaders       PathologyTestHeader[]    @relation("PathologyTestHeaderDeletedBy")
+  createdPathologyParameters    PathologyTestParameter[] @relation("PathologyTestParameterCreatedBy")
+  updatedPathologyParameters    PathologyTestParameter[] @relation("PathologyTestParameterUpdatedBy")
+  deletedPathologyParameters    PathologyTestParameter[] @relation("PathologyTestParameterDeletedBy")
+  createdReferenceRanges        ReferenceRange[]         @relation("ReferenceRangeCreatedBy")
+  updatedReferenceRanges        ReferenceRange[]         @relation("ReferenceRangeUpdatedBy")
+  deletedReferenceRanges        ReferenceRange[]         @relation("ReferenceRangeDeletedBy")
+  createdRadiologyTests         RadiologyTest[]          @relation("RadiologyTestCreatedBy")
+  updatedRadiologyTests         RadiologyTest[]          @relation("RadiologyTestUpdatedBy")
+  deletedRadiologyTests         RadiologyTest[]          @relation("RadiologyTestDeletedBy")
+  createdRadiologyTemplates     RadiologyTemplate[]      @relation("RadiologyTemplateCreatedBy")
+  updatedRadiologyTemplates     RadiologyTemplate[]      @relation("RadiologyTemplateUpdatedBy")
+  deletedRadiologyTemplates     RadiologyTemplate[]      @relation("RadiologyTemplateDeletedBy")
+  createdBillingSections        BillingSection[]         @relation("BillingSectionCreatedBy")
+  updatedBillingSections        BillingSection[]         @relation("BillingSectionUpdatedBy")
+  deletedBillingSections        BillingSection[]         @relation("BillingSectionDeletedBy")
+  createdServices               Service[]                @relation("ServiceCreatedBy")
+  updatedServices               Service[]                @relation("ServiceUpdatedBy")
+  deletedServices               Service[]                @relation("ServiceDeletedBy")
+  createdIncomes                Income[]                 @relation("IncomeCreatedBy")
+  updatedIncomes                Income[]                 @relation("IncomeUpdatedBy")
+  deletedIncomes                Income[]                 @relation("IncomeDeletedBy")
+  createdExpenses               Expense[]                @relation("ExpenseCreatedBy")
+  updatedExpenses               Expense[]                @relation("ExpenseUpdatedBy")
+  deletedExpenses               Expense[]                @relation("ExpenseDeletedBy")
+  createdFinanceCategories      FinanceCategory[]        @relation("FinanceCategoryCreatedBy")
+  updatedFinanceCategories      FinanceCategory[]        @relation("FinanceCategoryUpdatedBy")
+  deletedFinanceCategories      FinanceCategory[]        @relation("FinanceCategoryDeletedBy")
+  createdInvoiceItems           InvoiceBillingItem[]     @relation("InvoiceBillingItemCreatedBy")
+  updatedInvoiceItems           InvoiceBillingItem[]     @relation("InvoiceBillingItemUpdatedBy")
+  deletedInvoiceItems           InvoiceBillingItem[]     @relation("InvoiceBillingItemDeletedBy")
+  createdInvoiceBillingSections InvoiceBillingSection[]  @relation("InvoiceBillingSectionCreatedBy")
+  updatedInvoiceBillingSections InvoiceBillingSection[]  @relation("InvoiceBillingSectionUpdatedBy")
+  deletedInvoiceBillingSections InvoiceBillingSection[]  @relation("InvoiceBillingSectionDeletedBy")
+  createdInvoices               Invoice[]                @relation("InvoiceCreatedBy")
+  updatedInvoices               Invoice[]                @relation("InvoiceUpdatedBy")
+  deletedInvoices               Invoice[]                @relation("InvoiceDeletedBy")
+  createdOpds                   Opd[]                    @relation("OpdCreatedBy")
+  updatedOpds                   Opd[]                    @relation("OpdUpdatedBy")
+  deletedOpds                   Opd[]                    @relation("OpdDeletedBy")
+  createdIpds                   Ipd[]                    @relation("IpdCreatedBy")
+  updatedIpds                   Ipd[]                    @relation("IpdUpdatedBy")
+  deletedIpds                   Ipd[]                    @relation("IpdDeletedBy")
+  dischargedIpds                Ipd[]                    @relation("IpdDischargedBy")
+  mlcDeclaredIpds               Ipd[]                    @relation("IpdMlcDeclaredBy")
+  createdDrugCategories         DrugBillingCategory[]    @relation("DrugBillingCategoryCreatedBy")
+  updatedDrugCategories         DrugBillingCategory[]    @relation("DrugBillingCategoryUpdatedBy")
+  deletedDrugCategories         DrugBillingCategory[]    @relation("DrugBillingCategoryDeletedBy")
+  createdHsnSacs                HsnSac[]                 @relation("HsnSacCreatedBy")
+  updatedHsnSacs                HsnSac[]                 @relation("HsnSacUpdatedBy")
+  deletedHsnSacs                HsnSac[]                 @relation("HsnSacDeletedBy")
+  createdDrugs                  Drug[]                   @relation("DrugCreatedBy")
+  updatedDrugs                  Drug[]                   @relation("DrugUpdatedBy")
+  deletedDrugs                  Drug[]                   @relation("DrugDeletedBy")
+  createdDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierCreatedBy")
+  updatedDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierUpdatedBy")
+  deletedDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierDeletedBy")
+  createdInventoryItems         InventoryItems[]         @relation("InventoryItemCreatedBy")
+  updatedInventoryItems         InventoryItems[]         @relation("InventoryItemUpdatedBy")
+  deletedInventoryItems         InventoryItems[]         @relation("InventoryItemDeletedBy")
+  createdGrns                   GRN[]                    @relation("GRNCreatedBy")
+  updatedGrns                   GRN[]                    @relation("GRNUpdatedBy")
+  deletedGrns                   GRN[]                    @relation("GRNDeletedBy")
+  createdChallans               Challan[]                @relation("ChallanCreatedBy")
+  updatedChallans               Challan[]                @relation("ChallanUpdatedBy")
+  deletedChallans               Challan[]                @relation("ChallanDeletedBy")
+  createdPurchaseOrders         PurchaseOrder[]          @relation("PurchaseOrderCreatedBy")
+  updatedPurchaseOrders         PurchaseOrder[]          @relation("PurchaseOrderUpdatedBy")
+  deletedPurchaseOrders         PurchaseOrder[]          @relation("PurchaseOrderDeletedBy")
+  createdDrugBills              DrugBill[]               @relation("DrugBillCreatedBy")
+  updatedDrugBills              DrugBill[]               @relation("DrugBillUpdatedBy")
+  deletedDrugBills              DrugBill[]               @relation("DrugBillDeletedBy")
+  createdPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerCreatedBy")
+  updatedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerUpdatedBy")
+  deletedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerDeletedBy")
 
   @@index([isDeleted])
   @@index([createdAt])
@@ -661,14 +669,14 @@ model Doctor {
   updatedByUser User? @relation("DoctorUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("DoctorDeletedBy", fields: [deletedBy], references: [id])
 
-  availableDays DoctorAvailableDay[]
-  appointment   Appointment[]
-  consultingOpd Opd[]                @relation("ConsultantDoctorOpds")
-  referringOpd  Opd[]                @relation("ReferringDoctorOpds")
-  consultingIpd Ipd[]                @relation("ConsultantDoctorIpds")
-  referringIpd  Ipd[]                @relation("ReferringDoctorIpds")
-  drugBills     DrugBill[]
-  consultingService Service?         @relation("ConsultingDoctorService")
+  availableDays     DoctorAvailableDay[]
+  appointment       Appointment[]
+  consultingOpd     Opd[]                @relation("ConsultantDoctorOpds")
+  referringOpd      Opd[]                @relation("ReferringDoctorOpds")
+  consultingIpd     Ipd[]                @relation("ConsultantDoctorIpds")
+  referringIpd      Ipd[]                @relation("ReferringDoctorIpds")
+  drugBills         DrugBill[]
+  consultingService Service?             @relation("ConsultingDoctorService")
 
   @@index([createdBy])
   @@index([updatedBy])
@@ -1019,15 +1027,15 @@ model ParameterOptions {
 }
 
 model Income {
-  id            Int            @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   title         String
   mode          PaymentMode
   amount        Float
   collectedOn   DateTime
   collectedById Int
   categoryId    Int
-  description   String?        @db.LongText
-  isDeleted     Boolean        @default(false)
+  description   String?     @db.LongText
+  isDeleted     Boolean     @default(false)
 
   createdBy Int?
   updatedBy Int?
@@ -1037,23 +1045,23 @@ model Income {
   updatedAt DateTime @updatedAt
 
   category      FinanceCategory @relation("IncomeFinanceCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  collectedBy   User  @relation("CollectedIncome", fields: [collectedById], references: [id], onDelete: Cascade)
-  createdByUser User? @relation("IncomeCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User? @relation("IncomeUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User? @relation("IncomeDeletedBy", fields: [deletedBy], references: [id])
+  collectedBy   User            @relation("CollectedIncome", fields: [collectedById], references: [id], onDelete: Cascade)
+  createdByUser User?           @relation("IncomeCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?           @relation("IncomeUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?           @relation("IncomeDeletedBy", fields: [deletedBy], references: [id])
 
   @@index([categoryId])
 }
 
 model Expense {
-  id          Int             @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   title       String
   categoryId  Int
   amount      Float
   paymentMode PaymentMode
   dateTime    DateTime
-  description String?         @db.LongText
-  isDeleted   Boolean         @default(false)
+  description String?     @db.LongText
+  isDeleted   Boolean     @default(false)
 
   createdBy Int?
   updatedBy Int?
@@ -1063,9 +1071,9 @@ model Expense {
   updatedAt DateTime @updatedAt
 
   category      FinanceCategory @relation("ExpenseFinanceCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  createdByUser User? @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User? @relation("ExpenseUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User? @relation("ExpenseDeletedBy", fields: [deletedBy], references: [id])
+  createdByUser User?           @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?           @relation("ExpenseUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?           @relation("ExpenseDeletedBy", fields: [deletedBy], references: [id])
 
   @@index([categoryId])
 }
@@ -1122,14 +1130,14 @@ model ReferenceRange {
 
 // -------------------- Pathology Lab Order Management --------------------
 model PathologyTestOrder {
-  id                   Int  @id @default(autoincrement())
-  opdId                Int?
-  ipdId                Int?
-  patientId            Int
-  testId               Int
-  invoiceBillingItemId Int?
+  id                      Int     @id @default(autoincrement())
+  opdId                   Int?
+  ipdId                   Int?
+  patientId               Int
+  testId                  Int
+  invoiceBillingItemId    Int?
   scannedReportDocumentId Int?
-  isDeleted            Boolean   @default(false)
+  isDeleted               Boolean @default(false)
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1143,18 +1151,18 @@ model PathologyTestOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verifiedBy         User?                 @relation("verifiedPathology", fields: [verifiedById], references: [id])
-  resultEnteredBy    User?                 @relation("resultEnteredPathology", fields: [resultEnteredById], references: [id])
-  sampleTakenBy      User?                 @relation("sampleTakenPathology", fields: [sampleTakenById], references: [id])
-  cancelledByUser    User?                 @relation("cancelledTakenPathology", fields: [cancelledById], references: [id])
-  patient            Patient               @relation(fields: [patientId], references: [id])
-  test               PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
-  invoiceBillingItem InvoiceBillingItem?   @relation("InvoiceBillingItemPathologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
-  status             PathologyOrderStatus  @default(SAMPLE_PENDING)
-  results            PathologyTestResult[]
-  scannedReportDocument DocumentStore? @relation("PathologyScannedReport", fields: [scannedReportDocumentId], references: [id], onDelete: SetNull)
-  opd                Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
-  ipd                Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  verifiedBy            User?                 @relation("verifiedPathology", fields: [verifiedById], references: [id])
+  resultEnteredBy       User?                 @relation("resultEnteredPathology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy         User?                 @relation("sampleTakenPathology", fields: [sampleTakenById], references: [id])
+  cancelledByUser       User?                 @relation("cancelledTakenPathology", fields: [cancelledById], references: [id])
+  patient               Patient               @relation(fields: [patientId], references: [id])
+  test                  PathologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  invoiceBillingItem    InvoiceBillingItem?   @relation("InvoiceBillingItemPathologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
+  status                PathologyOrderStatus  @default(SAMPLE_PENDING)
+  results               PathologyTestResult[]
+  scannedReportDocument DocumentStore?        @relation("PathologyScannedReport", fields: [scannedReportDocumentId], references: [id], onDelete: SetNull)
+  opd                   Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd                   Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 
   @@index([opdId])
   @@index([ipdId])
@@ -1191,14 +1199,14 @@ model PathologyTestResult {
 
 // -------------------- Radiology Lab Order Management --------------------
 model RadiologyTestOrder {
-  id                   Int  @id @default(autoincrement())
-  opdId                Int?
-  ipdId                Int?
-  patientId            Int
-  testId               Int
-  invoiceBillingItemId Int?
+  id                      Int     @id @default(autoincrement())
+  opdId                   Int?
+  ipdId                   Int?
+  patientId               Int
+  testId                  Int
+  invoiceBillingItemId    Int?
   scannedReportDocumentId Int?
-  isDeleted            Boolean   @default(false)
+  isDeleted               Boolean @default(false)
 
   sampleTakenAt     DateTime?
   resultEnteredAt   DateTime?
@@ -1212,18 +1220,18 @@ model RadiologyTestOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verifiedBy         User?                 @relation("verifiedRadiology", fields: [verifiedById], references: [id])
-  resultEnteredBy    User?                 @relation("resultEnteredRadiology", fields: [resultEnteredById], references: [id])
-  sampleTakenBy      User?                 @relation("sampleTakenRadiology", fields: [sampleTakenById], references: [id])
-  cancelledByUser    User?                 @relation("cancelledTakenRadiology", fields: [cancelledById], references: [id])
-  patient            Patient               @relation(fields: [patientId], references: [id])
-  test               RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
-  invoiceBillingItem InvoiceBillingItem?   @relation("InvoiceBillingItemRadiologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
-  status             RadiologyOrderStatus  @default(RESULT_PENDING)
-  results            RadiologyTestResult[]
-  scannedReportDocument DocumentStore? @relation("RadiologyScannedReport", fields: [scannedReportDocumentId], references: [id], onDelete: SetNull)
-  opd                Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
-  ipd                Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  verifiedBy            User?                 @relation("verifiedRadiology", fields: [verifiedById], references: [id])
+  resultEnteredBy       User?                 @relation("resultEnteredRadiology", fields: [resultEnteredById], references: [id])
+  sampleTakenBy         User?                 @relation("sampleTakenRadiology", fields: [sampleTakenById], references: [id])
+  cancelledByUser       User?                 @relation("cancelledTakenRadiology", fields: [cancelledById], references: [id])
+  patient               Patient               @relation(fields: [patientId], references: [id])
+  test                  RadiologyTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  invoiceBillingItem    InvoiceBillingItem?   @relation("InvoiceBillingItemRadiologyOrders", fields: [invoiceBillingItemId], references: [id], onDelete: SetNull)
+  status                RadiologyOrderStatus  @default(RESULT_PENDING)
+  results               RadiologyTestResult[]
+  scannedReportDocument DocumentStore?        @relation("RadiologyScannedReport", fields: [scannedReportDocumentId], references: [id], onDelete: SetNull)
+  opd                   Opd?                  @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  ipd                   Ipd?                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 
   @@index([opdId])
   @@index([patientId])
@@ -1245,7 +1253,7 @@ enum DocumentStoreType {
 }
 
 model DocumentStore {
-  id           Int          @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   type         DocumentStoreType @default(OTHER)
   path         String
   originalName String
@@ -1343,13 +1351,13 @@ model BillingSection {
   updatedBy                   Int?
   deletedBy                   Int?
 
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  createdByUser       User?                @relation("BillingSectionCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser       User?                @relation("BillingSectionUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser       User?                @relation("BillingSectionDeletedBy", fields: [deletedBy], references: [id])
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  createdByUser          User?                   @relation("BillingSectionCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser          User?                   @relation("BillingSectionUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser          User?                   @relation("BillingSectionDeletedBy", fields: [deletedBy], references: [id])
   invoiceBillingSections InvoiceBillingSection[]
-  invoiceBillingItems InvoiceBillingItem[]
+  invoiceBillingItems    InvoiceBillingItem[]
 }
 
 model Service {
@@ -1438,19 +1446,19 @@ model Transaction {
 }
 
 model InvoiceBillingItem {
-  id               Int          @id @default(autoincrement())
-  opdId            Int?
-  billingSectionId Int
+  id                      Int          @id @default(autoincrement())
+  opdId                   Int?
+  billingSectionId        Int
   invoiceBillingSectionId Int
-  serviceId        Int
-  isLocked         Boolean      @default(false)
-  ipdBedAllocationId Int?       @unique
-  quantity         Int
-  rate             Float
-  discountType     DiscountType
-  discountValue    Float
-  total            Float
-  updateReason     String?      @db.LongText
+  serviceId               Int
+  isLocked                Boolean      @default(false)
+  ipdBedAllocationId      Int?         @unique
+  quantity                Int
+  rate                    Float
+  discountType            DiscountType
+  discountValue           Float
+  total                   Float
+  updateReason            String?      @db.LongText
 
   createdBy Int?
   updatedBy Int?
@@ -1459,17 +1467,17 @@ model InvoiceBillingItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  billingSection       BillingSection       @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  billingSection        BillingSection        @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
   invoiceBillingSection InvoiceBillingSection @relation(fields: [invoiceBillingSectionId], references: [id], onDelete: Cascade)
-  service              Service              @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  invoice              Invoice?             @relation(fields: [invoiceId], references: [id])
-  ipdBedAllocation     IpdBedAllocation?    @relation(fields: [ipdBedAllocationId], references: [id], onDelete: SetNull)
-  invoiceId            Int?
-  createdByUser        User?                @relation("InvoiceBillingItemCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser        User?                @relation("InvoiceBillingItemUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser        User?                @relation("InvoiceBillingItemDeletedBy", fields: [deletedBy], references: [id])
-  pathologyOrders      PathologyTestOrder[] @relation("InvoiceBillingItemPathologyOrders")
-  radiologyOrders      RadiologyTestOrder[] @relation("InvoiceBillingItemRadiologyOrders")
+  service               Service               @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  invoice               Invoice?              @relation(fields: [invoiceId], references: [id])
+  ipdBedAllocation      IpdBedAllocation?     @relation(fields: [ipdBedAllocationId], references: [id], onDelete: SetNull)
+  invoiceId             Int?
+  createdByUser         User?                 @relation("InvoiceBillingItemCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser         User?                 @relation("InvoiceBillingItemUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser         User?                 @relation("InvoiceBillingItemDeletedBy", fields: [deletedBy], references: [id])
+  pathologyOrders       PathologyTestOrder[]  @relation("InvoiceBillingItemPathologyOrders")
+  radiologyOrders       RadiologyTestOrder[]  @relation("InvoiceBillingItemRadiologyOrders")
 
   @@index([invoiceId])
   @@index([billingSectionId])
@@ -1490,12 +1498,12 @@ model InvoiceBillingSection {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  invoice         Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  billingSection  BillingSection       @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
-  items           InvoiceBillingItem[]
-  createdByUser   User?                @relation("InvoiceBillingSectionCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser   User?                @relation("InvoiceBillingSectionUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser   User?                @relation("InvoiceBillingSectionDeletedBy", fields: [deletedBy], references: [id])
+  invoice        Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  billingSection BillingSection       @relation(fields: [billingSectionId], references: [id], onDelete: Cascade)
+  items          InvoiceBillingItem[]
+  createdByUser  User?                @relation("InvoiceBillingSectionCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser  User?                @relation("InvoiceBillingSectionUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser  User?                @relation("InvoiceBillingSectionDeletedBy", fields: [deletedBy], references: [id])
 
   @@unique([invoiceId, billingSectionId])
   @@index([invoiceId])
@@ -1503,18 +1511,18 @@ model InvoiceBillingSection {
 }
 
 model Invoice {
-  id            Int                  @id @default(autoincrement())
-  rate          Float
-  discountType  DiscountType
-  discountValue Float
-  total         Float
-  isPaid        Boolean              @default(false)
-  isFree        Boolean              @default(false)
-  billingType   PaymentCategory
-  isDeleted     Boolean              @default(false)
-  billingItems  InvoiceBillingItem[]
+  id              Int                     @id @default(autoincrement())
+  rate            Float
+  discountType    DiscountType
+  discountValue   Float
+  total           Float
+  isPaid          Boolean                 @default(false)
+  isFree          Boolean                 @default(false)
+  billingType     PaymentCategory
+  isDeleted       Boolean                 @default(false)
+  billingItems    InvoiceBillingItem[]
   billingSections InvoiceBillingSection[]
-  transactions  Transaction[]
+  transactions    Transaction[]
 
   opd       Opd?
   ipd       Ipd?
@@ -1736,18 +1744,18 @@ model Ipd {
 }
 
 model IpdBedAllocation {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   ipdId        Int
   bedId        Int
   roomId       Int
   fromDateTime DateTime
   toDateTime   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  ipd  Ipd  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
-  bed  Bed  @relation(fields: [bedId], references: [id], onDelete: Cascade)
-  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  ipd                Ipd                 @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  bed                Bed                 @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  room               Room                @relation(fields: [roomId], references: [id], onDelete: Cascade)
   invoiceBillingItem InvoiceBillingItem?
 
   @@index([ipdId])
@@ -1758,32 +1766,32 @@ model IpdBedAllocation {
 }
 
 model IpdDischargeSummary {
-  id                               Int      @id @default(autoincrement())
-  ipdId                            Int      @unique
-  ipdDateTime                      DateTime?
-  isUnfitForFurtherManagement      Boolean  @default(false)
-  diagnosis                        String?  @db.LongText
-  procedureDate                    DateTime?
-  procedure                        String?  @db.LongText
-  courseInHospital                 String?  @db.LongText
-  investigationResults             String?  @db.LongText
-  allergies                        String?
-  diet                             String?
-  physicalActivity                 String?
-  followUpDate                     DateTime?
-  otherAdvice                      String?  @db.LongText
-  urgentCareWhen                   String?
-  isTransferred                    Boolean  @default(false)
-  remarks                          String?  @db.LongText
+  id                          Int       @id @default(autoincrement())
+  ipdId                       Int       @unique
+  ipdDateTime                 DateTime?
+  isUnfitForFurtherManagement Boolean   @default(false)
+  diagnosis                   String?   @db.LongText
+  procedureDate               DateTime?
+  procedure                   String?   @db.LongText
+  courseInHospital            String?   @db.LongText
+  investigationResults        String?   @db.LongText
+  allergies                   String?
+  diet                        String?
+  physicalActivity            String?
+  followUpDate                DateTime?
+  otherAdvice                 String?   @db.LongText
+  urgentCareWhen              String?
+  isTransferred               Boolean   @default(false)
+  remarks                     String?   @db.LongText
 
-  followUpAfterDays                Int?
-  followUpAdvice                   String?  @db.LongText
+  followUpAfterDays Int?
+  followUpAdvice    String? @db.LongText
 
-  createdAt                        DateTime @default(now())
-  updatedAt                        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  drugs                            IpdDischargeDrug[]
-  ipd                              Ipd      @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  drugs IpdDischargeDrug[]
+  ipd   Ipd                @relation(fields: [ipdId], references: [id], onDelete: Cascade)
 
   @@index([ipdId])
   @@index([followUpDate])
@@ -1800,7 +1808,7 @@ model IpdDischargeDrug {
   remarks            String?
 
   dischargeSummary IpdDischargeSummary @relation(fields: [dischargeSummaryId], references: [id], onDelete: Cascade)
-  drug            Drug                @relation(fields: [drugId], references: [id], onDelete: Restrict)
+  drug             Drug                @relation(fields: [drugId], references: [id], onDelete: Restrict)
 
   @@index([dischargeSummaryId])
   @@index([drugId])
@@ -1821,25 +1829,26 @@ model CompanyDetails {
 // -------------------- Drug Management --------------------
 
 model DrugBill {
-  id        Int     @id @default(autoincrement())
-  name      String
-  patientId Int?
-  customerId Int?
-  doctorId  Int?
-  invoiceId Int     @unique
+  id              Int     @id @default(autoincrement())
+  name            String
+  patientId       Int?
+  customerId      Int?
+  doctorId        Int?
+  invoiceId       Int     @unique
   isWholesaleBill Boolean @default(false)
-  isDeleted Boolean @default(false)
-  createdBy Int?
-  updatedBy Int?
-  deletedBy Int?
+  isLooseBill     Boolean @default(false)
+  isDeleted       Boolean @default(false)
+  createdBy       Int?
+  updatedBy       Int?
+  deletedBy       Int?
 
-  invoice       Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  patient       Patient?       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  invoice       Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  patient       Patient?          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   customer      PharmacyCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  doctor        Doctor?        @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
-  createdByUser User?          @relation("DrugBillCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User?          @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User?          @relation("DrugBillDeletedBy", fields: [deletedBy], references: [id])
+  doctor        Doctor?           @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  createdByUser User?             @relation("DrugBillCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?             @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?             @relation("DrugBillDeletedBy", fields: [deletedBy], references: [id])
   saleItems     DrugSaleItem[]
 
   @@index([invoiceId])
@@ -1864,11 +1873,11 @@ model PharmacyCustomer {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  patient       Patient?    @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  patient       Patient?   @relation(fields: [patientId], references: [id], onDelete: SetNull)
   drugBills     DrugBill[]
-  createdByUser User?       @relation("PharmacyCustomerCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User?       @relation("PharmacyCustomerUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User?       @relation("PharmacyCustomerDeletedBy", fields: [deletedBy], references: [id])
+  createdByUser User?      @relation("PharmacyCustomerCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?      @relation("PharmacyCustomerUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?      @relation("PharmacyCustomerDeletedBy", fields: [deletedBy], references: [id])
 
   @@index([name])
   @@index([patientId])
@@ -1890,23 +1899,42 @@ model DrugBillingCategory {
   deletedByUser User?    @relation("DrugBillingCategoryDeletedBy", fields: [deletedBy], references: [id])
 
   purchaseItems PurchaseItem[]
+  challanItems  ChallanItem[]
 }
 
-model Drug {
+model HsnSac {
   id             Int     @id @default(autoincrement())
-  name           String
-  description    String?
-  hsnCode        Int
-  gstPercentage  Float   @default(0)
+  code           Int     @unique
   cGstPercentage Float   @default(0)
   sGstPercentage Float   @default(0)
   iGstPercentage Float   @default(0)
-  manufacturer   String
-  unit           String
   isDeleted      Boolean @default(false)
   createdBy      Int?
   updatedBy      Int?
   deletedBy      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdByUser User? @relation("HsnSacCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User? @relation("HsnSacUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User? @relation("HsnSacDeletedBy", fields: [deletedBy], references: [id])
+
+  purchaseItems  PurchaseItem[]
+  challanItems   ChallanItem[]
+  inventoryItems InventoryItems[]
+}
+
+model Drug {
+  id           Int     @id @default(autoincrement())
+  name         String
+  description  String?
+  manufacturer String
+  unit         String
+  isDeleted    Boolean @default(false)
+  createdBy    Int?
+  updatedBy    Int?
+  deletedBy    Int?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -1914,15 +1942,16 @@ model Drug {
   updatedByUser User?    @relation("DrugUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?    @relation("DrugDeletedBy", fields: [deletedBy], references: [id])
 
-  inventoryItems InventoryItems[]
-  purchaseItems  PurchaseItem[]
+  inventoryItems    InventoryItems[]
+  purchaseItems     PurchaseItem[]
+  challanItems      ChallanItem[]
   ipdDischargeDrugs IpdDischargeDrug[]
 }
 
 model DrugSupplier {
   id        Int     @id @default(autoincrement())
   name      String
-  gstIn     Int?
+  gstIn     String?
   email     String?
   phone     Int
   isDeleted Boolean @default(false)
@@ -1938,11 +1967,13 @@ model DrugSupplier {
 
   inventoryItems InventoryItems[]
   purchaseOrders PurchaseOrder[]
+  challans       Challan[]
 }
 
 model InventoryItems {
   id                Int      @id @default(autoincrement())
   drugId            Int
+  hsnSacCode        Int?
   batchNo           Int
   expiryDate        DateTime
   manufacturingDate DateTime
@@ -1950,6 +1981,7 @@ model InventoryItems {
   mrp               Float
   sellingPrice      Float
   wholeSalePrice    Float
+  itemsPerPack      Int      @default(1)
   quantityInStock   Int
   supplierId        Int
   createdBy         Int?
@@ -1959,11 +1991,13 @@ model InventoryItems {
   updatedAt         DateTime @default(now()) @updatedAt
 
   drug          Drug           @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  hsnSac        HsnSac?        @relation(fields: [hsnSacCode], references: [code])
   supplier      DrugSupplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   createdByUser User?          @relation("InventoryItemCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User?          @relation("InventoryItemUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?          @relation("InventoryItemDeletedBy", fields: [deletedBy], references: [id])
   grnItems      GRNItems[]
+  challanItems  ChallanItem[]
   saleItems     DrugSaleItem[]
 
   @@index([drugId])
@@ -1976,6 +2010,7 @@ model DrugSaleItem {
   drugBillId      Int
   inventoryItemId Int
   quantity        Int
+  isLooseQuantity Boolean      @default(false)
   rate            Float
   discountType    DiscountType @default(VALUE)
   discountValue   Float        @default(0)
@@ -2001,19 +2036,27 @@ model DrugSaleItem {
 }
 
 model GRNItems {
-  id              Int @id @default(autoincrement())
-  purchaseItemId  Int
+  id              Int  @id @default(autoincrement())
+  purchaseItemId  Int?
+  challanItemId   Int?
   inventoryItemId Int
   grnId           Int
 
   grn           GRN            @relation(fields: [grnId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  purchaseItem  PurchaseItem   @relation(fields: [purchaseItemId], references: [id], onDelete: Cascade)
+  purchaseItem  PurchaseItem?  @relation(fields: [purchaseItemId], references: [id], onDelete: Cascade)
+  challanItem   ChallanItem?   @relation(fields: [challanItemId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseItemId])
+  @@index([challanItemId])
+  @@index([inventoryItemId])
+  @@index([grnId])
 }
 
 model GRN {
   id                Int      @id @default(autoincrement())
-  orderId           Int      @unique
+  orderId           Int?     @unique
+  challanId         Int?     @unique
   invoiceNumber     String
   invoiceDate       DateTime
   discountAmount    Float    @default(0)
@@ -2036,9 +2079,76 @@ model GRN {
 
   grnItems      GRNItems[]
   order         PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  challan       Challan?       @relation(fields: [challanId], references: [id], onDelete: Cascade)
   createdByUser User?          @relation("GRNCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User?          @relation("GRNUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?          @relation("GRNDeletedBy", fields: [deletedBy], references: [id])
+}
+
+model ChallanItem {
+  id                Int      @id @default(autoincrement())
+  challanId         Int
+  drugId            Int
+  hsnSacCode        Int?
+  quantity          Int
+  freeQuantity      Int      @default(0)
+  packaging         String?
+  qtyType           String?
+  itemsPerPack      Int      @default(1)
+  batchNo           Int
+  expiryDate        DateTime
+  manufacturingDate DateTime
+  purchasePrice     Float    @default(0)
+  mrp               Float    @default(0)
+  sellingPrice      Float    @default(0)
+  wholeSalePrice    Float    @default(0)
+  total             Float    @default(0)
+  categoryId        Int?
+  inventoryItemId   Int
+
+  challan       Challan              @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  category      DrugBillingCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  drug          Drug                 @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  hsnSac        HsnSac?              @relation(fields: [hsnSacCode], references: [code])
+  inventoryItem InventoryItems       @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  grnItems      GRNItems[]
+
+  @@index([challanId])
+  @@index([drugId])
+  @@index([inventoryItemId])
+}
+
+model Challan {
+  id                Int      @id @default(autoincrement())
+  supplierId        Int
+  challanNumber     String   @unique
+  invoiceNumber     String
+  invoiceDate       DateTime
+  discountAmount    Float    @default(0)
+  taxableAmount     Float    @default(0)
+  cGstAmount        Float    @default(0)
+  sGstAmount        Float    @default(0)
+  iGstAmount        Float    @default(0)
+  tcsAmount         Float    @default(0)
+  packingForwarding Float    @default(0)
+  roundOffAmount    Float    @default(0)
+  grandTotal        Float    @default(0)
+  cnAmount          Float    @default(0)
+  cnRef             String?
+  isDeleted         Boolean  @default(false)
+  createdBy         Int?
+  updatedBy         Int?
+  deletedBy         Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  supplier      DrugSupplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items         ChallanItem[]
+  grn           GRN?
+  createdByUser User?         @relation("ChallanCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?         @relation("ChallanUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?         @relation("ChallanDeletedBy", fields: [deletedBy], references: [id])
 }
 
 model PurchaseItem {
@@ -2053,8 +2163,9 @@ model PurchaseItem {
   purchaseOrderId    Int
 
   category      DrugBillingCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  drug          Drug                @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  purchaseOrder PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id])
+  drug          Drug                 @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  hsnSac        HsnSac?              @relation(fields: [hsnSacCode], references: [code])
+  purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
   grnItems      GRNItems[]
 }
 

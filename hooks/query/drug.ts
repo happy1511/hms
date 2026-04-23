@@ -1,6 +1,10 @@
-import { Drug } from "@/generated/prisma/client";
 import { PHARMACY_DRUG } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  PaginatedResponse,
+  PharmacyDrugType,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
 import {
@@ -18,8 +22,8 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-const createDrug = createRequest<ApiResponse<Drug>>(PHARMACY_DRUG, "POST");
-const updateDrug = createRequest<ApiResponse<Drug>, undefined, { id: string }>(
+const createDrug = createRequest<ApiResponse<PharmacyDrugType>>(PHARMACY_DRUG, "POST");
+const updateDrug = createRequest<ApiResponse<PharmacyDrugType>, undefined, { id: string }>(
   (p) => `${PHARMACY_DRUG}/${p.id}`,
   "PUT",
 );
@@ -27,13 +31,13 @@ const deleteDrug = createRequest<ApiResponse<null>, undefined, { id: string }>(
   (p) => `${PHARMACY_DRUG}/${p.id}`,
   "DELETE",
 );
-const getDrug = createRequest<ApiResponse<Drug>, undefined, { id: string }>(
+const getDrug = createRequest<ApiResponse<PharmacyDrugType>, undefined, { id: string }>(
   (p) => `${PHARMACY_DRUG}/${p.id}`,
   "GET",
 );
 
 const getDrugs = createRequest<
-  PaginatedResponse<Drug>,
+  PaginatedResponse<PharmacyDrugType>,
   {
     limit: number;
     name?: string;
@@ -48,9 +52,9 @@ export const useDrugList = (
   limit: number,
 ) => {
   return useQuery<
-    PaginatedResponse<Drug>,
+    PaginatedResponse<PharmacyDrugType>,
     AxiosError<ApiResponse<null>>,
-    PaginatedResponse<Drug>,
+    PaginatedResponse<PharmacyDrugType>,
     [string, FilterValues, number, number]
   >({
     queryKey: ["drugs", filters, page, limit],
@@ -68,9 +72,9 @@ export const useDrugList = (
 
 export const useGetDrug = (id?: string) => {
   return useQuery<
-    ApiResponse<Drug>,
+    ApiResponse<PharmacyDrugType>,
     AxiosError<ApiResponse<null>>,
-    Drug,
+    PharmacyDrugType,
     [string, string | undefined]
   >({
     queryKey: ["drug", id],
@@ -89,7 +93,7 @@ export const useCreateDrug = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation<
-    ApiResponse<Drug>,
+    ApiResponse<PharmacyDrugType>,
     AxiosError<ApiResponse<null>>,
     drugValidatorType
   >({
@@ -111,7 +115,7 @@ export const useUpdateDrug = () => {
   const router = useRouter();
 
   return useMutation<
-    ApiResponse<Drug>,
+    ApiResponse<PharmacyDrugType>,
     AxiosError<ApiResponse<null>>,
     partialDrugValidatorType
   >({
@@ -152,9 +156,9 @@ export const useDeleteDrug = () => {
 
 export const useInfiniteDrugList = (filters: FilterValues, limit: number) => {
   return useInfiniteQuery<
-    PaginatedResponse<Drug>,
+    PaginatedResponse<PharmacyDrugType>,
     AxiosError<ApiResponse<null>>,
-    InfiniteData<PaginatedResponse<Drug>>,
+    InfiniteData<PaginatedResponse<PharmacyDrugType>>,
     [string, FilterValues, number]
   >({
     queryKey: ["drugs-infinite", filters, limit],

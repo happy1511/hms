@@ -161,6 +161,12 @@ const pharmacyItems = [
     module: [ModuleType.PHARMACY_GRN],
   },
   {
+    title: "PHARMACY CHALLAN",
+    url: "/pharmacy/challan",
+    icon: Users,
+    module: [ModuleType.PHARMACY_CHALLAN],
+  },
+  {
     title: "INVENTORY",
     url: "/pharmacy/inventory",
     icon: Users,
@@ -274,6 +280,12 @@ const billingMasters: SidebarItem[] = [
 ];
 
 const pharmacyMasters: SidebarItem[] = [
+  {
+    title: "HSN/SAC",
+    url: "/hsn-sac",
+    icon: Bolt,
+    module: [ModuleType.PHARMACY_HSN_SAC_MASTER],
+  },
   {
     title: "DRUG CATEGORY",
     url: "/drug-category",

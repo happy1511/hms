@@ -10,17 +10,47 @@ import {
 } from "@/validators/api/masters/pharmacySaleBill";
 
 const buildRequestedQtyMap = (
-  items: { inventoryItem: { id: number }; quantity: number }[],
+  items: {
+    inventoryItem: { id: number };
+    quantity: number;
+    isLooseQuantity?: boolean;
+  }[],
+  inventoryById?: Map<number, { itemsPerPack: number }>,
 ) => {
   const qtyMap = new Map<number, number>();
   for (const item of items) {
     const previous = qtyMap.get(item.inventoryItem.id) ?? 0;
-    qtyMap.set(item.inventoryItem.id, previous + Number(item.quantity));
+    const packSize = Math.max(
+      Number(inventoryById?.get(item.inventoryItem.id)?.itemsPerPack || 1),
+      1,
+    );
+    const requestedPieces = Boolean(item.isLooseQuantity)
+      ? Number(item.quantity)
+      : Number(item.quantity) * packSize;
+    qtyMap.set(item.inventoryItem.id, previous + requestedPieces);
   }
   return qtyMap;
 };
 
 const round2 = (n: number) => Number(n.toFixed(2));
+const getBaseRate = ({
+  inventory,
+  isWholesaleBill,
+  isLooseQuantity,
+}: {
+  inventory: { wholeSalePrice: number; sellingPrice: number; itemsPerPack: number };
+  isWholesaleBill: boolean;
+  isLooseQuantity?: boolean;
+}) => {
+  const packageRate = Number(
+    isWholesaleBill ? inventory.wholeSalePrice || 0 : inventory.sellingPrice || 0,
+  );
+  if (!isLooseQuantity) {
+    return packageRate;
+  }
+
+  return packageRate / Math.max(Number(inventory.itemsPerPack || 1), 1);
+};
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -82,6 +112,7 @@ export const getAPI = async (req: Request) => {
                   include: {
                     drug: true,
                     supplier: true,
+                    hsnSac: true,
                   },
                 },
               },
@@ -131,6 +162,7 @@ export const getDetailsAPI = async (
                 include: {
                   drug: true,
                   supplier: true,
+                  hsnSac: true,
                 },
               },
             },
@@ -201,12 +233,11 @@ export const createAPI = async (req: Request, user: User) => {
           }
         }
 
-        const requestedQty = buildRequestedQtyMap(body.items);
-        const inventoryIds = [...requestedQty.keys()];
+        const inventoryIds = [...new Set(body.items.map((item) => item.inventoryItem.id))];
 
         const inventoryRows = await tx.inventoryItems.findMany({
           where: { id: { in: inventoryIds } },
-          include: { drug: true, supplier: true },
+          include: { drug: true, supplier: true, hsnSac: true },
         });
 
         if (inventoryRows.length !== inventoryIds.length) {
@@ -217,10 +248,11 @@ export const createAPI = async (req: Request, user: User) => {
         }
 
         const inventoryById = new Map(inventoryRows.map((i) => [i.id, i]));
+        const requestedQty = buildRequestedQtyMap(body.items, inventoryById);
 
-        for (const [inventoryId, qty] of requestedQty) {
+        for (const [inventoryId, requestedPieces] of requestedQty) {
           const row = inventoryById.get(inventoryId)!;
-          if (qty > row.quantityInStock) {
+          if (requestedPieces > row.quantityInStock) {
             return apiResponse({
               status: RESPONSE_STATUS.BAD_REQUEST,
               message: `Insufficient stock for ${row.drug.name}`,
@@ -232,9 +264,11 @@ export const createAPI = async (req: Request, user: User) => {
           const inventory = inventoryById.get(item.inventoryItem.id)!;
           const rate = Number(
             item.rate ??
-              (body.isWholesaleBill
-                ? inventory.wholeSalePrice
-                : inventory.sellingPrice),
+              getBaseRate({
+                inventory,
+                isWholesaleBill: body.isWholesaleBill,
+                isLooseQuantity: item.isLooseQuantity,
+              }),
           );
           const gross = rate * item.quantity;
           const discount =
@@ -243,22 +277,26 @@ export const createAPI = async (req: Request, user: User) => {
               : item.discountValue;
           const taxableAmount = Math.max(gross - discount, 0);
 
-          const gstPercentage = Number(inventory.drug.gstPercentage ?? 0);
-          const cGstPercentage = Number(inventory.drug.cGstPercentage ?? 0);
-          const sGstPercentage = Number(inventory.drug.sGstPercentage ?? 0);
-          const iGstPercentage = Number(inventory.drug.iGstPercentage ?? 0);
+          const taxSource = inventory.hsnSac;
+          const gstPercentage = Number(
+            (taxSource?.cGstPercentage || 0) +
+              (taxSource?.sGstPercentage || 0) +
+              (taxSource?.iGstPercentage || 0),
+          );
+          const cGstPercentage = Number(taxSource?.cGstPercentage ?? 0);
+          const sGstPercentage = Number(taxSource?.sGstPercentage ?? 0);
+          const iGstPercentage = Number(taxSource?.iGstPercentage ?? 0);
 
           const cGstAmount = round2((taxableAmount * cGstPercentage) / 100);
           const sGstAmount = round2((taxableAmount * sGstPercentage) / 100);
           const iGstAmount = round2((taxableAmount * iGstPercentage) / 100);
-          const explicitTax = cGstAmount + sGstAmount + iGstAmount;
-          const fallbackTax = round2((taxableAmount * gstPercentage) / 100);
-          const gstAmount = explicitTax > 0 ? explicitTax : fallbackTax;
+          const gstAmount = round2(cGstAmount + sGstAmount + iGstAmount);
           const lineTotal = round2(taxableAmount + gstAmount);
 
           return {
             inventoryItemId: inventory.id,
             quantity: item.quantity,
+            isLooseQuantity: Boolean(item.isLooseQuantity),
             rate,
             discountType: item.discountType,
             discountValue: item.discountValue,
@@ -329,6 +367,7 @@ export const createAPI = async (req: Request, user: User) => {
             doctorId: body.doctorId,
             invoiceId: invoice.id,
             isWholesaleBill: body.isWholesaleBill,
+            isLooseBill: body.isLooseBill,
             createdBy: user.id ,
             updatedBy: user.id ,
             saleItems: {
@@ -340,16 +379,25 @@ export const createAPI = async (req: Request, user: User) => {
             patient: true,
             customer: { include: { patient: true } },
             doctor: { include: { user: true } },
-            saleItems: { include: { inventoryItem: { include: { drug: true } } } },
+            saleItems: {
+              include: {
+                inventoryItem: {
+                  include: {
+                    drug: true,
+                    hsnSac: true,
+                  },
+                },
+              },
+            },
           },
         });
 
-        for (const [inventoryItemId, quantity] of requestedQty) {
+        for (const [inventoryItemId, quantityInPieces] of requestedQty) {
           await tx.inventoryItems.update({
             where: { id: inventoryItemId },
             data: {
               quantityInStock: {
-                decrement: quantity,
+                decrement: quantityInPieces,
               },
               updatedBy: user.id ,
             },
@@ -384,7 +432,13 @@ export const updateAPI = async (
           where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
           include: {
             invoice: { include: { transactions: true } },
-            saleItems: true,
+            saleItems: {
+              select: {
+                inventoryItemId: true,
+                quantity: true,
+                isLooseQuantity: true,
+              },
+            },
           },
         });
 
@@ -443,17 +497,15 @@ export const updateAPI = async (
           }
         }
 
-        const requestedQty = buildRequestedQtyMap(items);
-        const existingQty = new Map<number, number>();
-        for (const existing of existingBill.saleItems) {
-          const prev = existingQty.get(existing.inventoryItemId) ?? 0;
-          existingQty.set(existing.inventoryItemId, prev + existing.quantity);
-        }
-
-        const allInventoryIds = [...new Set([...requestedQty.keys(), ...existingQty.keys()])];
+        const allInventoryIds = [
+          ...new Set([
+            ...items.map((item) => item.inventoryItem.id),
+            ...existingBill.saleItems.map((item) => item.inventoryItemId),
+          ]),
+        ];
         const inventoryRows = await tx.inventoryItems.findMany({
           where: { id: { in: allInventoryIds } },
-          include: { drug: true },
+          include: { drug: true, hsnSac: true },
         });
 
         if (inventoryRows.length !== allInventoryIds.length) {
@@ -464,11 +516,23 @@ export const updateAPI = async (
         }
 
         const inventoryById = new Map(inventoryRows.map((i) => [i.id, i]));
+        const requestedQty = buildRequestedQtyMap(items, inventoryById);
+        const existingPieces = new Map<number, number>();
+        for (const existing of existingBill.saleItems) {
+          const inventory = inventoryById.get(existing.inventoryItemId);
+          const packSize = Math.max(Number(inventory?.itemsPerPack || 1), 1);
+          const previous = existingPieces.get(existing.inventoryItemId) ?? 0;
+          const restoredPieces = existing.isLooseQuantity
+            ? existing.quantity
+            : existing.quantity * packSize;
+          existingPieces.set(existing.inventoryItemId, previous + restoredPieces);
+        }
 
-        for (const [inventoryId, qty] of requestedQty) {
+        for (const [inventoryId, requestedPieces] of requestedQty) {
           const row = inventoryById.get(inventoryId)!;
-          const available = row.quantityInStock + (existingQty.get(inventoryId) ?? 0);
-          if (qty > available) {
+          const available =
+            row.quantityInStock + (existingPieces.get(inventoryId) ?? 0);
+          if (requestedPieces > available) {
             return apiResponse({
               status: RESPONSE_STATUS.BAD_REQUEST,
               message: `Insufficient stock for ${row.drug.name}`,
@@ -480,9 +544,12 @@ export const updateAPI = async (
           const inventory = inventoryById.get(item.inventoryItem.id)!;
           const rate = Number(
             item.rate ??
-              ((body.isWholesaleBill ?? existingBill.isWholesaleBill)
-                ? inventory.wholeSalePrice
-                : inventory.sellingPrice),
+              getBaseRate({
+                inventory,
+                isWholesaleBill:
+                  body.isWholesaleBill ?? existingBill.isWholesaleBill,
+                isLooseQuantity: item.isLooseQuantity,
+              }),
           );
           const gross = rate * item.quantity;
           const discount =
@@ -491,22 +558,26 @@ export const updateAPI = async (
               : item.discountValue;
           const taxableAmount = Math.max(gross - discount, 0);
 
-          const gstPercentage = Number(inventory.drug.gstPercentage ?? 0);
-          const cGstPercentage = Number(inventory.drug.cGstPercentage ?? 0);
-          const sGstPercentage = Number(inventory.drug.sGstPercentage ?? 0);
-          const iGstPercentage = Number(inventory.drug.iGstPercentage ?? 0);
+          const taxSource = inventory.hsnSac;
+          const gstPercentage = Number(
+            (taxSource?.cGstPercentage || 0) +
+              (taxSource?.sGstPercentage || 0) +
+              (taxSource?.iGstPercentage || 0),
+          );
+          const cGstPercentage = Number(taxSource?.cGstPercentage ?? 0);
+          const sGstPercentage = Number(taxSource?.sGstPercentage ?? 0);
+          const iGstPercentage = Number(taxSource?.iGstPercentage ?? 0);
 
           const cGstAmount = round2((taxableAmount * cGstPercentage) / 100);
           const sGstAmount = round2((taxableAmount * sGstPercentage) / 100);
           const iGstAmount = round2((taxableAmount * iGstPercentage) / 100);
-          const explicitTax = cGstAmount + sGstAmount + iGstAmount;
-          const fallbackTax = round2((taxableAmount * gstPercentage) / 100);
-          const gstAmount = explicitTax > 0 ? explicitTax : fallbackTax;
+          const gstAmount = round2(cGstAmount + sGstAmount + iGstAmount);
           const lineTotal = round2(taxableAmount + gstAmount);
 
           return {
             inventoryItemId: inventory.id,
             quantity: item.quantity,
+            isLooseQuantity: Boolean(item.isLooseQuantity),
             rate,
             discountType: item.discountType,
             discountValue: item.discountValue,
@@ -593,6 +664,7 @@ export const updateAPI = async (
             doctorId: body.doctorId,
             isWholesaleBill:
               body.isWholesaleBill ?? existingBill.isWholesaleBill,
+            isLooseBill: body.isLooseBill ?? existingBill.isLooseBill,
             updatedBy: user.id ,
             saleItems: {
               create: preparedItems,
@@ -602,7 +674,8 @@ export const updateAPI = async (
 
         for (const inventoryId of allInventoryIds) {
           const row = inventoryById.get(inventoryId)!;
-          const restocked = row.quantityInStock + (existingQty.get(inventoryId) ?? 0);
+          const restocked =
+            row.quantityInStock + (existingPieces.get(inventoryId) ?? 0);
           const nextQty = restocked - (requestedQty.get(inventoryId) ?? 0);
 
           await tx.inventoryItems.update({
@@ -624,7 +697,11 @@ export const updateAPI = async (
             saleItems: {
               include: {
                 inventoryItem: {
-                  include: { drug: true, supplier: true },
+                  include: {
+                    drug: true,
+                    supplier: true,
+                    hsnSac: true,
+                  },
                 },
               },
             },
@@ -655,7 +732,15 @@ export const deleteAPI = async (
         const billId = Number(params.billId);
         const existingBill = await tx.drugBill.findFirst({
           where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
-          include: { saleItems: true },
+          include: {
+            saleItems: {
+              select: {
+                inventoryItemId: true,
+                quantity: true,
+                isLooseQuantity: true,
+              },
+            },
+          },
         });
 
         if (!existingBill) {
@@ -665,18 +750,34 @@ export const deleteAPI = async (
           });
         }
 
-        const restoreQty = new Map<number, number>();
-        for (const item of existingBill.saleItems) {
-          const prev = restoreQty.get(item.inventoryItemId) ?? 0;
-          restoreQty.set(item.inventoryItemId, prev + item.quantity);
-        }
+        const restoreInventoryIds = [
+          ...new Set(existingBill.saleItems.map((item) => item.inventoryItemId)),
+        ];
 
-        for (const [inventoryItemId, quantity] of restoreQty) {
+        const inventoryRows = await tx.inventoryItems.findMany({
+          where: { id: { in: restoreInventoryIds } },
+          select: { id: true, itemsPerPack: true },
+        });
+        const packSizeByInventoryId = new Map(
+          inventoryRows.map((row) => [row.id, Math.max(Number(row.itemsPerPack || 1), 1)]),
+        );
+
+        for (const inventoryItemId of restoreInventoryIds) {
+          const restoredPieces = existingBill.saleItems
+            .filter((item) => item.inventoryItemId === inventoryItemId)
+            .reduce((sum, item) => {
+              const packSize = packSizeByInventoryId.get(inventoryItemId) ?? 1;
+              return (
+                sum +
+                (item.isLooseQuantity ? item.quantity : item.quantity * packSize)
+              );
+            }, 0);
+
           await tx.inventoryItems.update({
             where: { id: inventoryItemId },
             data: {
               quantityInStock: {
-                increment: quantity,
+                increment: restoredPieces,
               },
               updatedBy: user.id ,
             },

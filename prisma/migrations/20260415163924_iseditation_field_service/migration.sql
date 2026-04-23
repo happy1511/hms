@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `pharmacycustomer` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `PharmacyCustomer` ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `service` ADD COLUMN `isEditableRate` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `Service` ADD COLUMN `isEditableRate` BOOLEAN NOT NULL DEFAULT false;

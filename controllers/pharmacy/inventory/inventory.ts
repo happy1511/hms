@@ -46,6 +46,7 @@ export const getAPI = async (req: Request) => {
           include: {
             drug: true,
             supplier: true,
+            hsnSac: true,
           },
         }),
         prisma.inventoryItems.count({ where }),

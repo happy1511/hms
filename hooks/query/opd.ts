@@ -8,10 +8,10 @@ import {
   OPD_STATUS,
   OPD_VITALS,
 } from "@/lib/apiDefinations";
-import { AddressType, ContactType } from "@/generated/prisma/enums";
 import {
   ApiResponse,
   FilterValues,
+  opdConsultationDetailsType,
   OPDType,
   PaginatedResponse,
 } from "@/lib/type";
@@ -38,37 +38,6 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-export type opdConsultationDetailsType = consultantFileType & {
-  patient?: {
-    id?: number;
-    firstName?: string;
-    lastName?: string;
-    uhid?: string;
-    gender?: string;
-    contacts?: { type: ContactType; value: string }[];
-    addresses?: {
-      type?: AddressType;
-      addressLineOne?: string | null;
-      addressLineTwo?: string | null;
-      addressLineThree?: string | null;
-      location?: {
-        city?: string | null;
-        state?: string | null;
-        country?: string | null;
-        postcode?: string | null;
-      } | null;
-    }[];
-  };
-  consultantDoctorName?: string | null;
-  referringDoctorName?: string | null;
-  createdAt?: Date | string;
-  previousOpdHistory?: {
-    opdId: number;
-    createdAt: Date | string;
-    investigations: string[];
-  }[];
-};
-
 type UseCreateOpdOptions = {
   navigateBackOnSuccess?: boolean;
   onSuccess?: (data: ApiResponse<OPDType>) => void;
@@ -80,9 +49,15 @@ const updateConsultation = createRequest<ApiResponse<OPDType>>(
   OPD_CONSULTATION,
   "PUT",
 );
-const updateOpdDoctors = createRequest<ApiResponse<unknown>>(OPD_DOCTORS, "PUT");
+const updateOpdDoctors = createRequest<ApiResponse<unknown>>(
+  OPD_DOCTORS,
+  "PUT",
+);
 const updateOpdStatus = createRequest<ApiResponse<unknown>>(OPD_STATUS, "PUT");
-const updateOpdDateTime = createRequest<ApiResponse<unknown>>(OPD_DATETIME, "PUT");
+const updateOpdDateTime = createRequest<ApiResponse<unknown>>(
+  OPD_DATETIME,
+  "PUT",
+);
 const deleteOpd = createRequest<ApiResponse<OPDType>>(OPD, "DELETE");
 const deleteBillingSection = createRequest<
   ApiResponse<null>,

@@ -4,6 +4,7 @@ import z from "zod";
 const saleBillItemValidator = z.object({
   inventoryItem: z.object({ id: z.coerce.number().min(1) }),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  isLooseQuantity: z.coerce.boolean().default(false),
   rate: z.coerce.number().min(0).optional(),
   discountType: z.enum(DiscountType).default(DiscountType.VALUE),
   discountValue: z.coerce.number().default(0),
@@ -22,6 +23,7 @@ const saleBillBaseValidator = z.object({
     patientId: z.coerce.number().min(1).optional(),
     doctorId: z.coerce.number().min(1).optional(),
     isWholesaleBill: z.coerce.boolean().default(false),
+    isLooseBill: z.coerce.boolean().default(false),
     billingType: z.enum(PaymentCategory).default(PaymentCategory.SELF_PAY),
     discountType: z.enum(DiscountType).default(DiscountType.VALUE),
     discountValue: z.coerce.number().default(0),

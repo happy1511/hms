@@ -6,20 +6,19 @@ import { CustomTable } from "@/components/common/CustomTable";
 import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
-import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useInventoryItemsList } from "@/hooks/query/pharmacyInventory";
-import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  FilterConfig,
+  FilterValues,
+  PharmacyInventoryItemType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useState } from "react";
 
-type InventoryData = InventoryItemsGetPayload<{
-  include: {
-    drug: true;
-    supplier: true;
-  };
-}>;
+type InventoryData = PharmacyInventoryItemType;
 
 const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Search", valueKey: "name", type: "text" },
@@ -83,7 +82,8 @@ const InventoryList = () => {
       header: ({ column }) => (
         <SortableHeader<InventoryData> label="HSN" column={column} />
       ),
-      cell: ({ row }) => row.original.drug.hsnCode,
+      cell: ({ row }) =>
+        row.original.hsnSac?.code || "-",
       headerClassName: "min-w-16",
       cellClassName: "min-w-16",
     },
@@ -109,14 +109,14 @@ const InventoryList = () => {
       header: ({ column }) => (
         <SortableHeader<InventoryData> label="Pack" column={column} />
       ),
-      cell: ({ row }) => row.original.drug.unit,
+      cell: ({ row }) => `${row.original.itemsPerPack} / ${row.original.drug.unit}`,
       headerClassName: "min-w-16",
       cellClassName: "min-w-16",
     },
     {
       accessorKey: "quantityInStock",
       header: ({ column }) => (
-        <SortableHeader<InventoryData> label="Qty" column={column} />
+        <SortableHeader<InventoryData> label="Qty (pcs)" column={column} />
       ),
       headerClassName: "min-w-20",
       cellClassName: "min-w-20",

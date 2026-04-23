@@ -22,7 +22,6 @@ import {
   PaymentMode,
   Status,
 } from "@/generated/prisma/enums";
-import { DrugBillGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useInfinitePharmacyCustomers } from "@/hooks/query/pharmacyCustomer";
@@ -36,6 +35,7 @@ import {
   FilterValues,
   PaginatedResponse,
   PatientType,
+  PharmacySaleBillType,
   PharmacyCustomerType,
 } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
@@ -45,28 +45,7 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
-type SaleBillData = DrugBillGetPayload<{
-  include: {
-    patient: true;
-    customer: { include: { patient: true } };
-    doctor: { include: { user: true } };
-    invoice: {
-      include: {
-        transactions: true;
-      };
-    };
-    saleItems: {
-      include: {
-        inventoryItem: {
-          include: {
-            drug: true;
-            supplier: true;
-          };
-        };
-      };
-    };
-  };
-}>;
+type SaleBillData = PharmacySaleBillType;
 
 const toValidDate = (value: unknown) => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
@@ -80,6 +59,7 @@ const toValidDate = (value: unknown) => {
 const emptyItem = () => ({
   inventoryItem: null,
   quantity: 1,
+  isLooseQuantity: false,
   rate: 0,
   discountType: DiscountType.VALUE,
   discountValue: 0,
@@ -130,6 +110,7 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
       patient: null,
       doctor: null,
       isWholesaleBill: false,
+      isLooseBill: false,
       billingType: PaymentCategory.SELF_PAY,
       discountType: DiscountType.VALUE,
       discountValue: 0,
@@ -153,6 +134,7 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
     patient: (data.patient as unknown as PatientType) ?? null,
     doctor: (data.doctor as unknown as Doctor) ?? null,
     isWholesaleBill: Boolean(data.isWholesaleBill),
+    isLooseBill: Boolean(data.isLooseBill),
     billingType: data.invoice?.billingType ?? PaymentCategory.SELF_PAY,
     discountType: data.invoice?.discountType ?? DiscountType.VALUE,
     discountValue: Number(data.invoice?.discountValue || 0),
@@ -160,6 +142,7 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
     items: data.saleItems?.map((item) => ({
       inventoryItem: item.inventoryItem as SaleBillInventoryItem,
       quantity: Number(item.quantity),
+      isLooseQuantity: Boolean(item.isLooseQuantity),
       rate: Number(item.rate),
       discountType: item.discountType,
       discountValue: Number(item.discountValue || 0),
@@ -213,6 +196,12 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       name: "isWholesaleBill",
     }),
   );
+  const isLooseBill = Boolean(
+    useWatch({
+      control: form.control,
+      name: "isLooseBill",
+    }),
+  );
   const selectedPatient = useWatch({
     control: form.control,
     name: "patient",
@@ -251,9 +240,17 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
     }
 
     const hasOverStock = validItems.some(
-      (item) =>
-        Number(item.quantity || 0) >
-        Number(item.inventoryItem?.quantityInStock || 0),
+      (item) => {
+        const packSize = Math.max(
+          Number(item.inventoryItem?.itemsPerPack || 1),
+          1,
+        );
+        const requestedPieces = Boolean(item.isLooseQuantity)
+          ? Number(item.quantity || 0)
+          : Number(item.quantity || 0) * packSize;
+
+        return requestedPieces > Number(item.inventoryItem?.quantityInStock || 0);
+      },
     );
     if (hasOverStock) {
       toast.error("One or more rows exceed available stock");
@@ -274,6 +271,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
         ? Number(values.doctor.userId)
         : undefined,
       isWholesaleBill: Boolean(values.isWholesaleBill),
+      isLooseBill: Boolean(values.isLooseBill),
       billingType: values.billingType,
       discountType: values.discountType,
       discountValue: Number(values.discountValue || 0),
@@ -282,6 +280,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       items: validItems.map((item) => ({
         inventoryItem: { id: Number(item.inventoryItem?.id) },
         quantity: Number(item.quantity),
+        isLooseQuantity: Boolean(item.isLooseQuantity),
         rate: Number(item.rate || 0),
         discountType: item.discountType,
         discountValue: Number(item.discountValue || 0),
@@ -409,12 +408,20 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
             </div>
 
             <div className="w-full flex justify-between items-center">
-              <FormField<SaleBillFormValues>
-                label="Wholesale Bill"
-                type="checkbox"
-                name="isWholesaleBill"
-                control={form.control}
-              />
+              <div className="flex items-center gap-6">
+                <FormField<SaleBillFormValues>
+                  label="Wholesale Bill"
+                  type="checkbox"
+                  name="isWholesaleBill"
+                  control={form.control}
+                />
+                <FormField<SaleBillFormValues>
+                  label="Loose Bill"
+                  type="checkbox"
+                  name="isLooseBill"
+                  control={form.control}
+                />
+              </div>
               <CustomButton
                 type="button"
                 variant="secondary"
@@ -423,7 +430,11 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                 Store Directory
               </CustomButton>
             </div>
-            <SaleBillItemsTable form={form} isWholesaleBill={isWholesaleBill} />
+            <SaleBillItemsTable
+              form={form}
+              isWholesaleBill={isWholesaleBill}
+              isLooseBill={isLooseBill}
+            />
 
             <div className="grid gap-3 lg:grid-cols-[1fr_260px_260px]">
               <div />

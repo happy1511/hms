@@ -1,13 +1,12 @@
 import { DiscountType, PaymentCategory, PaymentMode } from "@/generated/prisma/enums";
-import { InventoryItemsGetPayload } from "@/generated/prisma/models";
-import { Doctor, PatientType, PharmacyCustomerType } from "@/lib/type";
+import {
+  Doctor,
+  PatientType,
+  PharmacyCustomerType,
+  PharmacyInventoryItemType,
+} from "@/lib/type";
 
-export type SaleBillInventoryItem = InventoryItemsGetPayload<{
-  include: {
-    drug: true;
-    supplier: true;
-  };
-}>;
+export type SaleBillInventoryItem = PharmacyInventoryItemType;
 
 export type SaleBillFormValues = {
   billDate: Date;
@@ -15,6 +14,7 @@ export type SaleBillFormValues = {
   patient?: PatientType | null;
   doctor?: Doctor | null;
   isWholesaleBill: boolean;
+  isLooseBill: boolean;
   billingType: PaymentCategory;
   discountType: DiscountType;
   discountValue: number;
@@ -22,6 +22,7 @@ export type SaleBillFormValues = {
   items: {
     inventoryItem?: SaleBillInventoryItem | null;
     quantity: number;
+    isLooseQuantity: boolean;
     rate: number;
     discountType: DiscountType;
     discountValue: number;

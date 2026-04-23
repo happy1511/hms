@@ -8,16 +8,15 @@ import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect"
 import CreateSupplierModal from "@/components/pharmacy/CreateSupplierModal";
 import { Form } from "@/components/ui/form";
 import {
-  Drug,
   DrugBillingCategory,
   DrugSupplier,
 } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
-import { PurchaseOrderGetPayload } from "@/generated/prisma/models";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteDrugList } from "@/hooks/query/drug";
 import { useInfiniteDrugBillingCategoryList } from "@/hooks/query/drugBillingCategory";
 import { useInfiniteDrugSupplierList } from "@/hooks/query/drugSupplier";
+import { useInfiniteHsnSacList } from "@/hooks/query/hsnSac";
 import {
   useCreatePurchaseOrder,
   useGetPurchaseOrder,
@@ -27,7 +26,12 @@ import {
   calculatePurchaseOrderLine,
   calculatePurchaseOrderSummary,
 } from "@/lib/pharmacyPurchaseOrder";
-import { PaginatedResponse } from "@/lib/type";
+import {
+  HsnSacType,
+  PaginatedResponse,
+  PharmacyDrugType,
+  PharmacyPurchaseOrderType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, PlusIcon, Trash2 } from "lucide-react";
@@ -45,12 +49,7 @@ import {
   purchaseOrderValidatorType,
 } from "@/validators/api/masters/pharmacyPurchase";
 
-type PurchaseOrderData = PurchaseOrderGetPayload<{
-  include: {
-    supplier: true;
-    items: { include: { category: true; drug: true } };
-  };
-}>;
+type PurchaseOrderData = PharmacyPurchaseOrderType;
 
 type PurchaseOrderItemForm = purchaseOrderValidatorType["items"][number];
 
@@ -59,12 +58,11 @@ const normalizeItems = (items: purchaseOrderValidatorType["items"] = []) =>
     quantity: Number(item?.quantity || 0),
     rate: Number(item?.rate || 0),
     discountPercentage: Number(item?.discountPercentage || 0),
-    drug: item?.drug
+    hsnSac: item?.hsnSac
       ? {
-          gstPercentage: Number(item.drug.gstPercentage || 0),
-          cGstPercentage: Number(item.drug.cGstPercentage || 0),
-          sGstPercentage: Number(item.drug.sGstPercentage || 0),
-          iGstPercentage: Number(item.drug.iGstPercentage || 0),
+          cGstPercentage: Number(item.hsnSac.cGstPercentage || 0),
+          sGstPercentage: Number(item.hsnSac.sGstPercentage || 0),
+          iGstPercentage: Number(item.hsnSac.iGstPercentage || 0),
         }
       : undefined,
   }));
@@ -80,12 +78,8 @@ const getEmptyItem = (): PurchaseOrderItemForm => ({
   drug: {
     id: undefined as unknown as number,
     name: "",
-    hsnCode: 0,
-    gstPercentage: 0,
-    cGstPercentage: 0,
-    sGstPercentage: 0,
-    iGstPercentage: 0,
   },
+  hsnSac: undefined,
   category: undefined,
 });
 
@@ -105,16 +99,12 @@ const getInitialValues = (
         discountPercentage: item.discountPercentage,
         rate: item.rate,
         total: item.total,
-        hsnSacCode: item.hsnSacCode ?? item.drug.hsnCode ?? undefined,
+        hsnSacCode: item.hsnSacCode ?? undefined,
         drug: {
           id: item.drug.id,
           name: item.drug.name,
-          hsnCode: item.drug.hsnCode,
-          gstPercentage: item.drug.gstPercentage,
-          cGstPercentage: item.drug.cGstPercentage,
-          sGstPercentage: item.drug.sGstPercentage,
-          iGstPercentage: item.drug.iGstPercentage,
         },
+        hsnSac: item.hsnSac ?? undefined,
         category: item.category ?? undefined,
       }))
     : [getEmptyItem()],
@@ -165,12 +155,17 @@ const PurchaseOrderRow = ({
 }) => {
   const [drugSearch, setDrugSearch] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
+  const [hsnSacSearch, setHsnSacSearch] = useState("");
   const drugsQuery = useInfiniteDrugList(
     { name: drugSearch, status: Status.active },
     10,
   );
   const categoryQuery = useInfiniteDrugBillingCategoryList(
     { name: categorySearch, status: Status.active },
+    10,
+  );
+  const hsnSacQuery = useInfiniteHsnSacList(
+    { name: hsnSacSearch, status: Status.active },
     10,
   );
 
@@ -192,15 +187,34 @@ const PurchaseOrderRow = ({
       (currentHsnSacCode === undefined ||
         currentHsnSacCode === null ||
         currentHsnSacCode === 0) &&
-      item?.drug?.hsnCode
+      item?.hsnSac?.code
     ) {
       form.setValue(
         `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
-        Number(item.drug.hsnCode),
+        Number(item.hsnSac.code),
         { shouldDirty: true, shouldValidate: false },
       );
     }
-  }, [form, item?.drug?.hsnCode, rowPath]);
+  }, [form, item?.hsnSac?.code, rowPath]);
+
+  useEffect(() => {
+    const selectedHsnSac = item?.hsnSac;
+    if (!selectedHsnSac) {
+      return;
+    }
+
+    const currentCode = Number(
+      form.getValues(`${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>) || 0,
+    );
+
+    if (currentCode !== Number(selectedHsnSac.code)) {
+      form.setValue(
+        `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
+        Number(selectedHsnSac.code),
+        { shouldDirty: true, shouldValidate: false },
+      );
+    }
+  }, [form, item?.hsnSac, rowPath]);
 
   useEffect(() => {
     const currentTotal = Number(
@@ -237,8 +251,8 @@ const PurchaseOrderRow = ({
 
       <td className="border-r border-black/20 px-1 py-1 min-w-56">
         <FormInfiniteSelect<
-          Drug,
-          PaginatedResponse<Drug>,
+          PharmacyDrugType,
+          PaginatedResponse<PharmacyDrugType>,
           string,
           purchaseOrderValidatorType
         >
@@ -275,11 +289,24 @@ const PurchaseOrderRow = ({
         />
       </td>
 
-      <td className="border-r border-black/20 px-1 py-1 min-w-24">
-        <FormField<purchaseOrderValidatorType>
-          type="number"
-          name={`${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>}
+      <td className="border-r border-black/20 px-1 py-1 min-w-40">
+        <FormInfiniteSelect<
+          HsnSacType,
+          PaginatedResponse<HsnSacType>,
+          string,
+          purchaseOrderValidatorType
+        >
+          name={`${rowPath}.hsnSac` as Path<purchaseOrderValidatorType>}
           control={form.control}
+          query={hsnSacQuery}
+          getItems={(page) => page?.data}
+          valueKey={(hsnSac) => String(hsnSac.id)}
+          labelKey={(hsnSac) =>
+            `${hsnSac.code} | CGST ${hsnSac.cGstPercentage}% | SGST ${hsnSac.sGstPercentage}% | IGST ${hsnSac.iGstPercentage}%`
+          }
+          search={hsnSacSearch}
+          onSearchChange={setHsnSacSearch}
+          placeholder="Select HSN/SAC"
           hideError
         />
       </td>
@@ -314,19 +341,15 @@ const PurchaseOrderRow = ({
       </td>
 
       <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
-        {Number(item?.drug?.gstPercentage || 0)}%
+        {Number(item?.hsnSac?.cGstPercentage || 0)}%
       </td>
 
       <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
-        {Number(item?.drug?.cGstPercentage || 0)}%
+        {Number(item?.hsnSac?.sGstPercentage || 0)}%
       </td>
 
       <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
-        {Number(item?.drug?.sGstPercentage || 0)}%
-      </td>
-
-      <td className="border-r border-black/20 px-2 py-2 text-center min-w-18">
-        {Number(item?.drug?.iGstPercentage || 0)}%
+        {Number(item?.hsnSac?.iGstPercentage || 0)}%
       </td>
 
       <td className="border-r border-black/20 px-2 py-2 text-right min-w-24">
@@ -376,7 +399,7 @@ const PurchaseOrderItemsTable = ({
   return (
     <div className="rounded-sm border border-black/20">
       <div className="overflow-x-auto">
-        <table className="min-w-[1750px] w-full text-tiny">
+        <table className="min-w-[1680px] w-full text-tiny">
           <thead className="bg-background/50">
             <tr className="border-b border-black/20 text-left">
               <th className="border-r border-black/20 px-2 py-2">Actions</th>
@@ -386,7 +409,6 @@ const PurchaseOrderItemsTable = ({
               <th className="border-r border-black/20 px-2 py-2">Qty.</th>
               <th className="border-r border-black/20 px-2 py-2">Rate</th>
               <th className="border-r border-black/20 px-2 py-2">Disc. %</th>
-              <th className="border-r border-black/20 px-2 py-2">GST%</th>
               <th className="border-r border-black/20 px-2 py-2">CGST%</th>
               <th className="border-r border-black/20 px-2 py-2">SGST%</th>
               <th className="border-r border-black/20 px-2 py-2">IGST%</th>
@@ -410,7 +432,7 @@ const PurchaseOrderItemsTable = ({
 
           <tfoot className="bg-background/50">
             <tr className="border-t border-black/20 font-semibold">
-              <td colSpan={12} className="px-3 py-2 text-right">
+              <td colSpan={11} className="px-3 py-2 text-right">
                 Totals: {summary.itemCount} Items / Qty {summary.quantityTotal}
               </td>
               <td className="px-3 py-2 text-right">

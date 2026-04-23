@@ -13,16 +13,11 @@ import { useInventoryItemsList } from "@/hooks/query/pharmacyInventory";
 import {
   ColumnDefWithClass,
   FilterValues,
+  PharmacyInventoryItemType,
 } from "@/lib/type";
-import { InventoryItemsGetPayload } from "@/generated/prisma/models";
 import { useState } from "react";
 
-type InventoryDirectoryRow = InventoryItemsGetPayload<{
-  include: {
-    drug: true;
-    supplier: true;
-  };
-}>;
+type InventoryDirectoryRow = PharmacyInventoryItemType;
 
 interface Props {
   open: boolean;
@@ -75,7 +70,8 @@ const StoreDirectoryModal = ({ open, onOpenChange }: Props) => {
       header: ({ column }) => (
         <SortableHeader<InventoryDirectoryRow> label="HSN" column={column} />
       ),
-      cell: ({ row }) => row.original.drug.hsnCode,
+      cell: ({ row }) =>
+        row.original.hsnSac?.code || "-",
       headerClassName: "min-w-16",
       cellClassName: "min-w-16",
     },
@@ -106,7 +102,7 @@ const StoreDirectoryModal = ({ open, onOpenChange }: Props) => {
       header: ({ column }) => (
         <SortableHeader<InventoryDirectoryRow> label="Pack" column={column} />
       ),
-      cell: ({ row }) => row.original.drug.unit,
+      cell: ({ row }) => `${row.original.itemsPerPack} / ${row.original.drug.unit}`,
       headerClassName: "min-w-16",
       cellClassName: "min-w-16",
     },
@@ -114,7 +110,7 @@ const StoreDirectoryModal = ({ open, onOpenChange }: Props) => {
       accessorKey: "quantityInStock",
       header: ({ column }) => (
         <SortableHeader<InventoryDirectoryRow>
-          label="Qty"
+          label="Qty (pcs)"
           column={column}
         />
       ),

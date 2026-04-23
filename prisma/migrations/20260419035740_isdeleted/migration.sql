@@ -1,17 +1,17 @@
 -- AlterTable
-ALTER TABLE `ipd` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `Ipd` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE `opd` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `Opd` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE `pathologytestorder` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `PathologyTestOrder` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE `radiologytestorder` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `RadiologyTestOrder` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE `transaction` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `Transaction` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateIndex
 CREATE INDEX `Ipd_isDeleted_idx` ON `Ipd`(`isDeleted`);

@@ -5,7 +5,7 @@ const importOptionalNumberText = z.string().optional().default("");
 
 const supplierValidator = z.object({
   name: z.string().min(1, "Name is required"),
-  gstIn: z.coerce.number().optional(),
+  gstIn: z.string().optional(),
   email: z.string().optional(),
   phone: z.coerce.number().optional().default(0),
 });

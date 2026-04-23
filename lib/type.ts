@@ -5,6 +5,8 @@
 
 import {
   ActionType,
+  AddressType,
+  ContactType,
   DiscountType,
   DoctorType,
   Gender,
@@ -34,6 +36,7 @@ import {
   Prisma,
 } from "@/generated/prisma/client";
 import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
+import { consultantFileType } from "@/validators/api/opd/opd";
 
 // ----------------------------------
 export type ApiResponse<T> = {
@@ -520,6 +523,135 @@ export type PharmacyCustomerType = Prisma.PharmacyCustomerGetPayload<{
   };
 }>;
 
+export type HsnSacType = Prisma.HsnSacGetPayload<{
+  include: {
+    createdByUser: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+    updatedByUser: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+  };
+}>;
+
+export type PharmacyDrugType = Prisma.DrugGetPayload<{
+  include: {};
+}>;
+
+export type PharmacyInventoryItemType = Prisma.InventoryItemsGetPayload<{
+  include: {
+    drug: true;
+    supplier: true;
+    hsnSac: true;
+  };
+}>;
+
+export type PharmacyPurchaseOrderType = Prisma.PurchaseOrderGetPayload<{
+  include: {
+    supplier: true;
+    items: {
+      include: {
+        category: true;
+        drug: true;
+        hsnSac: true;
+      };
+    };
+  };
+}>;
+
+export type PharmacySaleBillType = Prisma.DrugBillGetPayload<{
+  include: {
+    patient: true;
+    customer: {
+      include: {
+        patient: true;
+      };
+    };
+    doctor: {
+      include: {
+        user: true;
+      };
+    };
+    invoice: {
+      include: {
+        transactions: {
+          include: {
+            receivedBy: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
+      };
+    };
+    saleItems: {
+      include: {
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+      };
+    };
+  };
+}> & {
+  isLooseBill: boolean;
+  saleItems: Array<
+    Prisma.DrugSaleItemGetPayload<{
+      include: {
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+      };
+    }> & {
+      isLooseQuantity: boolean;
+    }
+  >;
+};
+
+export type PharmacyChallanType = Prisma.ChallanGetPayload<{
+  include: {
+    supplier: true;
+    grn: {
+      select: {
+        id: true;
+      };
+    };
+    createdByUser: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+    items: {
+      include: {
+        drug: true;
+        category: true;
+        hsnSac: true;
+        inventoryItem: {
+          include: {
+            drug: true;
+            hsnSac: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
   include: {
     patient: true;
@@ -691,6 +823,37 @@ export type OPDType = Prisma.OpdGetPayload<{
     updatedAt: true;
   };
 }>;
+
+export type opdConsultationDetailsType = consultantFileType & {
+  patient?: {
+    id?: number;
+    firstName?: string;
+    lastName?: string;
+    uhid?: string;
+    gender?: string;
+    contacts?: { type: ContactType; value: string }[];
+    addresses?: {
+      type?: AddressType;
+      addressLineOne?: string | null;
+      addressLineTwo?: string | null;
+      addressLineThree?: string | null;
+      location?: {
+        city?: string | null;
+        state?: string | null;
+        country?: string | null;
+        postcode?: string | null;
+      } | null;
+    }[];
+  };
+  consultantDoctorName?: string | null;
+  referringDoctorName?: string | null;
+  createdAt?: Date | string;
+  previousOpdHistory?: {
+    opdId: number;
+    createdAt: Date | string;
+    investigations: string[];
+  }[];
+};
 
 export type IPDType = Prisma.IpdGetPayload<{
   include: {
@@ -1307,6 +1470,11 @@ export type PharmacyGrnType = Prisma.GRNGetPayload<{
         supplier: true;
       };
     };
+    challan: {
+      include: {
+        supplier: true;
+      };
+    };
     createdByUser: {
       select: {
         id: true;
@@ -1319,11 +1487,20 @@ export type PharmacyGrnType = Prisma.GRNGetPayload<{
           include: {
             drug: true;
             category: true;
+            hsnSac: true;
+          };
+        };
+        challanItem: {
+          include: {
+            drug: true;
+            category: true;
+            hsnSac: true;
           };
         };
         inventoryItem: {
           include: {
             drug: true;
+            hsnSac: true;
           };
         };
       };

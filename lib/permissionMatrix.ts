@@ -141,6 +141,12 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.VIEW,
     ActionType.DELETE,
   ],
+  [ModuleType.PHARMACY_HSN_SAC_MASTER]: [
+    ActionType.CREATE,
+    ActionType.UPDATE,
+    ActionType.VIEW,
+    ActionType.DELETE,
+  ],
   [ModuleType.PHARMACY_DRUG_CATEGORY_MASTER]: [
     ActionType.CREATE,
     ActionType.UPDATE,
@@ -154,6 +160,7 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.DELETE,
   ],
   [ModuleType.PHARMACY_GRN]: [ActionType.CREATE, ActionType.VIEW],
+  [ModuleType.PHARMACY_CHALLAN]: [ActionType.CREATE, ActionType.VIEW],
   [ModuleType.PHARMACY_INVENTORY]: [ActionType.VIEW],
   [ModuleType.PHARMACY_SALE_BILL]: [
     ActionType.CREATE,

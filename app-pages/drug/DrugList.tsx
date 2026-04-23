@@ -9,11 +9,15 @@ import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
-import { Drug } from "@/generated/prisma/client";
 import { ActionType, ModuleType, Status } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useDeleteDrug, useDrugList } from "@/hooks/query/drug";
-import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  FilterConfig,
+  FilterValues,
+  PharmacyDrugType,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
@@ -32,12 +36,12 @@ const Buttons = ({
   return (
     <>
       {canCreate && (
-        <>
+        <div className="flex items-center gap-2">
           <CustomButton onClick={() => router.push("/drug/new")}>
             New Drug
           </CustomButton>
           <MasterImportModal master="drug" allowReplace={canDelete} />
-        </>
+        </div>
       )}
     </>
   );
@@ -69,7 +73,7 @@ const Actions = ({
   canEdit,
   canView,
 }: {
-  data: Drug;
+  data: PharmacyDrugType;
   canEdit: boolean;
   canDelete: boolean;
   canView: boolean;
@@ -79,7 +83,7 @@ const Actions = ({
   return (
     <>
       {canView && (
-        <DataViewModal<Drug>
+        <DataViewModal<PharmacyDrugType>
           data={data}
           title="Drug Details"
           fields={[
@@ -127,8 +131,11 @@ const DrugList = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isFetching, refetch, isError, error } =
-    useDrugList(filters, page, limit);
+  const { data, isLoading, isFetching, refetch, isError, error } = useDrugList(
+    filters,
+    page,
+    limit,
+  );
 
   if (!profile) {
     return <div />;
@@ -155,11 +162,11 @@ const DrugList = () => {
     ActionType.DELETE,
   );
 
-  const columns: ColumnDefWithClass<Drug>[] = [
+  const columns: ColumnDefWithClass<PharmacyDrugType>[] = [
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<Drug> label="ID" column={column} />;
+        return <SortableHeader<PharmacyDrugType> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -168,7 +175,9 @@ const DrugList = () => {
     {
       accessorKey: "name",
       header: ({ column }) => {
-        return <SortableHeader<Drug> label="Name" column={column} />;
+        return (
+          <SortableHeader<PharmacyDrugType> label="Name" column={column} />
+        );
       },
       cell: ({ row }) => (
         <Link
@@ -181,11 +190,15 @@ const DrugList = () => {
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
-
     {
       accessorKey: "createdAt",
       header: ({ column }) => {
-        return <SortableHeader<Drug> label="Created at" column={column} />;
+        return (
+          <SortableHeader<PharmacyDrugType>
+            label="Created at"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => {
         return (
@@ -201,7 +214,12 @@ const DrugList = () => {
     {
       accessorKey: "updatedAt",
       header: ({ column }) => {
-        return <SortableHeader<Drug> label="Updated at" column={column} />;
+        return (
+          <SortableHeader<PharmacyDrugType>
+            label="Updated at"
+            column={column}
+          />
+        );
       },
       cell: ({ row }) => {
         return (
