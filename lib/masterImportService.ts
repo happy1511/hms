@@ -1095,12 +1095,15 @@ const importPathologyTests = async (
   let updated = 0;
   let deleted = 0;
 
-  await prisma.$transaction(async (tx) => {
-    if (mode === "replace") {
-      deleted = await archivePathologyTests(tx as typeof prisma, userId);
-    }
+  if (mode === "replace") {
+    deleted = await prisma.$transaction(
+      async (tx) => archivePathologyTests(tx as typeof prisma, userId),
+      IMPORT_TRANSACTION_OPTIONS,
+    );
+  }
 
-    for (const row of rows) {
+  for (const row of rows) {
+    const existing = await prisma.$transaction(async (tx) => {
       const headers = parseJsonArray(
         row.headers,
         pathologyTestHeaderValidator,
@@ -1114,7 +1117,7 @@ const importPathologyTests = async (
         getRowNumber(row),
       );
 
-      const existing =
+      const existingRecord =
         mode === "append"
           ? await tx.pathologyTest.findFirst({
               where: { name: row.name },
@@ -1126,9 +1129,9 @@ const importPathologyTests = async (
             })
           : null;
 
-      const test = existing
+      const test = existingRecord
         ? await tx.pathologyTest.update({
-            where: { id: existing.id },
+            where: { id: existingRecord.id },
             data: {
               name: row.name,
               alias: row.alias,
@@ -1296,9 +1299,9 @@ const importPathologyTests = async (
         updatedBy: userId,
       };
 
-      if (existing?.services[0]?.serviceId) {
+      if (existingRecord?.services[0]?.serviceId) {
         await tx.service.update({
-          where: { id: existing.services[0].serviceId },
+          where: { id: existingRecord.services[0].serviceId },
           data: serviceData,
         });
       } else {
@@ -1315,13 +1318,15 @@ const importPathologyTests = async (
         });
       }
 
-      if (existing) {
-        updated += 1;
-      } else {
-        created += 1;
-      }
+      return existingRecord;
+    }, IMPORT_TRANSACTION_OPTIONS);
+
+    if (existing) {
+      updated += 1;
+    } else {
+      created += 1;
     }
-  }, IMPORT_TRANSACTION_OPTIONS);
+  }
 
   return { created, updated, deleted };
 };
