@@ -1,2 +1,0 @@
--- AlterTable
-DESCRIBE `Transaction`;

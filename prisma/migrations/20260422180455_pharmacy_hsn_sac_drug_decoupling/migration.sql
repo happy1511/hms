@@ -1,2 +1,0 @@
--- The database already reflects this decoupling state.
--- This migration is kept as a no-op so Prisma migration history can advance cleanly.

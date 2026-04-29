@@ -1,2 +1,0 @@
-ALTER TABLE `Transaction`
-  ADD COLUMN `transactionType` ENUM('PAYMENT', 'REFUND') NOT NULL DEFAULT 'PAYMENT';
