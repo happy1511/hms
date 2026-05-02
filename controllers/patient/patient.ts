@@ -1,11 +1,13 @@
 import { ContactType, Prisma, User } from "@/generated/prisma/client";
+import { DocumentStoreType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
+import { deletePublicDocument, savePublicDocument } from "@/services/documentStore";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
+import { patientDocumentUploadValidator } from "@/validators/api/masters/patientDocument";
 import {
-  identificationsValidator,
   partialPatientValidator,
   patientValidator,
 } from "@/validators/api/masters/patient";
@@ -118,45 +120,116 @@ export const getDocumentsAPI = async (req: Request) => {
       const search = query.search ?? "";
       const contactNo = query.contactNo ?? "";
       const patientId = query.uhid ? Number(query.uhid) : undefined;
+      const opdId = query.opdId ? Number(query.opdId) : undefined;
+      const ipdId = query.ipdId ? Number(query.ipdId) : undefined;
       const documentType = query.documentType ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
       const skip = (page - 1) * limit;
-      const and: Prisma.PatientIdentificationWhereInput[] = [];
+      const and: Prisma.DocumentStoreWhereInput[] = [
+        {
+          type: {
+            in: [
+              DocumentStoreType.OPD_DOCUMENT,
+              DocumentStoreType.IPD_DOCUMENT,
+            ],
+          },
+        },
+      ];
 
       if (search) {
         and.push({
-          patient: {
-            firstName: { contains: search },
-            lastName: { contains: search },
-            middleName: { contains: search },
-          },
+          OR: [
+            { documentName: { contains: search } },
+            { originalName: { contains: search } },
+            {
+              opd: {
+                is: {
+                  patient: {
+                    OR: [
+                      { firstName: { contains: search } },
+                      { lastName: { contains: search } },
+                      { middleName: { contains: search } },
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              ipd: {
+                is: {
+                  patient: {
+                    OR: [
+                      { firstName: { contains: search } },
+                      { lastName: { contains: search } },
+                      { middleName: { contains: search } },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
         });
       }
 
       if (patientId !== undefined) {
-        and.push({ patient: { id: { equals: patientId } } });
+        and.push({
+          OR: [
+            { opd: { is: { patientId: { equals: patientId } } } },
+            { ipd: { is: { patientId: { equals: patientId } } } },
+          ],
+        });
       }
 
       if (contactNo) {
         and.push({
-          patient: {
-            contacts: {
-              some: {
-                OR: [
-                  {
-                    type: ContactType.MOBILE,
-                    value: { equals: contactNo },
+          OR: [
+            {
+              opd: {
+                is: {
+                  patient: {
+                    contacts: {
+                      some: {
+                        OR: [
+                          {
+                            type: ContactType.MOBILE,
+                            value: { equals: contactNo },
+                          },
+                          {
+                            type: ContactType.PHONE,
+                            value: { equals: contactNo },
+                          },
+                        ],
+                      },
+                    },
                   },
-                  {
-                    type: ContactType.PHONE,
-                    value: { equals: contactNo },
-                  },
-                ],
+                },
               },
             },
-          },
+            {
+              ipd: {
+                is: {
+                  patient: {
+                    contacts: {
+                      some: {
+                        OR: [
+                          {
+                            type: ContactType.MOBILE,
+                            value: { equals: contactNo },
+                          },
+                          {
+                            type: ContactType.PHONE,
+                            value: { equals: contactNo },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
         });
       }
 
@@ -171,16 +244,24 @@ export const getDocumentsAPI = async (req: Request) => {
 
       if (documentType) {
         and.push({
-          type: { equals: documentType },
+          documentName: { equals: documentType },
         });
       }
 
-      const where: Prisma.PatientIdentificationWhereInput = and.length
+      if (opdId !== undefined && !Number.isNaN(opdId)) {
+        and.push({ opdId: { equals: opdId } });
+      }
+
+      if (ipdId !== undefined && !Number.isNaN(ipdId)) {
+        and.push({ ipdId: { equals: ipdId } });
+      }
+
+      const where: Prisma.DocumentStoreWhereInput = and.length
         ? { AND: and }
         : {};
 
       const [items, total] = await prisma.$transaction([
-        prisma.patientIdentification.findMany({
+        prisma.documentStore.findMany({
           skip,
           take: limit,
           orderBy: { createdAt: "desc" },
@@ -188,20 +269,47 @@ export const getDocumentsAPI = async (req: Request) => {
           select: {
             id: true,
             type: true,
-            number: true,
-            patient: {
+            documentName: true,
+            path: true,
+            originalName: true,
+            mimeType: true,
+            size: true,
+            opd: {
               select: {
-                firstName: true,
-                lastName: true,
-                middleName: true,
                 id: true,
+                opdDateTime: true,
+                patient: {
+                  select: {
+                    id: true,
+                    title: true,
+                    firstName: true,
+                    middleName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+            ipd: {
+              select: {
+                id: true,
+                ipdDateTime: true,
+                isDayCare: true,
+                patient: {
+                  select: {
+                    id: true,
+                    title: true,
+                    firstName: true,
+                    middleName: true,
+                    lastName: true,
+                  },
+                },
               },
             },
             createdAt: true,
             updatedAt: true,
           },
         }),
-        prisma.patientIdentification.count({ where }),
+        prisma.documentStore.count({ where }),
       ]);
 
       return apiResponse({
@@ -214,26 +322,134 @@ export const getDocumentsAPI = async (req: Request) => {
   });
 };
 
-export const createDocumentAPI = async (req: Request) => {
-  return validateRequest({
-    bodySchema: identificationsValidator,
-    req,
-    onSuccess: async ({ body }) => {
-      const data = body;
+export const createDocumentAPI = async (req: Request, user: User) => {
+  const formData = await req.formData();
+  const file = formData.get("file");
+  const rawOpdId = formData.get("opdId");
+  const rawIpdId = formData.get("ipdId");
+  const parsed = patientDocumentUploadValidator.safeParse({
+    documentName: formData.get("documentName"),
+    opdId: typeof rawOpdId === "string" && rawOpdId ? rawOpdId : undefined,
+    ipdId: typeof rawIpdId === "string" && rawIpdId ? rawIpdId : undefined,
+  });
 
-      const patient = await prisma.patientIdentification.create({
+  if (!parsed.success) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: parsed.error.issues[0]?.message || "Invalid request",
+    });
+  }
+
+  if (!(file instanceof File)) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message: "File is required",
+    });
+  }
+
+  const { documentName, opdId, ipdId } = parsed.data;
+  const linkedRecord = opdId
+    ? await prisma.opd.findFirst({
+        where: { id: opdId, isDeleted: false },
+        select: { id: true },
+      })
+    : await prisma.ipd.findFirst({
+        where: { id: ipdId, isDeleted: false },
+        select: { id: true },
+      });
+
+  if (!linkedRecord) {
+    return apiResponse({
+      status: RESPONSE_STATUS.NOT_FOUND,
+      message: opdId ? "OPD not found" : "IPD not found",
+    });
+  }
+
+  try {
+    const saved = await savePublicDocument({ file });
+
+    try {
+      const document = await prisma.documentStore.create({
         data: {
-          ...data,
+          type: opdId
+            ? DocumentStoreType.OPD_DOCUMENT
+            : DocumentStoreType.IPD_DOCUMENT,
+          documentName,
+          path: saved.publicPath,
+          originalName: saved.originalName,
+          mimeType: saved.mimeType,
+          size: saved.size,
+          createdBy: user.id,
+          opdId: opdId ?? null,
+          ipdId: ipdId ?? null,
+        },
+        select: {
+          id: true,
+          type: true,
+          documentName: true,
+          path: true,
+          originalName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+          updatedAt: true,
+          opd: {
+            select: {
+              id: true,
+              opdDateTime: true,
+              patient: {
+                select: {
+                  id: true,
+                  title: true,
+                  firstName: true,
+                  middleName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          ipd: {
+            select: {
+              id: true,
+              ipdDateTime: true,
+              isDayCare: true,
+              patient: {
+                select: {
+                  id: true,
+                  title: true,
+                  firstName: true,
+                  middleName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
       });
 
       return apiResponse({
         status: RESPONSE_STATUS.CREATED,
-        message: "Document Created Successfully",
-        data: patient,
+        message: "Document uploaded successfully",
+        data: document,
       });
-    },
-  });
+    } catch (error) {
+      try {
+        await deletePublicDocument(saved.publicPath);
+      } catch {}
+
+      return apiResponse({
+        status: RESPONSE_STATUS.BAD_REQUEST,
+        message:
+          error instanceof Error ? error.message : "Failed to upload document",
+      });
+    }
+  } catch (error) {
+    return apiResponse({
+      status: RESPONSE_STATUS.BAD_REQUEST,
+      message:
+        error instanceof Error ? error.message : "Failed to upload document",
+    });
+  }
 };
 
 export const getDetailsAPI = async (

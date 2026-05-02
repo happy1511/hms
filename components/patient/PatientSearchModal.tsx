@@ -18,7 +18,6 @@ import {
   ColumnDefWithClass,
   FilterValues,
   OPDType,
-  PatientDocumentType,
 } from "@/lib/type";
 import { useOpdList } from "@/hooks/query/opd";
 import { useRouter } from "next/navigation";
@@ -30,10 +29,7 @@ import { ActionType, ModuleType } from "@/generated/prisma/enums";
 
 interface Props {
   trigger: React.ReactNode;
-  actions: (
-    row: OPDType | PatientDocumentType,
-    setOpen: (open: boolean) => void,
-  ) => React.ReactNode;
+  actions: (row: OPDType, setOpen: (open: boolean) => void) => React.ReactNode;
 }
 
 const PatientSearchModal = ({ trigger, actions }: Props) => {

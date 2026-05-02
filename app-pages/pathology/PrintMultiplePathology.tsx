@@ -1,5 +1,6 @@
 "use client";
 
+import { CompanyDetailsType } from "@/generated/prisma/enums";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PathologyPatientDetailsTable from "@/components/pathology/PathologyPatientDetailsTable";
@@ -48,7 +49,10 @@ const PrintMultiplePathology = () => {
       <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
       <div style={{ fontSize }} className="overflow-auto">
         <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
-          <CompanyPrintHeader className="mb-2" />
+          <CompanyPrintHeader
+            className="mb-2"
+            type={CompanyDetailsType.LAB}
+          />
           <PathologyPatientDetailsTable data={firstOrder} />
 
           <div className="space-y-4 pt-3">

@@ -1,8 +1,8 @@
 import { PATIENT, PATIENT_DOCUMENTS } from "@/lib/apiDefinations";
 import {
   ApiResponse,
-  PaginatedResponse,
   FilterValues,
+  PaginatedResponse,
   PatientType,
   PatientDocumentType,
 } from "@/lib/type";
@@ -17,6 +17,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -42,17 +43,33 @@ const getPatientDocuments = createRequest<
   PaginatedResponse<PatientDocumentType>,
   {
     limit: number;
-    name?: string;
+    search?: string;
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
+    uhid?: number;
+    contactNo?: string;
+    documentType?: string;
+    opdId?: number;
+    ipdId?: number;
   }
 >(PATIENT_DOCUMENTS, "GET");
+const createPatientDocument = createRequest<
+  ApiResponse<PatientDocumentType>,
+  undefined,
+  undefined,
+  {
+    documentName: string;
+    file: File;
+    opdId?: number;
+    ipdId?: number;
+  }
+>(PATIENT_DOCUMENTS, "POST", true);
 
 const getPatients = createRequest<
   PaginatedResponse<PatientType>,
   {
     limit: number;
-    name?: string;
+    search?: string;
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
   }
@@ -87,6 +104,7 @@ export const usePatientDocumentsList = (
   filters: FilterValues,
   page: number,
   limit: number,
+  options?: { enabled?: boolean },
 ) => {
   return useQuery<
     PaginatedResponse<PatientDocumentType>,
@@ -103,8 +121,37 @@ export const usePatientDocumentsList = (
           ...(filters.uhid && { uhid: filters.uhid }),
           ...(filters.name && { search: filters.name }),
           ...(filters.contactNo && { contactNo: filters.contactNo }),
+          ...(filters.documentType && { documentType: filters.documentType }),
+          ...(filters.opdId && { opdId: filters.opdId }),
+          ...(filters.ipdId && { ipdId: filters.ipdId }),
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
         },
       }),
+    enabled: options?.enabled ?? true,
+  });
+};
+
+export const useCreatePatientDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ApiResponse<PatientDocumentType>,
+    AxiosError<ApiResponse<null>>,
+    {
+      documentName: string;
+      file: File;
+      opdId?: number;
+      ipdId?: number;
+    }
+  >({
+    mutationKey: ["create-patient-document"],
+    mutationFn: (data) => createPatientDocument({ body: data }),
+    onSuccess: () => {
+      toast.success("Document uploaded successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["patient-documents"],
+      });
+    },
+    onError: showError,
   });
 };
 

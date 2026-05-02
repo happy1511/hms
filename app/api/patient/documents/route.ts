@@ -12,6 +12,22 @@ export async function GET(request: Request) {
       request,
       [
         {
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["DAY_CARE_IPD"],
+          action: ActionType["VIEW"],
+        },
+        {
+          module: ModuleType["DISCHARGE_PATIENT"],
+          action: ActionType["VIEW"],
+        },
+        {
           module: ModuleType["PATIENT_MASTER"],
           action: ActionType["VIEW"],
         },
@@ -27,11 +43,23 @@ export async function POST(request: Request) {
       request,
       [
         {
-          module: ModuleType["PATIENT_MASTER"],
-          action: ActionType["CREATE"],
+          module: ModuleType["OPD_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["IPD_BILL"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["DAY_CARE_IPD"],
+          action: ActionType["UPDATE"],
+        },
+        {
+          module: ModuleType["DISCHARGE_PATIENT"],
+          action: ActionType["UPDATE"],
         },
       ],
-      () => createDocumentAPI(request),
+      (req, user) => createDocumentAPI(req, user),
     ),
   );
 }

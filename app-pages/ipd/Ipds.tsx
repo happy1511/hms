@@ -17,6 +17,7 @@ import ReallocateIpdBedModal from "@/components/ipd/ReallocateIpdBedModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import PatientDocumentsModal from "@/components/patient/PatientDocumentsModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -110,6 +111,7 @@ const Actions = ({
   canDelete,
   canPrint,
   canUpdate,
+  canView,
   canMarkMlc,
   data,
   onChangeDoctor,
@@ -120,6 +122,7 @@ const Actions = ({
   canDelete: boolean;
   canPrint: boolean;
   canUpdate: boolean;
+  canView: boolean;
   canMarkMlc: boolean;
   data: IPDType;
   onChangeDoctor: (mode: "consultant" | "referring", ipd: IPDType) => void;
@@ -134,6 +137,7 @@ const Actions = ({
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
   const [patientViewOpen, setPatientViewOpen] = useState(false);
+  const [viewDocumentsOpen, setViewDocumentsOpen] = useState(false);
 
   const { mutateAsync: declareMlc, isPending: declareMlcPending } =
     useDeclareIpdMlc();
@@ -184,6 +188,29 @@ const Actions = ({
   ];
 
   const ipdItems: DropdownItem[] = [];
+
+  if (canView) {
+    ipdItems.push({
+      label: "View Documents",
+      onClick: () => setViewDocumentsOpen(true),
+    });
+  }
+
+  if (canUpdate) {
+    ipdItems.push({
+      label: "Upload Document",
+      onClick: () => {
+        const params = new URLSearchParams({
+          ipdId: String(data.id),
+          patientId: String(data.patient.id),
+          patientName: [data.patient.firstName, data.patient.lastName]
+            .filter(Boolean)
+            .join(" "),
+        });
+        window.open(`/patient/documents/upload?${params.toString()}`, "_blank");
+      },
+    });
+  }
 
   if (!dischargedList && canUpdate) {
     ipdItems.push(
@@ -333,6 +360,15 @@ const Actions = ({
         open={changeDateTimeOpen}
         onOpenChange={setChangeDateTimeOpen}
         ipd={data}
+      />
+      <PatientDocumentsModal
+        open={viewDocumentsOpen}
+        onOpenChange={setViewDocumentsOpen}
+        ipdId={data.id}
+        title={`Documents: ${data.isDayCare ? "Day Care" : "IPD"} #${data.id}`}
+        description={[data.patient.firstName, data.patient.lastName]
+          .filter(Boolean)
+          .join(" ")}
       />
     </>
   );
@@ -578,6 +614,7 @@ const IPDs = ({
               canDelete={Boolean(canDelete)}
               canPrint={Boolean(canPrint)}
               canUpdate={Boolean(canUpdate)}
+              canView={Boolean(canView)}
               canMarkMlc={Boolean(canMarkMlc)}
               data={row.original}
               dischargedList
@@ -742,6 +779,7 @@ const IPDs = ({
               canDelete={Boolean(canDelete)}
               canPrint={Boolean(canPrint)}
               canUpdate={Boolean(canUpdate)}
+              canView={Boolean(canView)}
               canMarkMlc={Boolean(canMarkMlc)}
               data={row.original}
               onChangeDoctor={(mode, ipd) => {

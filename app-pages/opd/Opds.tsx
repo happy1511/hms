@@ -17,6 +17,7 @@ import ChangeOpdDoctorModal from "@/components/opd/ChangeOpdDoctorModal";
 import ChangeOpdStatusModal from "@/components/opd/ChangeOpdStatusModal";
 import PrintConsultationModal from "@/components/opd/PrintConsultationModal";
 import ViewInvoiceModal from "@/components/opd/ViewInvoiceModal";
+import PatientDocumentsModal from "@/components/patient/PatientDocumentsModal";
 import { PatientViewModal } from "@/components/patient/PatientView";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -36,6 +37,8 @@ import { endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const CERTIFICATES_MODULE = "CERTIFICATES" as ModuleType;
+
 const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
   const router = useRouter();
   return (
@@ -53,12 +56,16 @@ const Buttons = ({ canCreate = false }: { canCreate?: boolean }) => {
 
 const Actions = ({
   canDelete,
+  canCreateCertificates,
+  canView,
   canPrint,
   canUpdate,
   data,
   onPrintConsultPage,
 }: {
   canDelete: boolean;
+  canCreateCertificates: boolean;
+  canView: boolean;
   canPrint: boolean;
   canUpdate: boolean;
   data: OPDType;
@@ -71,6 +78,7 @@ const Actions = ({
   const [confirmAddToIpdOpen, setConfirmAddToIpdOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [viewDocumentsOpen, setViewDocumentsOpen] = useState(false);
   const router = useRouter();
   const { mutateAsync: deleteOpd, isPending: deletePending } = useDeleteOpd();
   const canDeleteToday = canDelete && isSameDay(new Date(data.createdAt), new Date());
@@ -100,10 +108,47 @@ const Actions = ({
       label: "View Consultation File",
       onClick: () => router.push(`/opd/consultation/${data.id}`),
     },
+    {
+      label: "View Documents",
+      onClick: () => setViewDocumentsOpen(true),
+      disabled: !canView,
+    },
   ];
+
+  if (canCreateCertificates) {
+    opdItems.push(
+      {
+        label: "Create Medical Certificate",
+        onClick: () =>
+          router.push(`/certificates?opdId=${data.id}&tab=${encodeURIComponent("MEDICAL")}`),
+      },
+      {
+        label: "Create Fitness Certificate",
+        onClick: () =>
+          router.push(`/certificates?opdId=${data.id}&tab=${encodeURIComponent("FITNESS")}`),
+      },
+    );
+  }
 
   if (canUpdate) {
     opdItems.unshift(
+      {
+        label: "Upload Document",
+        onClick: () => {
+          const params = new URLSearchParams({
+            opdId: String(data.id),
+            patientId: String(data.patient.id),
+            patientName: [
+              data.patient.title ? `${data.patient.title}.` : "",
+              data.patient.firstName,
+              data.patient.lastName,
+            ]
+              .filter(Boolean)
+              .join(" "),
+          });
+          window.open(`/patient/documents/upload?${params.toString()}`, "_blank");
+        },
+      },
       {
         label: "Create New OPD",
         onClick: () => setConfirmNewOpdOpen(true),
@@ -215,6 +260,19 @@ const Actions = ({
         pending={deletePending}
         handleConfirm={() => deleteOpd({ opdId: data.id })}
       />
+      <PatientDocumentsModal
+        open={viewDocumentsOpen}
+        onOpenChange={setViewDocumentsOpen}
+        opdId={data.id}
+        title={`Documents: OPD #${data.id}`}
+        description={[
+          data.patient.title ? `${data.patient.title}.` : "",
+          data.patient.firstName,
+          data.patient.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      />
     </>
   );
 };
@@ -295,6 +353,11 @@ const OPDs = ({
     profile?.data,
     ModuleType.OPD_BILL,
     ActionType.DELETE,
+  );
+  const canCreateCertificates = hasActionPermission(
+    profile?.data,
+    CERTIFICATES_MODULE,
+    ActionType.CREATE,
   );
 
   const columns: ColumnDefWithClass<OPDType>[] = [
@@ -482,6 +545,8 @@ const OPDs = ({
       cell: ({ row }) => (
         <Actions
           canDelete={Boolean(canDelete)}
+          canCreateCertificates={Boolean(canCreateCertificates)}
+          canView={Boolean(canView)}
           canPrint={Boolean(canPrint)}
           canUpdate={Boolean(canUpdate)}
           data={row.original}

@@ -57,6 +57,8 @@ interface SidebarItem {
   requireViewPermission?: boolean;
 }
 
+const CERTIFICATES_MODULE = "CERTIFICATES" as ModuleType;
+
 const opdItems: SidebarItem[] = [
   {
     title: "PATIENTS OPD",
@@ -75,6 +77,12 @@ const opdItems: SidebarItem[] = [
     url: "/opd/appointments",
     icon: Calendar,
     module: [ModuleType.APPOINTMENT],
+  },
+  {
+    title: "CERTIFICATES",
+    url: "/certificates",
+    icon: FileText,
+    module: [CERTIFICATES_MODULE],
   },
   // {
   //   title: "SCANNED REPORTS",
@@ -302,7 +310,11 @@ const masters: SidebarItem[] = [
     title: "COMPANY DETAILS",
     url: "/company",
     icon: Building2,
-    module: [ModuleType.COMPANY_DETAILS],
+    module: [
+      ModuleType.HOSPITAL_COMPANY_DETAILS,
+      ModuleType.LAB_COMPANY_DETAILS,
+      ModuleType.PHARMACY_COMPANY_DETAILS,
+    ],
   },
 ];
 

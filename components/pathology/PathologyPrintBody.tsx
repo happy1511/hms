@@ -1,5 +1,6 @@
 "use client";
 
+import { CompanyDetailsType } from "@/generated/prisma/enums";
 import { PathologyTestResultType } from "@/lib/type";
 import { cn } from "@/lib/utils";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
@@ -20,7 +21,7 @@ const PathologyPrintBody = ({ data, layoutClassName = "" }: Props) => {
         layoutClassName,
       )}
     >
-      <CompanyPrintHeader className="mb-2" />
+      <CompanyPrintHeader className="mb-2" type={CompanyDetailsType.LAB} />
       <PathologyPatientDetailsTable data={data} />
       <PathologyReportContent data={data} />
     </div>

@@ -1,7 +1,6 @@
 import {
   AppointmentStatus,
   DoctorType,
-  IdentityType,
   PathologyOrderStatus,
   PathologyTestSection,
   RadiologyOrderStatus,
@@ -71,7 +70,7 @@ const paginationValidator = z.object({
     .min(1)
     .optional()
     .transform((t) => Number(t)),
-  documentType: z.enum(IdentityType).optional(),
+  documentType: z.string().optional(),
   pathologyTestType: z.enum(PathologyTestSection).optional(),
   radiologyTestType: z.enum(RadiologySection).optional(),
   pathologyTestId: z.coerce
@@ -81,6 +80,10 @@ const paginationValidator = z.object({
   defaultSelectedIds: z.array(z.coerce.number()).optional(),
   transactionType: z.enum(["opd", "ipd"]).optional(),
   opdId: z.coerce
+    .number()
+    .optional()
+    .transform((t) => Number(t)),
+  ipdId: z.coerce
     .number()
     .optional()
     .transform((t) => Number(t)),

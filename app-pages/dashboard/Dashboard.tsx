@@ -219,6 +219,7 @@ const Dashboard = () => {
             <CustomTabs
               defaultValue={tabs[0]?.value}
               tabs={tabs}
+              classNames="border-none"
               buttons={
                 selectedDateRange?.from && selectedDateRange?.to ? (
                   <div className="px-2 pb-1 text-[11px] font-medium text-muted-foreground">

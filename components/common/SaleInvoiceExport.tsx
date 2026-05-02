@@ -3,6 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import { CompanyDetailsType } from "@/generated/prisma/enums";
 
 interface SaleInvoiceLine {
   name: string;
@@ -71,7 +72,7 @@ const SaleInvoiceExport = ({
       )}
     >
       <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
-        <CompanyPrintHeader />
+        <CompanyPrintHeader type={CompanyDetailsType.PHARMACY} />
         {/* Header */}
         <div>
           <div className="flex items-center justify-center bg-[#dedede] px-3 py-2">

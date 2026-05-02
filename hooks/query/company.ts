@@ -1,3 +1,4 @@
+import { CompanyDetailsType } from "@/generated/prisma/enums";
 import { COMPANY } from "@/lib/apiDefinations";
 import { ApiResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 
 export type CompanyDetails = {
   id: number;
+  type: CompanyDetailsType;
   name: string;
   address: string;
   mobile: string;
@@ -16,14 +18,16 @@ export type CompanyDetails = {
   updatedAt: string | Date;
 };
 
-const getCompany = createRequest<ApiResponse<CompanyDetails>>(COMPANY, "GET");
+export type CompanyDetailsByType = Record<CompanyDetailsType, CompanyDetails>;
+
+const getCompany = createRequest<ApiResponse<CompanyDetailsByType>>(COMPANY, "GET");
 const updateCompany = createRequest<ApiResponse<CompanyDetails>>(COMPANY, "PUT");
 
 export const useCompanyDetails = () => {
   return useQuery<
-    ApiResponse<CompanyDetails>,
+    ApiResponse<CompanyDetailsByType>,
     AxiosError<ApiResponse<null>>,
-    CompanyDetails,
+    CompanyDetailsByType,
     [string]
   >({
     queryKey: ["company-details"],
@@ -49,4 +53,3 @@ export const useUpdateCompanyDetails = () => {
     onError: showError,
   });
 };
-

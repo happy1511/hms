@@ -1,19 +1,28 @@
 "use client";
 
+import { CompanyDetailsType } from "@/generated/prisma/enums";
 import { useCompanyDetails } from "@/hooks/query/company";
 import { cn } from "@/lib/utils";
 import { useContext } from "react";
 import { PrintPreferencesContext } from "@/components/common/PrintPreferencesProvider";
 
-const CompanyPrintHeader = ({ className = "" }: { className?: string }) => {
+const CompanyPrintHeader = ({
+  className = "",
+  type = CompanyDetailsType.HOSPITAL,
+}: {
+  className?: string;
+  type?: CompanyDetailsType;
+}) => {
   const { includeHeader } = useContext(PrintPreferencesContext);
   const { data } = useCompanyDetails();
 
   if (!includeHeader) return null;
 
-  const name = data?.name?.trim() || "";
-  const address = data?.address?.trim() || "";
-  const mobile = data?.mobile?.trim() || "";
+  const selectedDetails = data?.[type];
+
+  const name = selectedDetails?.name?.trim() || "";
+  const address = selectedDetails?.address?.trim() || "";
+  const mobile = selectedDetails?.mobile?.trim() || "";
 
   if (!name && !address && !mobile) return null;
 

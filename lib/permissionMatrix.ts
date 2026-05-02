@@ -1,5 +1,7 @@
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 
+const CERTIFICATES_MODULE = "CERTIFICATES" as ModuleType;
+
 export const MODULE_ACTION_MATRIX = {
   [ModuleType.USER]: [
     ActionType.CREATE,
@@ -12,6 +14,9 @@ export const MODULE_ACTION_MATRIX = {
   [ModuleType.LAB_DASHBOARD]: [ActionType.VIEW],
   [ModuleType.PHARMACY_DASHBOARD]: [ActionType.VIEW],
   [ModuleType.COMPANY_DETAILS]: [ActionType.VIEW, ActionType.UPDATE],
+  [ModuleType.HOSPITAL_COMPANY_DETAILS]: [ActionType.UPDATE],
+  [ModuleType.LAB_COMPANY_DETAILS]: [ActionType.UPDATE],
+  [ModuleType.PHARMACY_COMPANY_DETAILS]: [ActionType.UPDATE],
   [ModuleType.DAY_CARE_IPD]: [
     ActionType.CREATE,
     ActionType.UPDATE,
@@ -208,5 +213,11 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.UPDATE,
     ActionType.VIEW,
     ActionType.DELETE,
+  ],
+  [CERTIFICATES_MODULE]: [
+    ActionType.CREATE,
+    ActionType.UPDATE,
+    ActionType.VIEW,
+    ActionType.PRINT,
   ],
 } as unknown as Record<ModuleType, ActionType[]>;

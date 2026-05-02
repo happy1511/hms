@@ -36,6 +36,8 @@ export const DOCTORS = "/doctor";
 // ----------------------------------
 export const PATIENT = "/patient";
 export const PATIENT_DOCUMENTS = "/patient/documents";
+export const CERTIFICATE = "/certificate";
+export const CERTIFICATE_TEMPLATE = "/certificate/template";
 
 // ----------------------------------
 // ---------DEPARTMENTS ENDPOINTS--------

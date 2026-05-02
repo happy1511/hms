@@ -176,6 +176,9 @@ enum ModuleType {
   LAB_DASHBOARD
   PHARMACY_DASHBOARD
   COMPANY_DETAILS
+  HOSPITAL_COMPANY_DETAILS
+  LAB_COMPANY_DETAILS
+  PHARMACY_COMPANY_DETAILS
   DAY_CARE_IPD
   IPD_MLC
   DOCTOR_MASTER
@@ -221,6 +224,7 @@ enum ModuleType {
   FINANCE_CATEGORY_MASTER
   INCOME
   EXPENSE
+  CERTIFICATES
 }
 
 enum ActionType {
@@ -381,6 +385,17 @@ enum SupplierPaymentType {
 enum FinanceCategoryType {
   INCOME
   EXPENSE
+}
+
+enum CertificateType {
+  MEDICAL
+  FITNESS
+}
+
+enum CompanyDetailsType {
+  HOSPITAL
+  LAB
+  PHARMACY
 }
 
 enum PathologyOrderStatus {
@@ -545,6 +560,10 @@ model User {
   sampleTakenRadiology          RadiologyTestOrder[]     @relation("sampleTakenRadiology")
   cancelledTakenRadiology       RadiologyTestOrder[]     @relation("cancelledTakenRadiology")
   createdDocuments              DocumentStore[]          @relation("DocumentStoreCreatedBy")
+  createdCertificateTemplates   CertificateTemplate[]    @relation("CertificateTemplateCreatedBy")
+  updatedCertificateTemplates   CertificateTemplate[]    @relation("CertificateTemplateUpdatedBy")
+  createdOpdCertificates        OpdCertificate[]         @relation("OpdCertificateCreatedBy")
+  updatedOpdCertificates        OpdCertificate[]         @relation("OpdCertificateUpdatedBy")
   createdByUser                 User?                    @relation("UserCreatedBy", fields: [createdBy], references: [id])
   updatedByUser                 User?                    @relation("UserUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser                 User?                    @relation("UserDeletedBy", fields: [deletedBy], references: [id])
@@ -1273,28 +1292,38 @@ enum DocumentStoreType {
   LAB_REPORT_PATHOLOGY
   LAB_REPORT_RADIOLOGY
   PATIENT_DOCUMENT
+  OPD_DOCUMENT
+  IPD_DOCUMENT
   OTHER
 }
 
 model DocumentStore {
   id           Int               @id @default(autoincrement())
   type         DocumentStoreType @default(OTHER)
+  documentName String?
   path         String
   originalName String
   mimeType     String?
   size         Int
   createdBy    Int?
+  opdId        Int?
+  ipdId        Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   createdByUser User? @relation("DocumentStoreCreatedBy", fields: [createdBy], references: [id])
+  opd           Opd?  @relation("OpdDocuments", fields: [opdId], references: [id], onDelete: SetNull)
+  ipd           Ipd?  @relation("IpdDocuments", fields: [ipdId], references: [id], onDelete: SetNull)
 
   pathologyScannedReports PathologyTestOrder[] @relation("PathologyScannedReport")
   radiologyScannedReports RadiologyTestOrder[] @relation("RadiologyScannedReport")
 
   @@index([type])
+  @@index([documentName])
   @@index([createdBy])
+  @@index([opdId])
+  @@index([ipdId])
   @@index([createdAt])
 }
 
@@ -1695,6 +1724,8 @@ model Opd {
   prescribedDrugs       PrescribedDrugs[]
   pathologyTestOrders   PathologyTestOrder[]
   radiologyTestOrders   RadiologyTestOrder[]
+  documents             DocumentStore[]          @relation("OpdDocuments")
+  certificates          OpdCertificate[]
 
   @@index([patientId])
   @@index([consultantDoctorId])
@@ -1747,6 +1778,7 @@ model Ipd {
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
   invoice             Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   dischargeSummary    IpdDischargeSummary?
+  documents           DocumentStore[]      @relation("IpdDocuments")
   bedAllocations      IpdBedAllocation[]
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
@@ -1842,13 +1874,51 @@ model IpdDischargeDrug {
 // -------------------- Company Details --------------------
 
 model CompanyDetails {
-  id      Int    @id @default(autoincrement())
-  name    String @default("")
-  address String @default("")
-  mobile  String @default("")
+  id      Int                @id @default(autoincrement())
+  type    CompanyDetailsType @unique
+  name    String             @default("")
+  address String             @default("")
+  mobile  String             @default("")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CertificateTemplate {
+  id        Int             @id @default(autoincrement())
+  type      CertificateType @unique
+  content   String          @db.LongText
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  createdByUser User? @relation("CertificateTemplateCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User? @relation("CertificateTemplateUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@index([createdBy])
+  @@index([updatedBy])
+}
+
+model OpdCertificate {
+  id        Int             @id @default(autoincrement())
+  opdId      Int
+  type      CertificateType
+  content   String          @db.LongText
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  opd           Opd   @relation(fields: [opdId], references: [id], onDelete: Cascade)
+  createdByUser User? @relation("OpdCertificateCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User? @relation("OpdCertificateUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@index([opdId])
+  @@index([type])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([createdAt])
 }
 
 // -------------------- Drug Management --------------------

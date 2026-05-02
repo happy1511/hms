@@ -16,6 +16,7 @@ import {
   NameTitle,
   PathologyOrderStatus,
   Status,
+  CertificateType,
 } from "@/generated/prisma/enums";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -308,6 +309,7 @@ export interface FilterValues {
   defaultSelectedIds?: string[] | number[];
   testStatus?: PathologyOrderStatus[];
   opdId?: number;
+  ipdId?: number;
   invoiceId?: number;
   supplierId?: number;
   drugId?: number;
@@ -837,11 +839,85 @@ export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
   };
 }>;
 
-export type PatientDocumentType = Prisma.PatientIdentificationGetPayload<{
-  include: {
-    patient: true;
+export type PatientDocumentType = Prisma.DocumentStoreGetPayload<{
+  select: {
+    id: true;
+    type: true;
+    documentName: true;
+    path: true;
+    originalName: true;
+    mimeType: true;
+    size: true;
+    createdAt: true;
+    updatedAt: true;
+    opd: {
+      select: {
+        id: true;
+        opdDateTime: true;
+        patient: {
+          select: {
+            id: true;
+            title: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+          };
+        };
+      };
+    };
+    ipd: {
+      select: {
+        id: true;
+        ipdDateTime: true;
+        isDayCare: true;
+        patient: {
+          select: {
+            id: true;
+            title: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+          };
+        };
+      };
+    };
   };
 }>;
+
+export type CertificateTemplateType = Prisma.CertificateTemplateGetPayload<{}>;
+
+export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{
+  include: {
+    opd: {
+      select: {
+        id: true;
+        opdDateTime: true;
+        consultantDoctor: {
+          select: {
+            user: {
+              select: {
+                name: true;
+              };
+            };
+          };
+        };
+        patient: {
+          select: {
+            id: true;
+            title: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+            gender: true;
+            dob: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type CertificateTemplateMap = Record<CertificateType, string>;
 
 export type ServiceDataType = Prisma.ServiceGetPayload<{
   include: {
