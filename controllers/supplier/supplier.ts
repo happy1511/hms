@@ -102,9 +102,15 @@ export const createAPI = async (req: Request, user: User) => {
     req,
     onSuccess: async ({ body }) => {
       return prisma.$transaction(async (tx) => {
+        const normalizedPhone = String(body.phone ?? "").trim();
+        const normalizedGstIn = body.gstIn?.trim() || null;
+        const normalizedEmail = body.email?.trim() || null;
         const data = await tx.drugSupplier.create({
           data: {
-            ...body,
+            name: body.name.trim(),
+            gstIn: normalizedGstIn,
+            email: normalizedEmail,
+            phone: normalizedPhone,
             createdBy: user.id ,
             updatedBy: user.id ,
           },
@@ -148,7 +154,16 @@ export const updateAPI = async (
         const updatedSupplier = await tx.drugSupplier.update({
           where: { id: supplierId },
           data: {
-            ...rest,
+            ...(rest.name !== undefined ? { name: rest.name.trim() } : {}),
+            ...(rest.gstIn !== undefined
+              ? { gstIn: rest.gstIn?.trim() || null }
+              : {}),
+            ...(rest.email !== undefined
+              ? { email: rest.email?.trim() || null }
+              : {}),
+            ...(rest.phone !== undefined
+              ? { phone: String(rest.phone ?? "").trim() }
+              : {}),
             updatedBy: user.id ,
           },
         });

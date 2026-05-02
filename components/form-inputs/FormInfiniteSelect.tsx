@@ -93,6 +93,9 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
     return mapToOption(value as TItem);
   }, [value, mapToOption, multiple]);
 
+  const menuPortalTarget =
+    typeof document !== "undefined" ? document.body : undefined;
+
   return (
     <AsyncPaginate<Option<TItem>, GroupBase<Option<TItem>>, Additional>
       isMulti={multiple as any}
@@ -106,6 +109,12 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
       }}
       debounceTimeout={300}
       placeholder={placeholder}
+      menuPlacement="auto"
+      menuPosition="fixed"
+      menuPortalTarget={menuPortalTarget}
+      menuShouldBlockScroll={false}
+      menuShouldScrollIntoView={false}
+      maxMenuHeight={240}
       classNamePrefix="react-select"
       classNames={{
         control: () => clsx("w-full rounded!", className),
@@ -135,7 +144,13 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
         indicatorsContainer: (base) => ({ ...base, height: 24 }),
         dropdownIndicator: (base) => ({ ...base, padding: 4 }),
         clearIndicator: (base) => ({ ...base, padding: 4 }),
-        menu: (base) => ({ ...base, zIndex: 50 }),
+        menu: (base) => ({ ...base, zIndex: 9999 }),
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        menuList: (base) => ({
+          ...base,
+          maxHeight: 240,
+          overflowY: "auto",
+        }),
       }}
     />
   );

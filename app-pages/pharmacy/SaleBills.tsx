@@ -31,14 +31,29 @@ const neededFilters: FilterConfig<FilterValues>[] = [
   { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
 ];
 
-const Buttons = ({ canCreate }: { canCreate: boolean }) => {
+const Buttons = ({
+  canCreateSaleBill,
+  canCreateSaleReturn,
+}: {
+  canCreateSaleBill: boolean;
+  canCreateSaleReturn: boolean;
+}) => {
   const router = useRouter();
   return (
     <>
-      {canCreate && (
-        <CustomButton onClick={() => router.push("/pharmacy/sale-bill/new")}>
-          New Sale Bill
-        </CustomButton>
+      {(canCreateSaleBill || canCreateSaleReturn) && (
+        <div className="flex gap-2">
+          {canCreateSaleReturn && (
+            <CustomButton onClick={() => router.push("/pharmacy/sale-return/select")}>
+              Sale Return
+            </CustomButton>
+          )}
+          {canCreateSaleBill && (
+            <CustomButton onClick={() => router.push("/pharmacy/sale-bill/new")}>
+              New Sale Bill
+            </CustomButton>
+          )}
+        </div>
       )}
     </>
   );
@@ -47,10 +62,12 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
 const Actions = ({
   data,
   canUpdate,
+  canCreateSaleReturn,
   canPrint,
 }: {
   data: SaleBillData;
   canUpdate: boolean;
+  canCreateSaleReturn: boolean;
   canPrint: boolean;
 }) => {
   const [viewInvoiceModal, setViewInvoiceModal] = useState(false);
@@ -66,6 +83,13 @@ const Actions = ({
 
   if (canPrint) {
     actions.push({ label: "Print", onClick: () => setViewInvoiceModal(true) });
+  }
+
+  if (canCreateSaleReturn) {
+    actions.push({
+      label: "Return Sale",
+      onClick: () => router.push(`/pharmacy/sale-return/select?billId=${data.id}`),
+    });
   }
 
   return (
@@ -114,6 +138,11 @@ const SaleBills = () => {
   const canCreate = hasActionPermission(
     profile?.data,
     ModuleType.PHARMACY_SALE_BILL,
+    ActionType.CREATE,
+  );
+  const canCreateSaleReturn = hasActionPermission(
+    profile?.data,
+    ModuleType.PHARMACY_SALE_RETURN,
     ActionType.CREATE,
   );
   const canUpdate = hasActionPermission(
@@ -222,6 +251,7 @@ const SaleBills = () => {
         <Actions
           data={row.original}
           canUpdate={Boolean(canUpdate)}
+          canCreateSaleReturn={Boolean(canCreateSaleReturn)}
           canPrint={Boolean(canPrint)}
         />
       ),
@@ -233,7 +263,12 @@ const SaleBills = () => {
   return (
     <CustomLayout
       title="Pharmacy Sale Bills"
-      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+      buttons={
+        <Buttons
+          canCreateSaleBill={Boolean(canCreate)}
+          canCreateSaleReturn={Boolean(canCreateSaleReturn)}
+        />
+      }
     >
       {canView && (
         <>

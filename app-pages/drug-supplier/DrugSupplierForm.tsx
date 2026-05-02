@@ -27,7 +27,7 @@ const getInitialValues = (data?: DrugSupplier): supplierValidatorType => ({
   name: data?.name ?? "",
   gstIn: data?.gstIn ?? "",
   email: data?.email ?? "",
-  phone: data?.phone ?? 0,
+  phone: data?.phone ? String(data.phone) : "",
 });
 
 const UpdateCreateForm = ({ data }: { data?: DrugSupplier }) => {
@@ -75,7 +75,7 @@ const UpdateCreateForm = ({ data }: { data?: DrugSupplier }) => {
 
           <FormField<supplierValidatorType>
             label="Phone Number"
-            type="number"
+            type="text"
             name="phone"
             control={form.control}
             required

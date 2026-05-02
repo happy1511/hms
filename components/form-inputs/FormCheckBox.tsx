@@ -18,13 +18,22 @@ export function FormCheckbox<T extends FieldValues>({
   label,
   required = false,
   className = "",
+  formItemClassName = "",
+  hideError = false,
+  hideLabel = false,
 }: FormCheckboxProps<T>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className="flex items-center gap-1 relative pb-4 text-primary">
+        <FormItem
+          className={clsx(
+            "flex items-center gap-1 relative text-primary",
+            hideError ? "" : "pb-4",
+            formItemClassName,
+          )}
+        >
           <FormControl className="h-6 flex items-center">
             <Checkbox
               checked={field.value}
@@ -33,14 +42,18 @@ export function FormCheckbox<T extends FieldValues>({
             />
           </FormControl>
 
-          <FormLabel className="text-tiny font-medium font-quicksand">
-            {label}
-            {required && (
-              <span className="text-[#FFA600] text-tiny ms-1">*</span>
-            )}
-          </FormLabel>
+          {!hideLabel && (
+            <FormLabel className="text-tiny font-medium font-quicksand">
+              {label}
+              {required && (
+                <span className="text-[#FFA600] text-tiny ms-1">*</span>
+              )}
+            </FormLabel>
+          )}
 
-          <FormMessage className="absolute bottom-1 left-6 text-tiny font-semibold" />
+          {!hideError && (
+            <FormMessage className="absolute bottom-1 left-6 text-tiny font-semibold" />
+          )}
         </FormItem>
       )}
     />

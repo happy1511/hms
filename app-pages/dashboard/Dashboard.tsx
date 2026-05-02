@@ -2,65 +2,20 @@
 
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import CustomTabs from "@/components/common/CustomTabs";
 import NoPermission from "@/components/common/NoPermission";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useDashboard } from "@/hooks/query/dashboard";
 import { DashboardType, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { Bed, LoaderIcon, NotebookPen, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-
-const formatAmount = (value: unknown) => {
-  const amount = Number(value || 0);
-  return amount.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-};
-
-const TableCard = ({
-  title,
-  rows,
-  totalLabel,
-  totalValue,
-  valueHeader = "Amount",
-}: {
-  title: string;
-  rows: Array<{ type: string; value: number }>;
-  totalLabel: string;
-  totalValue: number;
-  valueHeader?: string;
-}) => (
-  <div className="border bg-white">
-    <div className="border-b px-2 py-2 text-tiny font-semibold">{title}</div>
-    <table className="w-full text-tiny">
-      <thead className="bg-muted">
-        <tr>
-          <th className="w-12 px-2 py-1 text-left">No.</th>
-          <th className="px-2 py-1 text-left">Type</th>
-          <th className="w-40 px-2 py-1 text-right">{valueHeader}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, idx) => (
-          <tr key={`${title}-${row.type}-${idx}`} className="border-t">
-            <td className="px-2 py-1">{idx + 1}.</td>
-            <td className="px-2 py-1">{row.type}</td>
-            <td className="px-2 py-1 text-right">{formatAmount(row.value)}</td>
-          </tr>
-        ))}
-        <tr className="border-t font-semibold">
-          <td className="px-2 py-1" />
-          <td className="px-2 py-1">{totalLabel}</td>
-          <td className="px-2 py-1 text-right">{formatAmount(totalValue)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-);
+import { ReactNode, useState } from "react";
+import HospitalDashboard from "./components/HospitalDashboard";
+import LabDashboard from "./components/LabDashboard";
+import PharmacyDashboard from "./components/PharmacyDashboard";
 
 const QuickLinks = ({
   canCreateOpd,
@@ -113,90 +68,6 @@ const QuickLinks = ({
   </div>
 );
 
-const DashboardTables = ({ data }: { data: DashboardType }) => {
-  const patientRows = [
-    { type: "OPD", value: data.patients.opd },
-    { type: "IPD", value: data.patients.ipd },
-    { type: "DayCare", value: data.patients.dayCare },
-    {
-      type: "Total Patients",
-      value: data.patients.dayCare + data.patients.ipd + data.patients.opd,
-    },
-  ];
-
-  const collectionRows = [
-    { type: "OPD", value: data.collections.opd },
-    { type: "IPD", value: data.collections.ipd },
-    { type: "Other Income", value: data.collections.otherIncome },
-    {
-      type: "Total Income",
-      value: data.collections.totalIncome,
-    },
-    { type: "Expenses", value: data.collections.expenses },
-    { type: "Balance", value: data.collections.balance },
-    { type: "Online Paid", value: data.paymentModes.digitalWallet },
-    {
-      type: "Cash Balance",
-      value: data.collections.balance - data.paymentModes.digitalWallet,
-    },
-    { type: "IPD Due", value: data.collections.ipdDue },
-    { type: "OPD Due", value: data.collections.opdDue },
-  ];
-
-  const totalBillingRows = [{ type: "OPD", value: data.billing.opd }];
-
-  const paymentModeRows = [
-    { type: "Cash", value: data.paymentModes.cash },
-    { type: "Digital Wallet", value: data.paymentModes.digitalWallet },
-  ];
-
-  const careTypeRows = [
-    { type: "Surgical", value: data.ipdCareType.surgical },
-    { type: "Medical", value: data.ipdCareType.medical },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <TableCard
-        title="Patients"
-        rows={patientRows}
-        totalLabel="Ipd Census"
-        totalValue={data.patients.ipdCensus}
-        valueHeader="Count"
-      />
-      <TableCard
-        title="Collections"
-        rows={collectionRows}
-        totalLabel="Net"
-        totalValue={
-          data.collections.balance -
-          data.paymentModes.digitalWallet -
-          (data.collections.ipdDue + data.collections.opdDue)
-        }
-      />
-      <TableCard
-        title="Total Billing"
-        rows={totalBillingRows}
-        totalLabel="Total"
-        totalValue={data.billing.opd}
-      />
-      <TableCard
-        title="Payment Modes"
-        rows={paymentModeRows}
-        totalLabel="Total"
-        totalValue={data.paymentModes.total}
-      />
-      <TableCard
-        title="IPD Care Type"
-        rows={careTypeRows}
-        totalLabel="Total Patients"
-        totalValue={data.ipdCareType.total}
-        valueHeader="IPD Patients"
-      />
-    </div>
-  );
-};
-
 const Dashboard = () => {
   const [filters, setFilters] = useState<FilterValues>({
     createdAt: {
@@ -215,13 +86,43 @@ const Dashboard = () => {
     return <div />;
   }
 
-  const canViewDashboard = hasActionPermission(
-    profile.data,
-    ModuleType.DASHBOARD,
-    ActionType.VIEW,
+  const canViewHospital = Boolean(
+    hasActionPermission(
+      profile.data,
+      ModuleType.HOSPITAL_DASHBOARD,
+      ActionType.VIEW,
+    ),
+  );
+  const canViewPharmacy = Boolean(
+    hasActionPermission(
+      profile.data,
+      ModuleType.PHARMACY_DASHBOARD,
+      ActionType.VIEW,
+    ),
+  );
+  const canViewLab = Boolean(
+    hasActionPermission(
+      profile.data,
+      ModuleType.LAB_DASHBOARD,
+      ActionType.VIEW,
+    ),
+  );
+  const canViewPathologyOrders = Boolean(
+    hasActionPermission(
+      profile.data,
+      ModuleType.PATHOLOGY_ORDER,
+      ActionType.VIEW,
+    ),
+  );
+  const canViewRadiologyOrders = Boolean(
+    hasActionPermission(
+      profile.data,
+      ModuleType.RADIOLOGY_ORDER,
+      ActionType.VIEW,
+    ),
   );
 
-  if (!canViewDashboard) {
+  if (!canViewHospital && !canViewPharmacy && !canViewLab) {
     return (
       <CustomLayout title="Dashboard">
         <NoPermission />
@@ -229,38 +130,74 @@ const Dashboard = () => {
     );
   }
 
-  const canCreateOpd = hasActionPermission(
-    profile.data,
-    ModuleType.OPD_BILL,
-    ActionType.CREATE,
+  const canCreateOpd = Boolean(
+    hasActionPermission(profile.data, ModuleType.OPD_BILL, ActionType.CREATE),
   );
-  const canCreateIpd = hasActionPermission(
-    profile.data,
-    ModuleType.IPD_BILL,
-    ActionType.CREATE,
+  const canCreateIpd = Boolean(
+    hasActionPermission(profile.data, ModuleType.IPD_BILL, ActionType.CREATE),
   );
-  const canCreateDayCare = hasActionPermission(
-    profile.data,
-    ModuleType.DAY_CARE_IPD,
-    ActionType.CREATE,
+  const canCreateDayCare = Boolean(
+    hasActionPermission(profile.data, ModuleType.DAY_CARE_IPD, ActionType.CREATE),
   );
-  const canViewQueue = hasActionPermission(
-    profile.data,
-    ModuleType.OPD_QUEUE,
-    ActionType.VIEW,
+  const canViewQueue = Boolean(
+    hasActionPermission(profile.data, ModuleType.OPD_QUEUE, ActionType.VIEW),
   );
+
+  const tabs = [
+    canViewHospital
+      ? {
+          value: "hospital",
+          name: "Hospital",
+          content: data ? <HospitalDashboard data={data} /> : null,
+        }
+      : null,
+    canViewPharmacy
+      ? {
+          value: "pharmacy",
+          name: "Pharmacy",
+          content: data ? <PharmacyDashboard data={data.pharmacy} /> : null,
+        }
+      : null,
+    canViewLab
+      ? {
+          value: "lab",
+          name: "Lab",
+          content: data ? (
+            <LabDashboard
+              data={data.lab}
+              canViewPathologyOrders={canViewPathologyOrders}
+              canViewRadiologyOrders={canViewRadiologyOrders}
+            />
+          ) : null,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    value: string;
+    name: string;
+    content: ReactNode;
+  }>;
+  const selectedDateRange =
+    filters.createdAt && typeof filters.createdAt !== "string"
+      ? filters.createdAt
+      : null;
 
   return (
     <CustomLayout
-      contentClassName="grid h-full grid-cols-1 md:grid-cols-[15%_85%] md:space-x-3 max-md:space-y-3"
       title="Dashboard"
+      contentClassName={
+        canViewHospital
+          ? "grid h-full grid-cols-1 md:grid-cols-[15%_85%] md:space-x-3 max-md:space-y-3"
+          : undefined
+      }
     >
-      <QuickLinks
-        canCreateOpd={Boolean(canCreateOpd)}
-        canCreateIpd={Boolean(canCreateIpd)}
-        canCreateDayCare={Boolean(canCreateDayCare)}
-        canViewQueue={Boolean(canViewQueue)}
-      />
+      {canViewHospital && (
+        <QuickLinks
+          canCreateOpd={canCreateOpd}
+          canCreateIpd={canCreateIpd}
+          canCreateDayCare={canCreateDayCare}
+          canViewQueue={canViewQueue}
+        />
+      )}
 
       <div className="space-y-3">
         <CustomFilters<FilterValues>
@@ -278,7 +215,20 @@ const Dashboard = () => {
             <LoaderIcon className="size-4 animate-spin" />
           </div>
         ) : data ? (
-          <DashboardTables data={data} />
+          <div className="space-y-3">
+            <CustomTabs
+              defaultValue={tabs[0]?.value}
+              tabs={tabs}
+              buttons={
+                selectedDateRange?.from && selectedDateRange?.to ? (
+                  <div className="px-2 pb-1 text-[11px] font-medium text-muted-foreground">
+                    {format(new Date(selectedDateRange.from), "dd/MM/yyyy")} -{" "}
+                    {format(new Date(selectedDateRange.to), "dd/MM/yyyy")}
+                  </div>
+                ) : null
+              }
+            />
+          </div>
         ) : null}
 
         {isFetching && (

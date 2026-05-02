@@ -65,7 +65,16 @@ export const PHARMACY_PURCHASE_ORDER = "/pharmacy/purchase-order";
 export const PHARMACY_GRN = "/pharmacy/grn";
 export const PHARMACY_CHALLAN = "/pharmacy/challan";
 export const PHARMACY_SALE_BILL = "/pharmacy/sale-bill";
+export const PHARMACY_SALE_RETURN = "/pharmacy/sale-return";
+export const PHARMACY_SUPPLIER_RETURN = "/pharmacy/supplier-return";
+export const PHARMACY_SUPPLIER_PAYMENT = "/pharmacy/supplier-payment";
+export const PHARMACY_SUPPLIER_PAYMENT_DUE_GRN =
+  "/pharmacy/supplier-payment/due-grns";
+export const PHARMACY_SUPPLIER_CREDIT_NOTE = "/pharmacy/supplier-credit-note";
+export const PHARMACY_SUPPLIER_LEDGER = "/pharmacy/supplier-ledger";
+export const PHARMACY_CUSTOMER_LEDGER = "/pharmacy/customer-ledger";
 export const PHARMACY_INVENTORY = "/pharmacy/inventory";
+export const PHARMACY_STOCK_CORRECTION = "/pharmacy/stock-correction";
 export const PHARMACY_CUSTOMER = "/pharmacy/customer";
 
 // ----------------------------------

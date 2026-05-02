@@ -97,6 +97,15 @@ const paginationValidator = z.object({
     .min(1)
     .optional()
     .transform((id) => Number(id)),
+  drugId: z.coerce
+    .number()
+    .min(1)
+    .optional()
+    .transform((id) => Number(id)),
+  includeZeroStock: z
+    .string()
+    .optional()
+    .transform((t) => (t === "true" ? true : false)),
   withoutGrn: z
     .string()
     .optional()

@@ -78,6 +78,15 @@ const InventoryList = () => {
       cellClassName: "min-w-32",
     },
     {
+      accessorKey: "supplier",
+      header: ({ column }) => (
+        <SortableHeader<InventoryData> label="Supplier" column={column} />
+      ),
+      cell: ({ row }) => row.original.supplier?.name || "-",
+      headerClassName: "min-w-36",
+      cellClassName: "min-w-36",
+    },
+    {
       accessorKey: "hsn",
       header: ({ column }) => (
         <SortableHeader<InventoryData> label="HSN" column={column} />

@@ -37,3 +37,31 @@ export type SaleBillFormValues = {
   paymentMode: PaymentMode;
   paymentRemarks?: string | null;
 };
+
+export type SaleReturnFormValues = {
+  returnDate: Date;
+  billNumber: string;
+  customerName: string;
+  originalBillDate: string;
+  doctorName: string;
+  patientDisplay: string;
+  refundMode: PaymentMode;
+  remarks?: string | null;
+  items: {
+    saleItemId: number;
+    inventoryItem?: SaleBillInventoryItem | null;
+    soldQuantity: number;
+    soldIsLooseQuantity: boolean;
+    returnedQuantity: number;
+    remainingPieces: number;
+    quantity: number;
+    isLooseQuantity: boolean;
+    rate: number;
+    taxableAmount: number;
+    gstAmount: number;
+    cGstAmount: number;
+    sGstAmount: number;
+    iGstAmount: number;
+    total: number;
+  }[];
+};

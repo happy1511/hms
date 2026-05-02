@@ -8,6 +8,9 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.DELETE,
   ],
   [ModuleType.DASHBOARD]: [ActionType.VIEW],
+  [ModuleType.HOSPITAL_DASHBOARD]: [ActionType.VIEW],
+  [ModuleType.LAB_DASHBOARD]: [ActionType.VIEW],
+  [ModuleType.PHARMACY_DASHBOARD]: [ActionType.VIEW],
   [ModuleType.COMPANY_DETAILS]: [ActionType.VIEW, ActionType.UPDATE],
   [ModuleType.DAY_CARE_IPD]: [
     ActionType.CREATE,
@@ -168,6 +171,25 @@ export const MODULE_ACTION_MATRIX = {
     ActionType.VIEW,
     ActionType.DELETE,
     ActionType.PRINT,
+  ],
+  [ModuleType.PHARMACY_SALE_RETURN]: [ActionType.CREATE, ActionType.VIEW],
+  [ModuleType.PHARMACY_SUPPLIER_RETURN]: [
+    ActionType.CREATE,
+    ActionType.VIEW,
+  ],
+  [ModuleType.PHARMACY_SUPPLIER_PAYMENT]: [
+    ActionType.CREATE,
+    ActionType.VIEW,
+  ],
+  [ModuleType.PHARMACY_SUPPLIER_CREDIT_NOTE]: [
+    ActionType.CREATE,
+    ActionType.VIEW,
+  ],
+  [ModuleType.PHARMACY_SUPPLIER_LEDGER]: [ActionType.VIEW],
+  [ModuleType.PHARMACY_CUSTOMER_LEDGER]: [ActionType.VIEW],
+  [ModuleType.PHARMACY_STOCK_CORRECTION]: [
+    ActionType.VIEW,
+    ActionType.UPDATE,
   ],
   [ModuleType.FINANCE_CATEGORY_MASTER]: [
     ActionType.CREATE,

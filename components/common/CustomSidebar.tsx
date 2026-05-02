@@ -149,19 +149,19 @@ const canAccessSidebarItem = (data: any, item: SidebarItem) => {
 
 const pharmacyItems = [
   {
-    title: "PHARMACY PO",
+    title: "PO",
     url: "/pharmacy/purchase-order",
     icon: Users,
     module: [ModuleType.PHARMACY_PURCHASE_ORDER],
   },
   {
-    title: "PHARMACY GRN",
+    title: "GRN",
     url: "/pharmacy/grn",
     icon: Users,
     module: [ModuleType.PHARMACY_GRN],
   },
   {
-    title: "PHARMACY CHALLAN",
+    title: "CHALLAN",
     url: "/pharmacy/challan",
     icon: Users,
     module: [ModuleType.PHARMACY_CHALLAN],
@@ -173,10 +173,52 @@ const pharmacyItems = [
     module: ["PHARMACY_INVENTORY" as ModuleType],
   },
   {
-    title: "PHARMACY SALE BILL",
+    title: "SALE BILL",
     url: "/pharmacy/sale-bill",
     icon: Users,
     module: [ModuleType.PHARMACY_SALE_BILL],
+  },
+  {
+    title: "SALE RETURN",
+    url: "/pharmacy/sale-return/select",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SALE_RETURN],
+  },
+  {
+    title: "SUPPLIER RETURN",
+    url: "/pharmacy/supplier-return",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SUPPLIER_RETURN],
+  },
+  {
+    title: "SUPPLIER PAYMENT",
+    url: "/pharmacy/supplier-payment",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SUPPLIER_PAYMENT],
+  },
+  {
+    title: "SUPPLIER CREDIT NOTE",
+    url: "/pharmacy/supplier-credit-note",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SUPPLIER_CREDIT_NOTE],
+  },
+  {
+    title: "SUPPLIER LEDGER",
+    url: "/pharmacy/supplier-ledger",
+    icon: Users,
+    module: [ModuleType.PHARMACY_SUPPLIER_LEDGER],
+  },
+  {
+    title: "CUSTOMER LEDGER",
+    url: "/pharmacy/customer-ledger",
+    icon: Users,
+    module: [ModuleType.PHARMACY_CUSTOMER_LEDGER],
+  },
+  {
+    title: "STOCK CORRECTION",
+    url: "/pharmacy/stock-correction",
+    icon: Users,
+    module: [ModuleType.PHARMACY_STOCK_CORRECTION],
   },
 ];
 
@@ -430,7 +472,9 @@ export function CustomSidebar() {
     hasModulePermission(data.data, item.module),
   );
   const canViewDashboard = hasModulePermission(data.data, [
-    ModuleType.DASHBOARD,
+    ModuleType.HOSPITAL_DASHBOARD,
+    ModuleType.PHARMACY_DASHBOARD,
+    ModuleType.LAB_DASHBOARD,
   ]);
   const canUsePatientSearch = hasModulePermission(data.data, [
     ModuleType.OPD_BILL,

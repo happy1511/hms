@@ -6,6 +6,7 @@ import NoPermission from "@/components/common/NoPermission";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import FormField from "@/components/form-inputs/FormField";
 import CreatePharmacyCustomerModal from "@/components/pharmacy/sale-bill/CreatePharmacyCustomerModal";
+import PharmacySummaryRow from "@/components/pharmacy/PharmacySummaryRow";
 import SaleBillItemsTable from "@/components/pharmacy/sale-bill/SaleBillItemsTable";
 import SelectHospitalPatientModal from "@/components/pharmacy/sale-bill/SelectHospitalPatientModal";
 import StoreDirectoryModal from "@/components/pharmacy/sale-bill/StoreDirectoryModal";
@@ -41,7 +42,7 @@ import {
 import { hasActionPermission } from "@/lib/utils";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -78,30 +79,6 @@ const getPatientDisplayName = (patient?: PatientType | null) =>
 
 const money = (value: number) => Number(value || 0).toFixed(2);
 
-const SummaryField = ({ label, value }: { label: string; value: string }) => (
-  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
-    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
-      {label}
-    </div>
-    <div className="bg-white px-2 py-1 text-right text-tiny">{value}</div>
-  </div>
-);
-
-const SummaryInput = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) => (
-  <div className="grid grid-cols-[1fr_120px] border-b border-black/15 last:border-b-0">
-    <div className="border-r border-black/15 px-2 py-1 text-tiny font-medium">
-      {label}
-    </div>
-    <div className="bg-white px-2 py-1 text-right text-tiny">{value}</div>
-  </div>
-);
-
 const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
   if (!data) {
     return {
@@ -127,6 +104,7 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
     (sum, txn) => sum + Number(txn.amount || 0),
     0,
   );
+  const outstandingDue = Math.max(Number(data.invoice?.total || 0) - transactionTotal, 0);
 
   return {
     billDate: toValidDate(data.invoice?.createdAt),
@@ -153,7 +131,7 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
         iGstAmount: Number(item.iGstAmount || 0),
         total: Number(item.total || 0),
       })) ?? [emptyItem()],
-    paymentAmount: transactionTotal,
+    paymentAmount: outstandingDue,
     paymentMode: firstTransaction?.mode ?? PaymentMode.CASH,
     paymentRemarks: firstTransaction?.remarks ?? "",
   };
@@ -212,6 +190,16 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       name: "paymentAmount",
     }) || 0,
   );
+  const existingPaidAmount = useMemo(
+    () =>
+      Number(
+        (data?.invoice?.transactions || []).reduce(
+          (sum, txn) => sum + Number(txn.amount || 0),
+          0,
+        ),
+      ),
+    [data?.invoice?.transactions],
+  );
 
   const subtotal = useMemo(
     () => (items || []).reduce((sum, item) => sum + Number(item.total || 0), 0),
@@ -230,7 +218,24 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       (items || []).reduce((sum, item) => sum + Number(item.gstAmount || 0), 0),
     [items],
   );
-  const dueAmount = Math.max(subtotal - paymentAmount, 0);
+  const effectivePaidAmount = params?.billId
+    ? existingPaidAmount + paymentAmount
+    : paymentAmount;
+  const dueAmount = Math.max(subtotal - effectivePaidAmount, 0);
+
+  useEffect(() => {
+    const paymentState = form.getFieldState("paymentAmount");
+    const autoPaymentAmount = params?.billId
+      ? Math.max(subtotal - existingPaidAmount, 0)
+      : subtotal;
+
+    if (!paymentState.isDirty) {
+      form.setValue("paymentAmount", autoPaymentAmount, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+  }, [existingPaidAmount, form, params?.billId, subtotal]);
 
   const onSubmit = async (values: SaleBillFormValues) => {
     const validItems = values.items.filter((item) => item.inventoryItem?.id);
@@ -286,10 +291,18 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
         discountValue: Number(item.discountValue || 0),
         total: Number(item.total || 0),
       })),
-      transactions: Number(values.paymentAmount || 0)
+      transactions: Number(
+        params?.billId
+          ? existingPaidAmount + Number(values.paymentAmount || 0)
+          : Number(values.paymentAmount || 0),
+      )
         ? [
             {
-              amount: Number(values.paymentAmount || 0),
+              amount: Number(
+                params?.billId
+                  ? existingPaidAmount + Number(values.paymentAmount || 0)
+                  : Number(values.paymentAmount || 0),
+              ),
               mode: values.paymentMode,
               remarks: values.paymentRemarks || undefined,
             },
@@ -440,15 +453,15 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
               <div />
 
               <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
-                <SummaryField label="Discount" value={money(totalDiscount)} />
-                <SummaryField label="Tax" value={money(totalTax)} />
-                <SummaryField label="Total" value={money(subtotal)} />
-                <SummaryField label="Paid" value={money(paymentAmount)} />
-                <SummaryField label="Due" value={money(dueAmount)} />
+                <PharmacySummaryRow label="Discount" value={money(totalDiscount)} />
+                <PharmacySummaryRow label="Tax" value={money(totalTax)} />
+                <PharmacySummaryRow label="Total" value={money(subtotal)} />
+                <PharmacySummaryRow label="Paid" value={money(effectivePaidAmount)} />
+                <PharmacySummaryRow label="Due" value={money(dueAmount)} />
               </div>
 
               <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
-                <SummaryInput
+                <PharmacySummaryRow
                   label="Amount"
                   value={
                     <FormField<SaleBillFormValues>
@@ -459,7 +472,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                     />
                   }
                 />
-                <SummaryInput
+                <PharmacySummaryRow
                   label="Mode"
                   value={
                     <FormField<SaleBillFormValues>
@@ -474,7 +487,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                     />
                   }
                 />
-                <SummaryInput
+                <PharmacySummaryRow
                   label="Remarks"
                   value={
                     <FormField<SaleBillFormValues>

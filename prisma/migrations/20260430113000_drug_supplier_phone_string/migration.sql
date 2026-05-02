@@ -1,0 +1,2 @@
+ALTER TABLE `DrugSupplier`
+    MODIFY `phone` VARCHAR(191) NOT NULL;

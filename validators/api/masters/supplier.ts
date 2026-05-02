@@ -2,12 +2,19 @@ import { z } from "zod";
 
 const importOptionalText = z.string().optional().default("");
 const importOptionalNumberText = z.string().optional().default("");
+const phoneString = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined) return "";
+    return String(value).trim();
+  },
+  z.string().default(""),
+);
 
 const supplierValidator = z.object({
   name: z.string().min(1, "Name is required"),
   gstIn: z.string().optional(),
   email: z.string().optional(),
-  phone: z.coerce.number().optional().default(0),
+  phone: phoneString,
 });
 
 const partialSupplierValidator = supplierValidator.partial().extend({
@@ -18,7 +25,7 @@ const supplierImportRowValidator = z.object({
   name: z.string().min(1, "name is required"),
   gstIn: importOptionalNumberText,
   email: importOptionalText,
-  phone: z.coerce.number().default(0),
+  phone: phoneString,
 });
 
 type supplierValidatorType = z.input<typeof supplierValidator>;

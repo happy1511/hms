@@ -28,15 +28,22 @@ type Props = {
 
 const CreateSupplierModal = ({ open, onOpenChange, onCreated }: Props) => {
   const { mutateAsync: createSupplier, isPending } = useCreateDrugSupplierInline();
-  const form = useForm<Pick<supplierValidatorType, "name">>({
-    defaultValues: { name: "" },
-    resolver: zodResolver(supplierValidator.pick({ name: true })),
+  const form = useForm<supplierValidatorType>({
+    defaultValues: { name: "", phone: "", gstIn: "", email: "" },
+    resolver: zodResolver(
+      supplierValidator.pick({
+        name: true,
+        phone: true,
+        gstIn: true,
+        email: true,
+      }),
+    ),
   });
 
-  const handleSubmit = async (values: Pick<supplierValidatorType, "name">) => {
+  const handleSubmit = async (values: supplierValidatorType) => {
     const created = await createSupplier(values);
     onCreated(created.data);
-    form.reset({ name: "" });
+    form.reset({ name: "", phone: "", gstIn: "", email: "" });
     onOpenChange(false);
   };
 
@@ -46,7 +53,7 @@ const CreateSupplierModal = ({ open, onOpenChange, onCreated }: Props) => {
       onOpenChange={(nextOpen) => {
         onOpenChange(nextOpen);
         if (!nextOpen) {
-          form.reset({ name: "" });
+          form.reset({ name: "", phone: "", gstIn: "", email: "" });
         }
       }}
     >
@@ -60,7 +67,7 @@ const CreateSupplierModal = ({ open, onOpenChange, onCreated }: Props) => {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
-            <FormField<Pick<supplierValidatorType, "name">>
+            <FormField<supplierValidatorType>
               label="Supplier Name"
               name="name"
               type="text"

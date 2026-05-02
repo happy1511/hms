@@ -69,6 +69,7 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({
           OR: [
+            ...(Number.isFinite(Number(search)) ? [{ id: Number(search) }] : []),
             { name: { contains: search } },
             { customer: { name: { contains: search } } },
             { patient: { firstName: { contains: search } } },
@@ -115,6 +116,13 @@ export const getAPI = async (req: Request) => {
                     hsnSac: true,
                   },
                 },
+              },
+            },
+            saleReturns: {
+              where: { isDeleted: false },
+              include: {
+                items: true,
+                refundTransaction: true,
               },
             },
           },
@@ -165,6 +173,13 @@ export const getDetailsAPI = async (
                   hsnSac: true,
                 },
               },
+            },
+          },
+          saleReturns: {
+            where: { isDeleted: false },
+            include: {
+              items: true,
+              refundTransaction: true,
             },
           },
         },

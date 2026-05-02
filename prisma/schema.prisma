@@ -172,6 +172,9 @@ enum ResultType {
 enum ModuleType {
   USER
   DASHBOARD
+  HOSPITAL_DASHBOARD
+  LAB_DASHBOARD
+  PHARMACY_DASHBOARD
   COMPANY_DETAILS
   DAY_CARE_IPD
   IPD_MLC
@@ -208,6 +211,13 @@ enum ModuleType {
   PHARMACY_CHALLAN
   PHARMACY_INVENTORY
   PHARMACY_SALE_BILL
+  PHARMACY_SALE_RETURN
+  PHARMACY_SUPPLIER_RETURN
+  PHARMACY_SUPPLIER_PAYMENT
+  PHARMACY_SUPPLIER_CREDIT_NOTE
+  PHARMACY_SUPPLIER_LEDGER
+  PHARMACY_CUSTOMER_LEDGER
+  PHARMACY_STOCK_CORRECTION
   FINANCE_CATEGORY_MASTER
   INCOME
   EXPENSE
@@ -361,6 +371,11 @@ enum PaymentMode {
 enum TransactionType {
   PAYMENT
   REFUND
+}
+
+enum SupplierPaymentType {
+  DEBIT
+  CREDIT
 }
 
 enum FinanceCategoryType {
@@ -622,6 +637,12 @@ model User {
   createdDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierCreatedBy")
   updatedDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierUpdatedBy")
   deletedDrugSuppliers          DrugSupplier[]           @relation("DrugSupplierDeletedBy")
+  createdSupplierPayments       SupplierPayment[]        @relation("SupplierPaymentCreatedBy")
+  updatedSupplierPayments       SupplierPayment[]        @relation("SupplierPaymentUpdatedBy")
+  deletedSupplierPayments       SupplierPayment[]        @relation("SupplierPaymentDeletedBy")
+  createdSupplierReturns        SupplierReturn[]         @relation("SupplierReturnCreatedBy")
+  updatedSupplierReturns        SupplierReturn[]         @relation("SupplierReturnUpdatedBy")
+  deletedSupplierReturns        SupplierReturn[]         @relation("SupplierReturnDeletedBy")
   createdInventoryItems         InventoryItems[]         @relation("InventoryItemCreatedBy")
   updatedInventoryItems         InventoryItems[]         @relation("InventoryItemUpdatedBy")
   deletedInventoryItems         InventoryItems[]         @relation("InventoryItemDeletedBy")
@@ -637,6 +658,9 @@ model User {
   createdDrugBills              DrugBill[]               @relation("DrugBillCreatedBy")
   updatedDrugBills              DrugBill[]               @relation("DrugBillUpdatedBy")
   deletedDrugBills              DrugBill[]               @relation("DrugBillDeletedBy")
+  createdSaleReturns            SaleReturn[]             @relation("SaleReturnCreatedBy")
+  updatedSaleReturns            SaleReturn[]             @relation("SaleReturnUpdatedBy")
+  deletedSaleReturns            SaleReturn[]             @relation("SaleReturnDeletedBy")
   createdPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerCreatedBy")
   updatedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerUpdatedBy")
   deletedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerDeletedBy")
@@ -1439,6 +1463,7 @@ model Transaction {
 
   receivedBy User     @relation(fields: [receivedById], references: [id])
   invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  saleReturn SaleReturn?
   invoiceId  Int?
 
   @@index([invoiceId])
@@ -1850,6 +1875,7 @@ model DrugBill {
   updatedByUser User?             @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?             @relation("DrugBillDeletedBy", fields: [deletedBy], references: [id])
   saleItems     DrugSaleItem[]
+  saleReturns   SaleReturn[]
 
   @@index([invoiceId])
   @@index([patientId])
@@ -1953,7 +1979,7 @@ model DrugSupplier {
   name      String
   gstIn     String?
   email     String?
-  phone     Int
+  phone     String
   isDeleted Boolean @default(false)
   createdBy Int?
   updatedBy Int?
@@ -1968,6 +1994,8 @@ model DrugSupplier {
   inventoryItems InventoryItems[]
   purchaseOrders PurchaseOrder[]
   challans       Challan[]
+  supplierPayments SupplierPayment[]
+  supplierReturns SupplierReturn[]
 }
 
 model InventoryItems {
@@ -1999,6 +2027,8 @@ model InventoryItems {
   grnItems      GRNItems[]
   challanItems  ChallanItem[]
   saleItems     DrugSaleItem[]
+  saleReturnItems SaleReturnItem[]
+  supplierReturnItems SupplierReturnItem[]
 
   @@index([drugId])
   @@index([supplierId])
@@ -2030,8 +2060,162 @@ model DrugSaleItem {
 
   drugBill      DrugBill       @relation(fields: [drugBillId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  returnItems   SaleReturnItem[]
 
   @@index([drugBillId])
+  @@index([inventoryItemId])
+}
+
+model SaleReturn {
+  id                  Int         @id @default(autoincrement())
+  drugBillId          Int
+  refundAmount        Float       @default(0)
+  refundMode          PaymentMode @default(CASH)
+  remarks             String?
+  refundTransactionId Int?        @unique
+  isDeleted           Boolean     @default(false)
+  createdBy           Int?
+  updatedBy           Int?
+  deletedBy           Int?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  drugBill           DrugBill          @relation(fields: [drugBillId], references: [id], onDelete: Cascade)
+  refundTransaction  Transaction?      @relation(fields: [refundTransactionId], references: [id], onDelete: SetNull)
+  items              SaleReturnItem[]
+  createdByUser      User?             @relation("SaleReturnCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser      User?             @relation("SaleReturnUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser      User?             @relation("SaleReturnDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([drugBillId])
+  @@index([isDeleted])
+}
+
+model SaleReturnItem {
+  id              Int          @id @default(autoincrement())
+  saleReturnId    Int
+  drugSaleItemId  Int
+  inventoryItemId Int
+  quantity        Int
+  isLooseQuantity Boolean      @default(false)
+  rate            Float
+  discountType    DiscountType @default(VALUE)
+  discountValue   Float        @default(0)
+  taxableAmount   Float        @default(0)
+  gstPercentage   Float        @default(0)
+  cGstPercentage  Float        @default(0)
+  sGstPercentage  Float        @default(0)
+  iGstPercentage  Float        @default(0)
+  gstAmount       Float        @default(0)
+  cGstAmount      Float        @default(0)
+  sGstAmount      Float        @default(0)
+  iGstAmount      Float        @default(0)
+  total           Float
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  saleReturn    SaleReturn     @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
+  saleItem      DrugSaleItem   @relation(fields: [drugSaleItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([saleReturnId])
+  @@index([drugSaleItemId])
+  @@index([inventoryItemId])
+}
+
+model SupplierReturn {
+  id             Int      @id @default(autoincrement())
+  supplierId     Int
+  returnDate     DateTime
+  returnReason   String?  @db.LongText
+  taxableAmount  Float    @default(0)
+  cGstAmount     Float    @default(0)
+  sGstAmount     Float    @default(0)
+  iGstAmount     Float    @default(0)
+  total          Float    @default(0)
+  isDeleted      Boolean  @default(false)
+  createdBy      Int?
+  updatedBy      Int?
+  deletedBy      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       DrugSupplier         @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items          SupplierReturnItem[]
+  createdByUser  User?                @relation("SupplierReturnCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser  User?                @relation("SupplierReturnUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser  User?                @relation("SupplierReturnDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([supplierId])
+  @@index([returnDate])
+  @@index([isDeleted])
+}
+
+model SupplierPayment {
+  id           Int                 @id @default(autoincrement())
+  supplierId   Int
+  type         SupplierPaymentType
+  paymentDate  DateTime
+  amount       Float               @default(0)
+  reference    String?             @db.LongText
+  isDeleted    Boolean             @default(false)
+  createdBy    Int?
+  updatedBy    Int?
+  deletedBy    Int?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  supplier      DrugSupplier                @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  allocations   SupplierPaymentAllocation[]
+  createdByUser User?                       @relation("SupplierPaymentCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?                       @relation("SupplierPaymentUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?                       @relation("SupplierPaymentDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([supplierId])
+  @@index([type])
+  @@index([paymentDate])
+  @@index([isDeleted])
+}
+
+model SupplierPaymentAllocation {
+  id                Int      @id @default(autoincrement())
+  supplierPaymentId Int
+  grnId             Int
+  amount            Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  supplierPayment SupplierPayment @relation(fields: [supplierPaymentId], references: [id], onDelete: Cascade)
+  grn             GRN             @relation(fields: [grnId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierPaymentId, grnId])
+  @@index([supplierPaymentId])
+  @@index([grnId])
+}
+
+model SupplierReturnItem {
+  id               Int      @id @default(autoincrement())
+  supplierReturnId Int
+  inventoryItemId  Int
+  quantity         Int
+  isLooseQuantity  Boolean  @default(false)
+  rate             Float
+  taxableAmount    Float    @default(0)
+  gstPercentage    Float    @default(0)
+  cGstPercentage   Float    @default(0)
+  sGstPercentage   Float    @default(0)
+  iGstPercentage   Float    @default(0)
+  cGstAmount       Float    @default(0)
+  sGstAmount       Float    @default(0)
+  iGstAmount       Float    @default(0)
+  total            Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  supplierReturn SupplierReturn @relation(fields: [supplierReturnId], references: [id], onDelete: Cascade)
+  inventoryItem  InventoryItems @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([supplierReturnId])
   @@index([inventoryItemId])
 }
 
@@ -2077,12 +2261,13 @@ model GRN {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  grnItems      GRNItems[]
-  order         PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  challan       Challan?       @relation(fields: [challanId], references: [id], onDelete: Cascade)
-  createdByUser User?          @relation("GRNCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser User?          @relation("GRNUpdatedBy", fields: [updatedBy], references: [id])
-  deletedByUser User?          @relation("GRNDeletedBy", fields: [deletedBy], references: [id])
+  grnItems                   GRNItems[]
+  supplierPaymentAllocations SupplierPaymentAllocation[]
+  order                      PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  challan                    Challan?       @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  createdByUser              User?          @relation("GRNCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser              User?          @relation("GRNUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser              User?          @relation("GRNDeletedBy", fields: [deletedBy], references: [id])
 }
 
 model ChallanItem {

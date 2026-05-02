@@ -148,11 +148,13 @@ export interface FormCheckboxProps<T extends FieldValues> {
   label: string;
   required?: boolean;
   className?: string;
+  formItemClassName?: string;
   rules?: Omit<
     RegisterOptions<T, Path<T>>,
     "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
   >;
   hideError?: boolean;
+  hideLabel?: boolean;
 }
 
 export interface FormTextareaProps<T extends FieldValues> {
@@ -308,6 +310,8 @@ export interface FilterValues {
   opdId?: number;
   invoiceId?: number;
   supplierId?: number;
+  drugId?: number;
+  includeZeroStock?: boolean;
 }
 
 // ----------------------------------
@@ -552,6 +556,103 @@ export type PharmacyInventoryItemType = Prisma.InventoryItemsGetPayload<{
   };
 }>;
 
+export type PharmacySupplierReturnType = Prisma.SupplierReturnGetPayload<{
+  include: {
+    supplier: true;
+    items: {
+      include: {
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type PharmacySupplierPaymentType = Prisma.SupplierPaymentGetPayload<{
+  include: {
+    supplier: true;
+    allocations: {
+      include: {
+        grn: {
+          include: {
+            order: {
+              include: {
+                supplier: true;
+              };
+            };
+            challan: {
+              include: {
+                supplier: true;
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type PharmacySupplierCreditNoteType = PharmacySupplierPaymentType;
+
+export type PharmacySupplierDueGrnType = {
+  id: number;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  total: number;
+  paid: number;
+  due: number;
+  supplierId: number;
+  supplierName: string;
+};
+
+export type SupplierLedgerTransactionType = {
+  date: Date;
+  reference: string;
+  credit: number;
+  debit: number;
+  balance: number;
+};
+
+export type SupplierPendingInvoiceType = {
+  invoiceNumber: string;
+  date: Date;
+  total: number;
+  paid: number;
+  due: number;
+};
+
+export type SupplierLedgerDetailType = {
+  supplier: {
+    id: number;
+    name: string;
+    phone: string;
+    email?: string | null;
+    gstIn?: string | null;
+  };
+  transactions: SupplierLedgerTransactionType[];
+  pendingInvoices: SupplierPendingInvoiceType[];
+};
+
+export type CustomerLedgerRowType = {
+  id: string;
+  billNumber: string;
+  date: Date;
+  customer: string;
+  taxableAmount: number;
+  cGstAmount: number;
+  sGstAmount: number;
+  iGstAmount: number;
+  total: number;
+  paid: number;
+  due: number;
+  type: "SALE" | "RETURN";
+};
+
 export type PharmacyPurchaseOrderType = Prisma.PurchaseOrderGetPayload<{
   include: {
     supplier: true;
@@ -602,6 +703,15 @@ export type PharmacySaleBillType = Prisma.DrugBillGetPayload<{
         };
       };
     };
+    saleReturns: {
+      where: {
+        isDeleted: false;
+      };
+      include: {
+        items: true;
+        refundTransaction: true;
+      };
+    };
   };
 }> & {
   isLooseBill: boolean;
@@ -620,7 +730,71 @@ export type PharmacySaleBillType = Prisma.DrugBillGetPayload<{
       isLooseQuantity: boolean;
     }
   >;
+  saleReturns: Array<
+    Prisma.SaleReturnGetPayload<{
+      include: {
+        items: true;
+        refundTransaction: true;
+      };
+    }>
+  >;
 };
+
+export type PharmacySaleReturnType = Prisma.SaleReturnGetPayload<{
+  include: {
+    items: {
+      include: {
+        saleItem: {
+          include: {
+            inventoryItem: {
+              include: {
+                drug: true;
+                supplier: true;
+                hsnSac: true;
+              };
+            };
+          };
+        };
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+      };
+    };
+    refundTransaction: true;
+    drugBill: {
+      include: {
+        invoice: {
+          include: {
+            transactions: {
+              include: {
+                receivedBy: {
+                  select: {
+                    name: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+        customer: {
+          include: {
+            patient: true;
+          };
+        };
+        patient: true;
+        doctor: {
+          include: {
+            user: true;
+          };
+        };
+      };
+    };
+  };
+}>;
 
 export type PharmacyChallanType = Prisma.ChallanGetPayload<{
   include: {
@@ -1544,6 +1718,103 @@ export interface DashboardType {
     surgical: number;
     medical: number;
     total: number;
+  };
+  pharmacy: {
+    finance: {
+      counterSales: {
+        openingBalance: number;
+        cashSales: number;
+        otherSales: number;
+        totalSales: number;
+        cashReturns: number;
+        otherReturns: number;
+        totalReturns: number;
+        cashExpenses: number;
+        otherExpenses: number;
+        totalExpenses: number;
+        balance: number;
+        cashBalance: number;
+        closingBalance: number;
+      };
+      expensesByCategory: Array<{
+        category: string;
+        amount: number;
+      }>;
+      purchaseTotal: number;
+      totalStockValue: number;
+    };
+    stock: {
+      topPerformingItems: Array<{
+        item: string;
+        qtySold: number;
+      }>;
+      totalItemsInInventory: number;
+      nearExpiry: Array<{
+        item: string;
+        batch: number;
+        stock: number;
+        expiringInDays: number;
+        stockValue: number;
+      }>;
+    };
+    corporate: {
+      sales: number;
+      returns: number;
+      netSales: number;
+      expenses: number;
+      purchases: number;
+      purchaseReturns: number;
+      salesGst: number;
+      purchaseGst: number;
+    };
+  };
+  lab: {
+    pathology: {
+      requisitions: {
+        pending: number;
+        inProgress: number;
+        completed: number;
+        outsourced: number;
+        cancelled: number;
+      };
+      tests: Array<{
+        name: string;
+        revenue: number;
+        totalOrders: number;
+      }>;
+      sections: Array<{
+        name: string;
+        revenue: number;
+        totalOrders: number;
+      }>;
+      referredBy: Array<{
+        name: string;
+        totalOrders: number;
+      }>;
+    };
+    radiology: {
+      requisitions: {
+        pending: number;
+        inProgress: number;
+        completed: number;
+        outsourced: number;
+        cancelled: number;
+      };
+      tests: Array<{
+        name: string;
+        revenue: number;
+        totalOrders: number;
+      }>;
+      sections: Array<{
+        name: string;
+        revenue: number;
+        totalOrders: number;
+      }>;
+      referredBy: Array<{
+        name: string;
+        totalOrders: number;
+      }>;
+    };
   };
 }
 
