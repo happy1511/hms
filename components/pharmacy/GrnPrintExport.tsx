@@ -75,7 +75,8 @@ export const formatGrnNumber = (id: number, createdAt?: Date | string) => {
 
 export const mapGrnToPrintExportProps = (data: PharmacyGrnType) => ({
   grnNumber: formatGrnNumber(data.id, data.createdAt),
-  supplierName: data.order?.supplier?.name || data.challan?.supplier?.name || "-",
+  supplierName:
+    data.order?.supplier?.name || data.challan?.supplier?.name || "-",
   invoiceDate: data.invoiceDate,
   invoiceNumber: data.invoiceNumber,
   taxableAmount: Number(data.taxableAmount || 0),
@@ -95,17 +96,21 @@ export const mapGrnToPrintExportProps = (data: PharmacyGrnType) => ({
       item.inventoryItem?.drug?.name ||
       "-",
     categoryName:
-      item.purchaseItem?.category?.name || item.challanItem?.category?.name || "",
+      item.purchaseItem?.category?.name ||
+      item.challanItem?.category?.name ||
+      "",
     batchNo: item.inventoryItem?.batchNo ?? "-",
     expiryDate: item.inventoryItem?.expiryDate,
     hsnSacCode:
-      item.purchaseItem?.hsnSacCode ??
-      item.challanItem?.hsnSacCode ??
+      item.purchaseItem?.hsnSac?.code ??
+      item.challanItem?.hsnSac?.code ??
       item.purchaseItem?.hsnSac?.code ??
       item.challanItem?.hsnSac?.code ??
       item.inventoryItem?.hsnSac?.code ??
       "-",
-    quantity: Number(item.purchaseItem?.quantity || item.challanItem?.quantity || 0),
+    quantity: Number(
+      item.purchaseItem?.quantity || item.challanItem?.quantity || 0,
+    ),
     freeQuantity: 0,
     rate: Number(
       item.purchaseItem?.rate ||
