@@ -2028,7 +2028,7 @@ model DrugBillingCategory {
 
 model HsnSac {
   id             Int     @id @default(autoincrement())
-  code           Int     @unique
+  code           Int
   cGstPercentage Float   @default(0)
   sGstPercentage Float   @default(0)
   iGstPercentage Float   @default(0)
@@ -2047,6 +2047,8 @@ model HsnSac {
   purchaseItems  PurchaseItem[]
   challanItems   ChallanItem[]
   inventoryItems InventoryItems[]
+
+  @@index([code])
 }
 
 model Drug {

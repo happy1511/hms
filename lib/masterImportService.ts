@@ -1644,7 +1644,7 @@ const importHsnSacs = async (
   userId: number,
 ) => {
   let created = 0;
-  let updated = 0;
+  const updated = 0;
   let deleted = 0;
 
   await prisma.$transaction(async (tx) => {
@@ -1665,32 +1665,7 @@ const importHsnSacs = async (
       return;
     }
 
-    const existingItems = await tx.hsnSac.findMany({
-      where: { isDeleted: false },
-    });
-    const existingByCode = new Map(
-      existingItems.map((item) => [item.code, item]),
-    );
-
     for (const row of rows) {
-      const existing = existingByCode.get(row.code);
-
-      if (existing) {
-        await tx.hsnSac.update({
-          where: { id: existing.id },
-          data: {
-            code: row.code,
-            cGstPercentage: row.cGstPercentage,
-            sGstPercentage: row.sGstPercentage,
-            iGstPercentage: row.iGstPercentage,
-            isDeleted: false,
-            updatedBy: userId,
-          },
-        });
-        updated += 1;
-        continue;
-      }
-
       await tx.hsnSac.create({
         data: {
           code: row.code,
