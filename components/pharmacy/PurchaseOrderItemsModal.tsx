@@ -45,7 +45,8 @@ const PurchaseOrderItemsModal = ({ open, onOpenChange, order }: Props) => {
     {
       accessorKey: "hsnSacCode",
       header: () => <button className="flex">HSNSAC</button>,
-      cell: ({ row }) => row.original.hsnSacCode ?? row.original.hsnSac?.code ?? "-",
+      cell: ({ row }) =>
+        row.original.hsnSac?.code ?? row.original.hsnSac?.code ?? "-",
       headerClassName: "min-w-22",
       cellClassName: "min-w-22",
     },
@@ -78,24 +79,21 @@ const PurchaseOrderItemsModal = ({ open, onOpenChange, order }: Props) => {
     {
       accessorKey: "cGstPercentage",
       header: () => <button className="flex">CGST(%)</button>,
-      cell: ({ row }) =>
-        row.original.hsnSac?.cGstPercentage ?? 0,
+      cell: ({ row }) => row.original.hsnSac?.cGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
     {
       accessorKey: "sGstPercentage",
       header: () => <button className="flex">SGST(%)</button>,
-      cell: ({ row }) =>
-        row.original.hsnSac?.sGstPercentage ?? 0,
+      cell: ({ row }) => row.original.hsnSac?.sGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
     {
       accessorKey: "iGstPercentage",
       header: () => <button className="flex">IGST(%)</button>,
-      cell: ({ row }) =>
-        row.original.hsnSac?.iGstPercentage ?? 0,
+      cell: ({ row }) => row.original.hsnSac?.iGstPercentage ?? 0,
       headerClassName: "min-w-18",
       cellClassName: "min-w-18",
     },
