@@ -37,6 +37,15 @@ export function FormInput<T extends FieldValues>({
       name={name}
       rules={rules}
       render={({ field, fieldState }) => {
+        const shouldHideInitialZero =
+          type === "number" &&
+          !readOnly &&
+          !fieldState.isDirty &&
+          !fieldState.isTouched &&
+          Number(field.value ?? "") === 0;
+
+        const inputValue = shouldHideInitialZero ? "" : (field.value ?? "");
+
         return (
           <FormItem
             className={cn(
@@ -65,7 +74,7 @@ export function FormInput<T extends FieldValues>({
                       : ""
                   } ${className}`}
                   placeholder={placeholder}
-                  value={field.value ?? ""}
+                  value={inputValue}
                   onChange={(e) =>
                     type === "number"
                       ? field.onChange(
