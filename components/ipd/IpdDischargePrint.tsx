@@ -59,7 +59,13 @@ const Cell = ({
   );
 };
 
-const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
+const IpdDischargePrint = ({
+  data,
+  showToolbar = true,
+}: {
+  data: IpdDischargePrintResponse;
+  showToolbar?: boolean;
+}) => {
   const [fontSize, setFontSize] = useState<number>(10);
 
   const patientName = useMemo(() => {
@@ -128,7 +134,9 @@ const IpdDischargePrint = ({ data }: { data: IpdDischargePrintResponse }) => {
 
   return (
     <>
-      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      {showToolbar && (
+        <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      )}
       <div
         style={{ fontSize }}
         className="w-full bg-white text-black overflow-auto"

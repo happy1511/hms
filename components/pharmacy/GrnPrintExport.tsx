@@ -25,6 +25,7 @@ export interface GrnPrintItem {
 
 export interface GrnPrintExportProps {
   title?: string;
+  showToolbar?: boolean;
   grnNumber: string;
   supplierName: string;
   invoiceDate: Date | string;
@@ -163,6 +164,7 @@ const metaRows = (
 
 const GrnPrintExport = ({
   title = "GOODS RECEIVED NOTE (GRN)",
+  showToolbar = true,
   className,
   items,
   ...props
@@ -171,7 +173,9 @@ const GrnPrintExport = ({
 
   return (
     <>
-      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      {showToolbar && (
+        <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      )}
       <div
         style={{ fontSize }}
         className={cn(

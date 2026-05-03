@@ -5,6 +5,7 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ColumnDefWithClass,
   ExpiringItemRowType,
+  FilterValues,
   PharmacyReportsType,
   PurchaseUtilisationRowType,
   StockItemMovementRowType,
@@ -16,9 +17,10 @@ import { money } from "./reportUtils";
 
 type StockReportsTabProps = ReportTableStateProps & {
   data: PharmacyReportsType["stock"];
+  filters: FilterValues;
 };
 
-const purchaseUtilisationColumns: ColumnDefWithClass<PurchaseUtilisationRowType>[] =
+export const purchaseUtilisationColumns: ColumnDefWithClass<PurchaseUtilisationRowType>[] =
   [
     {
       accessorKey: "item",
@@ -154,7 +156,7 @@ const purchaseUtilisationColumns: ColumnDefWithClass<PurchaseUtilisationRowType>
     },
   ];
 
-const stockMovementColumns: ColumnDefWithClass<StockItemMovementRowType>[] = [
+export const stockMovementColumns: ColumnDefWithClass<StockItemMovementRowType>[] = [
   {
     accessorKey: "item",
     header: ({ column }) => (
@@ -382,7 +384,7 @@ const stockMovementColumns: ColumnDefWithClass<StockItemMovementRowType>[] = [
   },
 ];
 
-const topPerformingColumns: ColumnDefWithClass<TopPerformingItemRowType>[] = [
+export const topPerformingColumns: ColumnDefWithClass<TopPerformingItemRowType>[] = [
   {
     accessorKey: "item",
     header: ({ column }) => (
@@ -403,7 +405,7 @@ const topPerformingColumns: ColumnDefWithClass<TopPerformingItemRowType>[] = [
   },
 ];
 
-const expiringColumns: ColumnDefWithClass<ExpiringItemRowType>[] = [
+export const expiringColumns: ColumnDefWithClass<ExpiringItemRowType>[] = [
   {
     accessorKey: "item",
     header: ({ column }) => (
@@ -483,6 +485,7 @@ const StockReportsTab = ({
   isLoading,
   isError,
   error,
+  filters,
 }: StockReportsTabProps) => {
   return (
     <CustomTabs
@@ -498,6 +501,12 @@ const StockReportsTab = ({
               columns={purchaseUtilisationColumns}
               rowId={(row) => String(row.id)}
               searchPlaceholder="Search purchase utilization..."
+              printConfig={{
+                reportKey: "stock",
+                tableKey: "purchase-utilization",
+                title: "Purchase Utilization",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -513,6 +522,12 @@ const StockReportsTab = ({
               columns={stockMovementColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search stock item movements..."
+              printConfig={{
+                reportKey: "stock",
+                tableKey: "item-movements",
+                title: "Stock Items Sales/Returns",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -528,6 +543,12 @@ const StockReportsTab = ({
               columns={topPerformingColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search top performing items..."
+              printConfig={{
+                reportKey: "stock",
+                tableKey: "top-performing-items",
+                title: "Top Performing Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -543,6 +564,12 @@ const StockReportsTab = ({
               columns={expiringColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search expiring items..."
+              printConfig={{
+                reportKey: "stock",
+                tableKey: "expiring-items",
+                title: "Expiring Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}

@@ -46,6 +46,7 @@ const ViewGrnModal = ({ grnId, open, onOpenChange, trigger }: Props) => {
           ) : (
             <GrnPrintExport
               {...previewData}
+              showToolbar={false}
               title={`GRN View - ${previewData.supplierName} - GRN Number: ${previewData.grnNumber}`}
               className="min-h-full"
             />

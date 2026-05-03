@@ -36,7 +36,7 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   }
 
   return (
-    <CustomButton onClick={() => router.push("/pharmacy/challan/new")}>
+    <CustomButton onClick={() => router.push("/pharmacy/form/challan/new")}>
       New Challan
     </CustomButton>
   );
@@ -60,7 +60,7 @@ const Actions = ({
   } else if (canCreateGrn) {
     items.push({
       label: "Create GRN",
-      onClick: () => router.push(`/pharmacy/grn/challan/${data.id}`),
+      onClick: () => router.push(`/pharmacy/form/grn/challan/${data.id}`),
     });
   }
 

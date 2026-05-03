@@ -4,6 +4,7 @@ import CustomTabs from "@/components/common/CustomTabs";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ColumnDefWithClass,
+  FilterValues,
   GrnItemReportRowType,
   GrnReportRowType,
   PharmacyReportsType,
@@ -14,9 +15,10 @@ import { money } from "./reportUtils";
 
 type GrnReportsTabProps = ReportTableStateProps & {
   data: PharmacyReportsType["grn"];
+  filters: FilterValues;
 };
 
-const grnColumns: ColumnDefWithClass<GrnReportRowType>[] = [
+export const grnColumns: ColumnDefWithClass<GrnReportRowType>[] = [
   {
     accessorKey: "supplier",
     header: ({ column }) => (
@@ -163,7 +165,7 @@ const grnColumns: ColumnDefWithClass<GrnReportRowType>[] = [
   },
 ];
 
-const grnItemColumns: ColumnDefWithClass<GrnItemReportRowType>[] = [
+export const grnItemColumns: ColumnDefWithClass<GrnItemReportRowType>[] = [
   {
     accessorKey: "grn",
     header: ({ column }) => (
@@ -327,6 +329,7 @@ const GrnReportsTab = ({
   isLoading,
   isError,
   error,
+  filters,
 }: GrnReportsTabProps) => {
   return (
     <CustomTabs
@@ -342,6 +345,12 @@ const GrnReportsTab = ({
               columns={grnColumns}
               rowId={(row) => String(row.id)}
               searchPlaceholder="Search GRN summary..."
+              printConfig={{
+                reportKey: "grn",
+                tableKey: "grn-summary",
+                title: "GRN Summary",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -357,6 +366,12 @@ const GrnReportsTab = ({
               columns={grnItemColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search GRN items..."
+              printConfig={{
+                reportKey: "grn",
+                tableKey: "grn-items",
+                title: "GRN Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}

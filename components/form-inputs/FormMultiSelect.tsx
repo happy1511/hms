@@ -29,11 +29,11 @@ export function FormMultiSelect<T extends FieldValues>({
       control={control}
       name={name}
       rules={rules}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem
           className={cn(
             "gap-1 relative text-primary",
-            hideError ? "" : "pb-4 gap-1",
+            fieldState.error || !hideError ? "pb-4 gap-1" : "",
           )}
         >
           {label && (
@@ -61,10 +61,7 @@ export function FormMultiSelect<T extends FieldValues>({
               }
             />
           </FormControl>
-
-          {!hideError && (
-            <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
-          )}
+          <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
         </FormItem>
       )}
     />

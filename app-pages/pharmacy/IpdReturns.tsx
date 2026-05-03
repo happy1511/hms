@@ -146,7 +146,7 @@ const IpdReturns = () => {
       title="IPD Returns"
       buttons={
         canCreate ? (
-          <CustomButton onClick={() => router.push("/pharmacy/ipd-return/new")}>
+          <CustomButton onClick={() => router.push("/pharmacy/form/ipd-return/new")}>
             New IPD Return
           </CustomButton>
         ) : undefined

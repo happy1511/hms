@@ -188,7 +188,7 @@ export function FormInfiniteSelect<
         <FormItem
           className={cn(
             "text-primary relative",
-            hideError ? "" : "pb-4 gap-1",
+            fieldState.error || !hideError ? "pb-4 gap-1" : "",
             formItemClassName,
           )}
         >
@@ -219,10 +219,7 @@ export function FormInfiniteSelect<
               onSearchChange={onSearchChange}
             />
           </FormControl>
-
-          {!hideError && (
-            <FormMessage className="absolute bottom-1 font-semibold text-tiny! ms-1" />
-          )}
+          <FormMessage className="absolute bottom-1 font-semibold text-tiny! ms-1" />
         </FormItem>
       )}
     />

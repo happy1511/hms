@@ -66,8 +66,17 @@ export const hasActionPermission = (
 };
 
 export const showError = (error: AxiosError<ApiResponse<null>>) => {
+  const responseData = error.response?.data as
+    | (ApiResponse<unknown> & { data?: unknown })
+    | undefined;
+  const detailedMessage =
+    typeof responseData?.data === "string" ? responseData.data : undefined;
+
   toast.error(
-    error.response?.data.message || error.message || "Something went wrong",
+    detailedMessage ||
+      responseData?.message ||
+      error.message ||
+      "Something went wrong",
   );
 };
 

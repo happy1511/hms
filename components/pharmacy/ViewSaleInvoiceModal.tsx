@@ -1,6 +1,7 @@
 "use client";
 
 import SaleInvoiceExport from "@/components/common/SaleInvoiceExport";
+import { TransactionType } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -53,13 +54,15 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
       })),
       invoiceDiscount: data.invoice.discountValue,
       invoiceTotal: data.invoice.total,
-      transactions: data.invoice.transactions.map((txn) => ({
-        date: format(new Date(txn.createdAt), "dd/MM/yyyy hh:mm a"),
-        mode: String(txn.mode),
-        remarks: txn.remarks || "",
-        receivedBy: txn.receivedBy?.name || "-",
-        amount: txn.amount,
-      })),
+      transactions: data.invoice.transactions
+        .filter((txn) => txn.transactionType === TransactionType.PAYMENT)
+        .map((txn) => ({
+          date: format(new Date(txn.createdAt), "dd/MM/yyyy hh:mm a"),
+          mode: String(txn.mode),
+          remarks: txn.remarks || "",
+          receivedBy: txn.receivedBy?.name || "-",
+          amount: txn.amount,
+        })),
     };
   }, [data]);
 
@@ -119,7 +122,7 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
         <div className="flex justify-center gap-2 mt-3">
           <CustomButton
             type="button"
-            onClick={() => router.push(`/pharmacy/sale-bill/${billId}`)}
+            onClick={() => router.push(`/pharmacy/form/sale-bill/${billId}`)}
           >
             View More Details
           </CustomButton>

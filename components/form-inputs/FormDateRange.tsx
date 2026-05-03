@@ -108,7 +108,12 @@ export function FormDateRangePicker<T extends FieldValues>({
         const isValidRange = Boolean(value?.from && value?.to);
 
         return (
-          <FormItem className="relative">
+          <FormItem
+            className={cn(
+              "relative",
+              fieldState.error || !hideError ? "pb-4 gap-1" : "",
+            )}
+          >
             {label && (
               <FormLabel>
                 {label}
@@ -202,8 +207,7 @@ export function FormDateRangePicker<T extends FieldValues>({
                 </div>
               </PopoverContent>
             </Popover>
-
-            {!hideError && <FormMessage className="absolute -bottom-4.5" />}
+            <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
           </FormItem>
         );
       }}

@@ -4,6 +4,7 @@ import CustomTabs from "@/components/common/CustomTabs";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ColumnDefWithClass,
+  FilterValues,
   IpdSaleItemRowType,
   PharmacyReportsType,
   SalesHsnSummaryRowType,
@@ -14,9 +15,10 @@ import { money } from "./reportUtils";
 
 type IpdSaleReportsTabProps = ReportTableStateProps & {
   data: PharmacyReportsType["ipdSale"];
+  filters: FilterValues;
 };
 
-const hsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
+export const ipdSaleHsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
   {
     accessorKey: "hsn",
     header: ({ column }) => (
@@ -91,7 +93,7 @@ const hsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
   },
 ];
 
-const ipdSaleItemColumns: ColumnDefWithClass<IpdSaleItemRowType>[] = [
+export const ipdSaleItemColumns: ColumnDefWithClass<IpdSaleItemRowType>[] = [
   {
     accessorKey: "date",
     header: ({ column }) => (
@@ -177,6 +179,7 @@ const IpdSaleReportsTab = ({
   isLoading,
   isError,
   error,
+  filters,
 }: IpdSaleReportsTabProps) => {
   return (
     <CustomTabs
@@ -192,6 +195,12 @@ const IpdSaleReportsTab = ({
               columns={ipdSaleItemColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search IPD sale items..."
+              printConfig={{
+                reportKey: "ipd-sale",
+                tableKey: "items",
+                title: "IPD Sale Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -204,9 +213,15 @@ const IpdSaleReportsTab = ({
           content: (
             <ReportTable
               data={data.hsnSummary}
-              columns={hsnColumns}
+              columns={ipdSaleHsnColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search IPD sales HSN summary..."
+              printConfig={{
+                reportKey: "ipd-sale",
+                tableKey: "hsn-summary",
+                title: "IPD Sales HSN Summary",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}

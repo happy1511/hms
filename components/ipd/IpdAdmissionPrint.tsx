@@ -68,7 +68,13 @@ const Cell = ({
   );
 };
 
-const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
+const IpdAdmissionPrint = ({
+  data,
+  showToolbar = true,
+}: {
+  data: IPDType;
+  showToolbar?: boolean;
+}) => {
   const [fontSize, setFontSize] = useState(10);
 
   const patientName = useMemo(() => {
@@ -144,7 +150,9 @@ const IpdAdmissionPrint = ({ data }: { data: IPDType }) => {
 
   return (
     <>
-      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      {showToolbar && (
+        <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      )}
       <div
         style={{ fontSize }}
         className="w-full bg-white text-black print:overflow-hidden"

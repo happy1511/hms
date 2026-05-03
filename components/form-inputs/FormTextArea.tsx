@@ -38,7 +38,10 @@ export function FormTextarea<T extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => (
         <FormItem
-          className={cn("text-primary relative", hideError ? "" : "pb-4 gap-1")}
+          className={cn(
+            "text-primary relative",
+            fieldState.error || !hideError ? "pb-4 gap-1" : "",
+          )}
         >
           {label && (
             <FormLabel className="text-tiny gap-0 font-semibold font-quicksand">
@@ -74,10 +77,7 @@ export function FormTextarea<T extends FieldValues>({
               {charCount}/{maxChar}
             </div>
           )}
-
-          {!hideError && (
-            <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
-          )}
+          <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold" />
         </FormItem>
       )}
     />

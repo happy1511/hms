@@ -106,17 +106,6 @@ export const createAPI = async (req: Request, user: User) => {
     req,
     onSuccess: async ({ body, params }) => {
       return prisma.$transaction(async (tx) => {
-        const existing = await tx.hsnSac.findFirst({
-          where: { code: body.code, isDeleted: false },
-        });
-
-        if (existing) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "HSN/SAC code already exists",
-          });
-        }
-
         const data = await tx.hsnSac.create({
           data: {
             ...body,

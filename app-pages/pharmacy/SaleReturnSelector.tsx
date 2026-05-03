@@ -124,7 +124,7 @@ const SaleReturnSelector = () => {
           </CustomButton>
           <CustomButton
             type="button"
-            onClick={() => router.push(`/pharmacy/sale-return/${row.original.id}`)}
+            onClick={() => router.push(`/pharmacy/form/sale-return/${row.original.id}`)}
           >
             Confirm
           </CustomButton>
@@ -240,7 +240,7 @@ const SaleReturnSelector = () => {
               </div>
               <CustomButton
                 type="button"
-                onClick={() => router.push(`/pharmacy/sale-return/${selectedBill.id}`)}
+                onClick={() => router.push(`/pharmacy/form/sale-return/${selectedBill.id}`)}
               >
                 Continue To Return Form
               </CustomButton>

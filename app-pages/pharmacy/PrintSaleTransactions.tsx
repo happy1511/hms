@@ -1,6 +1,7 @@
 "use client";
 
 import TransactionReceiptExport from "@/components/common/TransactionReceiptExport";
+import { TransactionType } from "@/generated/prisma/enums";
 import { useGetSaleBill } from "@/hooks/query/pharmacySaleBill";
 import { LoaderIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -28,7 +29,9 @@ const PrintSaleTransactions = () => {
   const filteredTransactions =
     selectedTransactionId !== undefined && Number.isFinite(selectedTransactionId)
       ? data.invoice.transactions.filter((txn) => txn.id === selectedTransactionId)
-      : data.invoice.transactions;
+      : data.invoice.transactions.filter(
+          (txn) => txn.transactionType === TransactionType.PAYMENT,
+        );
 
   return (
     <TransactionReceiptExport

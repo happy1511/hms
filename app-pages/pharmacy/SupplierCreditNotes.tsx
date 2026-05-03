@@ -6,7 +6,7 @@ const SupplierCreditNotes = () => {
     <SupplierLedgerEntries
       type={SupplierPaymentType.CREDIT}
       title="Supplier Credit Notes"
-      createPath="/pharmacy/supplier-credit-note/new"
+      createPath="/pharmacy/form/supplier-credit-note/new"
       permissionModule={ModuleType.PHARMACY_SUPPLIER_CREDIT_NOTE}
       createLabel="New Supplier Credit Note"
     />

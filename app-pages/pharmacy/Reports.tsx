@@ -90,6 +90,7 @@ const Reports = () => {
               hsnSummary: [],
             }
           }
+          filters={filters}
           {...reportTableState}
         />
       ),
@@ -103,6 +104,7 @@ const Reports = () => {
       content: (
         <IpdSaleReportsTab
           data={data?.ipdSale ?? { items: [], hsnSummary: [] }}
+          filters={filters}
           {...reportTableState}
         />
       ),
@@ -116,6 +118,7 @@ const Reports = () => {
       content: (
         <PoReportsTab
           data={data?.po ?? { purchaseOrders: [], purchaseOrderItems: [] }}
+          filters={filters}
           {...reportTableState}
         />
       ),
@@ -129,6 +132,7 @@ const Reports = () => {
       content: (
         <GrnReportsTab
           data={data?.grn ?? { grns: [], grnItems: [] }}
+          filters={filters}
           {...reportTableState}
         />
       ),
@@ -149,6 +153,7 @@ const Reports = () => {
               expiringItems: [],
             }
           }
+          filters={filters}
           {...reportTableState}
         />
       ),

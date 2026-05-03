@@ -81,7 +81,7 @@ export function FormMonthYearPicker<T extends FieldValues>({
           <FormItem
             className={cn(
               "relative text-primary",
-              hideError ? "" : "pb-4 gap-1",
+              fieldState.error || !hideError ? "pb-4 gap-1" : "",
               formItemClassName,
             )}
           >
@@ -191,10 +191,7 @@ export function FormMonthYearPicker<T extends FieldValues>({
                 </PopoverContent>
               </Popover>
             </FormControl>
-
-            {!hideError && (
-              <FormMessage className="absolute bottom-1 font-semibold text-tiny text-destructive ms-1" />
-            )}
+            <FormMessage className="absolute bottom-1 font-semibold text-tiny text-destructive ms-1" />
           </FormItem>
         );
       }}

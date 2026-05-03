@@ -33,7 +33,7 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   }
 
   return (
-    <CustomButton onClick={() => router.push("/pharmacy/supplier-return/new")}>
+    <CustomButton onClick={() => router.push("/pharmacy/form/supplier-return/new")}>
       New Supplier Return
     </CustomButton>
   );

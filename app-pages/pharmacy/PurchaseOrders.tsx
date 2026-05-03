@@ -45,7 +45,7 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
   }
 
   return (
-    <CustomButton onClick={() => router.push("/pharmacy/purchase-order/new")}>
+    <CustomButton onClick={() => router.push("/pharmacy/form/purchase-order/new")}>
       New PO
     </CustomButton>
   );
@@ -68,14 +68,14 @@ const Actions = ({
 
   actions.push({
     label: "Edit",
-    onClick: () => router.push(`/pharmacy/purchase-order/${data.id}`),
+    onClick: () => router.push(`/pharmacy/form/purchase-order/${data.id}`),
     disabled: !canUpdate,
   });
 
   if (data.grnId) {
     actions.push({
       label: "Open GRN",
-      onClick: () => router.push(`/pharmacy/grn/${data.id}`),
+      onClick: () => router.push(`/pharmacy/form/grn/${data.id}`),
     });
   }
 

@@ -141,7 +141,7 @@ const GrnViaPo = () => {
           <CustomButton onClick={() => setSelectedOrder(row.original)}>
             View Items
           </CustomButton>
-          <CustomButton onClick={() => router.push(`/pharmacy/grn/${row.original.id}`)}>
+          <CustomButton onClick={() => router.push(`/pharmacy/form/grn/${row.original.id}`)}>
             Select
           </CustomButton>
         </div>

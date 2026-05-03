@@ -3,6 +3,9 @@
 import { CustomTable } from "@/components/common/CustomTable";
 import { ApiResponse, ColumnDefWithClass } from "@/lib/type";
 import { AxiosError } from "axios";
+import PharmacyReportPrintDialog, {
+  PharmacyReportPrintConfig,
+} from "./PharmacyReportPrintDialog";
 
 export type ReportTableStateProps = {
   isLoading: boolean;
@@ -16,6 +19,7 @@ type ReportTableProps<TData> = ReportTableStateProps & {
   rowId: (row: TData) => string;
   searchPlaceholder?: string;
   searchableColumnIds?: string[];
+  printConfig?: PharmacyReportPrintConfig;
 };
 
 const ReportTable = <TData,>({
@@ -27,21 +31,29 @@ const ReportTable = <TData,>({
   error,
   searchPlaceholder,
   searchableColumnIds,
+  printConfig,
 }: ReportTableProps<TData>) => {
   return (
-    <CustomTable
-      columns={columns}
-      data={data}
-      hidePagination
-      enableSorting
-      enableTableSearch
-      tableSearchPlaceholder={searchPlaceholder}
-      searchableColumnIds={searchableColumnIds}
-      isLoading={isLoading}
-      isError={isError}
-      error={error}
-      getRowId={rowId}
-    />
+    <div className="space-y-3">
+      {printConfig ? (
+        <div className="flex justify-end">
+          <PharmacyReportPrintDialog config={printConfig} />
+        </div>
+      ) : null}
+      <CustomTable
+        columns={columns}
+        data={data}
+        hidePagination
+        enableSorting
+        enableTableSearch
+        tableSearchPlaceholder={searchPlaceholder}
+        searchableColumnIds={searchableColumnIds}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        getRowId={rowId}
+      />
+    </div>
   );
 };
 

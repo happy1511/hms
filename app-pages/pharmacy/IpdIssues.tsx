@@ -146,7 +146,7 @@ const IpdIssues = () => {
       title="IPD Issues"
       buttons={
         canCreate ? (
-          <CustomButton onClick={() => router.push("/pharmacy/ipd-issue/new")}>
+          <CustomButton onClick={() => router.push("/pharmacy/form/ipd-issue/new")}>
             New IPD Issue
           </CustomButton>
         ) : undefined

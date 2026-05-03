@@ -21,6 +21,7 @@ export interface SalePrintLine {
 }
 
 export interface SalePrintExportProps {
+  showToolbar?: boolean;
   billNo: string;
   billDate: Date | string;
   patientName: string;
@@ -40,13 +41,16 @@ const formatBillDate = (value: Date | string) => {
 const SalePrintExport = ({
   billDate,
   className,
+  showToolbar = true,
   ...props
 }: SalePrintExportProps) => {
   const [fontSize, setFontSize] = useState<number>(11);
 
   return (
     <>
-      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      {showToolbar && (
+        <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      )}
       <div
         style={{ fontSize }}
         className={cn(

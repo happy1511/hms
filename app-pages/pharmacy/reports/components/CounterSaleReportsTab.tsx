@@ -10,15 +10,17 @@ import {
   PharmacyReportsType,
   SalesHsnSummaryRowType,
 } from "@/lib/type";
+import { FilterValues } from "@/lib/type";
 import { format } from "date-fns";
 import ReportTable, { ReportTableStateProps } from "./ReportTable";
 import { money } from "./reportUtils";
 
 type CounterSaleReportsTabProps = ReportTableStateProps & {
   data: PharmacyReportsType["counterSale"];
+  filters: FilterValues;
 };
 
-const hsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
+export const counterSaleHsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
   {
     accessorKey: "hsn",
     header: ({ column }) => (
@@ -93,7 +95,7 @@ const hsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[] = [
   },
 ];
 
-const counterSaleBillColumns: ColumnDefWithClass<CounterSaleBillRowType>[] = [
+export const counterSaleBillColumns: ColumnDefWithClass<CounterSaleBillRowType>[] = [
   {
     accessorKey: "billNumber",
     header: ({ column }) => (
@@ -240,7 +242,7 @@ const counterSaleBillColumns: ColumnDefWithClass<CounterSaleBillRowType>[] = [
   },
 ];
 
-const counterSaleItemColumns: ColumnDefWithClass<CounterSaleItemRowType>[] = [
+export const counterSaleItemColumns: ColumnDefWithClass<CounterSaleItemRowType>[] = [
   {
     accessorKey: "date",
     header: ({ column }) => (
@@ -519,7 +521,7 @@ const counterSaleItemColumns: ColumnDefWithClass<CounterSaleItemRowType>[] = [
   },
 ];
 
-const counterSaleCollectionColumns: ColumnDefWithClass<CounterSaleCollectionRowType>[] =
+export const counterSaleCollectionColumns: ColumnDefWithClass<CounterSaleCollectionRowType>[] =
   [
     {
       accessorKey: "customer",
@@ -612,6 +614,7 @@ const CounterSaleReportsTab = ({
   isLoading,
   isError,
   error,
+  filters,
 }: CounterSaleReportsTabProps) => {
   return (
     <CustomTabs
@@ -627,6 +630,12 @@ const CounterSaleReportsTab = ({
               columns={counterSaleBillColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search counter sale bills..."
+              printConfig={{
+                reportKey: "counter-sale",
+                tableKey: "bills",
+                title: "Counter Sale Bills",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -642,6 +651,12 @@ const CounterSaleReportsTab = ({
               columns={counterSaleItemColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search counter sale items..."
+              printConfig={{
+                reportKey: "counter-sale",
+                tableKey: "items",
+                title: "Counter Sale Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -657,6 +672,12 @@ const CounterSaleReportsTab = ({
               columns={counterSaleCollectionColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search counter sale collections..."
+              printConfig={{
+                reportKey: "counter-sale",
+                tableKey: "collections",
+                title: "Counter Sale Collections",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -669,9 +690,15 @@ const CounterSaleReportsTab = ({
           content: (
             <ReportTable
               data={data.hsnSummary}
-              columns={hsnColumns}
+              columns={counterSaleHsnColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search HSN summary..."
+              printConfig={{
+                reportKey: "counter-sale",
+                tableKey: "hsn-summary",
+                title: "Counter Sale HSN Summary",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}

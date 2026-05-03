@@ -30,7 +30,7 @@ const Actions = ({ data }: { data: DrugSupplier }) => {
   const router = useRouter();
 
   return (
-    <CustomButton onClick={() => router.push(`/pharmacy/supplier-ledger/${data.id}`)}>
+    <CustomButton onClick={() => router.push(`/pharmacy/form/supplier-ledger/${data.id}`)}>
       Open Ledger
     </CustomButton>
   );

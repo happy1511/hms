@@ -4,6 +4,7 @@ import CustomTabs from "@/components/common/CustomTabs";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ColumnDefWithClass,
+  FilterValues,
   PharmacyReportsType,
   PurchaseOrderItemReportRowType,
   PurchaseOrderReportRowType,
@@ -14,9 +15,10 @@ import { money } from "./reportUtils";
 
 type PoReportsTabProps = ReportTableStateProps & {
   data: PharmacyReportsType["po"];
+  filters: FilterValues;
 };
 
-const poColumns: ColumnDefWithClass<PurchaseOrderReportRowType>[] = [
+export const poColumns: ColumnDefWithClass<PurchaseOrderReportRowType>[] = [
   {
     accessorKey: "supplier",
     header: ({ column }) => (
@@ -181,7 +183,7 @@ const poColumns: ColumnDefWithClass<PurchaseOrderReportRowType>[] = [
   },
 ];
 
-const poItemColumns: ColumnDefWithClass<PurchaseOrderItemReportRowType>[] = [
+export const poItemColumns: ColumnDefWithClass<PurchaseOrderItemReportRowType>[] = [
   {
     accessorKey: "poNumber",
     header: ({ column }) => (
@@ -333,6 +335,7 @@ const PoReportsTab = ({
   isLoading,
   isError,
   error,
+  filters,
 }: PoReportsTabProps) => {
   return (
     <CustomTabs
@@ -348,6 +351,12 @@ const PoReportsTab = ({
               columns={poColumns}
               rowId={(row) => String(row.id)}
               searchPlaceholder="Search purchase orders..."
+              printConfig={{
+                reportKey: "po",
+                tableKey: "purchase-orders",
+                title: "Purchase Orders",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}
@@ -363,6 +372,12 @@ const PoReportsTab = ({
               columns={poItemColumns}
               rowId={(row) => row.id}
               searchPlaceholder="Search PO items..."
+              printConfig={{
+                reportKey: "po",
+                tableKey: "po-items",
+                title: "PO Items",
+                filters,
+              }}
               isLoading={isLoading}
               isError={isError}
               error={error}

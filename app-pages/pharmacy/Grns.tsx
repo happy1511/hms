@@ -35,15 +35,15 @@ const Buttons = ({ canCreate }: { canCreate: boolean }) => {
     <>
       {canCreate && (
         <div className="flex flex-wrap gap-2">
-          <CustomButton onClick={() => router.push("/pharmacy/grn/create-via-po")}>
+          <CustomButton onClick={() => router.push("/pharmacy/form/grn/create-via-po")}>
             Create GRN via PO
           </CustomButton>
           <CustomButton
-            onClick={() => router.push("/pharmacy/grn/create-via-challan")}
+            onClick={() => router.push("/pharmacy/form/grn/create-via-challan")}
           >
             Create GRN via Challan
           </CustomButton>
-          <CustomButton onClick={() => router.push("/pharmacy/grn/new")}>
+          <CustomButton onClick={() => router.push("/pharmacy/form/grn/create-via-po")}>
             New GRN
           </CustomButton>
         </div>

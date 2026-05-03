@@ -130,7 +130,7 @@ const PurchaseOrderItemsModal = ({ open, onOpenChange, order }: Props) => {
           <CustomButton
             onClick={() => {
               onOpenChange(false);
-              router.push(`/pharmacy/grn/${order.id}`);
+              router.push(`/pharmacy/form/grn/${order.id}`);
             }}
           >
             Create GRN with PO

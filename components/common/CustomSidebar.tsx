@@ -250,7 +250,7 @@ const pharmacyItems = [
   },
   {
     title: "STOCK CORRECTION",
-    url: "/pharmacy/stock-correction",
+    url: "/pharmacy/form/stock-correction",
     icon: Users,
     module: [ModuleType.PHARMACY_STOCK_CORRECTION],
   },

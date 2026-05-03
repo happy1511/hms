@@ -50,9 +50,11 @@ const stripHtmlToText = (value?: unknown) => {
 const OpdConsultationExport = ({
   data,
   patientOnly = false,
+  showToolbar = true,
 }: {
   data: opdConsultationDetailsType;
   patientOnly?: boolean;
+  showToolbar?: boolean;
 }) => {
   const [fontSize, setFontSize] = useState<number>(10);
   const patientName = [data.patient?.firstName, data.patient?.lastName]
@@ -81,7 +83,9 @@ const OpdConsultationExport = ({
 
   return (
     <>
-      <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      {showToolbar && (
+        <PrintToolbar fontSize={fontSize} onFontSizeChange={setFontSize} />
+      )}
       <div
         style={{ fontSize }}
         className="w-full bg-white text-black print:bg-white overflow-auto"

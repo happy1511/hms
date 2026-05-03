@@ -49,7 +49,7 @@ const Buttons = ({
             </CustomButton>
           )}
           {canCreateSaleBill && (
-            <CustomButton onClick={() => router.push("/pharmacy/sale-bill/new")}>
+            <CustomButton onClick={() => router.push("/pharmacy/form/sale-bill/new")}>
               New Sale Bill
             </CustomButton>
           )}
@@ -77,7 +77,7 @@ const Actions = ({
   if (canUpdate) {
     actions.push({
       label: "Edit",
-      onClick: () => router.push(`/pharmacy/sale-bill/${data.id}`),
+      onClick: () => router.push(`/pharmacy/form/sale-bill/${data.id}`),
     });
   }
 

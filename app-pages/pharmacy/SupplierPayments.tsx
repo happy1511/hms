@@ -6,7 +6,7 @@ const SupplierPayments = () => {
     <SupplierLedgerEntries
       type={SupplierPaymentType.DEBIT}
       title="Supplier Payments"
-      createPath="/pharmacy/supplier-payment/new"
+      createPath="/pharmacy/form/supplier-payment/new"
       permissionModule={ModuleType.PHARMACY_SUPPLIER_PAYMENT}
       createLabel="New Supplier Payment"
     />

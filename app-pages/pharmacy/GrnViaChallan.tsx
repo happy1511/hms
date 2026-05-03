@@ -141,7 +141,7 @@ const GrnViaChallan = () => {
       header: () => <button className="flex">Actions</button>,
       cell: ({ row }) => (
         <CustomButton
-          onClick={() => router.push(`/pharmacy/grn/challan/${row.original.id}`)}
+          onClick={() => router.push(`/pharmacy/form/grn/challan/${row.original.id}`)}
         >
           Select
         </CustomButton>
