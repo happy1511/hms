@@ -26,6 +26,13 @@ import { toast } from "sonner";
 
 const money = (value: number) => Number(value || 0).toFixed(2);
 
+const SummaryCard = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-sm border border-black/15 bg-white p-3">
+    <div className="text-[11px] uppercase tracking-wide text-black/55">{label}</div>
+    <div className="mt-1 text-lg font-semibold text-black">{value}</div>
+  </div>
+);
+
 type SupplierLedgerTransactionFormValues = {
   date: Date;
   creditAmount: number;
@@ -248,6 +255,29 @@ const SupplierLedgerAccount = () => {
       <div className="text-xl font-bold text-black">
         {`Ledger Transactions: ${data.supplier.name}`}
       </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="Phone" value={data.supplier.phone || "-"} />
+        <SummaryCard label="GSTIN" value={data.supplier.gstIn || "-"} />
+        <SummaryCard label="Current Balance" value={money(data.summary.balance)} />
+        <SummaryCard
+          label="Pending Invoices"
+          value={String(data.summary.pendingInvoiceCount)}
+        />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <SummaryCard label="Total Credit" value={money(data.summary.totalCredit)} />
+        <SummaryCard label="Total Debit" value={money(data.summary.totalDebit)} />
+        <SummaryCard label="Email" value={data.supplier.email || "-"} />
+      </div>
+
+      {!data.transactions.length && !data.pendingInvoices.length && (
+        <div className="rounded-sm border border-dashed border-black/20 bg-white px-4 py-6 text-center text-sm text-black/60">
+          No ledger activity is available for this supplier yet. You can still add a
+          manual transaction from this page.
+        </div>
+      )}
 
       {(canCreateDebit || canCreateCredit) && (
         <Form {...form}>

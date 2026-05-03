@@ -111,6 +111,7 @@ const SupplierLedgers = () => {
             onRefresh={refetch}
             isLoading={isLoading || isFetching}
             isRefreshing={isFetching}
+            defaultToday={false}
             filtersContainerClassName="grid-cols-1 md:grid-cols-2"
           />
           <CustomTable

@@ -720,6 +720,12 @@ export type SupplierLedgerDetailType = {
     email?: string | null;
     gstIn?: string | null;
   };
+  summary: {
+    totalCredit: number;
+    totalDebit: number;
+    balance: number;
+    pendingInvoiceCount: number;
+  };
   transactions: SupplierLedgerTransactionType[];
   pendingInvoices: SupplierPendingInvoiceType[];
 };

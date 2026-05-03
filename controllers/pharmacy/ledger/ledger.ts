@@ -255,8 +255,24 @@ export const getSupplierLedgerDetailsAPI = async (
           return acc;
         }, []);
 
+      const totalCredit = round2(
+        transactions.reduce((sum, item) => sum + Number(item.credit || 0), 0),
+      );
+      const totalDebit = round2(
+        transactions.reduce((sum, item) => sum + Number(item.debit || 0), 0),
+      );
+      const balance = transactions.length
+        ? round2(transactions[transactions.length - 1].balance)
+        : 0;
+
       const data: SupplierLedgerDetailType = {
         supplier,
+        summary: {
+          totalCredit,
+          totalDebit,
+          balance,
+          pendingInvoiceCount: pendingInvoices.length,
+        },
         transactions,
         pendingInvoices,
       };
