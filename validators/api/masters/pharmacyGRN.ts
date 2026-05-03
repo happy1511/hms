@@ -17,7 +17,7 @@ const grnItemValidator = z.object({
     .nullable()
     .optional(),
   category: z.object({ id: z.coerce.number().optional() }).optional(),
-  hsnSacCode: z.coerce.number().optional(),
+  hsnSacId: z.coerce.number().optional(),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   freeQuantity: z.coerce.number().default(0),
   packaging: z.string().optional(),

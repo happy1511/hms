@@ -150,7 +150,7 @@ export const createAPI = async (req: Request, user: User) => {
                 data: items.map((i) => ({
                   categoryId: i.category?.id ?? undefined,
                   drugId: i.drug.id,
-                  hsnSacCode: i.hsnSacCode ?? i.hsnSac?.code ?? null,
+                  hsnSacId: i.hsnSacId ?? i.hsnSac?.id ?? null,
                   quantity: i.quantity,
                   rate: i.rate,
                   total: i.total,
@@ -235,7 +235,7 @@ export const updateAPI = async (
             data: body.items.map((item) => ({
               purchaseOrderId: orderId,
               drugId: item.drug.id,
-              hsnSacCode: item.hsnSacCode ?? item.hsnSac?.code ?? null,
+              hsnSacId: item.hsnSacId ?? item.hsnSac?.id ?? null,
               categoryId: item.category?.id ?? undefined,
               quantity: item.quantity,
               discountPercentage: item.discountPercentage,

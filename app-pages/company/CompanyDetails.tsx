@@ -128,18 +128,15 @@ const CompanyDetails = () => {
     isError: profileError,
     refetch: refetchProfile,
   } = useProfile(false);
-  const {
-    data,
-    isLoading,
-    isFetching,
-    isError,
-    refetch,
-  } = useCompanyDetails();
+  const { data, isLoading, isFetching, isError, refetch } = useCompanyDetails();
 
   if (profileLoading) {
     return (
       <CustomLayout title="Company Details" buttons={<div />}>
-        <PageState variant="loading" description="Loading your access and company details." />
+        <PageState
+          variant="loading"
+          description="Loading your access and company details."
+        />
       </CustomLayout>
     );
   }

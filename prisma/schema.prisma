@@ -2028,7 +2028,7 @@ model DrugBillingCategory {
 
 model HsnSac {
   id             Int     @id @default(autoincrement())
-  code           Int
+  code           Int     @unique
   cGstPercentage Float   @default(0)
   sGstPercentage Float   @default(0)
   iGstPercentage Float   @default(0)
@@ -2099,7 +2099,7 @@ model DrugSupplier {
 model InventoryItems {
   id                Int      @id @default(autoincrement())
   drugId            Int
-  hsnSacCode        Int?
+  hsnSacId          Int?
   batchNo           Int
   expiryDate        DateTime
   manufacturingDate DateTime
@@ -2117,7 +2117,7 @@ model InventoryItems {
   updatedAt         DateTime @default(now()) @updatedAt
 
   drug                Drug                  @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  hsnSac              HsnSac?               @relation(fields: [hsnSacCode], references: [code])
+  hsnSac              HsnSac?               @relation(fields: [hsnSacId], references: [id])
   supplier            DrugSupplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   createdByUser       User?                 @relation("InventoryItemCreatedBy", fields: [createdBy], references: [id])
   updatedByUser       User?                 @relation("InventoryItemUpdatedBy", fields: [updatedBy], references: [id])
@@ -2480,7 +2480,7 @@ model ChallanItem {
   id                Int      @id @default(autoincrement())
   challanId         Int
   drugId            Int
-  hsnSacCode        Int?
+  hsnSacId          Int?
   quantity          Int
   freeQuantity      Int      @default(0)
   packaging         String?
@@ -2500,7 +2500,7 @@ model ChallanItem {
   challan       Challan              @relation(fields: [challanId], references: [id], onDelete: Cascade)
   category      DrugBillingCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   drug          Drug                 @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  hsnSac        HsnSac?              @relation(fields: [hsnSacCode], references: [code])
+  hsnSac        HsnSac?              @relation(fields: [hsnSacId], references: [id])
   inventoryItem InventoryItems       @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   grnItems      GRNItems[]
 
@@ -2545,7 +2545,7 @@ model Challan {
 model PurchaseItem {
   id                 Int   @id @default(autoincrement())
   drugId             Int
-  hsnSacCode         Int?
+  hsnSacId           Int?
   quantity           Int
   categoryId         Int?
   discountPercentage Float @default(0)
@@ -2555,7 +2555,7 @@ model PurchaseItem {
 
   category      DrugBillingCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   drug          Drug                 @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  hsnSac        HsnSac?              @relation(fields: [hsnSacCode], references: [code])
+  hsnSac        HsnSac?              @relation(fields: [hsnSacId], references: [id])
   purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
   grnItems      GRNItems[]
 }

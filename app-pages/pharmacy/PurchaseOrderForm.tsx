@@ -74,7 +74,7 @@ const getEmptyItem = (): PurchaseOrderItemForm => ({
   discountPercentage: 0,
   rate: 0,
   total: 0,
-  hsnSacCode: undefined,
+  hsnSacId: undefined,
   drug: {
     id: undefined as unknown as number,
     name: "",
@@ -99,7 +99,7 @@ const getInitialValues = (
         discountPercentage: item.discountPercentage,
         rate: item.rate,
         total: item.total,
-        hsnSacCode: item.hsnSacCode ?? undefined,
+        hsnSacId: item.hsnSacId ?? undefined,
         drug: {
           id: item.drug.id,
           name: item.drug.name,
@@ -179,23 +179,23 @@ const PurchaseOrderRow = ({
   );
 
   useEffect(() => {
-    const currentHsnSacCode = form.getValues(
-      `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
+    const currentHsnSacId = form.getValues(
+      `${rowPath}.hsnSacId` as Path<purchaseOrderValidatorType>,
     );
 
     if (
-      (currentHsnSacCode === undefined ||
-        currentHsnSacCode === null ||
-        currentHsnSacCode === 0) &&
-      item?.hsnSac?.code
+      (currentHsnSacId === undefined ||
+        currentHsnSacId === null ||
+        currentHsnSacId === 0) &&
+      item?.hsnSac?.id
     ) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
-        Number(item.hsnSac.code),
+        `${rowPath}.hsnSacId` as Path<purchaseOrderValidatorType>,
+        Number(item.hsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }
-  }, [form, item?.hsnSac?.code, rowPath]);
+  }, [form, item?.hsnSac?.id, rowPath]);
 
   useEffect(() => {
     const selectedHsnSac = item?.hsnSac;
@@ -204,13 +204,13 @@ const PurchaseOrderRow = ({
     }
 
     const currentCode = Number(
-      form.getValues(`${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>) || 0,
+      form.getValues(`${rowPath}.hsnSacId` as Path<purchaseOrderValidatorType>) || 0,
     );
 
-    if (currentCode !== Number(selectedHsnSac.code)) {
+    if (currentCode !== Number(selectedHsnSac.id)) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<purchaseOrderValidatorType>,
-        Number(selectedHsnSac.code),
+        `${rowPath}.hsnSacId` as Path<purchaseOrderValidatorType>,
+        Number(selectedHsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }

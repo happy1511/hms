@@ -56,7 +56,7 @@ const getEmptyItem = (): ChallanItemForm => ({
     name: "",
   },
   hsnSac: undefined,
-  hsnSacCode: 0,
+  hsnSacId: 0,
   batchNo: 0,
   expiryDate: new Date(),
   manufacturingDate: new Date(),
@@ -156,23 +156,23 @@ const ChallanRow = ({ index, form, lineTotal }: RowProps) => {
   ) as HsnSacType | undefined;
 
   useEffect(() => {
-    const currentHsnSacCode = form.getValues(
-      `${rowPath}.hsnSacCode` as Path<challanValidatorType>,
+    const currentHsnSacId = form.getValues(
+      `${rowPath}.hsnSacId` as Path<challanValidatorType>,
     );
 
     if (
-      (currentHsnSacCode === undefined ||
-        currentHsnSacCode === null ||
-        currentHsnSacCode === 0) &&
-      selectedHsnSac?.code
+      (currentHsnSacId === undefined ||
+        currentHsnSacId === null ||
+        currentHsnSacId === 0) &&
+      selectedHsnSac?.id
     ) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<challanValidatorType>,
-        Number(selectedHsnSac.code),
+        `${rowPath}.hsnSacId` as Path<challanValidatorType>,
+        Number(selectedHsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }
-  }, [form, rowPath, selectedHsnSac?.code]);
+  }, [form, rowPath, selectedHsnSac?.id]);
 
   useEffect(() => {
     if (!selectedHsnSac) {
@@ -180,13 +180,13 @@ const ChallanRow = ({ index, form, lineTotal }: RowProps) => {
     }
 
     const currentCode = Number(
-      form.getValues(`${rowPath}.hsnSacCode` as Path<challanValidatorType>) || 0,
+      form.getValues(`${rowPath}.hsnSacId` as Path<challanValidatorType>) || 0,
     );
 
-    if (currentCode !== Number(selectedHsnSac.code)) {
+    if (currentCode !== Number(selectedHsnSac.id)) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<challanValidatorType>,
-        Number(selectedHsnSac.code),
+        `${rowPath}.hsnSacId` as Path<challanValidatorType>,
+        Number(selectedHsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }

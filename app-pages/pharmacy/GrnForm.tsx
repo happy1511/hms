@@ -67,7 +67,7 @@ const getEmptyItem = (): GrnItemForm => ({
     name: "",
   },
   hsnSac: undefined,
-  hsnSacCode: 0,
+  hsnSacId: 0,
   batchNo: 0,
   expiryDate: new Date(),
   manufacturingDate: new Date(),
@@ -121,7 +121,7 @@ const getInitialValues = (
             },
             hsnSac: item.hsnSac ?? undefined,
             category: item.category ?? undefined,
-            hsnSacCode: item.hsnSacCode ?? item.hsnSac?.code ?? 0,
+            hsnSacId: item.hsnSacId ?? item.hsnSac?.id ?? 0,
             batchNo: item.batchNo,
             expiryDate: item.expiryDate ? new Date(item.expiryDate) : new Date(),
             manufacturingDate: item.manufacturingDate
@@ -161,7 +161,7 @@ const getInitialValues = (
           },
           hsnSac: item.hsnSac ?? undefined,
           category: item.category ?? undefined,
-          hsnSacCode: item.hsnSacCode ?? item.hsnSac?.code ?? 0,
+          hsnSacId: item.hsnSacId ?? item.hsnSac?.id ?? 0,
           batchNo: 0,
           expiryDate: new Date(),
           manufacturingDate: new Date(),
@@ -236,23 +236,23 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
   ) as HsnSacType | undefined;
 
   useEffect(() => {
-    const currentHsnSacCode = form.getValues(
-      `${rowPath}.hsnSacCode` as Path<grnValidatorType>,
+    const currentHsnSacId = form.getValues(
+      `${rowPath}.hsnSacId` as Path<grnValidatorType>,
     );
 
     if (
-      (currentHsnSacCode === undefined ||
-        currentHsnSacCode === null ||
-        currentHsnSacCode === 0) &&
-      selectedHsnSac?.code
+      (currentHsnSacId === undefined ||
+        currentHsnSacId === null ||
+        currentHsnSacId === 0) &&
+      selectedHsnSac?.id
     ) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<grnValidatorType>,
-        Number(selectedHsnSac.code),
+        `${rowPath}.hsnSacId` as Path<grnValidatorType>,
+        Number(selectedHsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }
-  }, [form, rowPath, selectedHsnSac?.code]);
+  }, [form, rowPath, selectedHsnSac?.id]);
 
   useEffect(() => {
     if (!selectedHsnSac) {
@@ -260,13 +260,13 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
     }
 
     const currentCode = Number(
-      form.getValues(`${rowPath}.hsnSacCode` as Path<grnValidatorType>) || 0,
+      form.getValues(`${rowPath}.hsnSacId` as Path<grnValidatorType>) || 0,
     );
 
-    if (currentCode !== Number(selectedHsnSac.code)) {
+    if (currentCode !== Number(selectedHsnSac.id)) {
       form.setValue(
-        `${rowPath}.hsnSacCode` as Path<grnValidatorType>,
-        Number(selectedHsnSac.code),
+        `${rowPath}.hsnSacId` as Path<grnValidatorType>,
+        Number(selectedHsnSac.id),
         { shouldDirty: true, shouldValidate: false },
       );
     }

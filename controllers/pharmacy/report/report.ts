@@ -546,7 +546,7 @@ export const getAPI = async (req: Request, user: User) => {
               customer,
               billNumber: formatSaleNumber(bill.id),
               item: item.inventoryItem.drug.name,
-              hsn: String(item.inventoryItem.hsnSac?.code ?? item.inventoryItem.hsnSacCode ?? "-"),
+              hsn: String(item.inventoryItem.hsnSac?.code ?? "-"),
               batch: String(item.inventoryItem.batchNo),
               expiry: item.inventoryItem.expiryDate,
               ptr: round2(ptr),
@@ -583,7 +583,7 @@ export const getAPI = async (req: Request, user: User) => {
 
           addHsnEntry({
             map: counterSaleHsnMap,
-            hsn: String(item.inventoryItem.hsnSac?.code ?? item.inventoryItem.hsnSacCode ?? "-"),
+            hsn: String(item.inventoryItem.hsnSac?.code ?? "-"),
             quantity: pieces,
             cGstPercentage: Number(item.cGstPercentage || 0),
             sGstPercentage: Number(item.sGstPercentage || 0),
@@ -651,7 +651,7 @@ export const getAPI = async (req: Request, user: User) => {
                 customer,
                 billNumber: formatSaleReturnNumber(saleReturn.id),
                 item: inventory.drug.name,
-                hsn: String(inventory.hsnSac?.code ?? inventory.hsnSacCode ?? "-"),
+                hsn: String(inventory.hsnSac?.code ?? "-"),
                 batch: String(inventory.batchNo),
                 expiry: inventory.expiryDate,
                 ptr: round2(ptr),
@@ -688,7 +688,7 @@ export const getAPI = async (req: Request, user: User) => {
 
             addHsnEntry({
               map: counterSaleHsnMap,
-              hsn: String(inventory.hsnSac?.code ?? inventory.hsnSacCode ?? "-"),
+              hsn: String(inventory.hsnSac?.code ?? "-"),
               quantity: pieces,
               cGstPercentage: Number(item.cGstPercentage || 0),
               sGstPercentage: Number(item.sGstPercentage || 0),
@@ -725,7 +725,7 @@ export const getAPI = async (req: Request, user: User) => {
 
           addHsnEntry({
             map: ipdSaleHsnMap,
-            hsn: String(item.inventoryItem.hsnSac?.code ?? item.inventoryItem.hsnSacCode ?? "-"),
+            hsn: String(item.inventoryItem.hsnSac?.code ?? "-"),
             quantity: toPieces({
               quantity: item.quantity,
               isLooseQuantity: Boolean(item.isLooseQuantity),
@@ -767,7 +767,7 @@ export const getAPI = async (req: Request, user: User) => {
             poDate: order.orderDate,
             item: item.drug.name,
             category: item.category?.name || "-",
-            hsn: String(item.hsnSac?.code ?? item.hsnSacCode ?? "-"),
+            hsn: String(item.hsnSac?.code ?? "-"),
             quantity: Number(item.quantity || 0),
             rate: Number(item.rate || 0),
             cGstPercentage: Number(item.hsnSac?.cGstPercentage || 0),
@@ -808,11 +808,8 @@ export const getAPI = async (req: Request, user: User) => {
           const inventory = item.inventoryItem;
           const hsnCode =
             purchaseItem?.hsnSac?.code ??
-            purchaseItem?.hsnSacCode ??
             challanItem?.hsnSac?.code ??
-            challanItem?.hsnSacCode ??
             inventory.hsnSac?.code ??
-            inventory.hsnSacCode ??
             "-";
 
           return {

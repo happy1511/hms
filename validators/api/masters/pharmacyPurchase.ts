@@ -16,7 +16,7 @@ const purchaseItems = z.object({
     .nullable()
     .optional(),
   quantity: z.coerce.number().min(1, "Invalid Quantity"),
-  hsnSacCode: z.coerce.number().optional(),
+  hsnSacId: z.coerce.number().optional(),
   category: z.object({ id: z.coerce.number() }).optional(),
   discountPercentage: z.coerce.number(),
   rate: z.coerce.number(),

@@ -148,23 +148,6 @@ export const updateAPI = async (
           });
         }
 
-        if (body.code && body.code !== existing.code) {
-          const duplicate = await tx.hsnSac.findFirst({
-            where: {
-              code: body.code,
-              isDeleted: false,
-              id: { not: hsnSacId },
-            },
-          });
-
-          if (duplicate) {
-            return apiResponse({
-              status: RESPONSE_STATUS.BAD_REQUEST,
-              message: "HSN/SAC code already exists",
-            });
-          }
-        }
-
         const updated = await tx.hsnSac.update({
           where: { id: hsnSacId },
           data: {

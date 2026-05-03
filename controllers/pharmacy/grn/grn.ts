@@ -173,7 +173,7 @@ export const createAPI = async (req: Request, user: User) => {
               data: {
                 purchaseOrderId: createdOrder.id,
                 drugId: item.drug.id,
-                hsnSacCode: item.hsnSacCode ?? item.hsnSac?.code ?? null,
+                hsnSacId: item.hsnSacId ?? item.hsnSac?.id ?? null,
                 categoryId: item.category?.id ?? undefined,
                 quantity: item.quantity,
                 discountPercentage: 0,
@@ -275,7 +275,7 @@ export const createAPI = async (req: Request, user: User) => {
                 quantityInStock: {
                   increment: receivedPieces,
                 },
-                hsnSacCode: i.hsnSacCode ?? i.hsnSac?.code ?? null,
+                hsnSacId: i.hsnSacId ?? i.hsnSac?.id ?? null,
                 expiryDate: i.expiryDate,
                 manufacturingDate: i.manufacturingDate,
                 purchasePrice: i.purchasePrice,
@@ -291,7 +291,7 @@ export const createAPI = async (req: Request, user: User) => {
             const newInventory = await tx.inventoryItems.create({
               data: {
                 drugId: i.drug.id,
-                hsnSacCode: i.hsnSacCode ?? i.hsnSac?.code ?? null,
+                hsnSacId: i.hsnSacId ?? i.hsnSac?.id ?? null,
                 batchNo: i.batchNo,
                 expiryDate: i.expiryDate,
                 manufacturingDate: i.manufacturingDate,
