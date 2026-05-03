@@ -34,6 +34,11 @@ const Buttons = () => {
     ModuleType.RADIOLOGY_TEST_MASTER,
     ActionType.CREATE,
   );
+  const canDeleteRadiology = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_TEST_MASTER,
+    ActionType.DELETE,
+  );
 
   return (
     <div className="flex gap-2">
@@ -48,10 +53,18 @@ const Buttons = () => {
         />
       )}
 
-      <MasterImportModal
-        master="pathology-test"
-        allowReplace={!!canDeletePathology}
-      />
+      {canCreatePathology && (
+        <MasterImportModal
+          master="pathology-test"
+          allowReplace={!!canDeletePathology}
+        />
+      )}
+      {canCreateRadiology && (
+        <MasterImportModal
+          master="radiology-test"
+          allowReplace={!!canDeleteRadiology}
+        />
+      )}
     </div>
   );
 };

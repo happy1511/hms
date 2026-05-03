@@ -4,10 +4,15 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import CustomTabs from "@/components/common/CustomTabs";
 import NoPermission from "@/components/common/NoPermission";
+import PageState from "@/components/common/PageState";
 import FormField from "@/components/form-inputs/FormField";
 import { FormTextarea } from "@/components/form-inputs/FormTextArea";
 import { Form } from "@/components/ui/form";
-import { ActionType, CompanyDetailsType, ModuleType } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  CompanyDetailsType,
+  ModuleType,
+} from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
   CompanyDetails as CompanyDetailsRow,
@@ -16,7 +21,6 @@ import {
 } from "@/hooks/query/company";
 import { hasActionPermission } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -118,10 +122,40 @@ const CompanyDetailsForm = ({
 };
 
 const CompanyDetails = () => {
-  const { data: profile } = useProfile(false);
-  const { data, isLoading, isFetching, refetch } = useCompanyDetails();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useProfile(false);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useCompanyDetails();
 
-  if (!profile) return <div />;
+  if (profileLoading) {
+    return (
+      <CustomLayout title="Company Details" buttons={<div />}>
+        <PageState variant="loading" description="Loading your access and company details." />
+      </CustomLayout>
+    );
+  }
+
+  if (profileError || !profile) {
+    return (
+      <CustomLayout title="Company Details" buttons={<div />}>
+        <PageState
+          variant="error"
+          description="We could not verify your access for this page."
+          actionLabel="Retry"
+          onAction={() => refetchProfile()}
+        />
+      </CustomLayout>
+    );
+  }
 
   const editableTypes = [
     CompanyDetailsType.HOSPITAL,
@@ -159,12 +193,18 @@ const CompanyDetails = () => {
       }
     >
       {isLoading ? (
-        <div className="flex h-full items-center justify-center">
-          <LoaderIcon className="size-4 animate-spin" />
-        </div>
+        <PageState variant="loading" description="Loading company details." />
+      ) : isError ? (
+        <PageState
+          variant="error"
+          description="We could not load company details right now."
+          actionLabel="Retry"
+          onAction={() => refetch()}
+        />
       ) : (
         <CustomTabs
           defaultValue={editableTypes[0]}
+          classNames="p-0 border-none shadow-none"
           tabs={editableTypes.map((type) => ({
             value: type,
             name: companyTypeLabels[type],

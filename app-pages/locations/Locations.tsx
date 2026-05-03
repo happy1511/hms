@@ -3,6 +3,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
@@ -18,11 +19,20 @@ import { Edit2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import LocationForm from "./LocationForm";
 
-const Buttons = ({ canCreate }: { canCreate: boolean }) => {
+const Buttons = ({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) => {
   return (
     <>
       {canCreate && (
-        <LocationForm trigger={<CustomButton>New Location</CustomButton>} />
+        <div className="flex items-center gap-4">
+          <LocationForm trigger={<CustomButton>New Location</CustomButton>} />
+          <MasterImportModal master="location" allowReplace={canDelete} />
+        </div>
       )}
     </>
   );
@@ -189,7 +199,12 @@ const Locations = () => {
   return (
     <CustomLayout
       title="Locations"
-      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+      buttons={
+        <Buttons
+          canCreate={Boolean(canCreate)}
+          canDelete={Boolean(canDelete)}
+        />
+      }
     >
       {canView && (
         <>

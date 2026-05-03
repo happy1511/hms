@@ -4,6 +4,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { SortableHeader } from "@/components/common/SortableHeader";
@@ -27,15 +28,27 @@ import { useState } from "react";
 const formatType = (type?: FinanceCategoryType) =>
   type === FinanceCategoryType.INCOME ? "Income" : "Expense";
 
-const Buttons = ({ canCreate }: { canCreate: boolean }) => {
+const Buttons = ({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) => {
   const router = useRouter();
 
   if (!canCreate) return null;
 
   return (
-    <CustomButton onClick={() => router.push("/finance/categories/new")}>
-      New Category
-    </CustomButton>
+    <div className="flex items-center gap-4">
+      <CustomButton onClick={() => router.push("/finance/categories/new")}>
+        New Category
+      </CustomButton>
+      <MasterImportModal
+        master="finance-category"
+        allowReplace={canDelete}
+      />
+    </div>
   );
 };
 
@@ -208,7 +221,12 @@ const FinanceCategoryPage = () => {
   return (
     <CustomLayout
       title="Finance Categories"
-      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+      buttons={
+        <Buttons
+          canCreate={Boolean(canCreate)}
+          canDelete={Boolean(canDelete)}
+        />
+      }
     >
       {canView && (
         <>

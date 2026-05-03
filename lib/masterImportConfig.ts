@@ -17,11 +17,17 @@ export type MasterImportKey =
   | "drug"
   | "supplier"
   | "department"
+  | "drug-category"
+  | "hsn-sac"
+  | "location"
+  | "finance-category"
   | "room-type"
   | "room"
   | "bed"
   | "service"
-  | "pathology-test";
+  | "pathology-test"
+  | "radiology-test"
+  | "radiology-template";
 
 export type MasterImportMode = "append" | "replace";
 
@@ -122,6 +128,47 @@ export const MASTER_IMPORT_CONFIG: Record<
       { key: "status", example: Status.active },
     ],
   },
+  "drug-category": {
+    title: "Drug Categories",
+    module: ModuleType.PHARMACY_DRUG_CATEGORY_MASTER,
+    queryKey: "drug-categories",
+    columns: [
+      { key: "name", required: true, example: "General Medicines" },
+      { key: "description", example: "Default pharmacy billing category" },
+    ],
+  },
+  "hsn-sac": {
+    title: "HSN/SAC",
+    module: ModuleType.PHARMACY_HSN_SAC_MASTER,
+    queryKey: "hsn-sac",
+    columns: [
+      { key: "code", required: true, example: "30049099" },
+      { key: "cGstPercentage", example: "6" },
+      { key: "sGstPercentage", example: "6" },
+      { key: "iGstPercentage", example: "12" },
+    ],
+  },
+  location: {
+    title: "Locations",
+    module: ModuleType.LOCATION_MASTER,
+    queryKey: "locations",
+    columns: [
+      { key: "city", required: true, example: "Pune" },
+      { key: "state", required: true, example: "Maharashtra" },
+      { key: "country", required: true, example: "India" },
+      { key: "postcode", required: true, example: "411001" },
+    ],
+  },
+  "finance-category": {
+    title: "Finance Categories",
+    module: ModuleType.FINANCE_CATEGORY_MASTER,
+    queryKey: "finance-categories",
+    columns: [
+      { key: "name", required: true, example: "Consultation Income" },
+      { key: "type", required: true, example: "INCOME" },
+      { key: "description", example: "Income ledger for OPD consultations" },
+    ],
+  },
   "room-type": {
     title: "Room Types",
     module: ModuleType.ROOM_TYPE_MASTER,
@@ -213,6 +260,30 @@ export const MASTER_IMPORT_CONFIG: Record<
         example:
           '[{"name":"Remarks","displayOrder":0,"isDescriptiveOnly":true,"referenceRanges":[],"parameterOptions":[]}]',
       },
+    ],
+  },
+  "radiology-test": {
+    title: "Radiology Tests",
+    module: ModuleType.RADIOLOGY_TEST_MASTER,
+    queryKey: "radiology-tests",
+    columns: [
+      { key: "name", required: true, example: "Chest X-Ray" },
+      { key: "alias", required: true, example: "CXR" },
+      { key: "section", required: true, example: "XRAY" },
+      { key: "status", example: Status.active },
+      { key: "price", required: true, example: "500" },
+    ],
+  },
+  "radiology-template": {
+    title: "Radiology Templates",
+    module: ModuleType.RADIOLOGY_TEMPLATE_MASTER,
+    queryKey: "radiology-templates",
+    columns: [
+      { key: "name", required: true, example: "Normal Chest X-Ray" },
+      { key: "section", required: true, example: "XRAY" },
+      { key: "status", example: Status.active },
+      { key: "content", required: true, example: "<p>No active cardiopulmonary disease.</p>" },
+      { key: "radiologyTests", example: "Chest X-Ray|PA View Chest" },
     ],
   },
 };

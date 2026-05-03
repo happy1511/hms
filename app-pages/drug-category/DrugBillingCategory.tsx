@@ -3,6 +3,7 @@ import { CustomAlert } from "@/components/common/CustomAlert";
 import CustomButton from "@/components/common/CustomButton";
 import CustomFilters from "@/components/common/CustomFilters";
 import CustomLayout from "@/components/common/CustomLayout";
+import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
@@ -23,14 +24,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const Buttons = ({ canCreate }: { canCreate: boolean }) => {
+const Buttons = ({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) => {
   const router = useRouter();
   return (
     <>
       {canCreate && (
-        <CustomButton onClick={() => router.push("/drug-category/new")}>
-          New Category
-        </CustomButton>
+        <div className="flex items-center gap-4">
+          <CustomButton onClick={() => router.push("/drug-category/new")}>
+            New Category
+          </CustomButton>
+          <MasterImportModal
+            master="drug-category"
+            allowReplace={canDelete}
+          />
+        </div>
       )}
     </>
   );
@@ -250,7 +263,12 @@ const DrugBillingCategoryList = () => {
   return (
     <CustomLayout
       title="Drug Category"
-      buttons={<Buttons canCreate={Boolean(canCreate)} />}
+      buttons={
+        <Buttons
+          canCreate={Boolean(canCreate)}
+          canDelete={Boolean(canDelete)}
+        />
+      }
     >
       {canView && (
         <>

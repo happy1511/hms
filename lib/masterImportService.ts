@@ -19,11 +19,19 @@ import type { BillingSectionImportRow } from "@/validators/api/masters/billingSe
 import type { DepartmentImportRow } from "@/validators/api/masters/department";
 import type { DoctorImportRow } from "@/validators/api/masters/doctor";
 import type { DrugImportRow } from "@/validators/api/masters/drug";
+import type { DrugBillingCategoryImportRow } from "@/validators/api/masters/drugBillingCategory";
+import type { FinanceCategoryImportRow } from "@/validators/api/masters/financeCategory";
+import type { HsnSacImportRow } from "@/validators/api/masters/hsnSac";
+import type { LocationImportRow } from "@/validators/api/masters/location";
 import {
   pathologyTestHeaderValidator,
   pathologyTestParameterValidator,
 } from "@/validators/api/masters/pathologyTest";
 import type { PathologyTestImportRow } from "@/validators/api/masters/pathologyTest";
+import type {
+  RadiologyTemplateImportRow,
+  RadiologyTestImportRow,
+} from "@/validators/api/masters/radiologyTest";
 import type { RoomImportRow } from "@/validators/api/masters/room";
 import type { RoomTypeImportRow } from "@/validators/api/masters/roomType";
 import type { ServiceImportRow } from "@/validators/api/masters/service";
@@ -286,6 +294,92 @@ const archiveDrugs = async (tx: typeof prisma, userId: number) => {
 const archiveSuppliers = async (tx: typeof prisma, userId: number) => {
   const count = await tx.drugSupplier.count({ where: { isDeleted: false } });
   await tx.drugSupplier.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+  return count;
+};
+
+const archiveDrugBillingCategories = async (
+  tx: typeof prisma,
+  userId: number,
+) => {
+  const count = await tx.drugBillingCategory.count({
+    where: { isDeleted: false },
+  });
+  await tx.drugBillingCategory.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+  return count;
+};
+
+const archiveHsnSacs = async (tx: typeof prisma, userId: number) => {
+  const count = await tx.hsnSac.count({ where: { isDeleted: false } });
+  await tx.hsnSac.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+  return count;
+};
+
+const archiveLocations = async (tx: typeof prisma, userId: number) => {
+  const count = await tx.location.count({ where: { isDeleted: false } });
+  await tx.location.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+  return count;
+};
+
+const archiveFinanceCategories = async (tx: typeof prisma, userId: number) => {
+  const count = await tx.financeCategory.count({ where: { isDeleted: false } });
+  await tx.financeCategory.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+  return count;
+};
+
+const archiveRadiologyTests = async (tx: typeof prisma, userId: number) => {
+  const tests = await tx.radiologyTest.findMany({
+    where: { isDeleted: false },
+    select: { id: true },
+  });
+  const testIds = tests.map((test) => test.id);
+
+  if (testIds.length) {
+    await tx.service.updateMany({
+      where: {
+        radiologyTests: {
+          some: {
+            testId: { in: testIds },
+          },
+        },
+        isDeleted: false,
+      },
+      data: {
+        isDeleted: true,
+        deletedBy: userId,
+        updatedBy: userId,
+      },
+    });
+  }
+
+  await tx.radiologyTest.updateMany({
+    where: { isDeleted: false },
+    data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
+  });
+
+  return tests.length;
+};
+
+const archiveRadiologyTemplates = async (
+  tx: typeof prisma,
+  userId: number,
+) => {
+  const count = await tx.radiologyTemplate.count({ where: { isDeleted: false } });
+  await tx.radiologyTemplate.updateMany({
     where: { isDeleted: false },
     data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
   });
@@ -1478,6 +1572,466 @@ const importDoctors = async (
   return { created, updated, deleted };
 };
 
+const importDrugBillingCategories = async (
+  rows: (DrugBillingCategoryImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveDrugBillingCategories(tx as typeof prisma, userId);
+      await tx.drugBillingCategory.createMany({
+        data: rows.map((row) => ({
+          name: row.name.trim(),
+          description: toNullableString(row.description),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      });
+      created = rows.length;
+      return;
+    }
+
+    const existingItems = await tx.drugBillingCategory.findMany({
+      where: { isDeleted: false },
+    });
+    const existingByName = new Map(
+      existingItems.map((item) => [item.name.trim().toLowerCase(), item]),
+    );
+
+    for (const row of rows) {
+      const normalizedName = row.name.trim().toLowerCase();
+      const existing = existingByName.get(normalizedName);
+
+      if (existing) {
+        await tx.drugBillingCategory.update({
+          where: { id: existing.id },
+          data: {
+            name: row.name.trim(),
+            description: toNullableString(row.description),
+            isDeleted: false,
+            updatedBy: userId,
+          },
+        });
+        updated += 1;
+        continue;
+      }
+
+      await tx.drugBillingCategory.create({
+        data: {
+          name: row.name.trim(),
+          description: toNullableString(row.description),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+      created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
+const importHsnSacs = async (
+  rows: (HsnSacImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveHsnSacs(tx as typeof prisma, userId);
+      await tx.hsnSac.createMany({
+        data: rows.map((row) => ({
+          code: row.code,
+          cGstPercentage: row.cGstPercentage,
+          sGstPercentage: row.sGstPercentage,
+          iGstPercentage: row.iGstPercentage,
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      });
+      created = rows.length;
+      return;
+    }
+
+    const existingItems = await tx.hsnSac.findMany({
+      where: { isDeleted: false },
+    });
+    const existingByCode = new Map(
+      existingItems.map((item) => [item.code, item]),
+    );
+
+    for (const row of rows) {
+      const existing = existingByCode.get(row.code);
+
+      if (existing) {
+        await tx.hsnSac.update({
+          where: { id: existing.id },
+          data: {
+            code: row.code,
+            cGstPercentage: row.cGstPercentage,
+            sGstPercentage: row.sGstPercentage,
+            iGstPercentage: row.iGstPercentage,
+            isDeleted: false,
+            updatedBy: userId,
+          },
+        });
+        updated += 1;
+        continue;
+      }
+
+      await tx.hsnSac.create({
+        data: {
+          code: row.code,
+          cGstPercentage: row.cGstPercentage,
+          sGstPercentage: row.sGstPercentage,
+          iGstPercentage: row.iGstPercentage,
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+      created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
+const importLocations = async (
+  rows: (LocationImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveLocations(tx as typeof prisma, userId);
+      await tx.location.createMany({
+        data: rows.map((row) => ({
+          city: row.city.trim(),
+          state: row.state.trim(),
+          country: row.country.trim(),
+          postcode: row.postcode.trim(),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      });
+      created = rows.length;
+      return;
+    }
+
+    const existingItems = await tx.location.findMany({
+      where: { isDeleted: false },
+    });
+    const existingByKey = new Map(
+      existingItems.map((item) => [
+        [
+          item.city.trim().toLowerCase(),
+          item.state.trim().toLowerCase(),
+          item.country.trim().toLowerCase(),
+          item.postcode.trim().toLowerCase(),
+        ].join("::"),
+        item,
+      ]),
+    );
+
+    for (const row of rows) {
+      const key = [
+        row.city.trim().toLowerCase(),
+        row.state.trim().toLowerCase(),
+        row.country.trim().toLowerCase(),
+        row.postcode.trim().toLowerCase(),
+      ].join("::");
+      const existing = existingByKey.get(key);
+
+      if (existing) {
+        await tx.location.update({
+          where: { id: existing.id },
+          data: {
+            city: row.city.trim(),
+            state: row.state.trim(),
+            country: row.country.trim(),
+            postcode: row.postcode.trim(),
+            isDeleted: false,
+            updatedBy: userId,
+          },
+        });
+        updated += 1;
+        continue;
+      }
+
+      await tx.location.create({
+        data: {
+          city: row.city.trim(),
+          state: row.state.trim(),
+          country: row.country.trim(),
+          postcode: row.postcode.trim(),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+      created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
+const importFinanceCategories = async (
+  rows: (FinanceCategoryImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveFinanceCategories(tx as typeof prisma, userId);
+      await tx.financeCategory.createMany({
+        data: rows.map((row) => ({
+          name: row.name.trim(),
+          type: row.type,
+          description: toNullableString(row.description),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      });
+      created = rows.length;
+      return;
+    }
+
+    const existingItems = await tx.financeCategory.findMany({
+      where: { isDeleted: false },
+    });
+    const existingByKey = new Map(
+      existingItems.map((item) => [
+        `${item.type}::${item.name.trim().toLowerCase()}`,
+        item,
+      ]),
+    );
+
+    for (const row of rows) {
+      const key = `${row.type}::${row.name.trim().toLowerCase()}`;
+      const existing = existingByKey.get(key);
+
+      if (existing) {
+        await tx.financeCategory.update({
+          where: { id: existing.id },
+          data: {
+            name: row.name.trim(),
+            type: row.type,
+            description: toNullableString(row.description),
+            isDeleted: false,
+            updatedBy: userId,
+          },
+        });
+        updated += 1;
+        continue;
+      }
+
+      await tx.financeCategory.create({
+        data: {
+          name: row.name.trim(),
+          type: row.type,
+          description: toNullableString(row.description),
+          isDeleted: false,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+      created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
+const importRadiologyTests = async (
+  rows: (RadiologyTestImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveRadiologyTests(tx as typeof prisma, userId);
+    }
+
+    for (const row of rows) {
+      const existing =
+        mode === "append"
+          ? await tx.radiologyTest.findFirst({
+              where: { name: row.name.trim(), isDeleted: false },
+              include: {
+                radiologyTestServices: {
+                  select: { serviceId: true },
+                  take: 1,
+                },
+              },
+            })
+          : null;
+
+      const testData = {
+        name: row.name.trim(),
+        alias: row.alias.trim(),
+        section: row.section,
+        status: row.status ?? Status.active,
+        price: row.price,
+        isDeleted: false,
+        updatedBy: userId,
+      };
+
+      const test = existing
+        ? await tx.radiologyTest.update({
+            where: { id: existing.id },
+            data: testData,
+          })
+        : await tx.radiologyTest.create({
+            data: {
+              ...testData,
+              createdBy: userId,
+            },
+          });
+
+      const linkedServiceId = existing?.radiologyTestServices[0]?.serviceId;
+      const serviceData = {
+        name: row.name.trim(),
+        type: ServiceType.RADIOLOGY_TEST,
+        price: row.price,
+        applicableOn: ServiceApplicableOn.BOTH,
+        status: row.status ?? Status.active,
+        isDeleted: false,
+        updatedBy: userId,
+      };
+
+      if (linkedServiceId) {
+        await tx.service.update({
+          where: { id: linkedServiceId },
+          data: serviceData,
+        });
+      } else {
+        await tx.service.create({
+          data: {
+            ...serviceData,
+            createdBy: userId,
+            radiologyTests: {
+              create: {
+                testId: test.id,
+              },
+            },
+          },
+        });
+      }
+
+      if (existing) updated += 1;
+      else created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
+const importRadiologyTemplates = async (
+  rows: (RadiologyTemplateImportRow & ImportRowMeta)[],
+  mode: MasterImportMode,
+  userId: number,
+) => {
+  let created = 0;
+  let updated = 0;
+  let deleted = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if (mode === "replace") {
+      deleted = await archiveRadiologyTemplates(tx as typeof prisma, userId);
+    }
+
+    for (const row of rows) {
+      const linkedTestNames = splitList(row.radiologyTests);
+      const linkedTests = linkedTestNames.length
+        ? await tx.radiologyTest.findMany({
+            where: {
+              name: { in: linkedTestNames },
+              isDeleted: false,
+            },
+            select: { id: true, name: true },
+          })
+        : [];
+
+      if (linkedTests.length !== linkedTestNames.length) {
+        throw new Error(
+          `Row ${getRowNumber(row)}: one or more radiologyTests were not found`,
+        );
+      }
+
+      const existing =
+        mode === "append"
+          ? await tx.radiologyTemplate.findFirst({
+              where: { name: row.name.trim(), isDeleted: false },
+            })
+          : null;
+
+      const templateData = {
+        name: row.name.trim(),
+        section: row.section,
+        status: row.status ?? Status.active,
+        content: row.content,
+        isDeleted: false,
+        updatedBy: userId,
+      };
+
+      if (existing) {
+        await tx.radiologyTemplate.update({
+          where: { id: existing.id },
+          data: {
+            ...templateData,
+            radiologyTests: {
+              set: linkedTests.map((test) => ({ id: test.id })),
+            },
+          },
+        });
+        updated += 1;
+        continue;
+      }
+
+      await tx.radiologyTemplate.create({
+        data: {
+          ...templateData,
+          createdBy: userId,
+          radiologyTests: {
+            connect: linkedTests.map((test) => ({ id: test.id })),
+          },
+        },
+      });
+      created += 1;
+    }
+  }, IMPORT_TRANSACTION_OPTIONS);
+
+  return { created, updated, deleted };
+};
+
 const importByMaster = async (
   master: MasterImportKey,
   rows: ImportRowMeta[],
@@ -1503,6 +2057,12 @@ const importByMaster = async (
         mode,
         userId,
       );
+    case "drug-category":
+      return importDrugBillingCategories(
+        rows as (DrugBillingCategoryImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
     case "supplier":
       return importSuppliers(
         rows as (SupplierImportRow & ImportRowMeta)[],
@@ -1512,6 +2072,24 @@ const importByMaster = async (
     case "department":
       return importDepartments(
         rows as (DepartmentImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "finance-category":
+      return importFinanceCategories(
+        rows as (FinanceCategoryImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "hsn-sac":
+      return importHsnSacs(
+        rows as (HsnSacImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "location":
+      return importLocations(
+        rows as (LocationImportRow & ImportRowMeta)[],
         mode,
         userId,
       );
@@ -1538,6 +2116,18 @@ const importByMaster = async (
     case "pathology-test":
       return importPathologyTests(
         rows as (PathologyTestImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "radiology-test":
+      return importRadiologyTests(
+        rows as (RadiologyTestImportRow & ImportRowMeta)[],
+        mode,
+        userId,
+      );
+    case "radiology-template":
+      return importRadiologyTemplates(
+        rows as (RadiologyTemplateImportRow & ImportRowMeta)[],
         mode,
         userId,
       );

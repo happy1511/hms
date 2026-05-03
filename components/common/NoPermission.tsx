@@ -1,15 +1,13 @@
 "use client";
 
+import PageState from "@/components/common/PageState";
+
 const NoPermission = ({
-  message = "This page does not have to view.",
+  message = "You do not have permission to view this page.",
 }: {
   message?: string;
 }) => {
-  return (
-    <div className="border border-red-500 bg-red-50 px-3 py-2 text-tiny text-red-600">
-      {message}
-    </div>
-  );
+  return <PageState variant="permission" description={message} className="min-h-40" />;
 };
 
 export default NoPermission;

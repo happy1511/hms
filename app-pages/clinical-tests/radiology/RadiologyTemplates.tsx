@@ -1,8 +1,11 @@
 "use client";
 
 import { CustomAlert } from "@/components/common/CustomAlert";
+import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import { DataViewModal } from "@/components/common/DataViewModal";
+import MasterImportModal from "@/components/common/MasterImportModal";
 import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,32 @@ import { format } from "date-fns";
 import { EditIcon, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+const Buttons = ({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) => {
+  const router = useRouter();
+
+  if (!canCreate) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <CustomButton onClick={() => router.push("/clinical-tests/radiology-template/new")}>
+        New Template
+      </CustomButton>
+      <MasterImportModal
+        master="radiology-template"
+        allowReplace={canDelete}
+      />
+    </div>
+  );
+};
 
 const Actions = ({
   data,
@@ -108,6 +137,11 @@ const RadiologyTemplates = () => {
     profile?.data,
     ModuleType.RADIOLOGY_TEMPLATE_MASTER,
     ActionType.UPDATE,
+  );
+  const canCreate = hasActionPermission(
+    profile?.data,
+    ModuleType.RADIOLOGY_TEMPLATE_MASTER,
+    ActionType.CREATE,
   );
   const canDelete = hasActionPermission(
     profile?.data,
@@ -209,22 +243,32 @@ const RadiologyTemplates = () => {
     },
   ];
   return (
-    <CustomTable
-      columns={columns}
-      data={data?.data || []}
-      page={page}
-      total={data?.total}
-      enableSorting
-      limit={limit}
-      handleChangePage={setPage}
-      isLoading={isLoading}
-      handleChangeLimit={setLimit}
-      isError={isError}
-      error={error}
-      enableGrouping
-      grouping={["section"]}
-      getRowId={(data) => String(data.id)}
-    />
+    <CustomLayout
+      title="Radiology Templates"
+      buttons={
+        <Buttons
+          canCreate={Boolean(canCreate)}
+          canDelete={Boolean(canDelete)}
+        />
+      }
+    >
+      <CustomTable
+        columns={columns}
+        data={data?.data || []}
+        page={page}
+        total={data?.total}
+        enableSorting
+        limit={limit}
+        handleChangePage={setPage}
+        isLoading={isLoading}
+        handleChangeLimit={setLimit}
+        isError={isError}
+        error={error}
+        enableGrouping
+        grouping={["section"]}
+        getRowId={(data) => String(data.id)}
+      />
+    </CustomLayout>
   );
 };
 

@@ -11,8 +11,16 @@ import { billingSectionImportRowValidator } from "@/validators/api/masters/billi
 import { departmentImportRowValidator } from "@/validators/api/masters/department";
 import { doctorImportRowValidator } from "@/validators/api/masters/doctor";
 import { drugImportRowValidator } from "@/validators/api/masters/drug";
+import { drugBillingCategoryImportRowValidator } from "@/validators/api/masters/drugBillingCategory";
+import { financeCategoryImportRowValidator } from "@/validators/api/masters/financeCategory";
+import { hsnSacImportRowValidator } from "@/validators/api/masters/hsnSac";
+import { locationImportRowValidator } from "@/validators/api/masters/location";
 import { appendReplaceModeValidator } from "@/validators/api/masters/masterImport";
 import { pathologyTestImportRowValidator } from "@/validators/api/masters/pathologyTest";
+import {
+  radiologyTemplateImportRowValidator,
+  radiologyTestImportRowValidator,
+} from "@/validators/api/masters/radiologyTest";
 import { roomImportRowValidator } from "@/validators/api/masters/room";
 import { roomTypeImportRowValidator } from "@/validators/api/masters/roomType";
 import { serviceImportRowValidator } from "@/validators/api/masters/service";
@@ -31,13 +39,19 @@ const rowSchemaMap: Record<MasterImportKey, z.ZodTypeAny> = {
   "billing-section": billingSectionImportRowValidator,
   doctor: doctorImportRowValidator,
   drug: drugImportRowValidator,
+  "drug-category": drugBillingCategoryImportRowValidator,
   supplier: supplierImportRowValidator,
   department: departmentImportRowValidator,
+  "finance-category": financeCategoryImportRowValidator,
+  "hsn-sac": hsnSacImportRowValidator,
+  location: locationImportRowValidator,
   "room-type": roomTypeImportRowValidator,
   room: roomImportRowValidator,
   bed: bedImportRowValidator,
   service: serviceImportRowValidator,
   "pathology-test": pathologyTestImportRowValidator,
+  "radiology-test": radiologyTestImportRowValidator,
+  "radiology-template": radiologyTemplateImportRowValidator,
 };
 
 type ValidatedImportRow = {

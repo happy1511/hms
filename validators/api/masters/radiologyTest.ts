@@ -17,6 +17,22 @@ const radiologyTestValidator = z.object({
   price: z.number().min(0, "Price must be a positive number"),
 });
 
+const radiologyTestImportRowValidator = z.object({
+  name: z.string().min(1, "name is required"),
+  alias: z.string().min(1, "alias is required"),
+  section: z.enum(RadiologySection),
+  status: z.enum(Status).optional().default(Status.active),
+  price: z.coerce.number().min(0, "price must be a positive number"),
+});
+
+const radiologyTemplateImportRowValidator = z.object({
+  name: z.string().min(1, "name is required"),
+  section: z.enum(RadiologySection),
+  status: z.enum(Status).optional().default(Status.active),
+  content: z.string().min(1, "content is required"),
+  radiologyTests: z.string().optional().default(""),
+});
+
 const partialRadiologyTestValidator = radiologyTestValidator.partial().extend({
   testId: z.coerce.number().min(1, "Service Id is required"),
 });
@@ -53,8 +69,12 @@ type RadiologyTestValidatorType = z.input<typeof radiologyTestValidator>;
 type PartialRadiologyTestValidatorType = z.input<
   typeof partialRadiologyTestValidator
 >;
+type RadiologyTestImportRow = z.infer<typeof radiologyTestImportRowValidator>;
 type RadiologyTemplateValidatorType = z.input<
   typeof radiologyTemplateValidator
+>;
+type RadiologyTemplateImportRow = z.infer<
+  typeof radiologyTemplateImportRowValidator
 >;
 type PartialRadiologyTemplateValidatorType = z.input<
   typeof partialRadiologyTemplateValidator
@@ -69,8 +89,10 @@ type RadiologyResultEntryValidatorType = z.input<typeof radiologyResultsEntry>;
 
 export type {
   PartialRadiologyTemplateValidatorType,
+  RadiologyTemplateImportRow,
   RadiologyTemplateValidatorType,
   RadiologyTestValidatorType,
+  RadiologyTestImportRow,
   PartialRadiologyTestValidatorType,
   PartialRadiologyOrderValidatorType,
   RadiologyOrderValidatorType,
@@ -78,8 +100,10 @@ export type {
 };
 export {
   radiologyTemplateValidator,
+  radiologyTemplateImportRowValidator,
   partialRadiologyTemplateValidator,
   partialRadiologyTestValidator,
+  radiologyTestImportRowValidator,
   radiologyTestValidator,
   partialRadiologyTestOrder,
   radiologyTestOrder,
