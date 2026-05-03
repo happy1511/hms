@@ -221,6 +221,15 @@ enum ModuleType {
   PHARMACY_SUPPLIER_LEDGER
   PHARMACY_CUSTOMER_LEDGER
   PHARMACY_STOCK_CORRECTION
+  PHARMACY_REPORTS
+  PHARMACY_REPORT_COUNTER_SALE
+  PHARMACY_REPORT_IPD_SALE
+  PHARMACY_REPORT_PO
+  PHARMACY_REPORT_GRN
+  PHARMACY_REPORT_STOCK
+  PHARMACY_IPD_ISSUE
+  PHARMACY_IPD_RETURN
+  PHARMACY_IPD_BILL
   FINANCE_CATEGORY_MASTER
   INCOME
   EXPENSE
@@ -438,6 +447,13 @@ enum RelationshipType {
   FATHER_OF
   MOTHER_OF
   OTHER
+}
+
+enum MlcInsuranceType {
+  SELF
+  AYUSHYAMAN
+  CORPORATE
+  INSURANCE
 }
 
 // --------------------
@@ -680,6 +696,12 @@ model User {
   createdSaleReturns            SaleReturn[]             @relation("SaleReturnCreatedBy")
   updatedSaleReturns            SaleReturn[]             @relation("SaleReturnUpdatedBy")
   deletedSaleReturns            SaleReturn[]             @relation("SaleReturnDeletedBy")
+  createdIpdDirectIssues        IpdDirectIssue[]         @relation("IpdDirectIssueCreatedBy")
+  updatedIpdDirectIssues        IpdDirectIssue[]         @relation("IpdDirectIssueUpdatedBy")
+  deletedIpdDirectIssues        IpdDirectIssue[]         @relation("IpdDirectIssueDeletedBy")
+  createdIpdDirectReturns       IpdDirectReturn[]        @relation("IpdDirectReturnCreatedBy")
+  updatedIpdDirectReturns       IpdDirectReturn[]        @relation("IpdDirectReturnUpdatedBy")
+  deletedIpdDirectReturns       IpdDirectReturn[]        @relation("IpdDirectReturnDeletedBy")
   createdPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerCreatedBy")
   updatedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerUpdatedBy")
   deletedPharmacyCustomers      PharmacyCustomer[]       @relation("PharmacyCustomerDeletedBy")
@@ -830,6 +852,9 @@ model Patient {
   maritalStatus      MaritalStatus?
   religion           String?
   bloodGroup         BloodGroup?
+  isMlcPatient       Boolean        @default(false)
+  mlcInsuranceType   MlcInsuranceType?
+  mlcPolicyOrCardNumber String?
   createdBy          Int?
   updatedBy          Int?
   deletedBy          Int?
@@ -857,6 +882,7 @@ model Patient {
 
   @@index([createdAt])
   @@index([createdBy])
+  @@index([isMlcPatient])
 }
 
 // -------------------- Facility Management --------------------
@@ -1780,6 +1806,8 @@ model Ipd {
   dischargeSummary    IpdDischargeSummary?
   documents           DocumentStore[]      @relation("IpdDocuments")
   bedAllocations      IpdBedAllocation[]
+  directIssues        IpdDirectIssue[]
+  directReturns       IpdDirectReturn[]
   pathologyTestOrders PathologyTestOrder[]
   radiologyTestOrders RadiologyTestOrder[]
   room                Room?                @relation(fields: [roomId], references: [id])
@@ -2099,6 +2127,8 @@ model InventoryItems {
   saleItems     DrugSaleItem[]
   saleReturnItems SaleReturnItem[]
   supplierReturnItems SupplierReturnItem[]
+  ipdIssueItems IpdDirectIssueItem[]
+  ipdReturnItems IpdDirectReturnItem[]
 
   @@index([drugId])
   @@index([supplierId])
@@ -2133,6 +2163,112 @@ model DrugSaleItem {
   returnItems   SaleReturnItem[]
 
   @@index([drugBillId])
+  @@index([inventoryItemId])
+}
+
+model IpdDirectIssue {
+  id             Int      @id @default(autoincrement())
+  ipdId          Int
+  discountAmount Float    @default(0)
+  roundOffAmount Float    @default(0)
+  total          Float    @default(0)
+  isDeleted      Boolean  @default(false)
+  createdBy      Int?
+  updatedBy      Int?
+  deletedBy      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  ipd           Ipd                  @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  items         IpdDirectIssueItem[]
+  createdByUser User?                @relation("IpdDirectIssueCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?                @relation("IpdDirectIssueUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?                @relation("IpdDirectIssueDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([ipdId])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model IpdDirectIssueItem {
+  id               Int      @id @default(autoincrement())
+  ipdDirectIssueId Int
+  inventoryItemId  Int
+  quantity         Int
+  isLooseQuantity  Boolean  @default(false)
+  rate             Float
+  taxableAmount    Float    @default(0)
+  gstPercentage    Float    @default(0)
+  cGstPercentage   Float    @default(0)
+  sGstPercentage   Float    @default(0)
+  iGstPercentage   Float    @default(0)
+  gstAmount        Float    @default(0)
+  cGstAmount       Float    @default(0)
+  sGstAmount       Float    @default(0)
+  iGstAmount       Float    @default(0)
+  total            Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  ipdDirectIssue IpdDirectIssue    @relation(fields: [ipdDirectIssueId], references: [id], onDelete: Cascade)
+  inventoryItem  InventoryItems    @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  returnItems    IpdDirectReturnItem[]
+
+  @@index([ipdDirectIssueId])
+  @@index([inventoryItemId])
+}
+
+model IpdDirectReturn {
+  id             Int      @id @default(autoincrement())
+  ipdId          Int
+  discountAmount Float    @default(0)
+  roundOffAmount Float    @default(0)
+  total          Float    @default(0)
+  isDeleted      Boolean  @default(false)
+  createdBy      Int?
+  updatedBy      Int?
+  deletedBy      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  ipd           Ipd                   @relation(fields: [ipdId], references: [id], onDelete: Cascade)
+  items         IpdDirectReturnItem[]
+  createdByUser User?                 @relation("IpdDirectReturnCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User?                 @relation("IpdDirectReturnUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser User?                 @relation("IpdDirectReturnDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([ipdId])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model IpdDirectReturnItem {
+  id                Int      @id @default(autoincrement())
+  ipdDirectReturnId Int
+  ipdDirectIssueItemId Int
+  inventoryItemId   Int
+  quantity          Int
+  isLooseQuantity   Boolean  @default(false)
+  rate              Float
+  taxableAmount     Float    @default(0)
+  gstPercentage     Float    @default(0)
+  cGstPercentage    Float    @default(0)
+  sGstPercentage    Float    @default(0)
+  iGstPercentage    Float    @default(0)
+  gstAmount         Float    @default(0)
+  cGstAmount        Float    @default(0)
+  sGstAmount        Float    @default(0)
+  iGstAmount        Float    @default(0)
+  total             Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  ipdDirectReturn IpdDirectReturn   @relation(fields: [ipdDirectReturnId], references: [id], onDelete: Cascade)
+  issueItem       IpdDirectIssueItem @relation(fields: [ipdDirectIssueItemId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItems     @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([ipdDirectReturnId])
+  @@index([ipdDirectIssueItemId])
   @@index([inventoryItemId])
 }
 

@@ -5,6 +5,7 @@ import {
   BloodGroup,
   Gender,
   MaritalStatus,
+  MlcInsuranceType,
   NameTitle,
 } from "@/generated/prisma/enums";
 import CustomButton from "../common/CustomButton";
@@ -16,6 +17,8 @@ const PersonalInfoForm = ({
   form: UseFormReturn<PatientValidatorType>;
   goNext: () => void;
 }) => {
+  const isMlcPatient = Boolean(form.watch("isMlcPatient"));
+
   const next = async () => {
     const isValid = await form.trigger([
       "title",
@@ -120,6 +123,32 @@ const PersonalInfoForm = ({
           label: m,
         }))}
       />
+      <FormField
+        control={form.control}
+        label="Medico Legal (MLC)"
+        name="isMlcPatient"
+        type="checkbox"
+      />
+      {isMlcPatient && (
+        <>
+          <FormField
+            control={form.control}
+            label="Insurance Type"
+            name="mlcInsuranceType"
+            type="select"
+            options={Object.values(MlcInsuranceType).map((value) => ({
+              value,
+              label: value,
+            }))}
+          />
+          <FormField
+            control={form.control}
+            label="Policy / Card Number"
+            name="mlcPolicyOrCardNumber"
+            type="text"
+          />
+        </>
+      )}
       <div className="flex justify-start col-span-2">
         <CustomButton type="button" onClick={next}>
           Next

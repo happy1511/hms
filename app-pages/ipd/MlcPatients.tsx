@@ -17,16 +17,12 @@ import {
   PatientType,
 } from "@/lib/type";
 import { formatAge, hasActionPermission } from "@/lib/utils";
-import { endOfDay, format, startOfDay } from "date-fns";
 import { useState } from "react";
 
 const MlcPatients = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<FilterValues>({
-    isMlcPatient: true,
-    mlcDeclarationDate: { from: startOfDay(new Date()), to: endOfDay(new Date()) },
-  });
+  const [filters, setFilters] = useState<FilterValues>({ isMlcPatient: true });
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } = useIpdList(
@@ -83,28 +79,26 @@ const MlcPatients = () => {
       cellClassName: "min-w-80",
     },
     {
-      accessorKey: "mlcDeclarationDate",
+      accessorKey: "patient.mlcInsuranceType",
       header: ({ column }) => (
-        <SortableHeader<IPDType> label="Medico-Legal Date" column={column} />
+        <SortableHeader<IPDType> label="Insurance Type" column={column} />
       ),
       cell: ({ row }) => (
         <div className="text-tiny">
-          {row.original.mlcDeclarationDate
-            ? format(new Date(row.original.mlcDeclarationDate), "dd/MM - h:mma")
-            : "--"}
+          {row.original.patient.mlcInsuranceType || "--"}
         </div>
       ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
     {
-      accessorKey: "mlcDeclaredByUser",
+      accessorKey: "patient.mlcPolicyOrCardNumber",
       header: ({ column }) => (
-        <SortableHeader<IPDType> label="Declared By" column={column} />
+        <SortableHeader<IPDType> label="Policy / Card Number" column={column} />
       ),
       cell: ({ row }) => (
         <div className="text-tiny">
-          {row.original.mlcDeclaredByUser?.name || "--"}
+          {row.original.patient.mlcPolicyOrCardNumber || "--"}
         </div>
       ),
       headerClassName: "min-w-50",
@@ -112,9 +106,7 @@ const MlcPatients = () => {
     },
   ];
 
-  const neededFilters: FilterConfig<FilterValues>[] = [
-    { label: "Medico-Legal Date", valueKey: "mlcDeclarationDate", type: "dateRange" },
-  ];
+  const neededFilters: FilterConfig<FilterValues>[] = [];
 
   if (!canView) {
     return (
@@ -132,7 +124,7 @@ const MlcPatients = () => {
         onRefresh={refetch}
         isLoading={isLoading || isFetching}
         isRefreshing={isFetching}
-        onSubmit={setFilters}
+        onSubmit={() => setFilters({ isMlcPatient: true })}
         filtersContainerClassName="grid-cols-1"
       />
       <CustomTable

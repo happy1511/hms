@@ -3,13 +3,12 @@
 import { DiscountType } from "@/generated/prisma/enums";
 import { useInfiniteInventoryItems } from "@/hooks/query/pharmacyInventory";
 import { FilterValues, PaginatedResponse } from "@/lib/type";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FormControl, FormField as UiFormField } from "@/components/ui/form";
 import { format } from "date-fns";
 import { PlusIcon, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Path, useFieldArray, useWatch, UseFormReturn } from "react-hook-form";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { FormCheckbox } from "@/components/form-inputs/FormCheckBox";
 import FormField from "@/components/form-inputs/FormField";
 import { SaleBillFormValues, SaleBillInventoryItem } from "./types";
 
@@ -197,18 +196,13 @@ const SaleBillItemRow = ({
       </td>
       <td className="px-2 py-1.5">{inventory?.itemsPerPack || "-"}</td>
       <td className="px-2 py-1.5 min-w-16 text-center">
-        <UiFormField
+        <FormCheckbox
+          label=""
           control={form.control}
           name={isLooseQuantityPath}
-          render={({ field }) => (
-            <FormControl>
-              <Checkbox
-                checked={Boolean(field.value)}
-                onCheckedChange={field.onChange}
-                className="mx-auto"
-              />
-            </FormControl>
-          )}
+          hideError
+          hideLabel
+          formItemClassName="items-center justify-center"
         />
       </td>
       <td className="px-2 py-1.5 min-w-20">

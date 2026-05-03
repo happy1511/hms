@@ -91,6 +91,19 @@ export function PatientViewModal({
             <div>Marital Status</div>
             <div>{data.maritalStatus}</div>
 
+            <div>MLC</div>
+            <div>{data.isMlcPatient ? "Yes" : "No"}</div>
+
+            {data.isMlcPatient && (
+              <>
+                <div>Insurance Type</div>
+                <div>{data.mlcInsuranceType || "--"}</div>
+
+                <div>Policy / Card Number</div>
+                <div>{data.mlcPolicyOrCardNumber || "--"}</div>
+              </>
+            )}
+
             <div>Relation</div>
             <div>
               {data.relations?.map((relation) => (

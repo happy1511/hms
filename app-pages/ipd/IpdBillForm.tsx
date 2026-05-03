@@ -23,6 +23,7 @@ import {
   IpdArrival,
   IpdCareType,
   MaritalStatus,
+  MlcInsuranceType,
   ModuleType,
   NameTitle,
   OpdArrival,
@@ -88,22 +89,19 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
     }
   });
 
-  // ---------------- IDENTIFICATION MAP (only AADHAR + VOTER) ----------------
-  const idMap = {
-    [IdentityType.ADHAR_CARD]: "",
-    [IdentityType.VOTER_CARD]: "",
-    [IdentityType.DRIVING_LICENSE]: "",
-  };
-
-  data?.identifications?.forEach((id) => {
-    if (
-      id.type === IdentityType.ADHAR_CARD ||
-      id.type === IdentityType.VOTER_CARD ||
-      id.type === IdentityType.DRIVING_LICENSE
-    ) {
-      idMap[id.type] = id.number;
-    }
-  });
+  const identificationRows = [
+    data?.identifications?.[0]
+      ? {
+          type: data.identifications[0].type,
+          number: data.identifications[0].number,
+          active: data.identifications[0].active,
+        }
+      : {
+          type: IdentityType.ADHAR_CARD,
+          number: "",
+          active: Status.active,
+        },
+  ];
 
   // ---------------- HOME ADDRESS ----------------
   const homeAddress = data?.addresses?.find((a) => a.type === AddressType.HOME);
@@ -138,6 +136,9 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
       maritalStatus: data?.maritalStatus ?? MaritalStatus.Married,
       religion: data?.religion ?? "",
       bloodGroup: data?.bloodGroup ?? BloodGroup.A_NEGATIVE,
+      isMlcPatient: data?.isMlcPatient ?? false,
+      mlcInsuranceType: data?.mlcInsuranceType ?? null,
+      mlcPolicyOrCardNumber: data?.mlcPolicyOrCardNumber ?? "",
       relations: relations ?? [],
       // ---------- ADDRESS ----------
       addresses: [
@@ -156,23 +157,7 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
       ],
 
       // ---------- IDENTIFICATIONS ----------
-      identifications: [
-        {
-          type: IdentityType.ADHAR_CARD,
-          number: idMap[IdentityType.ADHAR_CARD],
-          active: Status.active,
-        },
-        {
-          type: IdentityType.VOTER_CARD,
-          number: idMap[IdentityType.VOTER_CARD],
-          active: Status.active,
-        },
-        {
-          type: IdentityType.DRIVING_LICENSE,
-          number: idMap[IdentityType.DRIVING_LICENSE],
-          active: Status.active,
-        },
-      ],
+      identifications: identificationRows,
       emergencyContacts: data?.emergencyContacts ?? [],
       notes: data?.notes ?? [],
     },
@@ -855,6 +840,7 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const parsedAgeYears =
     typeof ageYears === "number" && Number.isFinite(ageYears) ? ageYears : null;
   const isAgeValid = parsedAgeYears !== null && parsedAgeYears >= 0;
+  const isMlcPatient = Boolean(form.watch("patient.isMlcPatient"));
 
   useEffect(() => {
     if (!isAgeValid || parsedAgeYears === null) return;
@@ -963,6 +949,32 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           control={form.control}
           type="text"
         />
+        <FormField<ipdValidatorType>
+          label="Medico Legal (MLC)"
+          name="patient.isMlcPatient"
+          control={form.control}
+          type="checkbox"
+        />
+        {isMlcPatient && (
+          <>
+            <FormField<ipdValidatorType>
+              label="Insurance Type"
+              name="patient.mlcInsuranceType"
+              control={form.control}
+              type="select"
+              options={Object.values(MlcInsuranceType).map((value) => ({
+                label: value,
+                value,
+              }))}
+            />
+            <FormField<ipdValidatorType>
+              label="Policy / Card Number"
+              name="patient.mlcPolicyOrCardNumber"
+              control={form.control}
+              type="text"
+            />
+          </>
+        )}
       </div>
       <div>
         <FormField<ipdValidatorType>
@@ -1049,10 +1061,14 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           />
 
           <FormField<ipdValidatorType>
-            label="Aadhar Number"
-            name="patient.identifications.0.number"
+            label="Identity Document Type"
+            name="patient.identifications.0.type"
             control={form.control}
-            type="text"
+            type="select"
+            options={Object.values(IdentityType).map((value) => ({
+              label: value,
+              value,
+            }))}
           />
 
           <FormField<ipdValidatorType>
@@ -1063,21 +1079,14 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           />
 
           <FormField<ipdValidatorType>
-            label="Voter Card Number"
-            name="patient.identifications.1.number"
+            label="Identity Number"
+            name="patient.identifications.0.number"
             control={form.control}
             type="text"
           />
           <FormField<ipdValidatorType>
             label="Email"
             name="patient.contacts.2.value"
-            control={form.control}
-            type="text"
-          />
-
-          <FormField<ipdValidatorType>
-            label="Driving License"
-            name="patient.identifications.2.number"
             control={form.control}
             type="text"
           />

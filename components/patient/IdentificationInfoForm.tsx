@@ -41,6 +41,9 @@ const IdentificationInfoForm = ({
 
   const identificationForm = useForm<PatientIdentificationValidatorType>({
     resolver: zodResolver(identifications),
+    defaultValues: {
+      active: Status.active,
+    },
   });
 
   const handleSubmit = (values: PatientIdentificationValidatorType) => {
@@ -51,7 +54,9 @@ const IdentificationInfoForm = ({
       setEditingIndex(null);
     }
 
-    identificationForm.reset({});
+    identificationForm.reset({
+      active: Status.active,
+    });
   };
   const submit = identificationForm.handleSubmit(handleSubmit);
 
@@ -116,7 +121,7 @@ const IdentificationInfoForm = ({
             description="Are you sure you want to delete identification?"
             cancelText="Cancel"
             confirmText="Delete"
-            handleConfirm={() => remove(0)}
+            handleConfirm={() => remove(row.index)}
           />
 
           <Button
@@ -154,14 +159,6 @@ const IdentificationInfoForm = ({
           label="Number"
           name="number"
           type="text"
-        />
-
-        <FormField
-          control={identificationForm.control}
-          label="Status"
-          name="active"
-          type="select"
-          options={Object.values(Status).map((s) => ({ value: s, label: s }))}
         />
 
         <div className="flex col-span-2 justify-start">

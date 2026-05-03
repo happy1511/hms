@@ -460,7 +460,32 @@ export const createAPI = async (req: Request, user: User) => {
               message: "Patient Not Found",
             });
           } else {
-            const relation = patient?.relations?.splice(0, 1);
+            const {
+              contacts = [],
+              addresses = [],
+              relations = [],
+              identifications = [],
+              emergencyContacts: _emergencyContacts,
+              notes: _notes,
+              mlcPolicyOrCardNumber,
+              ...patientRest
+            } = patient;
+
+            await tx.patient.update({
+              where: { id: existingPatient.id },
+              data: {
+                ...patientRest,
+                mlcPolicyOrCardNumber: patientRest.isMlcPatient
+                  ? (mlcPolicyOrCardNumber?.trim() ?? null)
+                  : null,
+                mlcInsuranceType: patientRest.isMlcPatient
+                  ? (patientRest.mlcInsuranceType ?? null)
+                  : null,
+                updatedBy: user.id,
+              },
+            });
+
+            const relation = relations.splice(0, 1);
             const firstRelation = relation?.[0];
 
             if (firstRelation?.type && firstRelation?.name?.trim()) {
@@ -486,9 +511,7 @@ export const createAPI = async (req: Request, user: User) => {
               });
             }
 
-            const homeAddress = patient?.addresses?.find(
-              (a) => a.type === AddressType.HOME,
-            );
+            const homeAddress = addresses.find((a) => a.type === AddressType.HOME);
 
             if (homeAddress) {
               const locationId = homeAddress.location?.id;
@@ -523,7 +546,7 @@ export const createAPI = async (req: Request, user: User) => {
               }
             }
 
-            const contactsToUpsert = (patient?.contacts ?? [])
+            const contactsToUpsert = contacts
               .filter(
                 (c) =>
                   [
@@ -559,7 +582,7 @@ export const createAPI = async (req: Request, user: User) => {
               );
             }
 
-            const documentToUpsert = (patient?.identifications ?? [])
+            const documentToUpsert = identifications
               .filter(
                 (c) =>
                   [
@@ -605,11 +628,18 @@ export const createAPI = async (req: Request, user: User) => {
             identifications,
             emergencyContacts,
             notes,
+            mlcPolicyOrCardNumber,
             ...rest
           } = patient;
           existingPatient = await tx.patient.create({
             data: {
               ...rest,
+              mlcInsuranceType: rest.isMlcPatient
+                ? (rest.mlcInsuranceType ?? null)
+                : null,
+              mlcPolicyOrCardNumber: rest.isMlcPatient
+                ? (mlcPolicyOrCardNumber?.trim() ?? null)
+                : null,
               contacts: {
                 create: contacts
                   .filter((c) => Boolean(c.value?.trim()))

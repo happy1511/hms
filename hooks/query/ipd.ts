@@ -29,7 +29,13 @@ import {
   ipdValidatorType,
   partialIpdValidatorType,
 } from "@/validators/api/ipd/ipd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -190,6 +196,54 @@ export const useGetIpdAdmissionPrint = (id?: string) => {
       }),
     select: (data) => data.data,
     enabled: !!id,
+  });
+};
+
+export const useInfiniteIpdList = (filters: FilterValues, limit: number) => {
+  return useInfiniteQuery<
+    PaginatedResponse<IPDType>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<IPDType>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["ipds-infinite", filters, limit],
+    queryFn: ({ pageParam = 1 }) =>
+      getIPDs({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.mlcDeclarationDate && {
+            mlcDeclarationDate: filters.mlcDeclarationDate,
+          }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.doctorType && { doctorType: filters.doctorType }),
+          ...(typeof filters.isDischarged === "boolean" && {
+            isDischarged: filters.isDischarged,
+          }),
+          ...(typeof filters.isDayCare === "boolean" && {
+            isDayCare: filters.isDayCare,
+          }),
+          ...(typeof filters.isMlcPatient === "boolean" && {
+            isMlcPatient: filters.isMlcPatient,
+          }),
+          ...(filters.consultantDoctor && {
+            consultantDoctorId: filters.consultantDoctor.userId,
+          }),
+          ...(filters.referringDoctorId && {
+            referringDoctorId: filters.referringDoctorId,
+          }),
+        },
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };
 
@@ -406,7 +460,7 @@ export const useDeclareIpdMlc = () => {
     mutationKey: ["declare-ipd-mlc"],
     mutationFn: (data) => declareIpdMlc({ body: data }),
     onSuccess: () => {
-      toast.success("Patient marked as MLC successfully");
+      toast.success("Patient MLC details updated successfully");
       queryClient.invalidateQueries({ queryKey: ["ipds"] });
     },
     onError: showError,

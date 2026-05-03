@@ -104,15 +104,25 @@ export const getAPI = async (req: Request, user: User) => {
         and.push({ isDayCare: resolvedIsDayCare });
       }
 
-      if (typeof isMlcPatient === "boolean") {
-        and.push({ isMlcPatient });
-      }
-
       if (mlcFrom || mlcTo) {
         and.push({
-          mlcDeclarationDate: {
-            ...(mlcFrom && { gte: mlcFrom }),
-            ...(mlcTo && { lte: mlcTo }),
+          patient: {
+            is: {
+              updatedAt: {
+                ...(mlcFrom && { gte: mlcFrom }),
+                ...(mlcTo && { lte: mlcTo }),
+              },
+            },
+          },
+        });
+      }
+
+      if (typeof isMlcPatient === "boolean") {
+        and.push({
+          patient: {
+            is: {
+              isMlcPatient,
+            },
           },
         });
       }
@@ -203,6 +213,9 @@ export const getAPI = async (req: Request, user: User) => {
                 addresses: true,
                 contacts: true,
                 gender: true,
+                isMlcPatient: true,
+                mlcInsuranceType: true,
+                mlcPolicyOrCardNumber: true,
               },
             },
           },
@@ -670,7 +683,32 @@ export const createAPI = async (req: Request, user: User) => {
               message: "Patient Not Found",
             });
           } else {
-            const relation = patient?.relations?.splice(0, 1);
+            const {
+              contacts = [],
+              addresses = [],
+              relations = [],
+              identifications = [],
+              emergencyContacts: _emergencyContacts,
+              notes: _notes,
+              mlcPolicyOrCardNumber,
+              ...patientRest
+            } = patient;
+
+            await tx.patient.update({
+              where: { id: existingPatient.id },
+              data: {
+                ...patientRest,
+                mlcPolicyOrCardNumber: patientRest.isMlcPatient
+                  ? (mlcPolicyOrCardNumber?.trim() ?? null)
+                  : null,
+                mlcInsuranceType: patientRest.isMlcPatient
+                  ? (patientRest.mlcInsuranceType ?? null)
+                  : null,
+                updatedBy: user.id,
+              },
+            });
+
+            const relation = relations.splice(0, 1);
             const firstRelation = relation?.[0];
 
             if (firstRelation?.type && firstRelation?.name?.trim()) {
@@ -696,9 +734,7 @@ export const createAPI = async (req: Request, user: User) => {
               });
             }
 
-            const homeAddress = patient?.addresses?.find(
-              (a) => a.type === AddressType.HOME,
-            );
+            const homeAddress = addresses.find((a) => a.type === AddressType.HOME);
 
             if (homeAddress) {
               const locationId = homeAddress.location?.id;
@@ -733,7 +769,7 @@ export const createAPI = async (req: Request, user: User) => {
               }
             }
 
-            const contactsToUpsert = (patient?.contacts ?? [])
+            const contactsToUpsert = contacts
               .filter(
                 (c) =>
                   [
@@ -769,7 +805,7 @@ export const createAPI = async (req: Request, user: User) => {
               );
             }
 
-            const documentToUpsert = (patient?.identifications ?? [])
+            const documentToUpsert = identifications
               .filter(
                 (c) =>
                   [
@@ -815,11 +851,18 @@ export const createAPI = async (req: Request, user: User) => {
             identifications,
             emergencyContacts,
             notes,
+            mlcPolicyOrCardNumber,
             ...rest
           } = patient;
           existingPatient = await tx.patient.create({
             data: {
               ...rest,
+              mlcInsuranceType: rest.isMlcPatient
+                ? (rest.mlcInsuranceType ?? null)
+                : null,
+              mlcPolicyOrCardNumber: rest.isMlcPatient
+                ? (mlcPolicyOrCardNumber?.trim() ?? null)
+                : null,
               contacts: {
                 create: contacts
                   .filter((c) => Boolean(c.value?.trim()))
@@ -1618,12 +1661,28 @@ export const declareIpdMlcAPI = async (req: Request, user: User) => {
     bodySchema: ipdMlcDeclareValidator,
     req,
     onSuccess: async ({ body }) => {
-      const { ipdId } = body;
+      const {
+        ipdId,
+        isMlcPatient = true,
+        mlcInsuranceType = null,
+        mlcPolicyOrCardNumber = null,
+      } = body;
 
       return prisma.$transaction(async (tx) => {
         const existingIpd = await tx.ipd.findUnique({
           where: { id: ipdId, isDeleted: false },
-          select: { id: true, isDayCare: true, isMlcPatient: true },
+          select: {
+            id: true,
+            isDayCare: true,
+            isMlcPatient: true,
+            patientId: true,
+            patient: {
+              select: {
+                id: true,
+                isMlcPatient: true,
+              },
+            },
+          },
         });
 
         if (!existingIpd) {
@@ -1646,26 +1705,21 @@ export const declareIpdMlcAPI = async (req: Request, user: User) => {
           });
         }
 
-        if (existingIpd.isMlcPatient) {
-          return apiResponse({
-            status: RESPONSE_STATUS.SUCCESS,
-            message: "Patient already marked as MLC",
-          });
-        }
-
-        await tx.ipd.update({
-          where: { id: ipdId },
+        await tx.patient.update({
+          where: { id: existingIpd.patientId },
           data: {
-            isMlcPatient: true,
-            mlcDeclaredById: user.id,
-            mlcDeclarationDate: new Date(),
             updatedBy: user.id,
+            isMlcPatient,
+            mlcInsuranceType: isMlcPatient ? mlcInsuranceType : null,
+            mlcPolicyOrCardNumber: isMlcPatient
+              ? (mlcPolicyOrCardNumber?.trim() ?? null)
+              : null,
           },
         });
 
         return apiResponse({
           status: RESPONSE_STATUS.SUCCESS,
-          message: "Patient marked as MLC successfully",
+          message: "Patient MLC details updated successfully",
         });
       });
     },

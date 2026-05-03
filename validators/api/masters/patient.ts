@@ -5,6 +5,7 @@ import {
   Gender,
   IdentityType,
   MaritalStatus,
+  MlcInsuranceType,
   NameTitle,
   RelationshipType,
   Status,
@@ -69,6 +70,9 @@ const personalValidator = z.object({
   maritalStatus: z.enum(MaritalStatus),
   religion: z.string().optional().nullable(),
   bloodGroup: z.enum(BloodGroup),
+  isMlcPatient: z.coerce.boolean().optional().default(false),
+  mlcInsuranceType: z.enum(MlcInsuranceType).optional().nullable(),
+  mlcPolicyOrCardNumber: z.string().optional().nullable(),
 });
 
 const patientValidator = personalValidator.extend({

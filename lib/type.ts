@@ -612,6 +612,90 @@ export type PharmacySupplierDueGrnType = {
   supplierName: string;
 };
 
+export type PharmacyIpdIssueType = Prisma.IpdDirectIssueGetPayload<{
+  include: {
+    ipd: {
+      include: {
+        patient: {
+          select: {
+            id: true;
+            title: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+            gender: true;
+          };
+        };
+      };
+    };
+    items: {
+      include: {
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+        returnItems: true;
+      };
+    };
+  };
+}>;
+
+export type PharmacyIpdReturnType = Prisma.IpdDirectReturnGetPayload<{
+  include: {
+    ipd: {
+      include: {
+        patient: {
+          select: {
+            id: true;
+            title: true;
+            firstName: true;
+            middleName: true;
+            lastName: true;
+            gender: true;
+          };
+        };
+      };
+    };
+    items: {
+      include: {
+        issueItem: {
+          include: {
+            inventoryItem: {
+              include: {
+                drug: true;
+                supplier: true;
+                hsnSac: true;
+              };
+            };
+            ipdDirectIssue: true;
+          };
+        };
+        inventoryItem: {
+          include: {
+            drug: true;
+            supplier: true;
+            hsnSac: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type PharmacyIpdBillRowType = {
+  id: string;
+  order: string;
+  batch: string;
+  patient: string;
+  ipdNo: string;
+  submission: Date;
+  item: string;
+  quantity: string;
+};
+
 export type SupplierLedgerTransactionType = {
   date: Date;
   reference: string;
@@ -919,6 +1003,245 @@ export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{
 
 export type CertificateTemplateMap = Record<CertificateType, string>;
 
+export type SalesHsnSummaryRowType = {
+  id: string;
+  hsn: string;
+  quantity: number;
+  cGstPercentage: number;
+  sGstPercentage: number;
+  taxableAmount: number;
+  cGstAmount: number;
+  sGstAmount: number;
+};
+
+export type CounterSaleBillRowType = {
+  id: string;
+  billNumber: string;
+  date: Date;
+  customer: string;
+  taxableAmount: number;
+  cGstAmount: number;
+  sGstAmount: number;
+  iGstAmount: number;
+  rounding: number;
+  billTotal: number;
+  paidTotal: number;
+  saleOrReturn: "SALE" | "RETURN";
+  wholesaleRetail: "WHOLESALE" | "RETAIL";
+  corporate: string;
+};
+
+export type CounterSaleItemRowType = {
+  id: string;
+  date: Date;
+  customer: string;
+  billNumber: string;
+  item: string;
+  hsn: string;
+  batch: string;
+  expiry: Date;
+  ptr: number;
+  ptrWithGst: number;
+  ptrTotal: number;
+  ptrWithGstTotal: number;
+  mrp: number;
+  itemsPerPack: number;
+  billedRate: number;
+  quantity: number;
+  discountPercentage: number;
+  total: number;
+  cGstPercentage: number;
+  sGstPercentage: number;
+  iGstPercentage: number;
+  saleOrReturn: "SALE" | "RETURN";
+  doctor: string;
+  saleType: "WHOLESALE" | "RETAIL";
+  profitLoss: number;
+  supplier: string;
+  purchaseDate: Date | null;
+  purchaseBillNumber: string;
+};
+
+export type CounterSaleCollectionRowType = {
+  id: string;
+  customer: string;
+  billNumber: string;
+  paymentDate: Date;
+  amount: number;
+  paymentMode: string;
+  receiptNumber: string;
+  remarks: string;
+};
+
+export type IpdSaleItemRowType = {
+  id: string;
+  date: Date;
+  invoiceNumber: string;
+  billingType: string;
+  customer: string;
+  item: string;
+  rate: number;
+  quantity: number;
+  itemTotal: number;
+};
+
+export type PurchaseOrderReportRowType = {
+  id: number;
+  supplier: string;
+  poNumber: string;
+  poDate: Date;
+  items: number;
+  taxableAmount: number;
+  packingForwarding: number;
+  cGstAmount: number;
+  sGstAmount: number;
+  iGstAmount: number;
+  tcsAmount: number;
+  discountAmount: number;
+  roundOffAmount: number;
+  grandTotal: number;
+  linkedGrn: string;
+};
+
+export type PurchaseOrderItemReportRowType = {
+  id: string;
+  poNumber: string;
+  supplier: string;
+  poDate: Date;
+  item: string;
+  category: string;
+  hsn: string;
+  quantity: number;
+  rate: number;
+  cGstPercentage: number;
+  sGstPercentage: number;
+  iGstPercentage: number;
+  total: number;
+};
+
+export type GrnReportRowType = {
+  id: number;
+  supplier: string;
+  gstIn: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  totalItems: number;
+  taxableAmount: number;
+  discountAmount: number;
+  cGstAmount: number;
+  sGstAmount: number;
+  iGstAmount: number;
+  tcsAmount: number;
+  packingForwarding: number;
+  roundOffAmount: number;
+  grandTotal: number;
+  grnNumber: string;
+  linkedPo: string;
+};
+
+export type GrnItemReportRowType = {
+  id: string;
+  grn: string;
+  po: string;
+  supplier: string;
+  invoiceNumber: string;
+  grnDate: Date;
+  item: string;
+  category: string;
+  batch: string;
+  expiry: Date;
+  hsn: string;
+  quantity: number;
+  freeQuantity: number;
+  rate: number;
+  cGstPercentage: number;
+  sGstPercentage: number;
+  iGstPercentage: number;
+  mrp: number;
+};
+
+export type PurchaseUtilisationRowType = {
+  id: number;
+  item: string;
+  batch: string;
+  expiry: Date;
+  purchasedQuantity: number;
+  ptr: number;
+  cGstPercentage: number;
+  sGstPercentage: number;
+  purchaseAmount: number;
+  soldQuantity: number;
+  soldAmount: number;
+  utilisationPercentage: number;
+};
+
+export type StockItemMovementRowType = {
+  id: string;
+  item: string;
+  counterSalesQuantity: number;
+  counterSalesPurchaseValue: number;
+  counterSalesMrpValue: number;
+  counterReturnsQuantity: number;
+  counterReturnsPurchaseValue: number;
+  counterReturnsMrpValue: number;
+  ipdSalesQuantity: number;
+  ipdSalesPurchaseValue: number;
+  ipdSalesMrpValue: number;
+  ipdReturnsQuantity: number;
+  ipdReturnsPurchaseValue: number;
+  ipdReturnsMrpValue: number;
+  purchaseOrdersQuantity: number;
+  purchaseOrdersPurchaseValue: number;
+  purchaseOrdersMrpValue: number;
+  purchaseReturnsQuantity: number;
+  purchaseReturnsPurchaseValue: number;
+  purchaseReturnsMrpValue: number;
+};
+
+export type TopPerformingItemRowType = {
+  id: string;
+  item: string;
+  quantity: number;
+};
+
+export type ExpiringItemRowType = {
+  id: string;
+  item: string;
+  batch: string;
+  expiringInDays: number;
+  ptr: number;
+  stockValuePtr: number;
+  mrp: number;
+  stockValueMrp: number;
+};
+
+export type PharmacyReportsType = {
+  counterSale: {
+    bills: CounterSaleBillRowType[];
+    items: CounterSaleItemRowType[];
+    collections: CounterSaleCollectionRowType[];
+    hsnSummary: SalesHsnSummaryRowType[];
+  };
+  ipdSale: {
+    items: IpdSaleItemRowType[];
+    hsnSummary: SalesHsnSummaryRowType[];
+  };
+  po: {
+    purchaseOrders: PurchaseOrderReportRowType[];
+    purchaseOrderItems: PurchaseOrderItemReportRowType[];
+  };
+  grn: {
+    grns: GrnReportRowType[];
+    grnItems: GrnItemReportRowType[];
+  };
+  stock: {
+    purchaseUtilisation: PurchaseUtilisationRowType[];
+    itemMovements: StockItemMovementRowType[];
+    topPerformingItems: TopPerformingItemRowType[];
+    expiringItems: ExpiringItemRowType[];
+  };
+};
+
 export type ServiceDataType = Prisma.ServiceGetPayload<{
   include: {
     pathologyTests: {
@@ -1144,6 +1467,9 @@ export type IPDType = Prisma.IpdGetPayload<{
         addresses: true;
         contacts: true;
         gender: true;
+        isMlcPatient: true;
+        mlcInsuranceType: true;
+        mlcPolicyOrCardNumber: true;
       };
     };
   };

@@ -78,6 +78,11 @@ export const PHARMACY_CUSTOMER_LEDGER = "/pharmacy/customer-ledger";
 export const PHARMACY_INVENTORY = "/pharmacy/inventory";
 export const PHARMACY_STOCK_CORRECTION = "/pharmacy/stock-correction";
 export const PHARMACY_CUSTOMER = "/pharmacy/customer";
+export const PHARMACY_REPORTS = "/pharmacy/reports";
+export const PHARMACY_IPD_ISSUE = "/pharmacy/ipd-issue";
+export const PHARMACY_IPD_RETURN = "/pharmacy/ipd-return";
+export const PHARMACY_IPD_BILL = "/pharmacy/ipd-bill";
+export const PHARMACY_IPD_PATIENT = "/pharmacy/ipd-patient";
 
 // ----------------------------------
 // ---------ROOM TYPE ENDPOINTS--------

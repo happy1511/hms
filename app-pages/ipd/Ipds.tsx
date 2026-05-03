@@ -13,6 +13,7 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import ChangeIpdBillingTypeModal from "@/components/ipd/ChangeIpdBillingTypeModal";
 import ChangeIpdDateTimeModal from "@/components/ipd/ChangeIpdDateTimeModal";
 import ChangeIpdDoctorModal from "@/components/ipd/ChangeIpdDoctorModal";
+import MarkIpdMlcModal from "@/components/ipd/MarkIpdMlcModal";
 import ReallocateIpdBedModal from "@/components/ipd/ReallocateIpdBedModal";
 import AddInvoiceItemModal from "@/components/opd/AddInvoiceItemModal";
 import AddPaymentModal from "@/components/opd/AddPayment";
@@ -25,7 +26,6 @@ import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import {
   useCancelDischargeIpd,
   useDeleteIpd,
-  useDeclareIpdMlc,
   useIpdList,
 } from "@/hooks/query/ipd";
 import {
@@ -136,11 +136,10 @@ const Actions = ({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [reallocateBedOpen, setReallocateBedOpen] = useState(false);
   const [changeDateTimeOpen, setChangeDateTimeOpen] = useState(false);
+  const [markMlcOpen, setMarkMlcOpen] = useState(false);
   const [patientViewOpen, setPatientViewOpen] = useState(false);
   const [viewDocumentsOpen, setViewDocumentsOpen] = useState(false);
 
-  const { mutateAsync: declareMlc, isPending: declareMlcPending } =
-    useDeclareIpdMlc();
   const { mutateAsync: deleteIpd, isPending: deletePending } = useDeleteIpd();
 
   const { mutateAsync: cancelDischargeIpd, isPending: cancelDischargePending } =
@@ -232,10 +231,10 @@ const Actions = ({
       },
     );
 
-    if (canMarkMlc && !data.isMlcPatient) {
+    if (canMarkMlc) {
       ipdItems.push({
-        label: declareMlcPending ? "Mark as MLC..." : "Mark as MLC",
-        onClick: () => declareMlc({ ipdId: Number(data.id) }),
+        label: data.patient?.isMlcPatient ? "Edit MLC Details" : "Mark as MLC",
+        onClick: () => setMarkMlcOpen(true),
       });
     }
   }
@@ -359,6 +358,11 @@ const Actions = ({
       <ChangeIpdDateTimeModal
         open={changeDateTimeOpen}
         onOpenChange={setChangeDateTimeOpen}
+        ipd={data}
+      />
+      <MarkIpdMlcModal
+        open={markMlcOpen}
+        onOpenChange={setMarkMlcOpen}
         ipd={data}
       />
       <PatientDocumentsModal

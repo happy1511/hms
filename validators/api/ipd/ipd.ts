@@ -4,6 +4,7 @@ import {
   IdentityType,
   IpdArrival,
   IpdCareType,
+  MlcInsuranceType,
   PaymentCategory,
   RelationshipType,
   Status,
@@ -103,6 +104,9 @@ const ipdDateTimeUpdateValidator = z.object({
 
 const ipdMlcDeclareValidator = z.object({
   ipdId: z.coerce.number(),
+  isMlcPatient: z.coerce.boolean().optional().default(true),
+  mlcInsuranceType: z.enum(MlcInsuranceType).optional().nullable(),
+  mlcPolicyOrCardNumber: z.string().optional().nullable(),
 });
 
 // -------------------- Ipd Discharge Summary --------------------

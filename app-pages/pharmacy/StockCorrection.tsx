@@ -78,20 +78,23 @@ const StockCorrection = () => {
   );
 
   useEffect(() => {
-    setSelectedInventoryItem(null);
-    form.setValue("itemName", "", { shouldDirty: false });
-    form.setValue("batchNo", 0, { shouldDirty: false });
-    form.setValue("mrp", 0, { shouldDirty: false });
-    form.setValue("quantityInStock", 0, { shouldDirty: false });
-    form.setValue("sellingPrice", 0, { shouldDirty: false });
-    form.setValue("itemsPerPack", 1, { shouldDirty: false });
-    form.setValue("expiryDate", new Date(), { shouldDirty: false });
+    form.reset({
+      ...getDefaultValues(),
+      drug: selectedDrug ?? null,
+    });
   }, [form, selectedDrug?.id]);
 
   const inventoryRows = useMemo(
     () => inventoryQuery.data?.data || [],
     [inventoryQuery.data?.data],
   );
+  const effectiveSelectedInventoryItem = useMemo(() => {
+    if (!selectedInventoryItem) {
+      return null;
+    }
+
+    return inventoryRows.find((row) => row.id === selectedInventoryItem.id) ?? null;
+  }, [inventoryRows, selectedInventoryItem]);
 
   if (!profile) {
     return <div />;
@@ -126,13 +129,13 @@ const StockCorrection = () => {
   };
 
   const onSubmit = async (values: StockCorrectionFormValues) => {
-    if (!selectedInventoryItem?.id) {
+    if (!effectiveSelectedInventoryItem?.id) {
       toast.error("Select inventory stock to correct");
       return;
     }
 
     await updateStock({
-      inventoryItemId: selectedInventoryItem.id,
+      inventoryItemId: effectiveSelectedInventoryItem.id,
       batchNo: Number(values.batchNo || 0),
       expiryDate: values.expiryDate,
       mrp: Number(values.mrp || 0),
@@ -201,7 +204,7 @@ const StockCorrection = () => {
                         <tr
                           key={row.id}
                           className={`cursor-pointer border-t border-primary/20 ${
-                            row.id === selectedInventoryItem?.id
+                            row.id === effectiveSelectedInventoryItem?.id
                               ? "bg-primary/10"
                               : "bg-white hover:bg-primary/5"
                           }`}
@@ -245,48 +248,48 @@ const StockCorrection = () => {
                     type="number"
                     name="batchNo"
                     control={form.control}
-                    readOnly={!canUpdate || !selectedInventoryItem}
+                    readOnly={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>
                     label="Expiry"
                     type="date"
                     name="expiryDate"
                     control={form.control}
-                    disabled={!canUpdate || !selectedInventoryItem}
+                    disabled={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>
                     label="MRP"
                     type="number"
                     name="mrp"
                     control={form.control}
-                    readOnly={!canUpdate || !selectedInventoryItem}
+                    readOnly={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>
                     label="Current Stock"
                     type="number"
                     name="quantityInStock"
                     control={form.control}
-                    readOnly={!canUpdate || !selectedInventoryItem}
+                    readOnly={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>
                     label="Sale Rate"
                     type="number"
                     name="sellingPrice"
                     control={form.control}
-                    readOnly={!canUpdate || !selectedInventoryItem}
+                    readOnly={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>
                     label="Items/Pack"
                     type="number"
                     name="itemsPerPack"
                     control={form.control}
-                    readOnly={!canUpdate || !selectedInventoryItem}
+                    readOnly={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                 </div>
 
                 <div className="mt-4 flex gap-2">
                   <CustomButton
-                    disabled={!canUpdate || !selectedInventoryItem || isPending}
+                    disabled={!canUpdate || !effectiveSelectedInventoryItem || isPending}
                     type="submit"
                   >
                     Save

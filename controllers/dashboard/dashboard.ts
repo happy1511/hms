@@ -312,7 +312,6 @@ export const getAPI = async (req: Request) => {
         }),
         prisma.ipd.count({
           where: {
-            isMlcPatient: false,
             isDischarged: false,
           },
         }),

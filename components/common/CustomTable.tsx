@@ -21,6 +21,7 @@ import {
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
+  getFilteredRowModel,
   getGroupedRowModel,
   getSortedRowModel,
   useReactTable,
@@ -50,6 +51,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { AxiosError } from "axios";
+import { Input } from "../ui/input";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDefWithClass<TData, TValue>[];
@@ -90,6 +92,11 @@ interface DataTableProps<TData, TValue> {
   headerBgClass?: string;
   rowBgClass?: string;
   rowAltBgClass?: string;
+
+  /** local table search */
+  enableTableSearch?: boolean;
+  tableSearchPlaceholder?: string;
+  searchableColumnIds?: string[];
 }
 
 function getPaginationRange({
@@ -157,6 +164,9 @@ export function CustomTable<TData, TValue>({
   headerBgClass = "bg-primary",
   rowBgClass = "bg-white",
   rowAltBgClass = "bg-[#F6FAFE]",
+  enableTableSearch = false,
+  tableSearchPlaceholder = "Search table...",
+  searchableColumnIds,
   useInfiniteScroll = false,
   page = 1,
   total = 0,
@@ -165,6 +175,7 @@ export function CustomTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
   const [groupingState, setGroupingState] = useState<GroupingState>(
     grouping ?? [],
   );
@@ -192,15 +203,30 @@ export function CustomTable<TData, TValue>({
           ),
           headerClassName: "min-w-[50px]",
           cellClassName: "min-w-[50px]",
-        },
+        } as ColumnDefWithClass<TData, TValue>,
         ...columns,
       ]
     : columns;
 
-  const table = useReactTable({
+  const table = useReactTable<TData>({
     data,
     columns: finalColumns,
     getCoreRowModel: getCoreRowModel(),
+    ...(enableTableSearch && {
+      getFilteredRowModel: getFilteredRowModel(),
+      onGlobalFilterChange: setGlobalFilter,
+      globalFilterFn: (row, columnId, filterValue: string) =>
+        String(row.getValue(columnId) ?? "")
+          .toLowerCase()
+          .includes(String(filterValue ?? "").toLowerCase()),
+      getColumnCanGlobalFilter: (column) => {
+        if (!enableTableSearch) return false;
+        if (searchableColumnIds?.length) {
+          return searchableColumnIds.includes(column.id);
+        }
+        return column.id !== "__select";
+      },
+    }),
     onSortingChange: setSorting,
     ...(enableGrouping && {
       onGroupingChange: setGroupingState,
@@ -208,6 +234,7 @@ export function CustomTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     state: {
       sorting,
+      ...(enableTableSearch && { globalFilter }),
       ...(enableGrouping && { grouping: groupingState }),
       ...(enableRowSelection && { rowSelection }),
     },
@@ -255,6 +282,16 @@ export function CustomTable<TData, TValue>({
 
   return (
     <>
+      {enableTableSearch && (
+        <div className="mb-3 flex justify-end">
+          <Input
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder={tableSearchPlaceholder}
+            className="h-6 w-full max-w-xs text-tiny placeholder:text-tiny"
+          />
+        </div>
+      )}
       <Table className="relative text-tiny">
         <TableHeader className={`sticky top-0 ${headerBgClass}`}>
           {table.getHeaderGroups().map((headerGroup) => (

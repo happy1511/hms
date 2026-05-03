@@ -21,6 +21,7 @@ import {
   Layers,
   DoorClosed,
   TestTubes,
+  FolderOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,17 @@ interface SidebarItem {
 }
 
 const CERTIFICATES_MODULE = "CERTIFICATES" as ModuleType;
+const PHARMACY_REPORTS_MODULE = "PHARMACY_REPORTS" as ModuleType;
+const PHARMACY_REPORT_COUNTER_SALE_MODULE =
+  "PHARMACY_REPORT_COUNTER_SALE" as ModuleType;
+const PHARMACY_REPORT_IPD_SALE_MODULE =
+  "PHARMACY_REPORT_IPD_SALE" as ModuleType;
+const PHARMACY_REPORT_PO_MODULE = "PHARMACY_REPORT_PO" as ModuleType;
+const PHARMACY_REPORT_GRN_MODULE = "PHARMACY_REPORT_GRN" as ModuleType;
+const PHARMACY_REPORT_STOCK_MODULE = "PHARMACY_REPORT_STOCK" as ModuleType;
+const PHARMACY_IPD_ISSUE_MODULE = "PHARMACY_IPD_ISSUE" as ModuleType;
+const PHARMACY_IPD_RETURN_MODULE = "PHARMACY_IPD_RETURN" as ModuleType;
+const PHARMACY_IPD_BILL_MODULE = "PHARMACY_IPD_BILL" as ModuleType;
 
 const opdItems: SidebarItem[] = [
   {
@@ -129,6 +141,20 @@ const patientCareItem: SidebarItem = {
     ModuleType.OPD_BILL,
     ModuleType.IPD_BILL,
     ModuleType.DAY_CARE_IPD,
+  ],
+  requireViewPermission: true,
+};
+
+const patientDocumentsItem: SidebarItem = {
+  title: "PATIENT DOCUMENTS",
+  url: "/patient/documents",
+  icon: FolderOpen,
+  module: [
+    ModuleType.PATIENT_MASTER,
+    ModuleType.OPD_BILL,
+    ModuleType.IPD_BILL,
+    ModuleType.DAY_CARE_IPD,
+    ModuleType.DISCHARGE_PATIENT,
   ],
   requireViewPermission: true,
 };
@@ -227,6 +253,36 @@ const pharmacyItems = [
     url: "/pharmacy/stock-correction",
     icon: Users,
     module: [ModuleType.PHARMACY_STOCK_CORRECTION],
+  },
+  {
+    title: "REPORTS",
+    url: "/pharmacy/reports",
+    icon: FileText,
+    module: [
+      PHARMACY_REPORT_COUNTER_SALE_MODULE,
+      PHARMACY_REPORT_IPD_SALE_MODULE,
+      PHARMACY_REPORT_PO_MODULE,
+      PHARMACY_REPORT_GRN_MODULE,
+      PHARMACY_REPORT_STOCK_MODULE,
+    ],
+  },
+  {
+    title: "IPD ISSUES",
+    url: "/pharmacy/ipd-issue",
+    icon: Users,
+    module: [PHARMACY_IPD_ISSUE_MODULE],
+  },
+  {
+    title: "IPD RETURNS",
+    url: "/pharmacy/ipd-return",
+    icon: Users,
+    module: [PHARMACY_IPD_RETURN_MODULE],
+  },
+  {
+    title: "IPD BILLS",
+    url: "/pharmacy/ipd-bill",
+    icon: FileText,
+    module: [PHARMACY_IPD_BILL_MODULE],
   },
 ];
 
@@ -462,6 +518,10 @@ export function CustomSidebar() {
     hasModulePermission(data.data, item.module),
   );
   const canViewPatientCare = canAccessSidebarItem(data.data, patientCareItem);
+  const canViewPatientDocuments = canAccessSidebarItem(
+    data.data,
+    patientDocumentsItem,
+  );
   const visibleOpd = opdItems.filter((item) =>
     canAccessSidebarItem(data.data, item),
   );
@@ -543,6 +603,27 @@ export function CustomSidebar() {
                     <Link href={patientCareItem.url}>
                       <patientCareItem.icon />
                       <span>{patientCareItem.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {canViewPatientDocuments && (
+          <SidebarGroup className="p-0">
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(patientDocumentsItem.url)}
+                    className="px-4 py-1.5 h-auto text-tiny! [&>svg]:size-3 font-semibold data-[active=true]:text-white hover:text-white text-sidebar-foreground"
+                  >
+                    <Link href={patientDocumentsItem.url}>
+                      <patientDocumentsItem.icon />
+                      <span>{patientDocumentsItem.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -8,7 +8,11 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import { CustomTable } from "@/components/common/CustomTable";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { CertificateType, ActionType, ModuleType } from "@/generated/prisma/enums";
+import {
+  CertificateType,
+  ActionType,
+  ModuleType,
+} from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import {
   useCertificateTemplates,
@@ -52,10 +56,7 @@ const defaultTemplates: CertificateTemplateMap = {
 
 const replaceTemplateTokens = (content: string, consultation: any) => {
   const patient = consultation?.patient;
-  const patientName = [
-    patient?.firstName,
-    patient?.lastName,
-  ]
+  const patientName = [patient?.firstName, patient?.lastName]
     .filter(Boolean)
     .join(" ");
 
@@ -122,19 +123,19 @@ const Certificates = () => {
   const templates = templatesData || defaultTemplates;
   const canView = Boolean(
     profile &&
-      hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.VIEW),
+    hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.VIEW),
   );
   const canCreate = Boolean(
     profile &&
-      hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.CREATE),
+    hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.CREATE),
   );
   const canUpdate = Boolean(
     profile &&
-      hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.UPDATE),
+    hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.UPDATE),
   );
   const canPrint = Boolean(
     profile &&
-      hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.PRINT),
+    hasActionPermission(profile.data, CERTIFICATES_MODULE, ActionType.PRINT),
   );
 
   const resolvedTemplateContent = useMemo(() => {
@@ -145,7 +146,6 @@ const Certificates = () => {
 
   useEffect(() => {
     form.reset({ content: resolvedTemplateContent });
-    setPage(1);
   }, [activeTab, form, resolvedTemplateContent]);
 
   if (!profile) {
@@ -153,10 +153,7 @@ const Certificates = () => {
   }
 
   const patientName = opdId
-    ? [
-        consultation?.patient?.firstName,
-        consultation?.patient?.lastName,
-      ]
+    ? [consultation?.patient?.firstName, consultation?.patient?.lastName]
         .filter(Boolean)
         .join(" ")
     : "";
@@ -217,7 +214,9 @@ const Certificates = () => {
             type="button"
             variant="secondary"
             className="h-auto px-2 py-1"
-            onClick={() => window.open(`/certificate/${row.original.id}`, "_blank")}
+            onClick={() =>
+              window.open(`/certificate/${row.original.id}`, "_blank")
+            }
           >
             Print
           </CustomButton>
@@ -266,7 +265,9 @@ const Certificates = () => {
 
         {opdId && canView ? (
           <div>
-            <div className="mb-2 text-sm font-semibold">Previously Created Certificates</div>
+            <div className="mb-2 text-sm font-semibold">
+              Previously Created Certificates
+            </div>
             <CustomTable
               columns={columns}
               data={certificateList?.data || []}
@@ -295,7 +296,8 @@ const Certificates = () => {
               />
             </div>
             <div className="rounded-md border border-dashed border-border bg-background px-3 py-2 text-[11px] text-black/70">
-              Available placeholders: {`{{patientName}}, {{uhid}}, {{gender}}, {{age}}, {{date}}, {{dateTime}}, {{opdNumber}}, {{consultantDoctor}}, {{referredBy}}`}
+              Available placeholders:{" "}
+              {`{{patientName}}, {{uhid}}, {{gender}}, {{age}}, {{date}}, {{dateTime}}, {{opdNumber}}, {{consultantDoctor}}, {{referredBy}}`}
             </div>
             {(canCreate || canUpdate) && (
               <div className="flex justify-end gap-2">
@@ -304,7 +306,9 @@ const Certificates = () => {
                     type="button"
                     variant="outline"
                     className="bg-white text-black"
-                    onClick={() => form.reset({ content: resolvedTemplateContent })}
+                    onClick={() =>
+                      form.reset({ content: resolvedTemplateContent })
+                    }
                   >
                     Reset To Template
                   </CustomButton>
@@ -351,14 +355,17 @@ const Certificates = () => {
       {(canView || canCreate || canUpdate) && (
         <CustomTabs
           tabs={tabs}
+          classNames="border-none p-0"
           value={activeTab}
-          onValueChange={(value) => {
-            const nextTab = value as CertificateType;
-            setActiveTab(nextTab);
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("tab", nextTab);
-            router.replace(`/certificates?${params.toString()}`);
-          }}
+        onValueChange={(value) => {
+  const nextTab = value as CertificateType;
+  setActiveTab(nextTab);
+  setPage(1);
+
+  const params = new URLSearchParams(searchParams.toString());
+  params.set("tab", nextTab);
+  router.replace(`/certificates?${params.toString()}`);
+}}
         />
       )}
     </CustomLayout>

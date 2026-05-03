@@ -477,6 +477,9 @@ export const getDetailsAPI = async (
           maritalStatus: true,
           religion: true,
           bloodGroup: true,
+          isMlcPatient: true,
+          mlcInsuranceType: true,
+          mlcPolicyOrCardNumber: true,
           relations: true,
           contacts: true,
           title: true,
@@ -516,12 +519,17 @@ export const createAPI = async (req: Request, user: User) => {
         addresses,
         identifications,
         notes,
+        mlcPolicyOrCardNumber,
         ...rest
       } = data;
 
       const patient = await prisma.patient.create({
         data: {
           ...rest,
+          mlcInsuranceType: rest.isMlcPatient ? (rest.mlcInsuranceType ?? null) : null,
+          mlcPolicyOrCardNumber: rest.isMlcPatient
+            ? (mlcPolicyOrCardNumber?.trim() ?? null)
+            : null,
           createdBy: user.id,
           updatedBy: user.id,
           contacts: {
@@ -599,6 +607,7 @@ export const updateAPI = async (
         identifications,
         notes,
         patientId,
+        mlcPolicyOrCardNumber,
         ...rest
       } = data;
 
@@ -606,6 +615,18 @@ export const updateAPI = async (
         where: { id: data.patientId },
         data: {
           ...rest,
+          mlcInsuranceType:
+            rest.isMlcPatient === false
+              ? null
+              : rest.mlcInsuranceType === undefined
+                ? undefined
+                : (rest.mlcInsuranceType ?? null),
+          mlcPolicyOrCardNumber:
+            rest.isMlcPatient === false
+              ? null
+              : mlcPolicyOrCardNumber === undefined
+                ? undefined
+                : (mlcPolicyOrCardNumber?.trim() ?? null),
           updatedBy: user.id,
 
           addresses: addresses
