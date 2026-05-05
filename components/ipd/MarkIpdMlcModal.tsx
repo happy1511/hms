@@ -44,8 +44,6 @@ const MarkIpdMlcModal = ({ open, onOpenChange, ipd }: Props) => {
     resolver: zodResolver(schema),
   });
 
-  const isMlcPatient = Boolean(form.watch("isMlcPatient"));
-
   useEffect(() => {
     form.reset({
       isMlcPatient: Boolean(ipd?.patient?.isMlcPatient),
@@ -69,12 +67,8 @@ const MarkIpdMlcModal = ({ open, onOpenChange, ipd }: Props) => {
     await mutateAsync({
       ipdId: Number(ipd.id),
       isMlcPatient: Boolean(values.isMlcPatient),
-      mlcInsuranceType: values.isMlcPatient
-        ? (values.mlcInsuranceType ?? null)
-        : null,
-      mlcPolicyOrCardNumber: values.isMlcPatient
-        ? (values.mlcPolicyOrCardNumber ?? "")
-        : "",
+      mlcInsuranceType: values.mlcInsuranceType ?? null,
+      mlcPolicyOrCardNumber: values.mlcPolicyOrCardNumber ?? "",
     });
 
     handleClose();
@@ -109,26 +103,22 @@ const MarkIpdMlcModal = ({ open, onOpenChange, ipd }: Props) => {
               type="checkbox"
             />
 
-            {isMlcPatient && (
-              <>
-                <FormField<FormValues>
-                  label="Insurance Type"
-                  name="mlcInsuranceType"
-                  control={form.control}
-                  type="select"
-                  options={Object.values(MlcInsuranceType).map((value) => ({
-                    label: value,
-                    value,
-                  }))}
-                />
-                <FormField<FormValues>
-                  label="Policy / Card Number"
-                  name="mlcPolicyOrCardNumber"
-                  control={form.control}
-                  type="text"
-                />
-              </>
-            )}
+            <FormField<FormValues>
+              label="Insurance Type"
+              name="mlcInsuranceType"
+              control={form.control}
+              type="select"
+              options={Object.values(MlcInsuranceType).map((value) => ({
+                label: value,
+                value,
+              }))}
+            />
+            <FormField<FormValues>
+              label="Policy / Card Number"
+              name="mlcPolicyOrCardNumber"
+              control={form.control}
+              type="text"
+            />
 
             <div className="flex justify-end gap-2">
               <CustomButton

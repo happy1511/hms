@@ -17,8 +17,6 @@ const PersonalInfoForm = ({
   form: UseFormReturn<PatientValidatorType>;
   goNext: () => void;
 }) => {
-  const isMlcPatient = Boolean(form.watch("isMlcPatient"));
-
   const next = async () => {
     const isValid = await form.trigger([
       "title",
@@ -129,26 +127,22 @@ const PersonalInfoForm = ({
         name="isMlcPatient"
         type="checkbox"
       />
-      {isMlcPatient && (
-        <>
-          <FormField
-            control={form.control}
-            label="Insurance Type"
-            name="mlcInsuranceType"
-            type="select"
-            options={Object.values(MlcInsuranceType).map((value) => ({
-              value,
-              label: value,
-            }))}
-          />
-          <FormField
-            control={form.control}
-            label="Policy / Card Number"
-            name="mlcPolicyOrCardNumber"
-            type="text"
-          />
-        </>
-      )}
+      <FormField
+        control={form.control}
+        label="Insurance Type"
+        name="mlcInsuranceType"
+        type="select"
+        options={Object.values(MlcInsuranceType).map((value) => ({
+          value,
+          label: value,
+        }))}
+      />
+      <FormField
+        control={form.control}
+        label="Policy / Card Number"
+        name="mlcPolicyOrCardNumber"
+        type="text"
+      />
       <div className="flex justify-start col-span-2">
         <CustomButton type="button" onClick={next}>
           Next

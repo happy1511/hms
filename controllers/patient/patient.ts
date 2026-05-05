@@ -526,10 +526,8 @@ export const createAPI = async (req: Request, user: User) => {
       const patient = await prisma.patient.create({
         data: {
           ...rest,
-          mlcInsuranceType: rest.isMlcPatient ? (rest.mlcInsuranceType ?? null) : null,
-          mlcPolicyOrCardNumber: rest.isMlcPatient
-            ? (mlcPolicyOrCardNumber?.trim() ?? null)
-            : null,
+          mlcInsuranceType: rest.mlcInsuranceType ?? null,
+          mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
           createdBy: user.id,
           updatedBy: user.id,
           contacts: {
@@ -616,17 +614,13 @@ export const updateAPI = async (
         data: {
           ...rest,
           mlcInsuranceType:
-            rest.isMlcPatient === false
-              ? null
-              : rest.mlcInsuranceType === undefined
-                ? undefined
-                : (rest.mlcInsuranceType ?? null),
+            rest.mlcInsuranceType === undefined
+              ? undefined
+              : (rest.mlcInsuranceType ?? null),
           mlcPolicyOrCardNumber:
-            rest.isMlcPatient === false
-              ? null
-              : mlcPolicyOrCardNumber === undefined
-                ? undefined
-                : (mlcPolicyOrCardNumber?.trim() ?? null),
+            mlcPolicyOrCardNumber === undefined
+              ? undefined
+              : (mlcPolicyOrCardNumber?.trim() ?? null),
           updatedBy: user.id,
 
           addresses: addresses

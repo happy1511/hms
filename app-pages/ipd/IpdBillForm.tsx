@@ -840,8 +840,6 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const parsedAgeYears =
     typeof ageYears === "number" && Number.isFinite(ageYears) ? ageYears : null;
   const isAgeValid = parsedAgeYears !== null && parsedAgeYears >= 0;
-  const isMlcPatient = Boolean(form.watch("patient.isMlcPatient"));
-
   useEffect(() => {
     if (!isAgeValid || parsedAgeYears === null) return;
 
@@ -955,26 +953,22 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           control={form.control}
           type="checkbox"
         />
-        {isMlcPatient && (
-          <>
-            <FormField<ipdValidatorType>
-              label="Insurance Type"
-              name="patient.mlcInsuranceType"
-              control={form.control}
-              type="select"
-              options={Object.values(MlcInsuranceType).map((value) => ({
-                label: value,
-                value,
-              }))}
-            />
-            <FormField<ipdValidatorType>
-              label="Policy / Card Number"
-              name="patient.mlcPolicyOrCardNumber"
-              control={form.control}
-              type="text"
-            />
-          </>
-        )}
+        <FormField<ipdValidatorType>
+          label="Insurance Type"
+          name="patient.mlcInsuranceType"
+          control={form.control}
+          type="select"
+          options={Object.values(MlcInsuranceType).map((value) => ({
+            label: value,
+            value,
+          }))}
+        />
+        <FormField<ipdValidatorType>
+          label="Policy / Card Number"
+          name="patient.mlcPolicyOrCardNumber"
+          control={form.control}
+          type="text"
+        />
       </div>
       <div>
         <FormField<ipdValidatorType>

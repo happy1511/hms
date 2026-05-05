@@ -698,12 +698,8 @@ export const createAPI = async (req: Request, user: User) => {
               where: { id: existingPatient.id },
               data: {
                 ...patientRest,
-                mlcPolicyOrCardNumber: patientRest.isMlcPatient
-                  ? (mlcPolicyOrCardNumber?.trim() ?? null)
-                  : null,
-                mlcInsuranceType: patientRest.isMlcPatient
-                  ? (patientRest.mlcInsuranceType ?? null)
-                  : null,
+                mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
+                mlcInsuranceType: patientRest.mlcInsuranceType ?? null,
                 updatedBy: user.id,
               },
             });
@@ -857,12 +853,8 @@ export const createAPI = async (req: Request, user: User) => {
           existingPatient = await tx.patient.create({
             data: {
               ...rest,
-              mlcInsuranceType: rest.isMlcPatient
-                ? (rest.mlcInsuranceType ?? null)
-                : null,
-              mlcPolicyOrCardNumber: rest.isMlcPatient
-                ? (mlcPolicyOrCardNumber?.trim() ?? null)
-                : null,
+              mlcInsuranceType: rest.mlcInsuranceType ?? null,
+              mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
               contacts: {
                 create: contacts
                   .filter((c) => Boolean(c.value?.trim()))
@@ -1710,10 +1702,8 @@ export const declareIpdMlcAPI = async (req: Request, user: User) => {
           data: {
             updatedBy: user.id,
             isMlcPatient,
-            mlcInsuranceType: isMlcPatient ? mlcInsuranceType : null,
-            mlcPolicyOrCardNumber: isMlcPatient
-              ? (mlcPolicyOrCardNumber?.trim() ?? null)
-              : null,
+            mlcInsuranceType: mlcInsuranceType ?? null,
+            mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
           },
         });
 
