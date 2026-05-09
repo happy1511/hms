@@ -30,30 +30,35 @@ const CustomerInfo = ({ customer, invoice }: Props) => {
           leftValue={customer.uhid || "-"}
           rightLabel="Date"
           rightValue={invoice.date}
+          cellClassName="border-b-0"
         />
         <InfoRow
           leftLabel="Patient"
           leftValue={customer.name || "-"}
           rightLabel="OPD Number"
           rightValue={invoice.opdNumber || "-"}
+          cellClassName="border-b-0"
         />
         <InfoRow
           leftLabel="Gender / Age"
           leftValue={`${customer.gender || "-"}${customer.age ? ` / ${customer.age}` : ""}`}
           rightLabel="Invoice No."
           rightValue={invoice.number}
+          cellClassName="border-b-0"
         />
         <InfoRow
           leftLabel="Address"
           leftValue={customer.address || "-"}
           rightLabel="Consultant"
           rightValue={invoice.consultant || "-"}
+          cellClassName="border-b-0"
         />
         <InfoRow
           leftLabel="Relation"
           leftValue={customer.relation || "-"}
           rightLabel="Referred By"
           rightValue={invoice.referredBy || "-"}
+          cellClassName="border-b-0"
         />
         <InfoRow
           leftLabel="Mobile No."

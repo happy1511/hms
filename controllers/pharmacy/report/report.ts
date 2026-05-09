@@ -1,6 +1,7 @@
 import { Prisma, User } from "@/generated/prisma/client";
 import { ActionType, ModuleType, PaymentCategory, TransactionType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
+import { calculatePurchaseOrderLine } from "@/lib/pharmacyPurchaseOrder";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { hasUserPermission } from "@/lib/serverPermission";
@@ -9,6 +10,7 @@ import {
   CounterSaleCollectionRowType,
   CounterSaleItemRowType,
   ExpiringItemRowType,
+  GstSummaryRowType,
   GrnItemReportRowType,
   GrnReportRowType,
   IpdSaleItemRowType,
@@ -134,6 +136,39 @@ const addHsnEntry = ({
   row.taxableAmount = round2(row.taxableAmount + taxableAmount * sign);
   row.cGstAmount = round2(row.cGstAmount + cGstAmount * sign);
   row.sGstAmount = round2(row.sGstAmount + sGstAmount * sign);
+  map.set(key, row);
+};
+
+const addGstSummaryEntry = ({
+  map,
+  hsnSacCode,
+  gstRate,
+  taxableAmount,
+  sGstAmount,
+  cGstAmount,
+  sign = 1,
+}: {
+  map: Map<string, GstSummaryRowType>;
+  hsnSacCode: string;
+  gstRate: number;
+  taxableAmount: number;
+  sGstAmount: number;
+  cGstAmount: number;
+  sign?: 1 | -1;
+}) => {
+  const key = `${hsnSacCode}-${gstRate}`;
+  const row = map.get(key) ?? {
+    id: key,
+    hsnSacCode,
+    gstRate,
+    taxableAmount: 0,
+    sGstAmount: 0,
+    cGstAmount: 0,
+  };
+
+  row.taxableAmount = round2(row.taxableAmount + taxableAmount * sign);
+  row.sGstAmount = round2(row.sGstAmount + sGstAmount * sign);
+  row.cGstAmount = round2(row.cGstAmount + cGstAmount * sign);
   map.set(key, row);
 };
 
@@ -468,6 +503,7 @@ export const getAPI = async (req: Request, user: User) => {
       const counterSaleItems: CounterSaleItemRowType[] = [];
       const counterSaleCollections: CounterSaleCollectionRowType[] = [];
       const counterSaleHsnMap = new Map<string, SalesHsnSummaryRowType>();
+      const counterSaleGstSummaryMap = new Map<string, GstSummaryRowType>();
 
       for (const bill of saleBills) {
         const customer = getCustomerDisplayName({
@@ -591,6 +627,17 @@ export const getAPI = async (req: Request, user: User) => {
             cGstAmount: Number(item.cGstAmount || 0),
             sGstAmount: Number(item.sGstAmount || 0),
           });
+
+          addGstSummaryEntry({
+            map: counterSaleGstSummaryMap,
+            hsnSacCode: String(item.inventoryItem.hsnSac?.code ?? "-"),
+            gstRate: round2(
+              Number(item.cGstPercentage || 0) + Number(item.sGstPercentage || 0),
+            ),
+            taxableAmount: Number(item.taxableAmount || 0),
+            sGstAmount: Number(item.sGstAmount || 0),
+            cGstAmount: Number(item.cGstAmount || 0),
+          });
         }
 
         for (const saleReturn of bill.saleReturns) {
@@ -697,6 +744,18 @@ export const getAPI = async (req: Request, user: User) => {
               sGstAmount: Number(item.sGstAmount || 0),
               sign: -1,
             });
+
+            addGstSummaryEntry({
+              map: counterSaleGstSummaryMap,
+              hsnSacCode: String(inventory.hsnSac?.code ?? "-"),
+              gstRate: round2(
+                Number(item.cGstPercentage || 0) + Number(item.sGstPercentage || 0),
+              ),
+              taxableAmount: Number(item.taxableAmount || 0),
+              sGstAmount: Number(item.sGstAmount || 0),
+              cGstAmount: Number(item.cGstAmount || 0),
+              sign: -1,
+            });
           }
         }
       }
@@ -758,23 +817,50 @@ export const getAPI = async (req: Request, user: User) => {
         linkedGrn: order.grn?.id ? formatGrnNumber(order.grn.id) : "-",
       }));
 
+      const poGstSummaryMap = new Map<string, GstSummaryRowType>();
+
       const purchaseOrderItemRows: PurchaseOrderItemReportRowType[] = purchaseOrders.flatMap(
         (order) =>
-          order.items.map((item) => ({
-            id: `${order.id}-${item.id}`,
-            poNumber: formatPoNumber(order.id),
-            supplier: order.supplier.name,
-            poDate: order.orderDate,
-            item: item.drug.name,
-            category: item.category?.name || "-",
-            hsn: String(item.hsnSac?.code ?? "-"),
-            quantity: Number(item.quantity || 0),
-            rate: Number(item.rate || 0),
-            cGstPercentage: Number(item.hsnSac?.cGstPercentage || 0),
-            sGstPercentage: Number(item.hsnSac?.sGstPercentage || 0),
-            iGstPercentage: Number(item.hsnSac?.iGstPercentage || 0),
-            total: Number(item.total || 0),
-          })),
+          order.items.map((item) => {
+            const cGstPercentage = Number(item.hsnSac?.cGstPercentage || 0);
+            const sGstPercentage = Number(item.hsnSac?.sGstPercentage || 0);
+            const iGstPercentage = Number(item.hsnSac?.iGstPercentage || 0);
+            const lineSummary = calculatePurchaseOrderLine({
+              quantity: Number(item.quantity || 0),
+              rate: Number(item.rate || 0),
+              discountPercentage: Number(item.discountPercentage || 0),
+              hsnSac: {
+                cGstPercentage,
+                sGstPercentage,
+                iGstPercentage,
+              },
+            });
+
+            addGstSummaryEntry({
+              map: poGstSummaryMap,
+              hsnSacCode: String(item.hsnSac?.code ?? "-"),
+              gstRate: round2(cGstPercentage + sGstPercentage),
+              taxableAmount: lineSummary.taxableAmount,
+              sGstAmount: lineSummary.sGstAmount,
+              cGstAmount: lineSummary.cGstAmount,
+            });
+
+            return {
+              id: `${order.id}-${item.id}`,
+              poNumber: formatPoNumber(order.id),
+              supplier: order.supplier.name,
+              poDate: order.orderDate,
+              item: item.drug.name,
+              category: item.category?.name || "-",
+              hsn: String(item.hsnSac?.code ?? "-"),
+              quantity: Number(item.quantity || 0),
+              rate: Number(item.rate || 0),
+              cGstPercentage,
+              sGstPercentage,
+              iGstPercentage,
+              total: Number(item.total || 0),
+            };
+          }),
       );
 
       const grnRows: GrnReportRowType[] = grns.map((grn) => {
@@ -1097,6 +1183,11 @@ export const getAPI = async (req: Request, user: User) => {
           hsnSummary: canViewCounterSale
             ? Array.from(counterSaleHsnMap.values()).sort((a, b) => a.hsn.localeCompare(b.hsn))
             : [],
+          gstSummary: canViewCounterSale
+            ? Array.from(counterSaleGstSummaryMap.values()).sort((a, b) =>
+                a.hsnSacCode.localeCompare(b.hsnSacCode),
+              )
+            : [],
         },
         ipdSale: {
           items: canViewIpdSale ? ipdSaleItems : [],
@@ -1107,6 +1198,11 @@ export const getAPI = async (req: Request, user: User) => {
         po: {
           purchaseOrders: canViewPo ? purchaseOrderRows : [],
           purchaseOrderItems: canViewPo ? purchaseOrderItemRows : [],
+          gstSummary: canViewPo
+            ? Array.from(poGstSummaryMap.values()).sort((a, b) =>
+                a.hsnSacCode.localeCompare(b.hsnSacCode),
+              )
+            : [],
         },
         grn: {
           grns: canViewGrn ? grnRows : [],

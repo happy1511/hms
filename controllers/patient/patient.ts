@@ -95,6 +95,18 @@ export const getAPI = async (req: Request) => {
                 id: true,
               },
             },
+            ipds: {
+              where: {
+                isDeleted: false,
+                isDischarged: false,
+              },
+              take: 1,
+              select: {
+                id: true,
+                ipdDateTime: true,
+                isDayCare: true,
+              },
+            },
           },
         }),
         prisma.patient.count({ where }),
@@ -103,7 +115,10 @@ export const getAPI = async (req: Request) => {
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Patient Fetched Successfully",
-        data: items,
+        data: items.map((item) => ({
+          ...item,
+          activeIpd: item.ipds?.[0] ?? null,
+        })),
         total,
       });
     },
@@ -486,6 +501,18 @@ export const getDetailsAPI = async (
           addresses: { include: { location: true } },
           identifications: true,
           emergencyContacts: true,
+          ipds: {
+            where: {
+              isDeleted: false,
+              isDischarged: false,
+            },
+            take: 1,
+            select: {
+              id: true,
+              ipdDateTime: true,
+              isDayCare: true,
+            },
+          },
         },
       });
 
@@ -499,7 +526,10 @@ export const getDetailsAPI = async (
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Patient Fetched Successfully",
-        data: patient,
+        data: {
+          ...patient,
+          activeIpd: patient.ipds?.[0] ?? null,
+        },
       });
     },
   });

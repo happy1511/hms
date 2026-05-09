@@ -122,26 +122,57 @@ const PharmacyReportPrintGrid = <TData,>({
       ))}
 
       {table.getRowModel().rows.length ? (
-        table.getRowModel().rows.map((row) => (
-          <div
-            key={row.id}
-            className="grid border-b border-black/20 last:border-b-0 [break-inside:avoid] print:[break-inside:avoid]"
-            style={{ gridTemplateColumns }}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <div
-                key={cell.id}
-                className={[
-                  "min-w-0 border-r border-black/10 px-2 py-1 last:border-r-0",
-                  "whitespace-normal break-words [overflow-wrap:anywhere] leading-[1.2]",
-                  isDenseGrid ? "px-[3px] py-[2px] print:px-[3px] print:py-[2px]" : "print:px-[3px] print:py-[2px]",
-                ].join(" ")}
-              >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </div>
-            ))}
-          </div>
-        ))
+        <>
+          {table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              className="grid border-b border-black/20 last:border-b-0 [break-inside:avoid] print:[break-inside:avoid]"
+              style={{ gridTemplateColumns }}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <div
+                  key={cell.id}
+                  className={[
+                    "min-w-0 border-r border-black/10 px-2 py-1 last:border-r-0",
+                    "whitespace-normal break-words [overflow-wrap:anywhere] leading-[1.2]",
+                    isDenseGrid ? "px-[3px] py-[2px] print:px-[3px] print:py-[2px]" : "print:px-[3px] print:py-[2px]",
+                  ].join(" ")}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </div>
+              ))}
+            </div>
+          ))}
+          {table.getFooterGroups().some((group) =>
+            group.headers.some((header) => header.column.columnDef.footer),
+          )
+            ? table.getFooterGroups().map((footerGroup) => (
+                <div
+                  key={footerGroup.id}
+                  className="grid border-t border-black/30 bg-white font-semibold [break-inside:avoid] print:[break-inside:avoid]"
+                  style={{ gridTemplateColumns }}
+                >
+                  {footerGroup.headers.map((header) => (
+                    <div
+                      key={header.id}
+                      className={[
+                        "min-w-0 border-r border-black/10 px-2 py-1 last:border-r-0",
+                        "whitespace-normal break-words [overflow-wrap:anywhere] leading-[1.2]",
+                        isDenseGrid ? "px-[3px] py-[2px] print:px-[3px] print:py-[2px]" : "print:px-[3px] print:py-[2px]",
+                      ].join(" ")}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.footer,
+                            header.getContext(),
+                          )}
+                    </div>
+                  ))}
+                </div>
+              ))
+            : null}
+        </>
       ) : (
         <div className="px-3 py-6 text-center">No Data Found</div>
       )}

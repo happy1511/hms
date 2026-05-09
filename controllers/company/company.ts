@@ -51,6 +51,7 @@ const ensureCompanyDetailsRows = async () => {
         name: "",
         address: "",
         mobile: "",
+        letterheadHeightCm: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -88,11 +89,13 @@ export const updateCompanyDetailsAPI = async (req: Request) => {
           name: body.name,
           address: body.address ?? "",
           mobile: body.mobile ?? "",
+          letterheadHeightCm: body.letterheadHeightCm,
         },
         update: {
           name: body.name,
           address: body.address ?? "",
           mobile: body.mobile ?? "",
+          letterheadHeightCm: body.letterheadHeightCm,
         },
       });
 

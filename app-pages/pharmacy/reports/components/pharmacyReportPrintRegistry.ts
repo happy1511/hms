@@ -4,6 +4,7 @@ import {
   CounterSaleCollectionRowType,
   CounterSaleItemRowType,
   ExpiringItemRowType,
+  GstSummaryRowType,
   GrnItemReportRowType,
   GrnReportRowType,
   IpdSaleItemRowType,
@@ -18,11 +19,12 @@ import {
 import {
   counterSaleBillColumns,
   counterSaleCollectionColumns,
+  counterSaleGstSummaryColumns,
   counterSaleHsnColumns,
   counterSaleItemColumns,
 } from "./CounterSaleReportsTab";
 import { ipdSaleHsnColumns, ipdSaleItemColumns } from "./IpdSaleReportsTab";
-import { poColumns, poItemColumns } from "./PoReportsTab";
+import { poColumns, poGstSummaryColumns, poItemColumns } from "./PoReportsTab";
 import { grnColumns, grnItemColumns } from "./GrnReportsTab";
 import {
   expiringColumns,
@@ -60,6 +62,12 @@ export const pharmacyReportPrintRegistry: ReportRegistry = {
       rowId: (row: CounterSaleCollectionRowType) => row.id,
       getRows: (reports) => reports.counterSale.collections,
     },
+    "gst-summary": {
+      title: "Sales GST Summary",
+      columns: counterSaleGstSummaryColumns,
+      rowId: (row: GstSummaryRowType) => row.id,
+      getRows: (reports) => reports.counterSale.gstSummary,
+    },
     "hsn-summary": {
       title: "Counter Sale HSN Summary",
       columns: counterSaleHsnColumns,
@@ -93,6 +101,12 @@ export const pharmacyReportPrintRegistry: ReportRegistry = {
       columns: poItemColumns,
       rowId: (row: PurchaseOrderItemReportRowType) => row.id,
       getRows: (reports) => reports.po.purchaseOrderItems,
+    },
+    "gst-summary": {
+      title: "PO GST Summary",
+      columns: poGstSummaryColumns,
+      rowId: (row: GstSummaryRowType) => row.id,
+      getRows: (reports) => reports.po.gstSummary,
     },
   },
   grn: {

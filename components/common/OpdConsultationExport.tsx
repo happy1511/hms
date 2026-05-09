@@ -6,6 +6,7 @@ import { useState } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import { opdConsultationDetailsType } from "@/lib/type";
+import InfoRow from "../invoice/InfoRow";
 
 type AdviceItem = {
   id?: unknown;
@@ -92,35 +93,38 @@ const OpdConsultationExport = ({
       >
         <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <CompanyPrintHeader />
-          <header className="border-x border-black">
-            <div className="flex items-center justify-center border-b border-black bg-[#dedede] px-3 py-2">
+          <header>
+            <div className="flex items-center justify-center bg-[#dedede] px-3 py-2">
               <p className="font-semibold">OPD CONSULTATION</p>
             </div>
             <InfoRow
-              label1="Patient UHID"
-              value1={<PrintBarcodeValue value={data.patient?.id} />}
-              label2="Date"
-              value2={formatDateOrDash(data.createdAt, true)}
+              leftLabel="Patient UHID"
+              leftValue={<PrintBarcodeValue value={data.patient?.id} />}
+              rightLabel="Date"
+              rightValue={formatDateOrDash(data.createdAt, true)}
+              cellClassName="border-b-0"
             />
             <InfoRow
-              label1="Patient"
-              value1={valueOrDash(patientName)}
-              label2="OPD Number"
-              value2={<PrintBarcodeValue value={data.opdId as number} />}
+              leftLabel="Patient"
+              leftValue={valueOrDash(patientName)}
+              rightLabel="OPD Number"
+              rightValue={<PrintBarcodeValue value={data.opdId as number} />}
+              cellClassName="border-b-0"
             />
             <InfoRow
-              label1="Gender"
-              value1={valueOrDash(data.patient?.gender)}
-              label2="Consultant"
-              value2={valueOrDash(data.consultantDoctorName)}
+              leftLabel="Gender"
+              leftValue={valueOrDash(data.patient?.gender)}
+              rightLabel="Consultant"
+              rightValue={valueOrDash(data.consultantDoctorName)}
+              cellClassName="border-b-0"
             />
             {/* <InfoRow
-              label1="Mobile No."
-              value1={valueOrDash(mobile)}
-              label2="Referred By"
-              value2={valueOrDash(data.referringDoctorName)}
+              leftLabel="Mobile No."
+              leftValue={valueOrDash(mobile)}
+              rightLabel="Referred By"
+              rightValue={valueOrDash(data.referringDoctorName)}
             /> */}
-            <InfoRow label1="Address" value1={valueOrDash(address)} />
+            <InfoRow leftLabel="Address" leftValue={valueOrDash(address)} />
           </header>
 
           {!patientOnly && (
@@ -244,33 +248,6 @@ const Section = ({
     </div>
     <div className="p-0">{children}</div>
   </section>
-);
-
-const InfoRow = ({
-  label1,
-  value1,
-  label2,
-  value2,
-}: {
-  label1: string;
-  value1: React.ReactNode;
-  label2?: string;
-  value2?: React.ReactNode;
-}) => (
-  <table className="w-full border-collapse border-t border-black">
-    <tbody>
-      <tr>
-        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
-          {label1 ? `${label1}:` : ""}
-        </Cell>
-        <Cell className="w-[33%] text-left">{value1}</Cell>
-        <Cell className="w-[17%] bg-[#dedede] font-semibold text-left">
-          {label2 ? `${label2}:` : ""}
-        </Cell>
-        <Cell className="w-[33%] text-left">{value2}</Cell>
-      </tr>
-    </tbody>
-  </table>
 );
 
 const KV = ({ label, value }: { label: string; value?: unknown }) => (

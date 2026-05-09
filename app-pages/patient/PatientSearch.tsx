@@ -7,10 +7,9 @@ import NoPermission from "@/components/common/NoPermission";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { Patient } from "@/generated/prisma/client";
 import { useProfile } from "@/hooks/query/auth";
 import { usePatientsList } from "@/hooks/query/patient";
-import { ColumnDefWithClass, FilterValues } from "@/lib/type";
+import { ColumnDefWithClass, FilterValues, PatientType } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import {
@@ -29,11 +28,13 @@ const Actions = ({
   createIpd,
   dayCare = false,
 }: {
-  data: Patient;
+  data: PatientType;
   createOpd: boolean;
   createIpd: boolean;
   dayCare?: boolean;
 }) => {
+  const hasActiveIpd = Boolean(data.activeIpd?.id);
+
   return (
     <>
       {createOpd && (
@@ -45,12 +46,18 @@ const Actions = ({
         </Link>
       )}
       {createIpd && (
-        <Link
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-tiny rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/ipd/bill/${data.id}${dayCare ? "?dayCare=true" : ""}`}
-        >
-          Select
-        </Link>
+        hasActiveIpd ? (
+          <span className="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-tiny font-medium text-destructive">
+            Already Admitted
+          </span>
+        ) : (
+          <Link
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-tiny rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
+            href={`/ipd/bill/${data.id}${dayCare ? "?dayCare=true" : ""}`}
+          >
+            Select
+          </Link>
+        )
       )}
     </>
   );
@@ -124,11 +131,11 @@ const PatientSearch = () => {
     }
   };
 
-  const columns: ColumnDefWithClass<Patient>[] = [
+  const columns: ColumnDefWithClass<PatientType>[] = [
     {
       accessorKey: "_id",
       header: ({ column }) => {
-        return <SortableHeader<Patient> label="ID" column={column} />;
+        return <SortableHeader<PatientType> label="ID" column={column} />;
       },
       cell: ({ row }) => <span>#{row.index + 1}</span>,
       headerClassName: "min-w-15 max-w-20",
@@ -137,7 +144,7 @@ const PatientSearch = () => {
     {
       accessorKey: "name",
       header: ({ column }) => {
-        return <SortableHeader<Patient> label="Name" column={column} />;
+        return <SortableHeader<PatientType> label="Name" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
@@ -151,18 +158,38 @@ const PatientSearch = () => {
     {
       accessorKey: "id",
       header: ({ column }) => {
-        return <SortableHeader<Patient> label="Patient ID" column={column} />;
+        return <SortableHeader<PatientType> label="Patient ID" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
   ];
 
+  if (!!canCreateIPD && !!ipdCreate) {
+    columns.push({
+      accessorKey: "activeIpd",
+      header: ({ column }) => {
+        return <SortableHeader<PatientType> label="Admission" column={column} />;
+      },
+      cell: ({ row }) =>
+        row.original.activeIpd ? (
+          <span className="text-destructive font-medium">
+            {row.original.activeIpd.isDayCare ? "Day Care" : "IPD"} #
+            {row.original.activeIpd.id} Active
+          </span>
+        ) : (
+          <span>Available</span>
+        ),
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    });
+  }
+
   if ((!!canCreateOPD && !!opdCreate) || (!!canCreateIPD && !!ipdCreate)) {
     columns.push({
       accessorKey: "actions",
       header: ({ column }) => {
-        return <SortableHeader<Patient> label="Actions" column={column} />;
+        return <SortableHeader<PatientType> label="Actions" column={column} />;
       },
       cell: ({ row }) => (
         <Actions

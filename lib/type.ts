@@ -521,6 +521,11 @@ export interface PatientType extends Patient {
   identifications: PatientIdentification[];
   emergencyContacts: emergencyContact[];
   notes: PatientNotes[];
+  activeIpd?: {
+    id: number;
+    ipdDateTime: Date | string;
+    isDayCare: boolean;
+  } | null;
 }
 
 export type PharmacyCustomerType = Prisma.PharmacyCustomerGetPayload<{
@@ -1020,6 +1025,15 @@ export type SalesHsnSummaryRowType = {
   sGstAmount: number;
 };
 
+export type GstSummaryRowType = {
+  id: string;
+  hsnSacCode: string;
+  gstRate: number;
+  taxableAmount: number;
+  sGstAmount: number;
+  cGstAmount: number;
+};
+
 export type CounterSaleBillRowType = {
   id: string;
   billNumber: string;
@@ -1227,6 +1241,7 @@ export type PharmacyReportsType = {
     items: CounterSaleItemRowType[];
     collections: CounterSaleCollectionRowType[];
     hsnSummary: SalesHsnSummaryRowType[];
+    gstSummary: GstSummaryRowType[];
   };
   ipdSale: {
     items: IpdSaleItemRowType[];
@@ -1235,6 +1250,7 @@ export type PharmacyReportsType = {
   po: {
     purchaseOrders: PurchaseOrderReportRowType[];
     purchaseOrderItems: PurchaseOrderItemReportRowType[];
+    gstSummary: GstSummaryRowType[];
   };
   grn: {
     grns: GrnReportRowType[];

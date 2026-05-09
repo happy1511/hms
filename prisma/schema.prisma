@@ -1902,11 +1902,12 @@ model IpdDischargeDrug {
 // -------------------- Company Details --------------------
 
 model CompanyDetails {
-  id      Int                @id @default(autoincrement())
-  type    CompanyDetailsType @unique
-  name    String             @default("")
-  address String             @default("")
-  mobile  String             @default("")
+  id                 Int                @id @default(autoincrement())
+  type               CompanyDetailsType @unique
+  name               String             @default("")
+  address            String             @default("")
+  mobile             String             @default("")
+  letterheadHeightCm Float              @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

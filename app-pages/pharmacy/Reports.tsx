@@ -88,6 +88,7 @@ const Reports = () => {
               items: [],
               collections: [],
               hsnSummary: [],
+              gstSummary: [],
             }
           }
           filters={filters}
@@ -117,7 +118,9 @@ const Reports = () => {
       name: "PO",
       content: (
         <PoReportsTab
-          data={data?.po ?? { purchaseOrders: [], purchaseOrderItems: [] }}
+          data={
+            data?.po ?? { purchaseOrders: [], purchaseOrderItems: [], gstSummary: [] }
+          }
           filters={filters}
           {...reportTableState}
         />

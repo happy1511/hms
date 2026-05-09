@@ -5,6 +5,7 @@ import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
 import { CustomTable } from "@/components/common/CustomTable";
 import NoPermission from "@/components/common/NoPermission";
+import PageState from "@/components/common/PageState";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
@@ -1182,6 +1183,18 @@ const IpdBillForm = () => {
 
   if (params?.patientId && !patient) {
     return <div />;
+  }
+
+  if (params?.patientId && patient?.activeIpd) {
+    return (
+      <CustomLayout title={isDayCare ? "Day Care Billing" : "IPD Billing"}>
+        <PageState
+          variant="error"
+          title="Patient Already Admitted"
+          description={`This patient already has an active ${patient.activeIpd.isDayCare ? "Day Care" : "IPD"} admission (#${patient.activeIpd.id}). Discharge that admission before creating a new one.`}
+        />
+      </CustomLayout>
+    );
   }
 
   if (!profile) {

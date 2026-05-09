@@ -29,6 +29,10 @@ const schema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   address: z.string().optional(),
   mobile: z.string().optional(),
+  letterheadHeightCm: z
+    .number()
+    .min(0, "Letterhead height cannot be negative")
+    .max(30, "Letterhead height looks too large"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -59,6 +63,7 @@ const CompanyDetailsForm = ({
       name: "",
       address: "",
       mobile: "",
+      letterheadHeightCm: 0,
     },
     resolver: zodResolver(schema),
   });
@@ -68,6 +73,7 @@ const CompanyDetailsForm = ({
       name: details?.name ?? "",
       address: details?.address ?? "",
       mobile: details?.mobile ?? "",
+      letterheadHeightCm: details?.letterheadHeightCm ?? 0,
     });
   }, [details, form]);
 
@@ -77,6 +83,7 @@ const CompanyDetailsForm = ({
       name: values.name,
       address: values.address ?? "",
       mobile: values.mobile ?? "",
+      letterheadHeightCm: values.letterheadHeightCm ?? 0,
     });
   };
 
@@ -108,6 +115,18 @@ const CompanyDetailsForm = ({
               control={form.control}
               type="text"
             />
+
+            <FormField<FormValues>
+              label="Letterhead Height (cm)"
+              name="letterheadHeightCm"
+              control={form.control}
+              type="number"
+              required
+            />
+            <p className="-mt-2 text-tiny text-muted-foreground">
+              This top space will be reserved on printed documents whether the
+              header is included or not.
+            </p>
           </fieldset>
 
           <div className="flex justify-end">

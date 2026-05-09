@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import InfoRow from "../invoice/InfoRow";
 
 const flag = (value: number | string, range: string) => {
   if (!range || value === "" || value === null || value === undefined)
@@ -48,22 +49,22 @@ const PathologyOrderExport = ({ data }: any) => (
       {/* Patient info */}
       <div className="grid grid-cols-2 gap-4 border border-black p-3 text-xs">
         <div className="space-y-1">
-          <InfoLine label="Patient" value={data.patient.name} />
-          <InfoLine label="Gender" value={data.patient.gender} />
-          <InfoLine label="Patient UHID" value={data.patient.patientId} />
-          <InfoLine label="Referred By" value={data.doctor.name} />
+          <InfoRow leftLabel="Patient" leftValue={data.patient.name} />
+          <InfoRow leftLabel="Gender" leftValue={data.patient.gender} />
+          <InfoRow
+            leftLabel="Patient UHID"
+            leftValue={data.patient.patientId}
+          />
+          <InfoRow leftLabel="Referred By" leftValue={data.doctor.name} />
         </div>
         <div className="space-y-1 text-right">
-          <InfoLine label="Age" value={data.patient.age ?? "-"} align="right" />
-          <InfoLine
-            label="Phone"
-            value={data.patient.phone ?? "-"}
-            align="right"
-          />
-          <InfoLine
-            label="Email"
-            value={data.patient.email ?? "-"}
-            align="right"
+          <InfoRow leftLabel="Age" leftValue={data.patient.age ?? "-"} />
+          <InfoRow leftLabel="Phone" leftValue={data.patient.phone ?? "-"} />
+          <InfoRow
+            leftLabel="Email"
+            leftValue={data.patient.email ?? "-"}
+            rightLabel=""
+            rightValue=""
           />
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { CompanyDetailsType } from "@/generated/prisma/enums";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import InfoRow from "../invoice/InfoRow";
 
 const sanitizeInline = (html: string) => {
   if (!html) return "";
@@ -36,14 +37,20 @@ const RadiologyReportPDF = ({ data }: any) => {
         {/* Patient info */}
         <div className="border border-black p-3 text-xs">
           <p className="font-semibold text-sm mb-2">Patient Information</p>
-          <div className="grid grid-cols-2 gap-2">
-            <InfoLine
-              label="Name"
-              value={`${patient.firstName} ${patient.lastName}`}
+          <div>
+            <InfoRow
+              leftLabel="Name"
+              leftValue={`${patient.firstName} ${patient.lastName}`}
+              rightLabel="Gender"
+              rightValue={patient.gender}
+              cellClassName="border-b-0"
             />
-            <InfoLine label="Gender" value={patient.gender} />
-            <InfoLine label="Patient UHID" value={String(patient.id)} />
-            <InfoLine label="Age" value={patient.age ?? "-"} />
+            <InfoRow
+              leftLabel="Patient UHID"
+              leftValue={String(patient.id)}
+              rightLabel="Age"
+              rightValue={patient.age ?? "-"}
+            />
           </div>
         </div>
 

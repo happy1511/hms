@@ -3,6 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
+import InfoRow from "../invoice/InfoRow";
 
 interface TransactionItem {
   id?: number;
@@ -55,22 +56,24 @@ const TransactionReceiptExport = ({
       <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
         <CompanyPrintHeader />
         <header>
-          <div className="flex items-center border-t border-x justify-center border-b border-black bg-[#dedede] px-3 py-2">
+          <div className="flex items-center justify-center bg-[#dedede] px-3 py-2">
             <p className="font-semibold">TRANSACTION RECEIPT</p>
           </div>
           <InfoRow
-            label1="Patient Name"
-            value1={customer.name || "-"}
-            label2="Patient UHID"
-            value2={customer.uhid || "-"}
+            leftLabel="Patient Name"
+            leftValue={customer.name || "-"}
+            rightLabel="Patient UHID"
+            rightValue={customer.uhid || "-"}
+            cellClassName="border-b-0"
           />
           <InfoRow
-            label1="Age / Gender"
-            value1={customer.genderAge || "-"}
-            label2="Mobile No."
-            value2={customer.phone || "-"}
+            leftLabel="Age / Gender"
+            leftValue={customer.genderAge || "-"}
+            rightLabel="Mobile No."
+            rightValue={customer.phone || "-"}
+            cellClassName="border-b-0"
           />
-          <InfoRow label1="Address" value1={customer.address || "-"} />
+          <InfoRow leftLabel="Address" leftValue={customer.address || "-"} />
         </header>
 
         <div className="grid gap-4 print:break-after-auto">
@@ -124,43 +127,6 @@ const TransactionReceiptExport = ({
     </div>
   );
 };
-
-const InfoRow = ({
-  label1,
-  value1,
-  label2,
-  value2,
-}: {
-  label1: string;
-  value1: string;
-  label2?: string;
-  value2?: string;
-}) => (
-  <table className="w-full border-collapse border-t border-black text-left">
-    <tbody>
-      <tr>
-        <Cell className="w-[18%] bg-[#dedede] font-semibold">
-          {label1 ? `${label1}:` : ""}
-        </Cell>
-        <Cell className="w-[32%]">{value1}</Cell>
-        {label2 !== undefined && (
-          <>
-            <Cell className="w-[18%] bg-[#dedede] font-semibold">
-              {label2 ? `${label2}:` : ""}
-            </Cell>
-            <Cell className="w-[32%]">{value2}</Cell>
-          </>
-        )}
-        {label2 === undefined && (
-          <>
-            <Cell className="w-[18%] bg-[#dedede]" />
-            <Cell className="w-[32%]" />
-          </>
-        )}
-      </tr>
-    </tbody>
-  </table>
-);
 
 const KeyValueRow = ({
   label,

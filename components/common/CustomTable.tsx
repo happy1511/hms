@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -440,6 +441,40 @@ export function CustomTable<TData, TValue>({
             </TableRow>
           )}
         </TableBody>
+        {table.getFooterGroups().some((group) =>
+          group.headers.some((header) => header.column.columnDef.footer),
+        ) ? (
+          <TableFooter>
+            {table.getFooterGroups().map((footerGroup) => (
+              <TableRow
+                key={footerGroup.id}
+                className="h-7 border-t border-b border-black/30 bg-muted/40 font-semibold"
+              >
+                {footerGroup.headers.map((header, i) => (
+                  <TableCell
+                    key={i}
+                    className={clsx(
+                      "h-7",
+                      (
+                        header.column.columnDef as ColumnDefWithClass<
+                          TData,
+                          TValue
+                        >
+                      ).cellClassName,
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.footer,
+                          header.getContext(),
+                        )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableFooter>
+        ) : null}
       </Table>
 
       {!hidePagination && useInfiniteScroll && fetchNextPage && (

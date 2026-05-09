@@ -5,12 +5,14 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ColumnDefWithClass,
   FilterValues,
+  GstSummaryRowType,
   PharmacyReportsType,
   PurchaseOrderItemReportRowType,
   PurchaseOrderReportRowType,
 } from "@/lib/type";
 import { format } from "date-fns";
 import ReportTable, { ReportTableStateProps } from "./ReportTable";
+import { gstSummaryColumns } from "./gstSummaryColumns";
 import { money } from "./reportUtils";
 
 type PoReportsTabProps = ReportTableStateProps & {
@@ -330,6 +332,9 @@ export const poItemColumns: ColumnDefWithClass<PurchaseOrderItemReportRowType>[]
   },
 ];
 
+export const poGstSummaryColumns: ColumnDefWithClass<GstSummaryRowType>[] =
+  gstSummaryColumns;
+
 const PoReportsTab = ({
   data,
   isLoading,
@@ -376,6 +381,27 @@ const PoReportsTab = ({
                 reportKey: "po",
                 tableKey: "po-items",
                 title: "PO Items",
+                filters,
+              }}
+              isLoading={isLoading}
+              isError={isError}
+              error={error}
+            />
+          ),
+        },
+        {
+          value: "po-gst-summary",
+          name: "GST Summary",
+          content: (
+            <ReportTable
+              data={data.gstSummary}
+              columns={poGstSummaryColumns}
+              rowId={(row) => row.id}
+              searchPlaceholder="Search PO GST summary..."
+              printConfig={{
+                reportKey: "po",
+                tableKey: "gst-summary",
+                title: "PO GST Summary",
                 filters,
               }}
               isLoading={isLoading}

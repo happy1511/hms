@@ -34,6 +34,15 @@ const getIpdDeleteErrorResponse = () =>
     message: "IPD can only be deleted on the same day it was created",
   });
 
+const getPatientAlreadyAdmittedResponse = (activeIpd: {
+  id: number;
+  isDayCare: boolean;
+}) =>
+  apiResponse({
+    status: RESPONSE_STATUS.BAD_REQUEST,
+    message: `Patient is already admitted in ${activeIpd.isDayCare ? "Day Care" : "IPD"} #${activeIpd.id} and has not been discharged yet`,
+  });
+
 export const getAPI = async (req: Request, user: User) => {
   return validateRequest({
     querySchema: paginationValidator,
@@ -683,6 +692,22 @@ export const createAPI = async (req: Request, user: User) => {
               message: "Patient Not Found",
             });
           } else {
+            const activeIpd = await tx.ipd.findFirst({
+              where: {
+                patientId: existingPatient.id,
+                isDeleted: false,
+                isDischarged: false,
+              },
+              select: {
+                id: true,
+                isDayCare: true,
+              },
+            });
+
+            if (activeIpd) {
+              return getPatientAlreadyAdmittedResponse(activeIpd);
+            }
+
             const {
               contacts = [],
               addresses = [],

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ChevronDown, KeyRound, LogOut, UserCircle2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const CustomHeader = ({
@@ -34,9 +35,15 @@ const CustomHeader = ({
     <header className="h-12 flex items-center justify-between border-b border-border bg-linear-to-r from-background via-white to-muted/40 px-4">
       <div className="flex items-center gap-2 min-w-0">
         {!hideSidebarToggle && <SidebarTrigger className="md:hidden" />}
-        <span className="text-tiny font-medium text-foreground truncate">
-          Hospital Management System
-        </span>
+        <Image
+          src="/logo.png"
+          alt="Hospital logo"
+          width={140}
+          height={32}
+          className="h-8 w-auto object-contain"
+          priority
+          unoptimized
+        />
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

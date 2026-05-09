@@ -6,6 +6,10 @@ const companyDetailsUpdateValidator = z.object({
   name: z.string().trim().min(1, "Name is required"),
   address: z.string().optional().nullable(),
   mobile: z.string().optional().nullable(),
+  letterheadHeightCm: z
+    .number()
+    .min(0, "Letterhead height cannot be negative")
+    .max(30, "Letterhead height looks too large"),
 });
 
 type companyDetailsUpdateValidatorType = z.input<

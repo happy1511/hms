@@ -16,27 +16,50 @@ const CompanyPrintHeader = ({
   const { includeHeader } = useContext(PrintPreferencesContext);
   const { data } = useCompanyDetails();
 
-  if (!includeHeader) return null;
-
   const selectedDetails = data?.[type];
 
   const name = selectedDetails?.name?.trim() || "";
   const address = selectedDetails?.address?.trim() || "";
   const mobile = selectedDetails?.mobile?.trim() || "";
+  const letterheadHeightCm =
+    typeof selectedDetails?.letterheadHeightCm === "number" &&
+    Number.isFinite(selectedDetails.letterheadHeightCm)
+      ? Math.max(0, selectedDetails.letterheadHeightCm)
+      : 0;
+  const hasHeaderContent = Boolean(name || address || mobile);
+  const shouldRenderContent = includeHeader && hasHeaderContent;
 
-  if (!name && !address && !mobile) return null;
+  if (!shouldRenderContent && letterheadHeightCm <= 0) return null;
 
   return (
-    <div className={cn("w-full border border-black px-3 py-2", className)}>
-      <div className="text-center leading-tight space-y-1">
-        {name && <div className="font-bold uppercase text-base">{name}</div>}
-        {address && <div className="text-[11px]">{address}</div>}
-        {mobile && (
-          <div className="text-[11px]">
-            <span className="font-bold">Mobile:</span> {mobile}
+    <div
+      className={cn("w-full", className)}
+      style={
+        letterheadHeightCm > 0
+          ? { minHeight: `${letterheadHeightCm}cm` }
+          : undefined
+      }
+    >
+      {shouldRenderContent ? (
+        <div
+          className="flex w-full items-center justify-center border border-black px-3 py-2"
+          style={
+            letterheadHeightCm > 0
+              ? { minHeight: `${letterheadHeightCm}cm` }
+              : undefined
+          }
+        >
+          <div className="text-center leading-tight space-y-1">
+            {name && <div className="font-bold uppercase text-base">{name}</div>}
+            {address && <div className="text-[11px]">{address}</div>}
+            {mobile && (
+              <div className="text-[11px]">
+                <span className="font-bold">Mobile:</span> {mobile}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -14,6 +14,7 @@ export type CompanyDetails = {
   name: string;
   address: string;
   mobile: string;
+  letterheadHeightCm: number;
   createdAt: string | Date;
   updatedAt: string | Date;
 };

@@ -9,10 +9,12 @@ import {
   CounterSaleItemRowType,
   PharmacyReportsType,
   SalesHsnSummaryRowType,
+  GstSummaryRowType,
 } from "@/lib/type";
 import { FilterValues } from "@/lib/type";
 import { format } from "date-fns";
 import ReportTable, { ReportTableStateProps } from "./ReportTable";
+import { gstSummaryColumns } from "./gstSummaryColumns";
 import { money } from "./reportUtils";
 
 type CounterSaleReportsTabProps = ReportTableStateProps & {
@@ -94,6 +96,9 @@ export const counterSaleHsnColumns: ColumnDefWithClass<SalesHsnSummaryRowType>[]
     cellClassName: "min-w-24",
   },
 ];
+
+export const counterSaleGstSummaryColumns: ColumnDefWithClass<GstSummaryRowType>[] =
+  gstSummaryColumns;
 
 export const counterSaleBillColumns: ColumnDefWithClass<CounterSaleBillRowType>[] = [
   {
@@ -676,6 +681,27 @@ const CounterSaleReportsTab = ({
                 reportKey: "counter-sale",
                 tableKey: "collections",
                 title: "Counter Sale Collections",
+                filters,
+              }}
+              isLoading={isLoading}
+              isError={isError}
+              error={error}
+            />
+          ),
+        },
+        {
+          value: "counter-sale-gst-summary",
+          name: "GST Summary",
+          content: (
+            <ReportTable
+              data={data.gstSummary}
+              columns={counterSaleGstSummaryColumns}
+              rowId={(row) => row.id}
+              searchPlaceholder="Search sales GST summary..."
+              printConfig={{
+                reportKey: "counter-sale",
+                tableKey: "gst-summary",
+                title: "Sales GST Summary",
                 filters,
               }}
               isLoading={isLoading}
