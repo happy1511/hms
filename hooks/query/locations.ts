@@ -1,10 +1,16 @@
 import { Location } from "@/generated/prisma/client";
 import { LOCATIONS } from "@/lib/apiDefinations";
-import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
+import {
+  ApiResponse,
+  FilterValues,
+  LocationFieldName,
+  LocationOption,
+  PaginatedResponse,
+} from "@/lib/type";
 import { showError } from "@/lib/utils";
 import { createRequest } from "@/services/apiRequest";
-import { PartialBedValidatorType } from "@/validators/api/masters/bed";
 import {
+  LocationQueryValidatorType,
   LocationValidatorType,
   PartialLocationValidatorType,
 } from "@/validators/api/masters/location";
@@ -37,9 +43,22 @@ const getLocations = createRequest<
   PaginatedResponse<Location>,
   {
     limit: number;
-    name?: string;
+    search?: string;
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
+  }
+>(LOCATIONS, "GET");
+const getLocationOptions = createRequest<
+  PaginatedResponse<LocationOption>,
+  {
+    limit: number;
+    field?: LocationFieldName;
+    search?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+    postcode?: string;
+    postName?: string;
   }
 >(LOCATIONS, "GET");
 
@@ -63,7 +82,6 @@ export const useLocationsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.departmentId && { departmentId: filters.departmentId }),
         },
       }),
   });
@@ -89,13 +107,54 @@ export const useInfiniteLocationsList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.doctorType && { doctorType: filters.doctorType }),
-          ...(filters.billingSectionId && {
-            billingSectionId: filters.billingSectionId,
-          }),
         },
       }),
 
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+};
+
+type LocationOptionFilters = Pick<
+  LocationQueryValidatorType,
+  "field" | "country" | "state" | "city" | "postcode" | "postName"
+> & {
+  search?: string;
+};
+
+export const useInfiniteLocationOptionsList = (
+  filters: LocationOptionFilters,
+  limit: number,
+  enabled = true,
+) => {
+  return useInfiniteQuery<
+    PaginatedResponse<LocationOption>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<LocationOption>>,
+    [string, LocationOptionFilters, number]
+  >({
+    queryKey: ["infinite-location-options", filters, limit],
+    enabled,
+    queryFn: ({ pageParam = 1 }) =>
+      getLocationOptions({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.field && { field: filters.field }),
+          ...(filters.search && { search: filters.search }),
+          ...(filters.country && { country: filters.country }),
+          ...(filters.state && { state: filters.state }),
+          ...(filters.city && { city: filters.city }),
+          ...(filters.postcode && { postcode: filters.postcode }),
+          ...(filters.postName && { postName: filters.postName }),
+        },
+      }),
     getNextPageParam: (lastPage, allPages) => {
       const totalFetched = allPages.reduce(
         (acc, page) => acc + page.data.length,
@@ -157,11 +216,11 @@ export const useDeleteLocation = () => {
   return useMutation<
     ApiResponse<null>,
     AxiosError<ApiResponse<null>>,
-    PartialBedValidatorType
+    PartialLocationValidatorType
   >({
     mutationKey: ["delete-locations"],
     mutationFn: (data) =>
-      deleteLocation({ urlHelpers: { id: data.bedId.toString() } }),
+      deleteLocation({ body: data, urlHelpers: { id: data.id.toString() } }),
     onSuccess: () => {
       toast.success("Location Deleted Successfully");
       queryClient.invalidateQueries({

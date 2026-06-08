@@ -157,6 +157,7 @@ export const MASTER_IMPORT_CONFIG: Record<
       { key: "state", required: true, example: "Maharashtra" },
       { key: "country", required: true, example: "India" },
       { key: "postcode", required: true, example: "411001" },
+      { key: "postName", required: true, example: "Shivajinagar" },
     ],
   },
   "finance-category": {

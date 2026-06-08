@@ -36,6 +36,7 @@ type InnerSelectProps<TItem, TPage, TFieldValues extends FieldValues> = {
   getItems: (page: TPage) => TItem[];
   search: string;
   onSearchChange: (val: string) => void;
+  disabled?: boolean;
 };
 
 type Additional = { page: number };
@@ -51,6 +52,7 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
   getItems,
   search,
   onSearchChange,
+  disabled,
 }: InnerSelectProps<TItem, TPage, TFieldValues>) {
   const value = field.value as TItem | TItem[] | null | undefined;
 
@@ -99,6 +101,7 @@ function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
   return (
     <AsyncPaginate<Option<TItem>, GroupBase<Option<TItem>>, Additional>
       isMulti={multiple as any}
+      isDisabled={disabled}
       value={selectedValue}
       loadOptions={loadOptions}
       additional={{ page: 1 }}
@@ -177,6 +180,7 @@ export function FormInfiniteSelect<
   className,
   search,
   onSearchChange,
+  disabled,
 }: FormInfiniteSelectProps<TItem, TPage, TValue, TFieldValues>) {
   const items: readonly TItem[] = query.data?.pages.flatMap(getItems) ?? [];
 
@@ -217,6 +221,7 @@ export function FormInfiniteSelect<
               getItems={getItems}
               search={search}
               onSearchChange={onSearchChange}
+              disabled={disabled}
             />
           </FormControl>
           <FormMessage className="absolute bottom-1 font-semibold text-tiny! ms-1" />

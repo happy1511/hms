@@ -4,6 +4,7 @@ import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { IpdDischargePrintResponse } from "@/hooks/query/ipd";
+import { formatAddress } from "@/lib/address";
 import { cn, formatAge } from "@/lib/utils";
 import { type ReactNode, useMemo, useState } from "react";
 
@@ -90,17 +91,7 @@ const IpdDischargePrint = ({
   const address = useMemo(() => {
     const home = data.patient?.addresses?.[0] as any;
     if (!home) return "--";
-    return [
-      home.addressLineOne,
-      home.addressLineTwo,
-      home.addressLineThree,
-      home.location?.city,
-      home.location?.state,
-      home.location?.postcode,
-      home.location?.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    return formatAddress(home) || "--";
   }, [data.patient?.addresses]);
 
   const consultantName = data.consultantDoctor?.user?.name;

@@ -2,6 +2,7 @@
 
 import CustomerInfo from "@/components/invoice/CustomerInfo";
 import InvoiceTable from "@/components/invoice/InvoiceTable";
+import { formatAddress } from "@/lib/address";
 import { BillingSections, InvoiceGroupedBySection } from "@/lib/type";
 import { amount, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -81,16 +82,7 @@ export const InvoicePrintDayWise = ({
             gender: patientGender,
             relation: patientRelation,
             address: patient?.addresses?.[0]
-              ? [
-                  patient.addresses[0].addressLineOne,
-                  patient.addresses[0].addressLineTwo,
-                  patient.addresses[0].addressLineThree,
-                  patient.addresses[0].location?.city,
-                  patient.addresses[0].location?.state,
-                  patient.addresses[0].location?.postcode,
-                ]
-                  .filter(Boolean)
-                  .join(", ")
+              ? formatAddress(patient.addresses[0])
               : "",
             phone: patient?.contacts?.[0]?.value || "",
           }}

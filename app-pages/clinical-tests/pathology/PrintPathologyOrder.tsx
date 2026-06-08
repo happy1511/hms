@@ -2,31 +2,9 @@
 
 import PathologyOrderExport from "@/components/common/PathologyOrderExport";
 import { useGetPathologyOrderParameters } from "@/hooks/query/pathology";
+import { formatPatientAddress } from "@/lib/address";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-
-const formatPatientAddress = (patient: any) => {
-  if (!patient?.addresses?.length) return "";
-
-  // Prefer HOME address
-  const homeAddress =
-    patient.addresses.find((a: any) => a.type === "HOME") ||
-    patient.addresses[0];
-
-  if (!homeAddress) return "";
-
-  const parts = [
-    homeAddress.addressLineOne,
-    homeAddress.addressLineTwo,
-    homeAddress.addressLineThree,
-    homeAddress.location?.postcode,
-    homeAddress.location?.city,
-    homeAddress.location?.state,
-    homeAddress.location?.country,
-  ].filter(Boolean);
-
-  return parts.join(", ");
-};
 
 const PrintPathologyOrder = () => {
   const { orderId }: { orderId: string } = useParams();

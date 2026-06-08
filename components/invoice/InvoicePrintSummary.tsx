@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import InvoiceTable from "./InvoiceTable";
 import InvoicePaymentHistory from "./InvoicePaymentHistory";
 import InvoicePaymentSummary from "./InvoicePaymentSummary";
+import { formatAddress } from "@/lib/address";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { amount, cn } from "@/lib/utils";
 import { InvoiceGroupedBySection, sectionsWithTotals } from "@/lib/type";
@@ -62,18 +63,7 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
     relation: patient?.relations?.[0]
       ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
       : "",
-    address: patient?.addresses?.[0]
-      ? [
-          patient.addresses[0].addressLineOne,
-          patient.addresses[0].addressLineTwo,
-          patient.addresses[0].addressLineThree,
-          patient.addresses[0].location?.city,
-          patient.addresses[0].location?.state,
-          patient.addresses[0].location?.postcode,
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "",
+    address: patient?.addresses?.[0] ? formatAddress(patient.addresses[0]) : "",
     phone: patient?.contacts?.[0]?.value || "",
   };
 

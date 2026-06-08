@@ -29,6 +29,7 @@ import {
 import {
   Appointment,
   emergencyContact,
+  Location,
   Patient,
   PatientContact,
   PatientIdentification,
@@ -141,7 +142,21 @@ export interface FormInfiniteSelectProps<
   search: string;
   onSearchChange: (val: string) => void;
   compareKey?: (item: TItem) => unknown;
+  disabled?: boolean;
 }
+
+export type LocationFieldName =
+  | "country"
+  | "state"
+  | "city"
+  | "postcode"
+  | "postName";
+
+export type LocationOption = {
+  [K in LocationFieldName]?: Location[K];
+} & {
+  id?: Location["id"];
+};
 
 export interface FormCheckboxProps<T extends FieldValues> {
   name: FieldPath<T>;
@@ -552,7 +567,9 @@ export type HsnSacType = Prisma.HsnSacGetPayload<{
 }>;
 
 export type PharmacyDrugType = Prisma.DrugGetPayload<{
-  include: {};
+  include: {
+    _count: true;
+  };
 }>;
 
 export type PharmacyInventoryItemType = Prisma.InventoryItemsGetPayload<{
@@ -979,7 +996,11 @@ export type PatientDocumentType = Prisma.DocumentStoreGetPayload<{
   };
 }>;
 
-export type CertificateTemplateType = Prisma.CertificateTemplateGetPayload<{}>;
+export type CertificateTemplateType = Prisma.CertificateTemplateGetPayload<{
+  include:{
+    createdByUser:true
+  }
+}>;
 
 export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{
   include: {
@@ -1437,6 +1458,7 @@ export type opdConsultationDetailsType = consultantFileType & {
         state?: string | null;
         country?: string | null;
         postcode?: string | null;
+        postName?: string | null;
       } | null;
     }[];
   };

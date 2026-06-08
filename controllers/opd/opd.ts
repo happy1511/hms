@@ -296,6 +296,7 @@ export const getConsultationAPI = async (
                         state: true,
                         country: true,
                         postcode: true,
+                        postName: true,
                       },
                     },
                   },

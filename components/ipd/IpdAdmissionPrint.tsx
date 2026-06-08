@@ -4,6 +4,7 @@ import PrintToolbar from "@/components/common/PrintToolbar";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import { AddressType, ContactType } from "@/generated/prisma/enums";
+import { formatAddress } from "@/lib/address";
 import { IPDType } from "@/lib/type";
 import { cn, formatAge } from "@/lib/utils";
 import { useMemo, useState } from "react";
@@ -96,17 +97,7 @@ const IpdAdmissionPrint = ({
     const home =
       addresses.find((a) => a.type === AddressType.HOME) ?? addresses[0];
     if (!home) return "--";
-    return [
-      home.addressLineOne,
-      home.addressLineTwo,
-      home.addressLineThree,
-      home.location?.city,
-      home.location?.state,
-      home.location?.postcode,
-      home.location?.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    return formatAddress(home) || "--";
   }, [data]);
 
   const relationText = useMemo(() => {

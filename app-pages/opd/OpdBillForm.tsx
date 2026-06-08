@@ -9,9 +9,10 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import PostCreatePrintDialog from "@/components/opd/PostCreatePrintDialog";
+import LocationCascadeFields from "@/components/patient/LocationCascadeFields";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { BillingSection, Location } from "@/generated/prisma/client";
+import { BillingSection } from "@/generated/prisma/client";
 import {
   ActionType,
   AddressType,
@@ -32,7 +33,6 @@ import {
 } from "@/generated/prisma/enums";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
-import { useInfiniteLocationsList } from "@/hooks/query/locations";
 import { useCreateOpd } from "@/hooks/query/opd";
 import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
@@ -925,13 +925,8 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 };
 
 const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
-  const [locationSearch, setLocationSearch] = useState("");
   const isSettingDobFromAge = useRef(false);
   const prevDob = useRef<Date | undefined>(undefined);
-  const locationQuery = useInfiniteLocationsList(
-    { name: locationSearch, status: Status["active"] },
-    10,
-  );
 
   const dob = form.watch("patient.dob") as unknown;
   const ageYears = form.watch("patient.ageYears" as any) as unknown;
@@ -1076,73 +1071,9 @@ const PatientForm = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           type="text"
         />
 
-        <FormInfiniteSelect<
-          Location,
-          PaginatedResponse<Location>,
-          string,
-          opdValidatorType
-        >
-          control={form.control}
-          label="City"
+        <LocationCascadeFields
+          form={form}
           name="patient.addresses.0.location"
-          query={locationQuery}
-          getItems={(p) => p?.data}
-          valueKey={(i) => String(i?.id)}
-          labelKey={(i) => i?.city}
-          placeholder="City"
-          search={locationSearch}
-          onSearchChange={setLocationSearch}
-        />
-        <FormInfiniteSelect<
-          Location,
-          PaginatedResponse<Location>,
-          string,
-          opdValidatorType
-        >
-          control={form.control}
-          label="State"
-          name="patient.addresses.0.location"
-          query={locationQuery}
-          getItems={(p) => p?.data}
-          valueKey={(i) => String(i?.id)}
-          labelKey={(i) => i?.state}
-          placeholder="State"
-          search={locationSearch}
-          onSearchChange={setLocationSearch}
-        />
-        <FormInfiniteSelect<
-          Location,
-          PaginatedResponse<Location>,
-          string,
-          opdValidatorType
-        >
-          control={form.control}
-          label="Country"
-          name="patient.addresses.0.location"
-          query={locationQuery}
-          getItems={(p) => p?.data}
-          valueKey={(i) => String(i?.id)}
-          labelKey={(i) => i?.country}
-          placeholder="Country"
-          search={locationSearch}
-          onSearchChange={setLocationSearch}
-        />
-        <FormInfiniteSelect<
-          Location,
-          PaginatedResponse<Location>,
-          string,
-          opdValidatorType
-        >
-          control={form.control}
-          label="Post Code"
-          name="patient.addresses.0.location"
-          query={locationQuery}
-          getItems={(p) => p?.data}
-          valueKey={(i) => String(i?.id)}
-          labelKey={(i) => i?.postcode}
-          placeholder="Country"
-          search={locationSearch}
-          onSearchChange={setLocationSearch}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 space-x-2">
           <FormField<opdValidatorType>

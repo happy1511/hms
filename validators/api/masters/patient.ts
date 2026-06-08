@@ -12,12 +12,21 @@ import {
 } from "@/generated/prisma/enums";
 import z from "zod";
 
+const patientAddressLocation = z.object({
+  id: z.coerce.number(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postcode: z.string().optional(),
+  postName: z.string().optional(),
+});
+
 const patientAddress = z.object({
   type: z.enum(AddressType),
   addressLineOne: z.string().min(1, "Address Line One is required"),
   addressLineTwo: z.string().optional().nullable(),
   addressLineThree: z.string().optional().nullable(),
-  location: z.object({ id: z.coerce.number() }),
+  location: patientAddressLocation,
 });
 
 const patientContact = z.object({

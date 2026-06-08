@@ -1,6 +1,7 @@
 import {
   ActionType,
   FinanceCategoryType,
+  Location,
   ModuleType,
   NameTitle,
   PrismaClient,
@@ -112,7 +113,10 @@ const createPermissions = async () => {
   });
 
   const stalePermissionIds = existingPermissions
-    .filter((permission) => !allowedPairs.has(`${permission.moduleId}:${permission.actionId}`))
+    .filter(
+      (permission) =>
+        !allowedPairs.has(`${permission.moduleId}:${permission.actionId}`),
+    )
     .map((permission) => permission.id);
 
   if (stalePermissionIds.length) {
@@ -181,18 +185,51 @@ const locations = async () => {
   console.log("🌱 Seeding locations...");
 
   const chunkSize = 1000;
+  const locationsByKey = new Map<string, Location>();
 
-  for (let i = 0; i < data.length; i += chunkSize) {
-    const chunk = data.slice(i, i + chunkSize);
+  for (const item of data as Location[]) {
+    if (!item.postName.trim()) {
+      continue;
+    }
+
+    const key = [
+      item.city.trim().toLowerCase(),
+      item.state.trim().toLowerCase(),
+      item.country.trim().toLowerCase(),
+      item.postcode.trim().toLowerCase(),
+      item.postName.trim().toLowerCase(),
+    ].join("::");
+
+    locationsByKey.set(key, {
+      ...item,
+      city: item.city.trim(),
+      state: item.state.trim(),
+      country: item.country.trim(),
+      postcode: item.postcode.trim(),
+      postName: item.postName.trim(),
+    });
+  }
+
+  const uniqueLocations = Array.from(locationsByKey.values());
+
+  for (let i = 0; i < uniqueLocations.length; i += chunkSize) {
+    const chunk = uniqueLocations.slice(i, i + chunkSize);
 
     await prisma.location.createMany({
       data: chunk,
       skipDuplicates: true,
     });
 
-    console.log(`Inserted ${i + chunk.length}/${data.length}`);
+    console.log(`Inserted ${i + chunk.length}/${uniqueLocations.length}`);
   }
 
+  const { count } = await prisma.location.deleteMany({
+    where: {
+      postName: "",
+    },
+  });
+
+  console.log(`Removed ${count} locations with empty postName`);
   console.log("✅ Seeding complete");
 };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatAddress } from "@/lib/address";
 import { PathologyTestResultType } from "@/lib/type";
 import { format } from "date-fns";
 import InfoRow from "../invoice/InfoRow";
@@ -61,16 +62,7 @@ const PathologyPatientDetailsTable = ({
         leftLabel="Address"
         leftValue={
           patient?.addresses?.[0]
-            ? [
-                patient.addresses[0].addressLineOne,
-                patient.addresses[0].addressLineTwo,
-                patient.addresses[0].addressLineThree,
-                patient.addresses[0].location?.city,
-                patient.addresses[0].location?.state,
-                patient.addresses[0].location?.postcode,
-              ]
-                .filter(Boolean)
-                .join(", ")
+            ? formatAddress(patient.addresses[0])
             : ""
         }
         rightLabel="OPD No"

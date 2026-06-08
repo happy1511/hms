@@ -464,10 +464,11 @@ enum MlcInsuranceType {
 
 model Location {
   id               Int              @id @default(autoincrement())
-  city             String
-  state            String
-  country          String
-  postcode         String
+  city             String           @db.VarChar(100)
+  state            String           @db.VarChar(100)
+  country          String           @db.VarChar(100)
+  postcode         String           @db.VarChar(20)
+  postName         String           @default("") @db.VarChar(191)
   isDeleted        Boolean          @default(false)
   createdBy        Int?
   updatedBy        Int?
@@ -480,8 +481,12 @@ model Location {
   updatedByUser User? @relation("LocationUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User? @relation("LocationDeletedBy", fields: [deletedBy], references: [id])
 
+  @@unique([city, state, country, postcode, postName])
+  @@index([country])
+  @@index([state])
   @@index([city])
   @@index([postcode])
+  @@index([postName])
 }
 
 // -------------------- Permission Management --------------------

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { formatAddress } from "@/lib/address";
 import PrintToolbar from "./PrintToolbar";
 import { useState } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
@@ -64,17 +65,7 @@ const OpdConsultationExport = ({
   const address = (() => {
     const homeAddress = data.patient?.addresses?.[0];
     if (!homeAddress) return "--";
-    return [
-      homeAddress.addressLineOne,
-      homeAddress.addressLineTwo,
-      homeAddress.addressLineThree,
-      homeAddress.location?.city,
-      homeAddress.location?.state,
-      homeAddress.location?.postcode,
-      homeAddress.location?.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    return formatAddress(homeAddress) || "--";
   })();
 
   const drugs =

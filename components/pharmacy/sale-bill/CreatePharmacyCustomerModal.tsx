@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { useCreatePharmacyCustomer } from "@/hooks/query/pharmacyCustomer";
+import { formatPatientAddress } from "@/lib/address";
 import { PatientType, PharmacyCustomerType } from "@/lib/type";
 import { pharmacyCustomerValidatorType } from "@/validators/api/masters/pharmacyCustomer";
 import { useEffect } from "react";
@@ -50,15 +51,7 @@ const CreatePharmacyCustomerModal = ({
         ].join(" ")
       : "";
     const patientContact = selectedPatient?.contacts?.[0]?.value || "";
-    const patientAddress = selectedPatient?.addresses?.[0]
-      ? [
-          selectedPatient.addresses[0].addressLineOne,
-          selectedPatient.addresses[0].addressLineTwo,
-          selectedPatient.addresses[0].addressLineThree,
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
+    const patientAddress = formatPatientAddress(selectedPatient ?? undefined);
 
     form.reset({
       name: patientName,

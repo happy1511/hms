@@ -1692,22 +1692,35 @@ const importLocations = async (
   let created = 0;
   let updated = 0;
   let deleted = 0;
+  const getLocationKey = (location: LocationImportRow) =>
+    [
+      location.city.trim().toLowerCase(),
+      location.state.trim().toLowerCase(),
+      location.country.trim().toLowerCase(),
+      location.postcode.trim().toLowerCase(),
+      location.postName.trim().toLowerCase(),
+    ].join("::");
+  const uniqueRows = Array.from(
+    new Map(rows.map((row) => [getLocationKey(row), row])).values(),
+  );
 
   await prisma.$transaction(async (tx) => {
     if (mode === "replace") {
       deleted = await archiveLocations(tx as typeof prisma, userId);
       await tx.location.createMany({
-        data: rows.map((row) => ({
+        data: uniqueRows.map((row) => ({
           city: row.city.trim(),
           state: row.state.trim(),
           country: row.country.trim(),
           postcode: row.postcode.trim(),
+          postName: row.postName.trim(),
           isDeleted: false,
           createdBy: userId,
           updatedBy: userId,
         })),
+        skipDuplicates: true,
       });
-      created = rows.length;
+      created = uniqueRows.length;
       return;
     }
 
@@ -1721,18 +1734,14 @@ const importLocations = async (
           item.state.trim().toLowerCase(),
           item.country.trim().toLowerCase(),
           item.postcode.trim().toLowerCase(),
+          item.postName.trim().toLowerCase(),
         ].join("::"),
         item,
       ]),
     );
 
-    for (const row of rows) {
-      const key = [
-        row.city.trim().toLowerCase(),
-        row.state.trim().toLowerCase(),
-        row.country.trim().toLowerCase(),
-        row.postcode.trim().toLowerCase(),
-      ].join("::");
+    for (const row of uniqueRows) {
+      const key = getLocationKey(row);
       const existing = existingByKey.get(key);
 
       if (existing) {
@@ -1743,6 +1752,7 @@ const importLocations = async (
             state: row.state.trim(),
             country: row.country.trim(),
             postcode: row.postcode.trim(),
+            postName: row.postName.trim(),
             isDeleted: false,
             updatedBy: userId,
           },
@@ -1757,6 +1767,7 @@ const importLocations = async (
           state: row.state.trim(),
           country: row.country.trim(),
           postcode: row.postcode.trim(),
+          postName: row.postName.trim(),
           isDeleted: false,
           createdBy: userId,
           updatedBy: userId,

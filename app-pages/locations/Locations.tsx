@@ -43,7 +43,7 @@ const neededFilters: FilterConfig<FilterValues>[] = [
     label: "Search",
     valueKey: "name",
     type: "text",
-    placeholder: "Search by city, state, postcode here.",
+    placeholder: "Search by city, state, postcode, or post name here.",
   },
 ];
 
@@ -58,7 +58,7 @@ const Actions = ({
   canDelete: boolean;
   canView: boolean;
 }) => {
-  const { mutateAsync: deleteBed, isPending: deletePending } =
+  const { mutateAsync: deleteLocation, isPending: deletePending } =
     useDeleteLocation();
 
   return (
@@ -72,6 +72,7 @@ const Actions = ({
             { key: "city", label: "City" },
             { key: "state", label: "State" },
             { key: "postcode", label: "Post Code" },
+            { key: "postName", label: "Post Name" },
             { key: "country", label: "Country" },
           ]}
         />
@@ -100,7 +101,7 @@ const Actions = ({
           description="Are you sure you want to delete location?"
           cancelText="Cancel"
           confirmText="Delete"
-          handleConfirm={() => deleteBed({ bedId: Number(data.id) })}
+          handleConfirm={() => deleteLocation({ id: Number(data.id) })}
           pending={deletePending}
         />
       )}
@@ -171,6 +172,12 @@ const Locations = () => {
     {
       accessorKey: "postcode",
       header: "PostCode",
+      headerClassName: "min-w-50",
+      cellClassName: "min-w-50",
+    },
+    {
+      accessorKey: "postName",
+      header: "Post Name",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

@@ -32,6 +32,7 @@ const UpdateForm = ({ data }: { data?: Location }) => {
       state: data?.state || "",
       country: data?.country || "",
       postcode: data?.postcode || "",
+      postName: data?.postName || "",
     },
     resolver: zodResolver(locationValidator),
   });
@@ -73,6 +74,13 @@ const UpdateForm = ({ data }: { data?: Location }) => {
             label="Post Code"
             type="text"
             name="postcode"
+            control={form.control}
+            required
+          />
+          <FormField<LocationValidatorType>
+            label="Post Name"
+            type="text"
+            name="postName"
             control={form.control}
             required
           />

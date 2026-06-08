@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { hasActionPermission } from "@/lib/utils";
+import { formatAddress } from "@/lib/address";
 
 export interface DataViewField<T> {
   key: keyof T;
@@ -122,12 +123,7 @@ export function PatientViewModal({
             {data.addresses?.map((address) => (
               <>
                 <div>{address.type}</div>
-                <div>
-                  {address.addressLineOne}, {address.addressLineTwo},
-                  {address.addressLineThree}, {address.location?.city},{" "}
-                  {address.location?.state}, {address.location?.postcode},{" "}
-                  {address.location?.country}
-                </div>
+                <div>{formatAddress(address)}</div>
               </>
             ))}
           </CustomLayout>

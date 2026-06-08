@@ -3,6 +3,7 @@
 import TransactionReceiptExport from "@/components/common/TransactionReceiptExport";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
+import { formatPatientAddress } from "@/lib/address";
 import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
@@ -28,28 +29,6 @@ const getPatientAge = (dob?: string | Date) => {
   return String(age);
 };
 
-const formatPatientAddress = (patient: any) => {
-  if (!patient?.addresses?.length) return "";
-
-  const homeAddress =
-    patient.addresses.find((a: any) => a.type === "HOME") ||
-    patient.addresses[0];
-
-  if (!homeAddress) return "";
-
-  const parts = [
-    homeAddress.addressLineOne,
-    homeAddress.addressLineTwo,
-    homeAddress.addressLineThree,
-    homeAddress.location?.postcode,
-    homeAddress.location?.city,
-    homeAddress.location?.state,
-    homeAddress.location?.country,
-  ].filter(Boolean);
-
-  return parts.join(", ");
-};
-
 const PrintInvoiceTransactions = () => {
   const { invoiceId }: { invoiceId: string } = useParams();
   const searchParams = useSearchParams();
@@ -69,6 +48,7 @@ const PrintInvoiceTransactions = () => {
       : undefined;
 
   const patient = data?.opd?.patient || data?.ipd?.patient;
+  const patientAddress = formatPatientAddress(patient);
 
   if (isLoading) {
     return (
@@ -155,7 +135,7 @@ const PrintInvoiceTransactions = () => {
               name: `${patient?.firstName} ${patient?.lastName}`,
               uhid: String(patient?.id || ""),
               genderAge,
-              address: formatPatientAddress(patient),
+              address: patientAddress,
               phone: patient?.contacts?.[0]?.value || "",
             }}
             receipt={{
