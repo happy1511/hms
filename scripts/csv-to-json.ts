@@ -13,6 +13,7 @@ fs.createReadStream(filePath)
     const city = row.district;
     const state = row.statename;
     const postcode = row.pincode;
+    const postName = row.postName;
 
     if (city && state && postcode) {
       results.push({
@@ -20,6 +21,7 @@ fs.createReadStream(filePath)
         state: state.toString().trim(),
         country: "India",
         postcode: postcode.toString().trim(),
+        postName: postName ? postName.toString().trim() : "",
         isDeleted: false,
         createdBy: null,
         updatedBy: null,
