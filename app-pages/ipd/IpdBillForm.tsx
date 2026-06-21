@@ -44,6 +44,7 @@ import { useInfiniteServicesList } from "@/hooks/query/service";
 import {
   ColumnDefWithClass,
   Doctor,
+  PaginatedResponse,
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
@@ -973,7 +974,10 @@ const PatientForm = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           type="text"
         />
 
-        <LocationCascadeFields form={form} name="patient.addresses.0.location" />
+        <LocationCascadeFields
+          form={form}
+          name="patient.addresses.0.location"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 space-x-2">
           <FormField<ipdValidatorType>
             label="Phone"
