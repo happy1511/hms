@@ -315,7 +315,7 @@ const OPDs = ({
       doctorType: "consulting",
       name: consultantValue,
     },
-    10,
+    20,
   );
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } = useOpdList(

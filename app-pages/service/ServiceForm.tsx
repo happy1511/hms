@@ -74,7 +74,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
       name: pathologySearchValue,
       status: Status["active"],
     },
-    10,
+    20,
     type === "LAB_TEST" || type === "CLINICAL_TEST",
   );
   const radiologyQuery = useInfiniteRadiologyTestsList(
@@ -82,7 +82,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
       name: radiologySearchValue,
       status: Status["active"],
     },
-    10,
+    20,
     type === "RADIOLOGY_TEST" || type === "CLINICAL_TEST",
   );
 

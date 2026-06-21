@@ -187,19 +187,15 @@ export const getDetailsAPI = async (
           gender: true,
           dob: true,
           maritalStatus: true,
-          address: true,
-          city: true,
-          country: true,
-          state: true,
-          postcode: true,
+          location: true,
           contactNumber: true,
           email: true,
           identityType: true,
           identityNumber: true,
-          education: true,
           qualifications: true,
           department: true,
           title: true,
+          roleType: true,
           password: true,
           loginId: true,
           createdAt: true,
@@ -273,21 +269,16 @@ export const createAPI = async (req: Request, actingUser: User) => {
         });
       }
 
-      const { permissions, ...rest } = data;
+      const { permissions, location, ...rest } = data;
       const name = buildUserName(rest);
 
       const user = await prisma.user.create({
         data: {
           ...rest,
           middleName: trimOptionalString(rest.middleName),
-          address: trimOptionalString(rest.address),
-          city: trimOptionalString(rest.city),
-          country: trimOptionalString(rest.country),
-          state: trimOptionalString(rest.state),
-          postcode: trimOptionalString(rest.postcode),
+          locationId: location?.id ?? null,
           email: trimOptionalString(rest.email),
           identityNumber: trimOptionalString(rest.identityNumber),
-          education: trimOptionalString(rest.education),
           qualifications: trimOptionalString(rest.qualifications),
           department: trimOptionalString(rest.department),
           loginId: contactNumber,
@@ -336,7 +327,7 @@ export const updateAPI = async (
         });
       }
 
-      const { permissions, ...rest } = data;
+      const { permissions, location, ...rest } = data;
       const nextContactNumber = rest.contactNumber?.trim();
 
       if (
@@ -375,24 +366,8 @@ export const updateAPI = async (
             rest.middleName !== undefined
               ? trimOptionalString(rest.middleName)
               : undefined,
-          address:
-            rest.address !== undefined
-              ? trimOptionalString(rest.address)
-              : undefined,
-          city:
-            rest.city !== undefined ? trimOptionalString(rest.city) : undefined,
-          country:
-            rest.country !== undefined
-              ? trimOptionalString(rest.country)
-              : undefined,
-          state:
-            rest.state !== undefined
-              ? trimOptionalString(rest.state)
-              : undefined,
-          postcode:
-            rest.postcode !== undefined
-              ? trimOptionalString(rest.postcode)
-              : undefined,
+          locationId:
+            location !== undefined ? location?.id ?? null : undefined,
           email:
             rest.email !== undefined
               ? trimOptionalString(rest.email)
@@ -400,10 +375,6 @@ export const updateAPI = async (
           identityNumber:
             rest.identityNumber !== undefined
               ? trimOptionalString(rest.identityNumber)
-              : undefined,
-          education:
-            rest.education !== undefined
-              ? trimOptionalString(rest.education)
               : undefined,
           qualifications:
             rest.qualifications !== undefined

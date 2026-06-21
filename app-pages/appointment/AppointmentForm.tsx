@@ -32,7 +32,7 @@ const AppointmentForm = () => {
       name: doctorSearchValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
 
   const form = useForm<AppointmentValidatorType>({

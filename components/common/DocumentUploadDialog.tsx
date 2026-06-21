@@ -1,6 +1,7 @@
 "use client";
 
 import CustomButton from "@/components/common/CustomButton";
+import { MAX_DOCUMENT_SIZE_LABEL } from "@/lib/document";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,9 @@ const DocumentUploadDialog = ({
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
           <div className="text-xs text-muted-foreground">{fileLabel}</div>
+          <div className="text-xs text-muted-foreground">
+            Max file size: {MAX_DOCUMENT_SIZE_LABEL}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">
@@ -99,4 +103,3 @@ const DocumentUploadDialog = ({
 };
 
 export default DocumentUploadDialog;
-

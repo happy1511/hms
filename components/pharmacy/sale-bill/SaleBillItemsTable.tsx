@@ -41,7 +41,7 @@ const SaleBillItemRow = ({
   const [inventorySearch, setInventorySearch] = useState("");
   const inventoryQuery = useInfiniteInventoryItems(
     { name: inventorySearch } as FilterValues,
-    10,
+    20,
   );
   const { remove } = useFieldArray({
     control: form.control,

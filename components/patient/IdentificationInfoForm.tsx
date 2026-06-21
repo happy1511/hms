@@ -149,6 +149,7 @@ const IdentificationInfoForm = ({
           label="Type"
           name="type"
           type="select"
+          required
           options={Object.values(IdentityType).flatMap((a) => ({
             label: a,
             value: a,
@@ -159,6 +160,7 @@ const IdentificationInfoForm = ({
           label="Number"
           name="number"
           type="text"
+          required
         />
 
         <div className="flex col-span-2 justify-start">

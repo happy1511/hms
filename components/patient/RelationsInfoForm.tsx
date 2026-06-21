@@ -158,12 +158,14 @@ const RelationsInfoForm = ({
           label="Relation"
           name="type"
           type="text"
+          required
         />
         <FormField
           control={relationsForm.control}
           label="Name"
           name="name"
           type="text"
+          required
         />
         <FormField
           control={relationsForm.control}

@@ -125,6 +125,7 @@ export const getDetailsAPI = async (
           consultingDoctorId: true,
           discountAvailable: true,
           maxDiscount: true,
+          type: true,
           pathologyTests: {
             select: {
               id: true,
@@ -262,8 +263,8 @@ export const createAPI = async (req: Request, user: User) => {
                 testId: test.id,
               })),
             },
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -376,7 +377,7 @@ export const updateAPI = async (
                 testId: test.id,
               })),
             },
-            updatedBy: user.id ,
+            updatedBy: user.id,
           },
         });
 
@@ -424,8 +425,8 @@ export const deleteAPI = async (
           where: { id: data.serviceId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -438,4 +439,3 @@ export const deleteAPI = async (
     },
   });
 };
-

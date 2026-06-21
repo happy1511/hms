@@ -60,12 +60,14 @@ export const upsertConsultingDoctorService = async (
     actingUserId: number;
   },
 ) => {
+  const serviceName = `consultation charges of ${doctorName}`;
+
   return tx.service.upsert({
     where: { consultingDoctorId: doctorId },
     create: {
       consultingDoctorId: doctorId,
-      name: doctorName,
-      description: `Consultation charges for ${doctorName}`,
+      name: serviceName,
+      description: serviceName,
       type: ServiceType.OTHER,
       applicableOn: ServiceApplicableOn.CONSULTATION,
       price: consultationCharges,
@@ -77,8 +79,8 @@ export const upsertConsultingDoctorService = async (
     },
     update: {
       isDeleted: false,
-      name: doctorName,
-      description: `Consultation charges for ${doctorName}`,
+      name: serviceName,
+      description: serviceName,
       type: ServiceType.OTHER,
       applicableOn: ServiceApplicableOn.CONSULTATION,
       price: consultationCharges,
@@ -135,14 +137,14 @@ export const upsertRoomChargeService = async (
     actingUserId: number;
   },
 ) => {
-  const serviceName = `${roomName} Room Charges`;
+  const serviceName = `${roomName} charges`;
 
   return tx.service.upsert({
     where: { roomId },
     create: {
       roomId,
       name: serviceName,
-      description: `Room charges for ${roomName}`,
+      description: serviceName,
       type: ServiceType.OTHER,
       applicableOn: ServiceApplicableOn.INPATIENT,
       price: roomPrice,
@@ -155,7 +157,7 @@ export const upsertRoomChargeService = async (
     update: {
       isDeleted: false,
       name: serviceName,
-      description: `Room charges for ${roomName}`,
+      description: serviceName,
       type: ServiceType.OTHER,
       applicableOn: ServiceApplicableOn.INPATIENT,
       price: roomPrice,

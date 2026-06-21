@@ -193,7 +193,7 @@ const Prescription = ({ form }: { form: UseFormReturn<ipdDischargeSummaryValidat
   });
 
   const [drugSearchValue, setDrugSearchValue] = useState("");
-  const drugsQuery = useInfiniteDrugList({ name: drugSearchValue }, 10);
+  const drugsQuery = useInfiniteDrugList({ name: drugSearchValue }, 20);
 
   const prescriptionForm = useForm<PrescriptionRowFormType>({
     defaultValues: {

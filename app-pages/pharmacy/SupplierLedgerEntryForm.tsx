@@ -68,7 +68,7 @@ const SupplierLedgerEntryForm = ({
   const { mutateAsync: createEntry, isPending } = useCreateSupplierPayment(type);
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearch, status: Status.active },
-    10,
+    20,
   );
   const form = useForm<SupplierLedgerFormValues>({
     defaultValues: getDefaultValues(),

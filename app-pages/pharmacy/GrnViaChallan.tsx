@@ -43,7 +43,7 @@ const GrnViaChallan = () => {
   const [supplierSearch, setSupplierSearch] = useState("");
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearch, status: Status.active },
-    10,
+    20,
   );
   const form = useForm<SelectorValues>({
     defaultValues: { supplier: undefined },

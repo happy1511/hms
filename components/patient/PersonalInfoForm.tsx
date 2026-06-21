@@ -43,6 +43,7 @@ const PersonalInfoForm = ({
         label="Title"
         name="title"
         type="select"
+        required
         options={Object.values(NameTitle).map((g) => ({
           value: g,
           label: g,
@@ -53,6 +54,7 @@ const PersonalInfoForm = ({
         label="First Name"
         name="firstName"
         type="text"
+        required
       />
       <FormField
         control={form.control}
@@ -65,6 +67,7 @@ const PersonalInfoForm = ({
         label="Last Name"
         name="lastName"
         type="text"
+        required
       />
       <FormField
         control={form.control}
@@ -77,6 +80,7 @@ const PersonalInfoForm = ({
         label="Date of birth"
         name="dob"
         type="date"
+        required
       />
       <FormField
         control={form.control}
@@ -89,6 +93,7 @@ const PersonalInfoForm = ({
         label="Gender"
         name="gender"
         type="select"
+        required
         options={Object.values(Gender).map((g) => ({
           value: g,
           label: g,
@@ -99,6 +104,7 @@ const PersonalInfoForm = ({
         label="Marital Status"
         name="maritalStatus"
         type="select"
+        required
         options={Object.values(MaritalStatus).map((m) => ({
           value: m,
           label: m,
@@ -116,6 +122,7 @@ const PersonalInfoForm = ({
         label="Blood Group"
         name="bloodGroup"
         type="select"
+        required
         options={Object.values(BloodGroup).map((m) => ({
           value: m,
           label: m,

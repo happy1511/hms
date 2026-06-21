@@ -158,15 +158,15 @@ const PurchaseOrderRow = ({
   const [hsnSacSearch, setHsnSacSearch] = useState("");
   const drugsQuery = useInfiniteDrugList(
     { name: drugSearch, status: Status.active },
-    10,
+    20,
   );
   const categoryQuery = useInfiniteDrugBillingCategoryList(
     { name: categorySearch, status: Status.active },
-    10,
+    20,
   );
   const hsnSacQuery = useInfiniteHsnSacList(
     { name: hsnSacSearch, status: Status.active },
-    10,
+    20,
   );
 
   const rowPath = `items.${index}` as const;
@@ -465,7 +465,7 @@ const UpdateCreateForm = ({ data }: { data?: PurchaseOrderData }) => {
   const { mutateAsync: update, isPending: updating } = useUpdatePurchaseOrder();
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearchValue, status: Status.active },
-    10,
+    20,
   );
 
   const form = useForm<purchaseOrderValidatorType>({

@@ -65,12 +65,12 @@ const AddInvoiceItemModal = ({
 
   const billingItemQuery = useInfiniteBillingSectionsList(
     { name: billingItemSearch, status: Status["active"] },
-    10,
+    20,
   );
 
   const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, status: Status["active"] },
-    10,
+    20,
   );
 
   const flatServices = useMemo(

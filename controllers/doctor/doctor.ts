@@ -14,8 +14,6 @@ import {
   Days,
   DoctorType,
   Prisma,
-  ServiceApplicableOn,
-  ServiceType,
   Status,
   User,
 } from "@/generated/prisma/client";
@@ -93,10 +91,7 @@ export const getAPI = async (req: Request) => {
       const and: Prisma.DoctorWhereInput[] = [];
 
       if (search) {
-        and.push(
-          { user: { name: { contains: search } } },
-          { user: { loginId: { contains: search } } },
-        );
+        and.push({ user: { name: { contains: search } } });
       }
       and.push({ user: { isDeleted: false } });
 
@@ -169,19 +164,15 @@ export const getDetailsAPI = async (
               gender: true,
               dob: true,
               maritalStatus: true,
-              address: true,
-              city: true,
-              country: true,
-              state: true,
-              postcode: true,
+              location: true,
               contactNumber: true,
               email: true,
               identityType: true,
               identityNumber: true,
-              education: true,
               qualifications: true,
               department: true,
               title: true,
+              roleType: true,
               password: true,
               status: true,
               loginId: true,
@@ -319,8 +310,15 @@ export const createAPI = async (req: Request, actingUser: User) => {
           });
         }
       }
-      const { permissions, status, password, availableDays, title, ...rest } =
-        data;
+      const {
+        permissions,
+        status,
+        password,
+        availableDays,
+        title,
+        location,
+        ...rest
+      } = data;
       const name = buildUserName(rest);
 
       const user = await prisma.user.create({
@@ -331,6 +329,7 @@ export const createAPI = async (req: Request, actingUser: User) => {
               .replace(/[^a-zA-Z0-9]/g, "")
               .slice(0, 8)}`,
           title,
+          roleType: rest.roleType,
           name,
           firstName: rest.firstName.trim(),
           middleName: trimOptionalString(rest.middleName),
@@ -339,23 +338,18 @@ export const createAPI = async (req: Request, actingUser: User) => {
           gender: rest.gender,
           dob: rest.dob,
           maritalStatus: rest.maritalStatus,
-          address: trimOptionalString(rest.address),
-          city: trimOptionalString(rest.city),
-          country: trimOptionalString(rest.country),
-          state: trimOptionalString(rest.state),
-          postcode: trimOptionalString(rest.postcode),
+          locationId: location?.id ?? null,
           contactNumber: loginId,
           email: trimOptionalString(rest.email),
           identityType: rest.identityType,
           identityNumber: trimOptionalString(rest.identityNumber),
-          education: trimOptionalString(rest.education),
           qualifications: trimOptionalString(rest.qualifications),
           department: trimOptionalString(rest.department),
           loginId,
           status: status ?? Status.active,
           username: loginId,
-          createdBy: actingUser.id ,
-          updatedBy: actingUser.id ,
+          createdBy: actingUser.id,
+          updatedBy: actingUser.id,
         },
       });
 
@@ -369,7 +363,9 @@ export const createAPI = async (req: Request, actingUser: User) => {
         yearsExperience: rest.yearsExperience ?? null,
         doctorType: rest.doctorType,
         consultationCharges:
-          rest.consultationCharges !== undefined ? rest.consultationCharges : null,
+          rest.consultationCharges !== undefined
+            ? rest.consultationCharges
+            : null,
         email: rest.email?.trim() || null,
         phoneNumber: rest.contactNumber?.trim() || null,
         designation: rest.designation?.trim() || null,
@@ -438,8 +434,15 @@ export const updateAPI = async (
         });
       }
 
-      const { availableDays, password, permissions, status, title, ...rest } =
-        data;
+      const {
+        availableDays,
+        password,
+        permissions,
+        status,
+        title,
+        location,
+        ...rest
+      } = data;
       const nextContactNumber = rest.contactNumber?.trim();
 
       if (
@@ -515,7 +518,8 @@ export const updateAPI = async (
             })
           : existingUser.name;
 
-      const effectiveDoctorType = rest.doctorType ?? existingUser.doctor.doctorType;
+      const effectiveDoctorType =
+        rest.doctorType ?? existingUser.doctor.doctorType;
       const effectiveCharges =
         rest.consultationCharges ?? existingUser.doctor.consultationCharges;
 
@@ -542,24 +546,8 @@ export const updateAPI = async (
           gender: rest.gender,
           dob: rest.dob,
           maritalStatus: rest.maritalStatus,
-          address:
-            rest.address !== undefined
-              ? trimOptionalString(rest.address)
-              : undefined,
-          city:
-            rest.city !== undefined ? trimOptionalString(rest.city) : undefined,
-          country:
-            rest.country !== undefined
-              ? trimOptionalString(rest.country)
-              : undefined,
-          state:
-            rest.state !== undefined
-              ? trimOptionalString(rest.state)
-              : undefined,
-          postcode:
-            rest.postcode !== undefined
-              ? trimOptionalString(rest.postcode)
-              : undefined,
+          locationId:
+            location !== undefined ? (location?.id ?? null) : undefined,
           contactNumber: nextContactNumber,
           email:
             rest.email !== undefined
@@ -569,10 +557,6 @@ export const updateAPI = async (
           identityNumber:
             rest.identityNumber !== undefined
               ? trimOptionalString(rest.identityNumber)
-              : undefined,
-          education:
-            rest.education !== undefined
-              ? trimOptionalString(rest.education)
               : undefined,
           qualifications:
             rest.qualifications !== undefined
@@ -586,9 +570,10 @@ export const updateAPI = async (
           password,
           status,
           title,
+          roleType: rest.roleType,
           loginId: nextContactNumber,
           username: nextContactNumber,
-          updatedBy: actingUser.id ,
+          updatedBy: actingUser.id,
         },
       });
 
@@ -638,7 +623,7 @@ export const updateAPI = async (
             rest.consultationEndingTime !== undefined
               ? trimOptionalString(rest.consultationEndingTime)
               : undefined,
-          updatedBy: actingUser.id ,
+          updatedBy: actingUser.id,
         },
       });
 
@@ -724,16 +709,16 @@ export const deleteAPI = async (
         prisma.doctor.update({
           where: { userId: data.userId },
           data: {
-            deletedBy: actingUser.id ,
-            updatedBy: actingUser.id ,
+            deletedBy: actingUser.id,
+            updatedBy: actingUser.id,
           },
         }),
         prisma.user.update({
           where: { id: data.userId },
           data: {
             isDeleted: true,
-            deletedBy: actingUser.id ,
-            updatedBy: actingUser.id ,
+            deletedBy: actingUser.id,
+            updatedBy: actingUser.id,
           },
         }),
         prisma.service.updateMany({
@@ -754,4 +739,3 @@ export const deleteAPI = async (
     },
   });
 };
-

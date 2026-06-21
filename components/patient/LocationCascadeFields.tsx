@@ -50,6 +50,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
   const selectedLocation =
     (form.watch(name) as Location | null | undefined) ?? null;
   const syncRef = useRef(false);
+  const skipNextExternalSyncRef = useRef(false);
   const [postcodeFirstMode, setPostcodeFirstMode] = useState(false);
 
   const [countrySearch, setCountrySearch] = useState("");
@@ -74,6 +75,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
   const postcodeValue = getLocationValue(postcode, "postcode");
 
   const clearSelectedLocation = useCallback(() => {
+    skipNextExternalSyncRef.current = true;
     form.setValue(name, null as any, {
       shouldDirty: true,
       shouldValidate: true,
@@ -89,6 +91,11 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
   );
 
   useEffect(() => {
+    if (skipNextExternalSyncRef.current && !selectedLocation) {
+      skipNextExternalSyncRef.current = false;
+      return;
+    }
+
     syncRef.current = true;
     cascadeForm.reset(buildStateFromLocation(selectedLocation));
     setPostcodeFirstMode(
@@ -149,6 +156,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
     queueMicrotask(() => {
       syncRef.current = false;
     });
+    skipNextExternalSyncRef.current = true;
     form.setValue(name, location as any, {
       shouldDirty: true,
       shouldValidate: true,
@@ -160,7 +168,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
       field: "country",
       search: countrySearch || undefined,
     },
-    10,
+    20,
   );
   const stateQuery = useInfiniteLocationOptionsList(
     {
@@ -168,8 +176,8 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
       search: stateSearch || undefined,
       country: countryValue || undefined,
     },
-    10,
-    Boolean(countryValue) && !postcodeFirstMode,
+    20,
+    Boolean(countryValue),
   );
   const cityQuery = useInfiniteLocationOptionsList(
     {
@@ -178,8 +186,8 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
       country: countryValue || undefined,
       state: stateValue || undefined,
     },
-    10,
-    Boolean(countryValue && stateValue) && !postcodeFirstMode,
+    20,
+    Boolean(stateValue),
   );
   const postcodeQuery = useInfiniteLocationOptionsList(
     {
@@ -189,7 +197,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
       state: postcodeFirstMode ? undefined : stateValue || undefined,
       city: postcodeFirstMode ? undefined : cityValue || undefined,
     },
-    10,
+    20,
   );
   const postNameQuery = useInfiniteLocationOptionsList(
     {
@@ -200,7 +208,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
       city: cityValue || undefined,
       postcode: postcodeValue || undefined,
     },
-    10,
+    20,
     Boolean(postcodeValue),
   );
 
@@ -242,7 +250,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         search={stateSearch}
         onSearchChange={setStateSearch}
         required={required}
-        disabled={postcodeFirstMode || !countryValue}
+        disabled={!countryValue}
       />
       <FormInfiniteSelect<
         LocationOption,
@@ -261,7 +269,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         search={citySearch}
         onSearchChange={setCitySearch}
         required={required}
-        disabled={postcodeFirstMode || !stateValue}
+        disabled={!stateValue}
       />
       <FormInfiniteSelect<
         LocationOption,
@@ -280,6 +288,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         search={postcodeSearch}
         onSearchChange={setPostcodeSearch}
         required={required}
+        disabled={Boolean(countryValue) && !cityValue}
       />
       <FormInfiniteSelect<
         LocationOption,

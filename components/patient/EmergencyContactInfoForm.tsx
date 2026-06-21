@@ -172,18 +172,21 @@ const EmergencyContactInfoForm = ({
           label="Relation"
           name="relation"
           type="text"
+          required
         />
         <FormField
           control={emergencyContactForm.control}
           label="Name"
           name="name"
           type="text"
+          required
         />
         <FormField
           control={emergencyContactForm.control}
           label="Contact"
           name="contact"
           type="text"
+          required
         />
         <FormField
           control={emergencyContactForm.control}

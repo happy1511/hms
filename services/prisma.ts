@@ -14,8 +14,8 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({
   adapter,
   transactionOptions: {
-    maxWait: 10_000,
-    timeout: 20_000,
+    maxWait: 40_000,
+    timeout: 70_000,
   },
 });
 

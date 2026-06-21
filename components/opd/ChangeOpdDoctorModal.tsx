@@ -39,7 +39,7 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
       doctorType: "consulting",
       name: doctorSearch,
     },
-    10,
+    20,
     open,
   );
 

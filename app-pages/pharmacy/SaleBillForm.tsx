@@ -149,11 +149,11 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
 
   const doctorQuery = useInfiniteDoctorList(
     { name: doctorSearch, status: Status.active },
-    10,
+    20,
   );
   const customerQuery = useInfinitePharmacyCustomers(
     { name: customerSearch } as FilterValues,
-    10,
+    20,
   );
 
   const form = useForm<SaleBillFormValues>({

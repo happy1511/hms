@@ -213,7 +213,7 @@ const SupplierReturnRow = ({
   const [inventorySearch, setInventorySearch] = useState("");
   const inventoryQuery = useInfiniteInventoryItems(
     { name: inventorySearch, supplierId } as FilterValues,
-    10,
+    20,
   );
 
   const rowPath = `items.${index}` as Path<SupplierReturnFormValues>;
@@ -380,7 +380,7 @@ const SupplierReturnForm = () => {
     useCreateSupplierReturn();
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearch, status: Status.active },
-    10,
+    20,
   );
 
   const form = useForm<SupplierReturnFormValues>({

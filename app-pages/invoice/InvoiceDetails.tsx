@@ -310,7 +310,7 @@ const ServiceRow = ({
   const previousServiceIdRef = useRef<number | null>(null);
   const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, status: Status.active },
-    10,
+    20,
   );
 
   const rowPath = `${fieldName}.${index}` as Path<updateInvoiceValidatorType>;

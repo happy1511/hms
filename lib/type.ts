@@ -15,6 +15,7 @@ import {
   ModuleType,
   NameTitle,
   PathologyOrderStatus,
+  RoleType,
   Status,
   CertificateType,
 } from "@/generated/prisma/enums";
@@ -87,6 +88,7 @@ export interface FormSelectProps<T extends FieldValues> {
   required?: boolean;
   className?: string;
   options: SelectOption[];
+  disabled?: boolean;
   rules?: Omit<
     RegisterOptions<T, Path<T>>,
     "disabled" | "valueAsNumber" | "valueAsDate" | "setValueAs"
@@ -120,10 +122,35 @@ export interface InfiniteSelectBaseProps {
 
 export type Primitive = string | number;
 
+// export interface FormInfiniteSelectProps<
+//   TItem,
+//   TPage,
+//   TValue,
+//   TFieldValues extends FieldValues,
+// > {
+//   name: FieldPath<TFieldValues>;
+//   control: Control<TFieldValues>;
+//   className?: string;
+//   label?: string;
+//   required?: boolean;
+//   placeholder?: string;
+//   multiple?: boolean;
+//   formItemClassName?: string;
+//   query: UseInfiniteQueryResult<InfiniteData<TPage>>;
+//   getItems: (page: TPage) => TItem[];
+//   valueKey: (item: TItem) => TValue;
+//   labelKey: (item: TItem) => string;
+//   hideError?: boolean;
+//   search: string;
+//   onSearchChange: (val: string) => void;
+//   compareKey?: (item: TItem) => unknown;
+//   disabled?: boolean;
+// }
+
 export interface FormInfiniteSelectProps<
   TItem,
   TPage,
-  TValue,
+  TValue extends string | number,
   TFieldValues extends FieldValues,
 > {
   name: FieldPath<TFieldValues>;
@@ -141,7 +168,6 @@ export interface FormInfiniteSelectProps<
   hideError?: boolean;
   search: string;
   onSearchChange: (val: string) => void;
-  compareKey?: (item: TItem) => unknown;
   disabled?: boolean;
 }
 
@@ -450,6 +476,7 @@ export interface User {
   id: number;
   name: string;
   title: NameTitle;
+  roleType: RoleType;
   loginId: string;
   firstName: string;
   middleName?: string | null;
@@ -458,16 +485,12 @@ export interface User {
   gender: Gender;
   dob?: string | Date | null;
   maritalStatus?: MaritalStatus | null;
-  address?: string | null;
-  city?: string | null;
-  country?: string | null;
-  state?: string | null;
-  postcode?: string | null;
+  locationId?: number | null;
+  location?: Location | null;
   contactNumber: string;
   email?: string | null;
   identityType?: IdentityType | null;
   identityNumber?: string | null;
-  education?: string | null;
   qualifications?: string | null;
   department?: string | null;
   password: string;
@@ -484,6 +507,7 @@ export interface Doctor extends Pick<
   | "status"
   | "loginId"
   | "title"
+  | "roleType"
   | "createdAt"
   | "updatedAt"
   | "name"
@@ -494,16 +518,12 @@ export interface Doctor extends Pick<
   | "gender"
   | "dob"
   | "maritalStatus"
-  | "address"
-  | "city"
-  | "country"
-  | "state"
-  | "postcode"
+  | "locationId"
+  | "location"
   | "contactNumber"
   | "email"
   | "identityType"
   | "identityNumber"
-  | "education"
   | "qualifications"
   | "department"
   | "password"
@@ -997,9 +1017,9 @@ export type PatientDocumentType = Prisma.DocumentStoreGetPayload<{
 }>;
 
 export type CertificateTemplateType = Prisma.CertificateTemplateGetPayload<{
-  include:{
-    createdByUser:true
-  }
+  include: {
+    createdByUser: true;
+  };
 }>;
 
 export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{

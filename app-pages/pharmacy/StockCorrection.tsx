@@ -57,7 +57,7 @@ const StockCorrection = () => {
   const { mutateAsync: updateStock, isPending } = useUpdateInventoryStockCorrection();
   const drugQuery = useInfiniteDrugList(
     { name: drugSearch, status: Status.active },
-    10,
+    20,
   );
   const form = useForm<StockCorrectionFormValues>({
     defaultValues: getDefaultValues(),

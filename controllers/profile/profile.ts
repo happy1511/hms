@@ -27,16 +27,11 @@ export const getProfile = async (req: NextRequest) => {
         gender: true,
         dob: true,
         maritalStatus: true,
-        address: true,
-        city: true,
-        country: true,
-        state: true,
-        postcode: true,
+        location: true,
         contactNumber: true,
         email: true,
         identityType: true,
         identityNumber: true,
-        education: true,
         qualifications: true,
         department: true,
         title: true,
@@ -180,25 +175,22 @@ export const updateProfile = async (req: NextRequest) => {
         }
       }
 
+      const { location, ...profileData } = body;
+
       const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
-          ...body,
-          middleName: trimOptionalString(body.middleName),
-          address: trimOptionalString(body.address),
-          city: trimOptionalString(body.city),
-          country: trimOptionalString(body.country),
-          state: trimOptionalString(body.state),
-          postcode: trimOptionalString(body.postcode),
-          email: trimOptionalString(body.email),
-          identityNumber: trimOptionalString(body.identityNumber),
-          education: trimOptionalString(body.education),
-          qualifications: trimOptionalString(body.qualifications),
-          department: trimOptionalString(body.department),
+          ...profileData,
+          middleName: trimOptionalString(profileData.middleName),
+          locationId: location?.id ?? null,
+          email: trimOptionalString(profileData.email),
+          identityNumber: trimOptionalString(profileData.identityNumber),
+          qualifications: trimOptionalString(profileData.qualifications),
+          department: trimOptionalString(profileData.department),
           contactNumber,
           loginId: contactNumber,
           username: contactNumber,
-          name: buildUserName(body),
+          name: buildUserName(profileData),
         },
       });
 
@@ -207,9 +199,9 @@ export const updateProfile = async (req: NextRequest) => {
           where: { userId: user.id },
           data: {
             phoneNumber: contactNumber,
-            email: trimOptionalString(body.email),
-            qualifications: trimOptionalString(body.qualifications),
-            department: trimOptionalString(body.department),
+            email: trimOptionalString(profileData.email),
+            qualifications: trimOptionalString(profileData.qualifications),
+            department: trimOptionalString(profileData.department),
           },
         });
       }

@@ -92,7 +92,7 @@ const Prescription = ({
     control: form.control,
   });
   const [drugSearchValue, setDrugSearchValue] = useState("");
-  const drugsQuery = useInfiniteDrugList({ name: drugSearchValue }, 10);
+  const drugsQuery = useInfiniteDrugList({ name: drugSearchValue }, 20);
 
   const prescriptionForm = useForm<prescribedDrugFormType>({
     defaultValues: {
@@ -296,13 +296,13 @@ const Advice = ({ form }: { form: UseFormReturn<consultantFileType> }) => {
     {
       name: pathologySearchValue,
     },
-    10,
+    20,
   );
   const radiologyTests = useInfiniteRadiologyTestsList(
     {
       name: radiologySearchValue,
     },
-    10,
+    20,
   );
 
   return (

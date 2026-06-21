@@ -145,12 +145,14 @@ const NotesInfoForm = ({
           label="Type"
           name="type"
           type="text"
+          required
         />
         <FormField
           control={notesForm.control}
           label="Note"
           name="note"
           type="text"
+          required
         />
 
         <div className="flex justify-start">

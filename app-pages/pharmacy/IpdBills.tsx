@@ -48,7 +48,7 @@ const IpdBills = () => {
   const [ipdSearch, setIpdSearch] = useState("");
   const currentIpdQuery = useInfinitePharmacyIpdPatients(
     { isDischarged: false, isDayCare: false, name: ipdSearch } as FilterValues,
-    10,
+    20,
   );
   const form = useForm<SelectorValues>({
     defaultValues: { ipd: null },

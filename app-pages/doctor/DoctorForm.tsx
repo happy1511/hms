@@ -14,6 +14,7 @@ import {
   Gender,
   ModuleType,
   NameTitle,
+  RoleType,
   Status,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -41,6 +42,7 @@ const getInitialValues = (
   if (data) {
     return {
       title: data.user.title,
+      roleType: data.user.roleType,
       firstName: data.user.firstName,
       middleName: data.user.middleName || "",
       lastName: data.user.lastName,
@@ -48,16 +50,11 @@ const getInitialValues = (
       gender: data.user.gender,
       dob: data.user.dob ? new Date(data.user.dob) : undefined,
       maritalStatus: data.user.maritalStatus || undefined,
-      address: data.user.address || "",
-      city: data.user.city || "",
-      country: data.user.country || "",
-      state: data.user.state || "",
-      postcode: data.user.postcode || "",
+      location: data.user.location ?? null,
       contactNumber: data.user.contactNumber,
       email: data.user.email || data.email || "",
       identityType: data.user.identityType || undefined,
       identityNumber: data.user.identityNumber || "",
-      education: data.user.education || "",
       qualifications: data.user.qualifications || data.qualifications || "",
       department: data.user.department || data.department || "",
       password: data.user.password,
@@ -71,30 +68,27 @@ const getInitialValues = (
       emergencyContact: data.emergencyContact || "",
       consultationStartingTime: data.consultationStartingTime || "",
       consultationEndingTime: data.consultationEndingTime || "",
-      availableDays: (data.availableDays || []) as DoctorValidatorType["availableDays"],
+      availableDays: (data.availableDays ||
+        []) as DoctorValidatorType["availableDays"],
       permissions: data.user.permissions,
     };
   }
 
   return {
     title: NameTitle["DR"],
+    roleType: RoleType.DOCTOR,
     firstName: "",
     middleName: "",
     lastName: "",
     preferredName: "",
-    gender: Gender["Other"],
+    gender: Gender["Male"],
     dob: undefined,
     maritalStatus: undefined,
-    address: "",
-    city: "",
-    country: "",
-    state: "",
-    postcode: "",
+    location: null,
     contactNumber: "",
     email: "",
     identityType: undefined,
     identityNumber: "",
-    education: "",
     qualifications: "",
     department: "",
     password: "",
@@ -146,8 +140,12 @@ const UpdateCreateForm = ({
       <form onSubmit={form.handleSubmit(onSubmit as any)}>
         <div className="grid grid-cols-2 gap-x-2">
           <UserProfileFields
-            control={form.control as any}
+            form={form as any}
             contactNumberReadOnly={Boolean(data)}
+            emailRequired={isConsulting}
+            qualificationsRequired={isConsulting}
+            showRoleType
+            roleTypeDisabled
           />
           <FormField<DoctorValidatorType>
             label="License Number"

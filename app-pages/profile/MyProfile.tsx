@@ -24,16 +24,11 @@ const getInitialValues = (data?: User): ProfileUpdateValidatorType => ({
   gender: data?.gender ?? "Other",
   dob: data?.dob ? new Date(data.dob) : undefined,
   maritalStatus: data?.maritalStatus ?? undefined,
-  address: data?.address ?? "",
-  city: data?.city ?? "",
-  country: data?.country ?? "",
-  state: data?.state ?? "",
-  postcode: data?.postcode ?? "",
+  location: data?.location ?? null,
   contactNumber: data?.contactNumber ?? "",
   email: data?.email ?? "",
   identityType: data?.identityType ?? undefined,
   identityNumber: data?.identityNumber ?? "",
-  education: data?.education ?? "",
   qualifications: data?.qualifications ?? "",
   department: data?.department ?? "",
 });
@@ -74,7 +69,7 @@ const MyProfile = () => {
           )}
         >
           <div className="grid grid-cols-2 gap-x-2">
-            <UserProfileFields control={form.control as any} />
+            <UserProfileFields form={form as any} />
           </div>
           <CustomButton disabled={isPending} type="submit">
             Save Profile

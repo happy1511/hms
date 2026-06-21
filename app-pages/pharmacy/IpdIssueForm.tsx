@@ -97,7 +97,7 @@ const IssueItemRow = ({
   const [inventorySearch, setInventorySearch] = useState("");
   const inventoryQuery = useInfiniteInventoryItems(
     { name: inventorySearch } as FilterValues,
-    10,
+    20,
   );
   const rowPath = `items.${index}` as Path<IssueFormValues>;
   const inventoryPath = `${rowPath}.inventoryItem` as Path<IssueFormValues>;
@@ -243,7 +243,7 @@ const IpdIssueForm = () => {
   const [ipdSearch, setIpdSearch] = useState("");
   const currentIpdQuery = useInfinitePharmacyIpdPatients(
     { isDischarged: false, isDayCare: false, name: ipdSearch } as FilterValues,
-    10,
+    20,
   );
   const form = useForm<IssueFormValues>({
     defaultValues: emptyValues(),

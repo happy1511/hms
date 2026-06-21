@@ -39,7 +39,7 @@ const PrintConsultationModal = ({
       doctorType: "consulting",
       name: doctorSearch,
     },
-    10,
+    20,
     open,
   );
 

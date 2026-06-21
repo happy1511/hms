@@ -145,6 +145,7 @@ const ContactInfoForm = ({
           label="Contact Type"
           name="type"
           type="select"
+          required
           options={Object.values(ContactType).flatMap((a) => ({
             label: a,
             value: a,
@@ -155,6 +156,7 @@ const ContactInfoForm = ({
           label="Value"
           name="value"
           type="text"
+          required
         />
 
         <div className="flex justify-start">

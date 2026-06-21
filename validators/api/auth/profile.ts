@@ -7,6 +7,17 @@ import {
 import { z } from "zod";
 
 const optionalText = z.string().optional().or(z.literal(""));
+const profileLocation = z
+  .object({
+    id: z.coerce.number(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().optional(),
+    postcode: z.string().optional(),
+    postName: z.string().optional(),
+  })
+  .optional()
+  .nullable();
 
 export const profileUpdateValidator = z.object({
   title: z.enum(NameTitle),
@@ -17,18 +28,13 @@ export const profileUpdateValidator = z.object({
   gender: z.enum(Gender),
   dob: z.coerce.date().optional(),
   maritalStatus: z.enum(MaritalStatus).optional(),
-  address: optionalText,
-  city: optionalText,
-  country: optionalText,
-  state: optionalText,
-  postcode: optionalText,
+  location: profileLocation,
   contactNumber: z
     .string()
     .regex(/^\d{10}$/, "Contact number must be a 10-digit phone number"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   identityType: z.enum(IdentityType).optional(),
   identityNumber: optionalText,
-  education: optionalText,
   qualifications: optionalText,
   department: optionalText,
 });

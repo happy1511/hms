@@ -248,6 +248,7 @@ const AddressInfoFormForm = ({
           label="Address Type"
           name="type"
           type="select"
+          required
           options={Object.values(AddressType).flatMap((a) => ({
             label: a,
             value: a,
@@ -258,6 +259,7 @@ const AddressInfoFormForm = ({
           label="Address Line 1"
           name="addressLineOne"
           type="text"
+          required
         />
         <FormField
           control={addressForm.control}

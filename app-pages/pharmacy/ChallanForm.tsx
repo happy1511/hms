@@ -139,15 +139,15 @@ const ChallanRow = ({ index, form, lineTotal }: RowProps) => {
   const [hsnSacSearch, setHsnSacSearch] = useState("");
   const drugsQuery = useInfiniteDrugList(
     { name: drugSearch, status: Status.active },
-    10,
+    20,
   );
   const categoryQuery = useInfiniteDrugBillingCategoryList(
     { name: categorySearch, status: Status.active },
-    10,
+    20,
   );
   const hsnSacQuery = useInfiniteHsnSacList(
     { name: hsnSacSearch, status: Status.active },
-    10,
+    20,
   );
 
   const rowPath = `challanItems.${index}` as const;
@@ -468,7 +468,7 @@ const UpdateCreateForm = () => {
   const [supplierSearch, setSupplierSearch] = useState("");
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearch, status: Status.active },
-    10,
+    20,
   );
   const { mutateAsync: create, isPending: creating } = useCreateChallan();
 

@@ -121,7 +121,7 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
       discountType: DiscountType["VALUE"],
       discountValue: 0,
       isFree: false,
-      isPaid: false,
+      isPaid: "true" as any,
       total: 0,
     },
     patient: {
@@ -243,12 +243,12 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
 
   const billingItemQuery = useInfiniteBillingSectionsList(
     { name: billingItemSearch, status: Status["active"] },
-    10,
+    20,
   );
 
   const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, status: Status["active"] },
-    10,
+    20,
   );
 
   const flatServices = useMemo(
@@ -1061,7 +1061,7 @@ const IpdBillForm = () => {
       nonOccupied: true,
       status: Status["active"],
     },
-    10,
+    20,
   );
   const consultingDoctorQuery = useInfiniteDoctorList(
     {
@@ -1069,14 +1069,14 @@ const IpdBillForm = () => {
       name: consultantValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
   const referringDoctorQuery = useInfiniteDoctorList(
     {
       name: referringValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
 
   const onSubmit = (values: ipdValidatorType) => {

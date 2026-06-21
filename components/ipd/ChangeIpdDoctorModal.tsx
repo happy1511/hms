@@ -39,7 +39,7 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
       doctorType: "consulting",
       name: doctorSearch,
     },
-    10,
+    20,
     open,
   );
 

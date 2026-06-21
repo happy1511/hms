@@ -6,18 +6,30 @@ import {
   IdentityType,
   MaritalStatus,
   NameTitle,
+  RoleType,
 } from "@/generated/prisma/enums";
-import { Control } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
+import LocationCascadeFields from "../patient/LocationCascadeFields";
 
 type Props = {
-  control: Control<any>;
+  form: UseFormReturn<any>;
   contactNumberReadOnly?: boolean;
+  emailRequired?: boolean;
+  qualificationsRequired?: boolean;
+  showRoleType?: boolean;
+  roleTypeDisabled?: boolean;
 };
 
 const UserProfileFields = ({
-  control,
+  form,
   contactNumberReadOnly = false,
+  emailRequired = false,
+  qualificationsRequired = false,
+  showRoleType = false,
+  roleTypeDisabled = false,
 }: Props) => {
+  const { control } = form;
+
   return (
     <>
       <FormField
@@ -28,6 +40,20 @@ const UserProfileFields = ({
         options={Object.keys(NameTitle).map((t) => ({ value: t, label: t }))}
         required
       />
+      {showRoleType && (
+        <FormField
+          label="Role Type"
+          type="select"
+          name="roleType"
+          control={control}
+          options={Object.values(RoleType).map((value) => ({
+            value,
+            label: value.replaceAll("_", " "),
+          }))}
+          required
+          disabled={Boolean(roleTypeDisabled)}
+        />
+      )}
       <FormField
         label="First Name"
         type="text"
@@ -66,7 +92,12 @@ const UserProfileFields = ({
         }))}
         required
       />
-      <FormField label="Date of Birth" type="date" name="dob" control={control} />
+      <FormField
+        label="Date of Birth"
+        type="date"
+        name="dob"
+        control={control}
+      />
       <FormField
         label="Marital Status"
         type="select"
@@ -77,11 +108,7 @@ const UserProfileFields = ({
           label: value,
         }))}
       />
-      <FormField label="Address" type="text" name="address" control={control} />
-      <FormField label="City" type="text" name="city" control={control} />
-      <FormField label="Country" type="text" name="country" control={control} />
-      <FormField label="State" type="text" name="state" control={control} />
-      <FormField label="Postcode" type="text" name="postcode" control={control} />
+      <LocationCascadeFields form={form} name="location" />
       <FormField
         label="Contact Number"
         type="text"
@@ -90,7 +117,13 @@ const UserProfileFields = ({
         required
         readOnly={contactNumberReadOnly}
       />
-      <FormField label="Email" type="email" name="email" control={control} />
+      <FormField
+        label="Email"
+        type="email"
+        name="email"
+        control={control}
+        required={emailRequired}
+      />
       <FormField
         label="Identity Type"
         type="select"
@@ -107,14 +140,19 @@ const UserProfileFields = ({
         name="identityNumber"
         control={control}
       />
-      <FormField label="Education" type="text" name="education" control={control} />
       <FormField
         label="Qualifications"
         type="text"
         name="qualifications"
         control={control}
+        required={qualificationsRequired}
       />
-      <FormField label="Department" type="text" name="department" control={control} />
+      <FormField
+        label="Department"
+        type="text"
+        name="department"
+        control={control}
+      />
     </>
   );
 };

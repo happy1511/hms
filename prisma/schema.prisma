@@ -71,6 +71,15 @@ enum IdentityType {
   VOTER_CARD
 }
 
+enum RoleType {
+  DOCTOR
+  NURSE
+  PHARMACIST
+  LAB_TECHNICIAN
+  RECEPTIONIST
+  ACCOUNTANT
+}
+
 enum DocumentType {
   ALL_TYPES_OF_DOCUMENT
   BIRTH_CERTIFICATE
@@ -476,6 +485,7 @@ model Location {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   patientAddresses PatientAddress[]
+  userAddresses    User[]           @relation("UserAddressLocation")
 
   createdByUser User? @relation("LocationCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("LocationUpdatedBy", fields: [updatedBy], references: [id])
@@ -538,6 +548,7 @@ model User {
   username       String         @unique
   loginId        String         @unique
   title          NameTitle      @default(MR)
+  roleType       RoleType       @default(RECEPTIONIST)
   password       String
   status         Status         @default(active)
   isDeleted      Boolean        @default(false)
@@ -549,16 +560,12 @@ model User {
   gender         Gender         @default(Other)
   dob            DateTime?
   maritalStatus  MaritalStatus?
-  address        String?
-  city           String?
-  country        String?
-  state          String?
-  postcode       String?
+  locationId     Int?
+  location       Location?      @relation("UserAddressLocation", fields: [locationId], references: [id], onDelete: SetNull)
   contactNumber  String         @unique
   email          String?
   identityType   IdentityType?
   identityNumber String?
-  education      String?
   qualifications String?
   department     String?
   createdBy      Int?
@@ -713,6 +720,7 @@ model User {
 
   @@index([isDeleted])
   @@index([createdAt])
+  @@index([locationId])
 }
 
 model Doctor {

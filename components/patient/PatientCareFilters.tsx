@@ -30,7 +30,7 @@ const PatientCareFilters = ({
       doctorType: "consulting",
       name: consultantValue,
     },
-    10,
+    20,
   );
 
   const filters: FilterConfig<FilterValues>[] = [

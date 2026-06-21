@@ -114,7 +114,7 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
       discountType: DiscountType["VALUE"],
       discountValue: 0,
       isFree: false,
-      isPaid: false,
+      isPaid: "true" as any,
       total: 0,
     },
     patient: {
@@ -236,19 +236,19 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
   const billingItemQuery = useInfiniteBillingSectionsList(
     { name: billingItemSearch, status: Status["active"] },
-    10,
+    20,
   );
   const consultationBillingSectionQuery = useInfiniteBillingSectionsList(
     {
       name: SYSTEM_BILLING_SECTION_NAMES.CONSULTATION_CHARGES,
       status: Status["active"],
     },
-    10,
+    20,
   );
 
   const servicesQuery = useInfiniteServicesList(
     { name: serviceSearch, status: Status["active"] },
-    10,
+    20,
   );
 
   const consultantDoctor = form.watch("consultantDoctor") as Doctor | null;
@@ -1155,14 +1155,14 @@ const OpdBillForm = () => {
       name: consultantValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
   const referringDoctorQuery = useInfiniteDoctorList(
     {
       name: referringValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
 
   const form = useForm<opdValidatorType>({

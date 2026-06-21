@@ -28,6 +28,7 @@ export function FormSelect<T extends FieldValues>({
   className = "",
   options,
   rules,
+  disabled = false,
   hideError = false,
   readonly = false,
 }: FormSelectProps<T>) {
@@ -58,7 +59,7 @@ export function FormSelect<T extends FieldValues>({
               onValueChange={(value) => {
                 field.onChange(value);
               }}
-              disabled={readonly}
+              disabled={readonly || disabled}
             >
               <SelectTrigger
                 className={clsx(

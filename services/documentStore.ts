@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
+import { MAX_DOCUMENT_BYTES } from "@/lib/document";
 
-const DEFAULT_MAX_BYTES = 25 * 1024 * 1024; // 25MB
+const DEFAULT_MAX_BYTES = MAX_DOCUMENT_BYTES;
 
 const guessExtensionFromMimeType = (mimeType: string): string => {
   switch (mimeType) {
@@ -71,4 +72,3 @@ export const deletePublicDocument = async (publicPath: string) => {
   const absPath = path.join(process.cwd(), "public", ...normalized.split("/"));
   await fs.unlink(absPath);
 };
-

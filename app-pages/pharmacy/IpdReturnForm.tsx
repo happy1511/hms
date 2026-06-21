@@ -272,7 +272,7 @@ const IpdReturnForm = () => {
   const [ipdSearch, setIpdSearch] = useState("");
   const currentIpdQuery = useInfinitePharmacyIpdPatients(
     { isDischarged: false, isDayCare: false, name: ipdSearch } as FilterValues,
-    10,
+    20,
   );
   const form = useForm<ReturnFormValues>({
     defaultValues: emptyValues(),

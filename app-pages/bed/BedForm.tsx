@@ -32,7 +32,7 @@ const CreateForm = () => {
   const { mutateAsync: create, isPending: creating } = useCreateBed();
   const roomQuery = useInfiniteRoomsList(
     { name: roomSearchValue, status: Status["active"] },
-    10,
+    20,
   );
 
   const form = useForm<BedValidatorType>({
@@ -87,7 +87,7 @@ const UpdateForm = ({
 }) => {
   const { mutateAsync: update, isPending: updating } = useUpdateBed();
   const [roomSearch, setRoomSearch] = useState("");
-  const roomQuery = useInfiniteRoomsList({ name: roomSearch }, 10);
+  const roomQuery = useInfiniteRoomsList({ name: roomSearch }, 20);
 
   const form = useForm<PartialBedValidatorType>({
     defaultValues: {

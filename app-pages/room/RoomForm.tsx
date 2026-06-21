@@ -44,7 +44,7 @@ const UpdateCreateForm = ({
   const { mutateAsync: update, isPending: updating } = useUpdateRoom();
   const floorQuery = useInfiniteRoomTypeList(
     { name: roomTypeSearchValue, status: Status["active"] },
-    10,
+    20,
   );
 
   const form = useForm<roomValidatorType>({

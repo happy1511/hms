@@ -7,7 +7,14 @@ import FormField from "@/components/form-inputs/FormField";
 import PermissionsSection from "@/components/user/PermissionsSection";
 import UserProfileFields from "@/components/user/UserProfileFields";
 import { Form } from "@/components/ui/form";
-import { ActionType, Gender, ModuleType, NameTitle, Status } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  Gender,
+  ModuleType,
+  NameTitle,
+  RoleType,
+  Status,
+} from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { usePermissionsList } from "@/hooks/query/permission";
 import { useCreateUser, useGetUser, useUpdateUser } from "@/hooks/query/user";
@@ -29,6 +36,7 @@ const getInitialValues = (
   if (data) {
     return {
       title: data.title,
+      roleType: data.roleType,
       firstName: data.firstName,
       middleName: data.middleName || "",
       lastName: data.lastName,
@@ -36,16 +44,11 @@ const getInitialValues = (
       gender: data.gender,
       dob: data.dob ? new Date(data.dob) : undefined,
       maritalStatus: data.maritalStatus || undefined,
-      address: data.address || "",
-      city: data.city || "",
-      country: data.country || "",
-      state: data.state || "",
-      postcode: data.postcode || "",
+      location: data.location ?? null,
       contactNumber: data.contactNumber,
       email: data.email || "",
       identityType: data.identityType || undefined,
       identityNumber: data.identityNumber || "",
-      education: data.education || "",
       qualifications: data.qualifications || "",
       department: data.department || "",
       password: data.password,
@@ -56,6 +59,7 @@ const getInitialValues = (
 
   return {
     title: NameTitle["MR"],
+    roleType: RoleType.RECEPTIONIST,
     firstName: "",
     middleName: "",
     lastName: "",
@@ -63,16 +67,11 @@ const getInitialValues = (
     gender: Gender["Other"],
     dob: undefined,
     maritalStatus: undefined,
-    address: "",
-    city: "",
-    country: "",
-    state: "",
-    postcode: "",
+    location: null,
     contactNumber: "",
     email: "",
     identityType: undefined,
     identityNumber: "",
-    education: "",
     qualifications: "",
     department: "",
     password: "",
@@ -109,8 +108,9 @@ const UpdateCreateForm = ({
       <form onSubmit={form.handleSubmit(onSubmit as any)}>
         <div className="grid grid-cols-2 gap-x-2">
           <UserProfileFields
-            control={form.control as any}
+            form={form as any}
             contactNumberReadOnly={Boolean(data)}
+            showRoleType
           />
           <FormField<UserValidatorType>
             label="Password"

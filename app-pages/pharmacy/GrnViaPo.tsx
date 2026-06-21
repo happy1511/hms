@@ -49,7 +49,7 @@ const GrnViaPo = () => {
   );
   const supplierQuery = useInfiniteDrugSupplierList(
     { name: supplierSearch, status: Status.active },
-    10,
+    20,
   );
   const form = useForm<SelectorValues>({
     defaultValues: { supplier: undefined },

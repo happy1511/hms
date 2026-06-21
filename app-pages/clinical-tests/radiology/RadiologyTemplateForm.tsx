@@ -48,7 +48,7 @@ const CreateUpdateForm = ({
       name: radiologySearchValue,
       status: Status["active"],
     },
-    10,
+    20,
   );
 
   const form = useForm<RadiologyTemplateValidatorType>({

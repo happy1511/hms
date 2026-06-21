@@ -147,11 +147,7 @@ const doctorImportRowValidator = z.object({
   preferredName: z.string().min(1, "preferredName is required"),
   gender: z.enum(Gender),
   dob: optionalText,
-  address: optionalText,
-  city: optionalText,
-  country: optionalText,
-  state: optionalText,
-  postcode: optionalText,
+  locationId: importOptionalNumberText,
   contactNumber: z
     .string()
     .regex(/^\d{10}$/, "contactNumber must be exactly 10 digits"),
