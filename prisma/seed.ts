@@ -185,9 +185,9 @@ const locations = async () => {
   console.log("🌱 Seeding locations...");
 
   const chunkSize = 1000;
-  const locationsByKey = new Map<string, Location>();
+  const locationsByKey = new Map<string, Omit<Location, 'id'>>();
 
-  for (const item of data as Location[]) {
+  for (const item of data as Omit<Location, 'id'>[]) {
     if (!item.postName.trim()) {
       continue;
     }
