@@ -181,13 +181,27 @@ const assignAdminPermissions = async (adminId: number) => {
 /* Locations                  */
 /* ---------------------------------- */
 
+type LocationData = {
+  country: string;
+  state: string;
+  city: string;
+  postName: string;
+  postcode: string;
+  isDeleted: boolean;
+  createdBy: null | string | number;
+  updatedBy: null | string | number;
+  deletedBy: null | string | number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const locations = async () => {
   console.log("🌱 Seeding locations...");
 
   const chunkSize = 1000;
-  const locationsByKey = new Map<string, Omit<Location, 'id'>>();
+  const locationsByKey = new Map<string, LocationData>();
 
-  for (const item of data as Omit<Location, 'id'>[]) {
+  for (const item of data as LocationData[]) {
     if (!item.postName.trim()) {
       continue;
     }
@@ -216,7 +230,7 @@ const locations = async () => {
     const chunk = uniqueLocations.slice(i, i + chunkSize);
 
     await prisma.location.createMany({
-      data: chunk,
+      data: chunk as Omit<Location, "id" | "createdAt" | "updatedAt">[],
       skipDuplicates: true,
     });
 
