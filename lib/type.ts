@@ -2223,7 +2223,7 @@ export interface DashboardType {
       totalItemsInInventory: number;
       nearExpiry: Array<{
         item: string;
-        batch: number;
+        batch: string;
         stock: number;
         expiringInDays: number;
         stockValue: number;
