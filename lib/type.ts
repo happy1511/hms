@@ -549,7 +549,7 @@ type PatientAddress = Prisma.PatientAddressGetPayload<{
 }>;
 
 export interface PatientType extends Patient {
-  uhid?: string;
+  uhid: string;
   appointment: Appointment[];
   contacts: PatientContact[];
   relations: PatientRelations[];
@@ -1041,6 +1041,7 @@ export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{
         patient: {
           select: {
             id: true;
+            uhid: true;
             title: true;
             firstName: true;
             middleName: true;
@@ -2017,6 +2018,7 @@ export interface RadiologyTestOrderWithResults {
   }>;
   patient: {
     id: number;
+    uhid?: string | null;
     firstName: string;
     lastName: string;
     dob: string;
@@ -2061,6 +2063,7 @@ export interface PathologyTestOrderWithResults {
   }>;
   patient: {
     id: number;
+    uhid?: string | null;
     firstName: string;
     lastName: string;
     dob: string;
