@@ -1526,6 +1526,7 @@ export type IPDType = Prisma.IpdGetPayload<{
         id: true;
         lastName: true;
         firstName: true;
+        uhid: true;
         middleName: true;
         dob: true;
         maritalStatus: true;
