@@ -48,6 +48,8 @@ type RowProps = {
 };
 
 const money = (value: number) => Number(value || 0).toFixed(2);
+const getDefaultExpiryDate = () =>
+  new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
 
 const getEmptyItem = (): ChallanItemForm => ({
   category: undefined,
@@ -57,8 +59,8 @@ const getEmptyItem = (): ChallanItemForm => ({
   },
   hsnSac: undefined,
   hsnSacId: 0,
-  batchNo: 0,
-  expiryDate: new Date(),
+  batchNo: "",
+  expiryDate: getDefaultExpiryDate(),
   manufacturingDate: new Date(),
   quantity: 1,
   freeQuantity: 0,
@@ -258,7 +260,7 @@ const ChallanRow = ({ index, form, lineTotal }: RowProps) => {
 
       <td className="border-r border-black/20 px-1 py-1 min-w-20">
         <FormField<challanValidatorType>
-          type="number"
+          type="text"
           name={`${rowPath}.batchNo` as Path<challanValidatorType>}
           control={form.control}
           hideError
@@ -271,6 +273,8 @@ const ChallanRow = ({ index, form, lineTotal }: RowProps) => {
           name={`${rowPath}.expiryDate` as Path<challanValidatorType>}
           control={form.control}
           placeholder="MMM YYYY"
+          minDate={getDefaultExpiryDate()}
+          allowFutureDates
           hideError
         />
       </td>

@@ -80,7 +80,7 @@ const getInitialValues = (bill?: PharmacySaleBillType): SaleReturnFormValues => 
     originalBillDate: format(new Date(bill.invoice.createdAt), "dd/MM/yyyy"),
     doctorName: bill.doctor?.user?.name ?? "-",
     patientDisplay: bill.patient
-      ? `${bill.patient.id} | ${getPatientDisplayName(bill.patient)}`
+      ? `${bill.patient.uhid || "-"} | ${getPatientDisplayName(bill.patient)}`
       : "-",
     refundMode: PaymentMode.CASH,
     remarks: "",

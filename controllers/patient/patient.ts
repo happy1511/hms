@@ -12,6 +12,13 @@ import {
   patientValidator,
 } from "@/validators/api/masters/patient";
 
+const getPatientUhid = (id: number, createdAt: Date) => {
+  const day = String(createdAt.getDate()).padStart(2, "0");
+  const month = String(createdAt.getMonth() + 1).padStart(2, "0");
+  const year = String(createdAt.getFullYear()).slice(-2);
+  return `UHID_${id}${day}${month}${year}`;
+};
+
 export const getAPI = async (req: Request) => {
   return validateRequest({
     querySchema: paginationValidator,
@@ -21,7 +28,7 @@ export const getAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const contactNo = query.contactNo ?? "";
-      const patientId = query.uhid ? Number(query.uhid) : undefined;
+      const uhid = query.uhid?.trim();
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
 
@@ -36,8 +43,8 @@ export const getAPI = async (req: Request) => {
         );
       }
 
-      if (patientId !== undefined) {
-        and.push({ id: { equals: patientId } });
+      if (uhid) {
+        and.push({ uhid: { equals: uhid } });
       }
 
       if (contactNo) {
@@ -81,6 +88,7 @@ export const getAPI = async (req: Request) => {
             lastName: true,
             middleName: true,
             id: true,
+            uhid: true,
             title: true,
             gender: true,
             dob: true,
@@ -134,7 +142,7 @@ export const getDocumentsAPI = async (req: Request) => {
       const limit = Number(query.limit ?? 10);
       const search = query.search ?? "";
       const contactNo = query.contactNo ?? "";
-      const patientId = query.uhid ? Number(query.uhid) : undefined;
+      const uhid = query.uhid?.trim();
       const opdId = query.opdId ? Number(query.opdId) : undefined;
       const ipdId = query.ipdId ? Number(query.ipdId) : undefined;
       const documentType = query.documentType ?? "";
@@ -188,11 +196,11 @@ export const getDocumentsAPI = async (req: Request) => {
         });
       }
 
-      if (patientId !== undefined) {
+      if (uhid) {
         and.push({
           OR: [
-            { opd: { is: { patientId: { equals: patientId } } } },
-            { ipd: { is: { patientId: { equals: patientId } } } },
+            { opd: { is: { patient: { uhid: { equals: uhid } } } } },
+            { ipd: { is: { patient: { uhid: { equals: uhid } } } } },
           ],
         });
       }
@@ -482,6 +490,7 @@ export const getDetailsAPI = async (
         where: { id: id },
         select: {
           id: true,
+          uhid: true,
           firstName: true,
           middleName: true,
           lastName: true,
@@ -550,49 +559,59 @@ export const createAPI = async (req: Request, user: User) => {
         identifications,
         notes,
         mlcPolicyOrCardNumber,
+        ageYears,
         ...rest
       } = data;
+      void ageYears;
 
-      const patient = await prisma.patient.create({
-        data: {
-          ...rest,
-          mlcInsuranceType: rest.mlcInsuranceType ?? null,
-          mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
-          createdBy: user.id,
-          updatedBy: user.id,
-          contacts: {
-            create: contacts,
+      const patient = await prisma.$transaction(async (tx) => {
+        const created = await tx.patient.create({
+          data: {
+            ...rest,
+            uhid: `PENDING_${crypto.randomUUID()}`,
+            mlcInsuranceType: rest.mlcInsuranceType ?? null,
+            mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
+            createdBy: user.id,
+            updatedBy: user.id,
+            contacts: {
+              create: contacts,
+            },
+            addresses: {
+              create: addresses.map((l) => ({
+                addressLineOne: l.addressLineOne,
+                addressLineThree: l.addressLineThree,
+                addressLineTwo: l.addressLineTwo,
+                locationId: l.location.id,
+                type: l.type,
+              })),
+            },
+            relations: {
+              create: relations,
+            },
+            identifications: {
+              create: identifications,
+            },
+            emergencyContacts: {
+              create: emergencyContacts,
+            },
+            notes: {
+              create: notes,
+            },
           },
-          addresses: {
-            create: addresses.map((l) => ({
-              addressLineOne: l.addressLineOne,
-              addressLineThree: l.addressLineThree,
-              addressLineTwo: l.addressLineTwo,
-              locationId: l.location.id,
-              type: l.type,
-            })),
+        });
+
+        return tx.patient.update({
+          where: { id: created.id },
+          data: { uhid: getPatientUhid(created.id, created.createdAt) },
+          include: {
+            contacts: true,
+            addresses: true,
+            relations: true,
+            identifications: true,
+            emergencyContacts: true,
+            notes: true,
           },
-          relations: {
-            create: relations,
-          },
-          identifications: {
-            create: identifications,
-          },
-          emergencyContacts: {
-            create: emergencyContacts,
-          },
-          notes: {
-            create: notes,
-          },
-        },
-        include: {
-          contacts: true,
-          addresses: true,
-          relations: true,
-          identifications: true,
-          emergencyContacts: true,
-          notes: true,
-        },
+        });
       });
 
       return apiResponse({
@@ -636,8 +655,10 @@ export const updateAPI = async (
         notes,
         patientId,
         mlcPolicyOrCardNumber,
+        ageYears,
         ...rest
       } = data;
+      void ageYears;
 
       const updatedPatient = await prisma.patient.update({
         where: { id: data.patientId },

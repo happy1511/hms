@@ -82,6 +82,10 @@ const personalValidator = z.object({
   isMlcPatient: z.coerce.boolean().optional().default(false),
   mlcInsuranceType: z.enum(MlcInsuranceType).optional().nullable(),
   mlcPolicyOrCardNumber: z.string().optional().nullable(),
+  ageYears: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.coerce.number().int().min(0).optional(),
+  ),
 });
 
 const patientValidator = personalValidator.extend({
@@ -116,7 +120,7 @@ const partialPatientValidator = patientValidator.partial().extend({
 
 const findPatientValidator = z
   .object({
-    uhid: z.coerce.number().int().positive().optional(),
+    uhid: z.string().trim().optional(),
     name: z.string().optional(),
     contactNo: z.string().optional(),
   })

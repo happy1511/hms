@@ -5,29 +5,11 @@ import PrintToolbar from "@/components/common/PrintToolbar";
 import { useInvoiceDetails } from "@/hooks/query/invoice";
 import { formatPatientAddress } from "@/lib/address";
 import { getSignedTransactionAmount } from "@/lib/invoiceTransactions";
+import { formatAge } from "@/lib/utils";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
-
-const getPatientAge = (dob?: string | Date) => {
-  if (!dob) return "";
-  const birthDate = new Date(dob);
-  if (Number.isNaN(birthDate.getTime())) return "";
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age -= 1;
-  }
-
-  return String(age);
-};
 
 const PrintInvoiceTransactions = () => {
   const { invoiceId }: { invoiceId: string } = useParams();
@@ -83,9 +65,9 @@ const PrintInvoiceTransactions = () => {
     date: format(new Date(txn.createdAt), "dd/MM/yyyy - hh:mm a"),
   }));
 
-  const patientAge = getPatientAge(patient?.dob);
+  const patientAge = patient?.dob ? formatAge(patient.dob) : "";
   const genderAge = `${patient?.gender ? String(patient.gender) : "-"}${
-    patientAge ? `, ${patientAge} years` : ""
+    patientAge ? `, ${patientAge}` : ""
   }`;
 
   return (
@@ -133,7 +115,7 @@ const PrintInvoiceTransactions = () => {
           <TransactionReceiptExport
             customer={{
               name: `${patient?.firstName} ${patient?.lastName}`,
-              uhid: String(patient?.id || ""),
+              uhid: patient?.uhid || "",
               genderAge,
               address: patientAddress,
               phone: patient?.contacts?.[0]?.value || "",

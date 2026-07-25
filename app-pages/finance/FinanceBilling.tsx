@@ -255,7 +255,7 @@ const FinanceBilling = () => {
                 </div>
               }
             />
-            <div className="text-[10px]">{patient.id}</div>
+            <div className="text-[10px]">{patient.uhid || "-"}</div>
           </div>
         );
       },
@@ -449,7 +449,7 @@ const FinanceBilling = () => {
                         ...(values.invoiceId
                           ? { invoiceId: values.invoiceId }
                           : {}),
-                        ...(values.uhid ? { uhid: Number(values.uhid) } : {}),
+                        ...(values.uhid ? { uhid: values.uhid } : {}),
                         ...(values.billingPeriod?.from ||
                         values.billingPeriod?.to
                           ? {

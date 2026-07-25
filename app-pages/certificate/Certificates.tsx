@@ -62,7 +62,7 @@ const replaceTemplateTokens = (content: string, consultation: any) => {
 
   const replacements: Record<string, string> = {
     "{{patientName}}": patientName || "",
-    "{{uhid}}": String(patient?.id ?? ""),
+    "{{uhid}}": String(patient?.uhid ?? ""),
     "{{gender}}": String(patient?.gender ?? ""),
     "{{age}}": "",
     "{{date}}": format(new Date(), "dd/MM/yyyy"),

@@ -1,12 +1,24 @@
 import z from "zod";
 
+const today = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 const stockCorrectionParamsValidator = z.object({
   inventoryItemId: z.coerce.number().int().min(1, "Inventory item is required"),
 });
 
 const stockCorrectionValidator = z.object({
-  batchNo: z.coerce.number().int().min(0, "Batch is required"),
-  expiryDate: z.coerce.date(),
+  batchNo: z
+    .string()
+    .trim()
+    .min(1, "Batch is required")
+    .regex(/^[a-zA-Z0-9]+$/, "Batch must be alphanumeric"),
+  expiryDate: z.coerce.date().refine((date) => date > today(), {
+    message: "Expiry date must be in the future",
+  }),
   mrp: z.coerce.number().min(0, "MRP cannot be negative"),
   quantityInStock: z.coerce
     .number()

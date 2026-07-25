@@ -115,7 +115,7 @@ export const updateStockCorrectionAPI = async (
           id: inventoryItem.id,
         },
         data: {
-          batchNo: Number(body.batchNo),
+          batchNo: body.batchNo,
           expiryDate: body.expiryDate,
           mrp: Number(body.mrp),
           quantityInStock: Number(body.quantityInStock),

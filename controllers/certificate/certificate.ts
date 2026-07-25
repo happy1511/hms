@@ -41,6 +41,7 @@ const certificateSelect = {
       patient: {
         select: {
           id: true,
+          uhid: true,
           title: true,
           firstName: true,
           middleName: true,

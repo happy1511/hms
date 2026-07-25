@@ -131,7 +131,7 @@ const SelectHospitalPatientModal = ({
                 setPage(1);
                 setFilters({
                   ...(name ? { name } : {}),
-                  ...(uhid ? { uhid: Number(uhid) } : {}),
+                  ...(uhid ? { uhid } : {}),
                   ...(contactNo ? { contactNo } : {}),
                 });
               }}

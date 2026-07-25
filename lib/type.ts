@@ -331,7 +331,7 @@ export interface FilterValues {
   nonOccupied?: boolean;
   createdAt?: string | { from?: Date; to?: Date };
   mlcDeclarationDate?: string | { from?: Date; to?: Date };
-  uhid?: number;
+  uhid?: string;
   contactNo?: string;
   doctorType?: DoctorType;
   doctorId?: number;
@@ -549,6 +549,7 @@ type PatientAddress = Prisma.PatientAddressGetPayload<{
 }>;
 
 export interface PatientType extends Patient {
+  uhid?: string;
   appointment: Appointment[];
   contacts: PatientContact[];
   relations: PatientRelations[];

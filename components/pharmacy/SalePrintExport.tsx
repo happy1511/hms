@@ -8,7 +8,7 @@ import { useState } from "react";
 
 export interface SalePrintLine {
   name: string;
-  batchNo: number;
+  batchNo: string;
   qty: number;
   quantityLabel?: string;
   rate: number;

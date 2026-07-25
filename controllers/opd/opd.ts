@@ -109,6 +109,7 @@ export const getAPI = async (req: Request) => {
             patient: {
               select: {
                 id: true,
+                uhid: true,
                 lastName: true,
                 firstName: true,
                 middleName: true,
@@ -211,6 +212,8 @@ export const getQueueAPI = async (req: Request) => {
             },
             patient: {
               select: {
+                id: true,
+                uhid: true,
                 lastName: true,
                 firstName: true,
                 middleName: true,
@@ -268,6 +271,7 @@ export const getConsultationAPI = async (
             patient: {
               select: {
                 id: true,
+                uhid: true,
                 firstName: true,
                 lastName: true,
                 gender: true,

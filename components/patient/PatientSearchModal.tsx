@@ -115,13 +115,13 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
     },
 
     {
-      accessorKey: "id",
+      accessorKey: "patient.uhid",
       header: ({ column }) => {
         return <SortableHeader<OPDType> label="Patient UHID" column={column} />;
       },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
-      cell: ({ row }) => row.original.patient.id,
+      cell: ({ row }) => row.original.patient.uhid || "-",
     },
     {
       accessorKey: "date",

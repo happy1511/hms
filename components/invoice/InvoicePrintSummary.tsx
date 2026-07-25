@@ -4,7 +4,7 @@ import InvoicePaymentHistory from "./InvoicePaymentHistory";
 import InvoicePaymentSummary from "./InvoicePaymentSummary";
 import { formatAddress } from "@/lib/address";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
-import { amount, cn } from "@/lib/utils";
+import { amount, cn, formatAge } from "@/lib/utils";
 import { InvoiceGroupedBySection, sectionsWithTotals } from "@/lib/type";
 import { format } from "date-fns";
 import CustomerInfo from "./CustomerInfo";
@@ -52,14 +52,9 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
 
   const customer = {
     name: `${patient?.firstName || ""} ${patient?.lastName || ""}`.trim(),
-    uhid: String(patient?.id || "-"),
+    uhid: patient?.uhid || "-",
     gender: patient?.gender ? String(patient.gender) : "-",
-    age: patient?.dob
-      ? `${Math.max(
-          0,
-          new Date().getFullYear() - new Date(patient.dob).getFullYear(),
-        )}`
-      : "-",
+    age: patient?.dob ? formatAge(patient.dob) : "-",
     relation: patient?.relations?.[0]
       ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
       : "",

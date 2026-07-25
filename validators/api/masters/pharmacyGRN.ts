@@ -1,5 +1,21 @@
 import z from "zod";
 
+const today = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const batchNoValidator = z
+  .string()
+  .trim()
+  .min(1, "Batch is required")
+  .regex(/^[a-zA-Z0-9]+$/, "Batch must be alphanumeric");
+
+const futureExpiryDateValidator = z.coerce.date().refine((date) => date > today(), {
+  message: "Expiry date must be in the future",
+});
+
 const grnItemValidator = z.object({
   id: z.coerce.number().optional(),
   drug: z.object({
@@ -23,8 +39,8 @@ const grnItemValidator = z.object({
   packaging: z.string().optional(),
   qtyType: z.string().optional(),
   itemsPerPack: z.coerce.number().min(1).default(1),
-  batchNo: z.coerce.number().default(0),
-  expiryDate: z.coerce.date(),
+  batchNo: batchNoValidator,
+  expiryDate: futureExpiryDateValidator,
   manufacturingDate: z.coerce.date().default(new Date()),
   purchasePrice: z.coerce.number().default(0),
   mrp: z.coerce.number().default(0),

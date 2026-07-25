@@ -2,7 +2,7 @@
 
 import { formatAddress } from "@/lib/address";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
-import { amount, cn, lineNet } from "@/lib/utils";
+import { amount, cn, formatAge, lineNet } from "@/lib/utils";
 import CustomerInfo from "./CustomerInfo";
 import InvoiceTable from "./InvoiceTable";
 import { InvoiceGroupedBySection, InvoiceItem } from "@/lib/type";
@@ -27,14 +27,7 @@ const InvoicePrintDetails = ({
   data,
 }: Props) => {
   const patient = data.opd?.patient || data.ipd?.patient;
-  const patientAge = patient?.dob
-    ? String(
-        Math.max(
-          0,
-          new Date().getFullYear() - new Date(patient.dob).getFullYear(),
-        ),
-      )
-    : "";
+  const patientAge = patient?.dob ? formatAge(patient.dob) : "";
   const patientGender = patient?.gender ? String(patient.gender) : "";
   const patientRelation = patient?.relations?.[0]
     ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
@@ -110,7 +103,7 @@ const InvoicePrintDetails = ({
           <CustomerInfo
             customer={{
               name: `${patient?.firstName} ${patient?.lastName}`,
-              uhid: String(patient?.id || ""),
+              uhid: patient?.uhid || "",
               age: patientAge,
               gender: patientGender,
               relation: patientRelation,

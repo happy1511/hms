@@ -90,7 +90,7 @@ const OpdConsultationExport = ({
             </div>
             <InfoRow
               leftLabel="Patient UHID"
-              leftValue={<PrintBarcodeValue value={data.patient?.id} />}
+              leftValue={<PrintBarcodeValue value={data.patient?.uhid} />}
               rightLabel="Date"
               rightValue={formatDateOrDash(data.createdAt, true)}
               cellClassName="border-b-0"

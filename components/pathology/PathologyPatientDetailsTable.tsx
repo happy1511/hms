@@ -2,6 +2,7 @@
 
 import { formatAddress } from "@/lib/address";
 import { PathologyTestResultType } from "@/lib/type";
+import { formatAge } from "@/lib/utils";
 import { format } from "date-fns";
 import InfoRow from "../invoice/InfoRow";
 
@@ -18,14 +19,7 @@ const PathologyPatientDetailsTable = ({
   data: PathologyTestResultType;
 }) => {
   const patient = data.patient;
-  const patientAge = patient?.dob
-    ? String(
-        Math.max(
-          0,
-          new Date().getFullYear() - new Date(patient.dob).getFullYear(),
-        ),
-      )
-    : "";
+  const patientAge = patient?.dob ? formatAge(patient.dob) : "";
   const patientGender = patient?.gender ? String(patient.gender) : "";
 
   const consultantName =
@@ -41,9 +35,9 @@ const PathologyPatientDetailsTable = ({
     <>
       <InfoRow
         leftLabel="Patient UHID"
-        leftValue={String(patient?.id || "-")}
+        leftValue={patient?.uhid || "-"}
         rightLabel="Barcode"
-        rightValue={String(patient?.id || "-")}
+        rightValue={patient?.uhid || "-"}
         cellClassName="border-b-0"
       />
 
@@ -55,7 +49,7 @@ const PathologyPatientDetailsTable = ({
             : "-"
         }
         rightLabel="Gender/Age"
-        rightValue={`${patientGender || "-"}, ${`${patientAge} years`}`}
+        rightValue={`${patientGender || "-"}, ${patientAge || "-"}`}
         cellClassName="border-b-0"
       />
       <InfoRow

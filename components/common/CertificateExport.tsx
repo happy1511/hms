@@ -36,7 +36,7 @@ const CertificateExport = ({ data }: { data: OpdCertificateType }) => {
         />
         <InfoRow
           leftLabel="Patient UHID"
-          leftValue={<PrintBarcodeValue value={patient.id} />}
+          leftValue={<PrintBarcodeValue value={patient.uhid} />}
           rightLabel="OPD No."
           rightValue={<PrintBarcodeValue value={data.opd.id} />}
           cellClassName="border-b-0"

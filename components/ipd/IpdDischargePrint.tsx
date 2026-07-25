@@ -152,7 +152,7 @@ const IpdDischargePrint = ({
                       Patient UHID:
                     </Cell>
                     <Cell>
-                      <PrintBarcodeValue value={data.patient?.id} />
+                      <PrintBarcodeValue value={data.patient?.uhid} />
                     </Cell>
                   </tr>
                   <tr>

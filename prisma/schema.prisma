@@ -854,6 +854,7 @@ model PatientIdentification {
 
 model Patient {
   id                    Int               @id @default(autoincrement())
+  uhid                  String            @unique
   title                 NameTitle
   firstName             String
   middleName            String?
@@ -896,6 +897,7 @@ model Patient {
   @@index([createdAt])
   @@index([createdBy])
   @@index([isMlcPatient])
+  @@index([uhid])
 }
 
 // -------------------- Facility Management --------------------
@@ -2116,7 +2118,7 @@ model InventoryItems {
   id                Int      @id @default(autoincrement())
   drugId            Int
   hsnSacId          Int?
-  batchNo           Int
+  batchNo           String
   expiryDate        DateTime
   manufacturingDate DateTime
   purchasePrice     Float
@@ -2502,7 +2504,7 @@ model ChallanItem {
   packaging         String?
   qtyType           String?
   itemsPerPack      Int      @default(1)
-  batchNo           Int
+  batchNo           String
   expiryDate        DateTime
   manufacturingDate DateTime
   purchasePrice     Float    @default(0)

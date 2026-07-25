@@ -466,7 +466,7 @@ export const getInvoiceListAPI = async (req: Request) => {
       const skip = (page - 1) * limit;
 
       const invoiceId = query.invoiceId ? Number(query.invoiceId) : null;
-      const patientId = query.uhid ? Number(query.uhid) : null;
+      const uhid = query.uhid?.trim() || null;
       const createdAtFrom = query["createdAt[from]"] ?? null;
       const createdAtTo = query["createdAt[to]"] ?? null;
       const invoiceType = query.invoiceType ?? null;
@@ -486,11 +486,11 @@ export const getInvoiceListAPI = async (req: Request) => {
         });
       }
 
-      if (patientId) {
+      if (uhid) {
         and.push({
           OR: [
-            { opd: { is: { patient: { id: patientId } } } },
-            { ipd: { is: { patient: { id: patientId } } } },
+            { opd: { is: { patient: { uhid } } } },
+            { ipd: { is: { patient: { uhid } } } },
           ],
         });
       }

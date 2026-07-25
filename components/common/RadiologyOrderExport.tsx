@@ -3,6 +3,7 @@
 import { CompanyDetailsType } from "@/generated/prisma/enums";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import InfoRow from "../invoice/InfoRow";
+import { formatAge } from "@/lib/utils";
 
 const sanitizeInline = (html: string) => {
   if (!html) return "";
@@ -47,9 +48,9 @@ const RadiologyReportPDF = ({ data }: any) => {
             />
             <InfoRow
               leftLabel="Patient UHID"
-              leftValue={String(patient.id)}
+              leftValue={patient.uhid || "-"}
               rightLabel="Age"
-              rightValue={patient.age ?? "-"}
+              rightValue={patient.dob ? formatAge(patient.dob) : (patient.age ?? "-")}
             />
           </div>
         </div>

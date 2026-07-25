@@ -28,7 +28,7 @@ import { toast } from "sonner";
 type StockCorrectionFormValues = {
   drug?: PharmacyDrugType | null;
   itemName: string;
-  batchNo: number;
+  batchNo: string;
   expiryDate: Date;
   mrp: number;
   quantityInStock: number;
@@ -39,7 +39,7 @@ type StockCorrectionFormValues = {
 const getDefaultValues = (): StockCorrectionFormValues => ({
   drug: null,
   itemName: "",
-  batchNo: 0,
+  batchNo: "",
   expiryDate: new Date(),
   mrp: 0,
   quantityInStock: 0,
@@ -114,7 +114,7 @@ const StockCorrection = () => {
   const onSelectInventoryItem = (item: PharmacyInventoryItemType) => {
     setSelectedInventoryItem(item);
     form.setValue("itemName", item.drug.name, { shouldDirty: false });
-    form.setValue("batchNo", Number(item.batchNo || 0), { shouldDirty: false });
+    form.setValue("batchNo", item.batchNo || "", { shouldDirty: false });
     form.setValue("expiryDate", new Date(item.expiryDate), { shouldDirty: false });
     form.setValue("mrp", Number(item.mrp || 0), { shouldDirty: false });
     form.setValue("quantityInStock", Number(item.quantityInStock || 0), {
@@ -136,7 +136,7 @@ const StockCorrection = () => {
 
     await updateStock({
       inventoryItemId: effectiveSelectedInventoryItem.id,
-      batchNo: Number(values.batchNo || 0),
+      batchNo: values.batchNo,
       expiryDate: values.expiryDate,
       mrp: Number(values.mrp || 0),
       quantityInStock: Number(values.quantityInStock || 0),
@@ -245,7 +245,7 @@ const StockCorrection = () => {
                   />
                   <FormField<StockCorrectionFormValues>
                     label="Batch"
-                    type="number"
+                    type="text"
                     name="batchNo"
                     control={form.control}
                     readOnly={!canUpdate || !effectiveSelectedInventoryItem}
@@ -255,6 +255,8 @@ const StockCorrection = () => {
                     type="date"
                     name="expiryDate"
                     control={form.control}
+                    minDate={new Date()}
+                    allowFutureDates
                     disabled={!canUpdate || !effectiveSelectedInventoryItem}
                   />
                   <FormField<StockCorrectionFormValues>

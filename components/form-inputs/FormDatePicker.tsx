@@ -90,6 +90,9 @@ export function FormDatePicker<T extends FieldValues>({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
+                  captionLayout="dropdown"
+                  startMonth={minDate}
+                  endMonth={effectiveMaxDate}
                   selected={field.value}
                   onSelect={field.onChange}
                   initialFocus

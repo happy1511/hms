@@ -1808,6 +1808,7 @@ export const getCompletedOrdersWithResultsAPI = async (req: Request) => {
           patient: {
             select: {
               id: true,
+              uhid: true,
               firstName: true,
               lastName: true,
               dob: true,

@@ -4,7 +4,7 @@ import CustomerInfo from "@/components/invoice/CustomerInfo";
 import InvoiceTable from "@/components/invoice/InvoiceTable";
 import { formatAddress } from "@/lib/address";
 import { BillingSections, InvoiceGroupedBySection } from "@/lib/type";
-import { amount, cn } from "@/lib/utils";
+import { amount, cn, formatAge } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMemo } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
@@ -35,14 +35,7 @@ export const InvoicePrintDayWise = ({
   );
 
   const patient = data.opd?.patient || data.ipd?.patient;
-  const patientAge = patient?.dob
-    ? String(
-        Math.max(
-          0,
-          new Date().getFullYear() - new Date(patient.dob).getFullYear(),
-        ),
-      )
-    : "";
+  const patientAge = patient?.dob ? formatAge(patient.dob) : "";
   const patientGender = patient?.gender ? String(patient.gender) : "";
   const patientRelation = patient?.relations?.[0]
     ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
@@ -77,7 +70,7 @@ export const InvoicePrintDayWise = ({
           }}
           customer={{
             name: `${patient?.firstName} ${patient?.lastName}`,
-            uhid: String(patient?.id || ""),
+            uhid: patient?.uhid || "",
             age: patientAge,
             gender: patientGender,
             relation: patientRelation,

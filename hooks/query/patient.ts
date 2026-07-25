@@ -46,7 +46,7 @@ const getPatientDocuments = createRequest<
     search?: string;
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
-    uhid?: number;
+    uhid?: string;
     contactNo?: string;
     documentType?: string;
     opdId?: number;

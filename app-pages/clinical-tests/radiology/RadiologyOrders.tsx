@@ -421,7 +421,7 @@ const RadiologyOrders = ({
 
                 <div>
                   <span className="font-medium">Patient UHID:</span>{" "}
-                  {selectedPatientData.id}
+                  {selectedPatientData.uhid || "-"}
                 </div>
 
                 <div>

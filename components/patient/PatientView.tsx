@@ -79,7 +79,7 @@ export function PatientViewModal({
             title="Personal"
           >
             <div>Patient UHID</div>
-            <div>{data.id}</div>
+            <div>{data.uhid || "-"}</div>
 
             <div>Name</div>
             <div>

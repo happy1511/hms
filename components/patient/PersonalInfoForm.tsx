@@ -1,4 +1,6 @@
 import { PatientValidatorType } from "@/validators/api/masters/patient";
+import { startOfDay, subYears } from "date-fns";
+import { useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import FormField from "../form-inputs/FormField";
 import {
@@ -17,6 +19,46 @@ const PersonalInfoForm = ({
   form: UseFormReturn<PatientValidatorType>;
   goNext: () => void;
 }) => {
+  const isSettingDobFromAge = useRef(false);
+  const prevDob = useRef<Date | undefined>(undefined);
+  const dob = form.watch("dob") as unknown;
+  const ageYears = form.watch("ageYears") as unknown;
+  const parsedAgeYears =
+    typeof ageYears === "number" && Number.isFinite(ageYears) ? ageYears : null;
+  const isAgeValid = parsedAgeYears !== null && parsedAgeYears >= 0;
+
+  useEffect(() => {
+    if (!isAgeValid || parsedAgeYears === null) return;
+
+    isSettingDobFromAge.current = true;
+    form.setValue("dob", startOfDay(subYears(new Date(), parsedAgeYears)) as any);
+    setTimeout(() => {
+      isSettingDobFromAge.current = false;
+    }, 0);
+  }, [form, isAgeValid, parsedAgeYears]);
+
+  useEffect(() => {
+    const currentDob = (() => {
+      if (!dob) return undefined;
+      if (dob instanceof Date) return dob;
+      const date = new Date(dob as any);
+      return Number.isNaN(date.getTime()) ? undefined : date;
+    })();
+    const previousDob = prevDob.current;
+
+    if (
+      parsedAgeYears !== null &&
+      currentDob &&
+      previousDob &&
+      currentDob.getTime() !== previousDob.getTime() &&
+      !isSettingDobFromAge.current
+    ) {
+      form.setValue("ageYears", undefined);
+    }
+
+    prevDob.current = currentDob;
+  }, [dob, form, parsedAgeYears]);
+
   const next = async () => {
     const isValid = await form.trigger([
       "title",
@@ -81,6 +123,19 @@ const PersonalInfoForm = ({
         name="dob"
         type="date"
         required
+        disabled={isAgeValid}
+      />
+      <FormField
+        control={form.control}
+        label="Age (years)"
+        name="ageYears"
+        type="number"
+        rules={{
+          min: {
+            value: 0,
+            message: "Age must be greater than or equal to 0",
+          },
+        }}
       />
       <FormField
         control={form.control}

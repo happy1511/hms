@@ -7,7 +7,7 @@ import { CompanyDetailsType } from "@/generated/prisma/enums";
 
 interface SaleInvoiceLine {
   name: string;
-  batchNo: number;
+  batchNo: string;
   qty: number;
   quantityLabel?: string;
   rate: number;

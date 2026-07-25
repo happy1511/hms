@@ -81,7 +81,7 @@ const PatientDetailsPanel = ({
         </div>
         <div>
           <p className="text-muted-foreground font-medium">Patient UHID</p>
-          <p className="font-semibold text-primary">{patient.id}</p>
+          <p className="font-semibold text-primary">{patient.uhid || "-"}</p>
         </div>
         <div>
           <p className="text-muted-foreground font-medium">Gender</p>

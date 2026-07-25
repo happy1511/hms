@@ -59,6 +59,8 @@ type RowProps = {
 };
 
 const money = (value: number) => Number(value || 0).toFixed(2);
+const getDefaultExpiryDate = () =>
+  new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
 
 const getEmptyItem = (): GrnItemForm => ({
   category: undefined,
@@ -68,8 +70,8 @@ const getEmptyItem = (): GrnItemForm => ({
   },
   hsnSac: undefined,
   hsnSacId: 0,
-  batchNo: 0,
-  expiryDate: new Date(),
+  batchNo: "",
+  expiryDate: getDefaultExpiryDate(),
   manufacturingDate: new Date(),
   quantity: 1,
   freeQuantity: 0,
@@ -162,8 +164,8 @@ const getInitialValues = (
           hsnSac: item.hsnSac ?? undefined,
           category: item.category ?? undefined,
           hsnSacId: item.hsnSacId ?? item.hsnSac?.id ?? 0,
-          batchNo: 0,
-          expiryDate: new Date(),
+          batchNo: "",
+          expiryDate: getDefaultExpiryDate(),
           manufacturingDate: new Date(),
           quantity: item.quantity,
           freeQuantity: 0,
@@ -358,7 +360,7 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
 
       <td className="border-r border-black/20 px-1 py-1 min-w-20">
         <FormField<grnValidatorType>
-          type="number"
+          type="text"
           name={`${rowPath}.batchNo` as Path<grnValidatorType>}
           control={form.control}
           hideError
@@ -371,6 +373,8 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
           name={`${rowPath}.expiryDate` as Path<grnValidatorType>}
           control={form.control}
           placeholder="MMM YYYY"
+          minDate={getDefaultExpiryDate()}
+          allowFutureDates
           hideError
         />
       </td>

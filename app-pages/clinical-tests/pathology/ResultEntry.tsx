@@ -206,7 +206,7 @@ const ResultEntry = () => {
               {data.patient.firstName} {data.patient.lastName}
             </p>
             <p className="text-muted-foreground">
-              Patient UHID: {data.patient.id}
+              Patient UHID: {data.patient.uhid || "-"}
             </p>
             <p className="text-muted-foreground">
               {data.patient.gender} • DOB:{" "}

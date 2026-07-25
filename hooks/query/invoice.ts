@@ -45,7 +45,7 @@ const getInvoiceList = createRequest<
     limit: number;
     invoiceType?: "opd" | "ipd" | "daycare" | "discharged";
     invoiceId?: number;
-    uhid?: number;
+    uhid?: string;
     createdAt?: string | { from?: Date; to?: Date };
   }
 >(INVOICE_LIST, "GET");
