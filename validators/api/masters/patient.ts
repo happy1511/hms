@@ -85,7 +85,7 @@ const personalValidator = z.object({
   ageYears: z.preprocess(
     (value) => (value === "" || value === null ? undefined : value),
     z.coerce.number().int().min(0).optional(),
-  ),
+  ).optional(),
 });
 
 const patientValidator = personalValidator.extend({

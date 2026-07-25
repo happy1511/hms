@@ -34,6 +34,7 @@ const getInitialValues = (data?: PatientType): PatientValidatorType => ({
   isMlcPatient: data?.isMlcPatient ?? false,
   mlcInsuranceType: data?.mlcInsuranceType ?? null,
   mlcPolicyOrCardNumber: data?.mlcPolicyOrCardNumber ?? "",
+  ageYears: undefined,
   addresses: (data?.addresses as PatientAddressValidatorType[]) ?? [],
   contacts: data?.contacts ?? [],
   relations: data?.relations ?? [],
