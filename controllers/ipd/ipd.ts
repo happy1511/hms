@@ -15,6 +15,7 @@ import { hasUserPermission } from "@/lib/serverPermission";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { syncIpdLockedBillingItems } from "@/lib/ipdBilling";
+import { getPatientUhid } from "@/controllers/patient/patient";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   ipdBedUpdateValidator,
@@ -878,11 +879,14 @@ export const createAPI = async (req: Request, user: User) => {
             emergencyContacts,
             notes,
             mlcPolicyOrCardNumber,
+            ageYears,
             ...rest
           } = patient;
+          void ageYears;
           existingPatient = await tx.patient.create({
             data: {
               ...rest,
+              uhid: `PENDING_${crypto.randomUUID()}`,
               mlcInsuranceType: rest.mlcInsuranceType ?? null,
               mlcPolicyOrCardNumber: mlcPolicyOrCardNumber?.trim() ?? null,
               contacts: {
@@ -932,6 +936,15 @@ export const createAPI = async (req: Request, user: User) => {
               notes: {
                 create: notes,
               },
+            },
+          });
+          existingPatient = await tx.patient.update({
+            where: { id: existingPatient.id },
+            data: {
+              uhid: getPatientUhid(
+                existingPatient.id,
+                existingPatient.createdAt,
+              ),
             },
           });
         }

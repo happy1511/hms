@@ -12,7 +12,7 @@ import {
   patientValidator,
 } from "@/validators/api/masters/patient";
 
-const getPatientUhid = (id: number, createdAt: Date) => {
+export const getPatientUhid = (id: number, createdAt: Date) => {
   const day = String(createdAt.getDate()).padStart(2, "0");
   const month = String(createdAt.getMonth() + 1).padStart(2, "0");
   const year = String(createdAt.getFullYear()).slice(-2);
