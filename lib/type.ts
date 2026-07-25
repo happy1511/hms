@@ -1448,6 +1448,7 @@ export type OPDType = Prisma.OpdGetPayload<{
         lastName: true;
         firstName: true;
         middleName: true;
+        uhid: true;
         dob: true;
         maritalStatus: true;
         relations: true;
