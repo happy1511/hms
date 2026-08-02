@@ -12,6 +12,7 @@ import { DashboardType } from "@/lib/type";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
 import { paginationValidator } from "@/validators/api/common/pagination";
+import { fullName } from "@/lib/utils";
 import { addDays, differenceInCalendarDays, startOfDay } from "date-fns";
 
 const roundAmount = (value: number) => Number(value.toFixed(2));
@@ -31,7 +32,9 @@ const getPieceCount = ({
   itemsPerPack?: number | null;
 }) => {
   const packSize = Math.max(Number(itemsPerPack || 1), 1);
-  return Number(isLooseQuantity ? quantity || 0 : Number(quantity || 0) * packSize);
+  return Number(
+    isLooseQuantity ? quantity || 0 : Number(quantity || 0) * packSize,
+  );
 };
 
 const getInventoryValue = ({
@@ -50,7 +53,9 @@ const getInventoryValue = ({
 
 const getCreatedAtFilter = (query: Record<string, unknown>) => {
   const createdAtFrom =
-    query["createdAt[from]"] instanceof Date ? query["createdAt[from]"] : undefined;
+    query["createdAt[from]"] instanceof Date
+      ? query["createdAt[from]"]
+      : undefined;
   const createdAtTo =
     query["createdAt[to]"] instanceof Date ? query["createdAt[to]"] : undefined;
 
@@ -72,24 +77,44 @@ const sumAmounts = (values: number[]) =>
 
 const buildReferredByRows = (
   rows: Array<{
-    opd?: { referringDoctor?: { user?: { name?: string | null } | null } | null } | null;
-    ipd?: { referringDoctor?: { user?: { name?: string | null } | null } | null } | null;
+    opd?: {
+      referringDoctor?: {
+        firstName?: string | null;
+        middleName?: string | null;
+        lastName?: string | null;
+        title?: string | null;
+        user?: { name?: string | null } | null;
+      } | null;
+    } | null;
+    ipd?: {
+      referringDoctor?: {
+        firstName?: string | null;
+        middleName?: string | null;
+        lastName?: string | null;
+        title?: string | null;
+        user?: { name?: string | null } | null;
+      } | null;
+    } | null;
   }>,
 ) => {
   const counter = new Map<string, number>();
 
   rows.forEach((row) => {
-    const name =
-      row.opd?.referringDoctor?.user?.name ||
-      row.ipd?.referringDoctor?.user?.name ||
-      "Self / Direct";
+    const doctor = row.opd?.referringDoctor || row.ipd?.referringDoctor;
+    const name = doctor
+      ? doctor
+        ? fullName(doctor)
+        : "Self / Direct"
+      : "Self / Direct";
 
     counter.set(name, (counter.get(name) || 0) + 1);
   });
 
   return [...counter.entries()]
     .map(([name, totalOrders]) => ({ name, totalOrders }))
-    .sort((a, b) => b.totalOrders - a.totalOrders || a.name.localeCompare(b.name));
+    .sort(
+      (a, b) => b.totalOrders - a.totalOrders || a.name.localeCompare(b.name),
+    );
 };
 
 export const getAPI = async (req: Request) => {
@@ -97,7 +122,9 @@ export const getAPI = async (req: Request) => {
     querySchema: paginationValidator,
     req,
     onSuccess: async ({ query }) => {
-      const { createdAtFrom, createdAtFilter } = getCreatedAtFilter(query as Record<string, unknown>);
+      const { createdAtFrom, createdAtFilter } = getCreatedAtFilter(
+        query as Record<string, unknown>,
+      );
       const createdAtBeforeFilter = createdAtFrom
         ? {
             lt: createdAtFrom,
@@ -500,29 +527,13 @@ export const getAPI = async (req: Request) => {
               },
             },
             opd: {
-              select: {
-                referringDoctor: {
-                  select: {
-                    user: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
+              include: {
+                referringDoctor: true,
               },
             },
             ipd: {
-              select: {
-                referringDoctor: {
-                  select: {
-                    user: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
+              include: {
+                referringDoctor: true,
               },
             },
           },
@@ -551,29 +562,13 @@ export const getAPI = async (req: Request) => {
               },
             },
             opd: {
-              select: {
-                referringDoctor: {
-                  select: {
-                    user: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
+              include: {
+                referringDoctor: true,
               },
             },
             ipd: {
-              select: {
-                referringDoctor: {
-                  select: {
-                    user: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
+              include: {
+                referringDoctor: true,
               },
             },
           },
@@ -594,7 +589,9 @@ export const getAPI = async (req: Request) => {
         Number(ipdRefundsAgg._sum.amount || 0) +
           Number(dayCareRefundsAgg._sum.amount || 0),
       );
-      const totalClinicalCollections = roundAmount(opdCollections + ipdCollections);
+      const totalClinicalCollections = roundAmount(
+        opdCollections + ipdCollections,
+      );
       const otherIncome = roundAmount(Number(otherIncomeAgg._sum.amount || 0));
       const totalIncome = roundAmount(totalClinicalCollections + otherIncome);
       const expenses = roundAmount(Number(expenseAgg._sum.amount || 0));
@@ -612,10 +609,13 @@ export const getAPI = async (req: Request) => {
         otherIncomeAgg._sum?.amount,
         otherCashPaymentsAgg._sum?.amount,
       );
-      const cashAmount = cashPayments + Number(otherCashPaymentsAgg._sum?.amount || 0);
+      const cashAmount =
+        cashPayments + Number(otherCashPaymentsAgg._sum?.amount || 0);
       const digitalWalletAmount =
-        getSignedTotal(walletPaymentsAgg._sum?.amount, walletRefundsAgg._sum?.amount) +
-        otherNoCashIncome;
+        getSignedTotal(
+          walletPaymentsAgg._sum?.amount,
+          walletRefundsAgg._sum?.amount,
+        ) + otherNoCashIncome;
       const paymentModesTotal = roundAmount(cashAmount + digitalWalletAmount);
 
       const counterSales = pharmacySaleBills.reduce(
@@ -702,12 +702,16 @@ export const getAPI = async (req: Request) => {
           Number(priorPharmacyExpensesAgg._sum.amount || 0),
       );
 
-      const totalSales = roundAmount(counterSales.cashSales + counterSales.otherSales);
+      const totalSales = roundAmount(
+        counterSales.cashSales + counterSales.otherSales,
+      );
       const totalReturns = roundAmount(
         returnsSummary.cashReturns + returnsSummary.otherReturns,
       );
       const totalExpenses = roundAmount(cashExpenses + otherExpenses);
-      const periodBalance = roundAmount(totalSales - totalReturns - totalExpenses);
+      const periodBalance = roundAmount(
+        totalSales - totalReturns - totalExpenses,
+      );
       const cashBalance = roundAmount(
         counterSales.cashSales - returnsSummary.cashReturns - cashExpenses,
       );
@@ -718,7 +722,9 @@ export const getAPI = async (req: Request) => {
           category,
           amount: roundAmount(amount),
         }))
-        .sort((a, b) => b.amount - a.amount || a.category.localeCompare(b.category));
+        .sort(
+          (a, b) => b.amount - a.amount || a.category.localeCompare(b.category),
+        );
 
       const totalStockValue = sumAmounts(
         inventoryItems.map((item) =>
@@ -733,16 +739,23 @@ export const getAPI = async (req: Request) => {
       const nearExpiry = inventoryItems
         .filter(
           (item) =>
-            new Date(item.expiryDate) >= now && new Date(item.expiryDate) <= nearExpiryDate,
+            new Date(item.expiryDate) >= now &&
+            new Date(item.expiryDate) <= nearExpiryDate,
         )
         .map((item) => ({
           item: item.drug.name,
           batch: item.batchNo,
           stock: Number(item.quantityInStock || 0),
-          expiringInDays: differenceInCalendarDays(new Date(item.expiryDate), now),
+          expiringInDays: differenceInCalendarDays(
+            new Date(item.expiryDate),
+            now,
+          ),
           stockValue: getInventoryValue(item),
         }))
-        .sort((a, b) => a.expiringInDays - b.expiringInDays || b.stockValue - a.stockValue);
+        .sort(
+          (a, b) =>
+            a.expiringInDays - b.expiringInDays || b.stockValue - a.stockValue,
+        );
 
       const topPerformingItems = [...counterSales.topItemMap.entries()]
         .map(([item, qtySold]) => ({
@@ -753,7 +766,9 @@ export const getAPI = async (req: Request) => {
         .slice(0, 50);
 
       const purchaseTotal = sumAmounts(
-        purchaseOrders.map((purchaseOrder) => Number(purchaseOrder.grandTotal || 0)),
+        purchaseOrders.map((purchaseOrder) =>
+          Number(purchaseOrder.grandTotal || 0),
+        ),
       );
       const purchaseTotalFromGrn = sumAmounts(
         grns.map((grn) => Number(grn.grandTotal || 0)),
@@ -780,23 +795,31 @@ export const getAPI = async (req: Request) => {
           invoiceBillingItem: { total: number } | null;
           test: { name: string; price: number; section: string };
           opd?: {
-            referringDoctor?: { user?: { name?: string | null } | null } | null;
+            referringDoctor?: { firstName?: string | null } | null;
           } | null;
           ipd?: {
-            referringDoctor?: { user?: { name?: string | null } | null } | null;
+            referringDoctor?: { firstName?: string | null } | null;
           } | null;
         },
       >(
         orders: T[],
         getPending: (order: T) => boolean,
       ) => {
-        const testMap = new Map<string, { revenue: number; totalOrders: number }>();
-        const sectionMap = new Map<string, { revenue: number; totalOrders: number }>();
+        const testMap = new Map<
+          string,
+          { revenue: number; totalOrders: number }
+        >();
+        const sectionMap = new Map<
+          string,
+          { revenue: number; totalOrders: number }
+        >();
 
         const requisitions = orders.reduce(
           (acc, order) => {
             const active = !order.isCancelled && !order.isOutSourced;
-            const revenue = Number(order.invoiceBillingItem?.total ?? order.test.price ?? 0);
+            const revenue = Number(
+              order.invoiceBillingItem?.total ?? order.test.price ?? 0,
+            );
 
             const testCurrent = testMap.get(order.test.name) || {
               revenue: 0,
@@ -859,14 +882,18 @@ export const getAPI = async (req: Request) => {
               revenue: roundAmount(value.revenue),
               totalOrders: value.totalOrders,
             }))
-            .sort((a, b) => b.revenue - a.revenue || b.totalOrders - a.totalOrders),
+            .sort(
+              (a, b) => b.revenue - a.revenue || b.totalOrders - a.totalOrders,
+            ),
           sections: [...sectionMap.entries()]
             .map(([name, value]) => ({
               name,
               revenue: roundAmount(value.revenue),
               totalOrders: value.totalOrders,
             }))
-            .sort((a, b) => b.revenue - a.revenue || b.totalOrders - a.totalOrders),
+            .sort(
+              (a, b) => b.revenue - a.revenue || b.totalOrders - a.totalOrders,
+            ),
           referredBy: buildReferredByRows(orders),
         };
       };
@@ -876,7 +903,11 @@ export const getAPI = async (req: Request) => {
       });
 
       const radiology = buildLabSummary(radiologyOrders, (order) => {
-        return !order.resultEnteredAt && !order.verifiedAt && order.status !== RadiologyOrderStatus.COMPLETED;
+        return (
+          !order.resultEnteredAt &&
+          !order.verifiedAt &&
+          order.status !== RadiologyOrderStatus.COMPLETED
+        );
       });
 
       const data: DashboardType = {

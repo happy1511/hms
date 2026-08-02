@@ -10,7 +10,7 @@ const batchNoValidator = z
   .string()
   .trim()
   .min(1, "Batch is required")
-  .regex(/^[a-zA-Z0-9]+$/, "Batch must be alphanumeric");
+  .regex(/^[a-zA-Z0-9\-\/]+$/, "Batch must be alphanumeric");
 
 const futureExpiryDateValidator = z.coerce.date().refine((date) => date > today(), {
   message: "Expiry date must be in the future",

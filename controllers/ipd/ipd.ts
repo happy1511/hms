@@ -982,8 +982,8 @@ export const createAPI = async (req: Request, user: User) => {
                 careType: body.careType,
                 isDayCare: body.isDayCare ?? false,
                 remarks: body.remarks,
-                consultantDoctorId: body.consultantDoctor.userId,
-                referringDoctorId: body.referredDoctor?.userId,
+                consultantDoctorId: body.consultantDoctor.id,
+                referringDoctorId: body.referredDoctor?.id,
                 createdBy: user.id,
                 updatedBy: user.id,
                 ipdDateTime: createdAt,
@@ -1383,10 +1383,10 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
           });
         }
 
-        if (consultantDoctor?.userId) {
+        if (consultantDoctor?.id) {
           const exists = await tx.doctor.findUnique({
-            where: { userId: consultantDoctor.userId },
-            select: { userId: true },
+            where: { id: consultantDoctor.id },
+            select: { id: true },
           });
           if (!exists) {
             return apiResponse({
@@ -1396,10 +1396,10 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
           }
         }
 
-        if (referredDoctor?.userId) {
+        if (referredDoctor?.id) {
           const exists = await tx.doctor.findUnique({
-            where: { userId: referredDoctor.userId },
-            select: { userId: true },
+            where: { id: referredDoctor.id },
+            select: { id: true },
           });
           if (!exists) {
             return apiResponse({
@@ -1412,13 +1412,13 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
         const updated = await tx.ipd.update({
           where: { id: ipdId },
           data: {
-            ...(consultantDoctor?.userId
-              ? { consultantDoctorId: consultantDoctor.userId }
+            ...(consultantDoctor?.id
+              ? { consultantDoctorId: consultantDoctor.id }
               : {}),
             ...(referredDoctor === null
               ? { referringDoctorId: null }
-              : referredDoctor?.userId
-                ? { referringDoctorId: referredDoctor.userId }
+              : referredDoctor?.id
+                ? { referringDoctorId: referredDoctor.id }
                 : {}),
             updatedBy: user.id,
           },

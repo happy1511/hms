@@ -18,11 +18,15 @@ const toFiniteNumber = (value: unknown): number | null => {
 
 const isOutOfRange = (result: unknown, min: unknown, max: unknown) => {
   const resultNumber = toFiniteNumber(result);
+  if (resultNumber === null) return false;
+
   const minNumber = toFiniteNumber(min);
   const maxNumber = toFiniteNumber(max);
-  if (resultNumber === null || minNumber === null || maxNumber === null)
-    return false;
-  return resultNumber < minNumber || resultNumber > maxNumber;
+
+  if (minNumber !== null && resultNumber < minNumber) return true;
+  if (maxNumber !== null && resultNumber > maxNumber) return true;
+
+  return false;
 };
 
 const PathologyReportContent = ({
@@ -119,7 +123,7 @@ const PathologyReportContent = ({
                     <Cell
                       className={
                         isOutOfRange(param.result, param.min, param.max)
-                          ? "font-bold! border-t-0 border-x-0 border-b border-[#dedede]!"
+                          ? "font-extrabold! text-black dark:text-black border-t-0 border-x-0 border-b border-[#dedede]!"
                           : "font-normal border-t-0 border-x-0 border-b border-[#dedede]!"
                       }
                     >

@@ -15,7 +15,7 @@ import CustomButton from "../common/CustomButton";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/query/auth";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { formatAddress } from "@/lib/address";
 
 export interface DataViewField<T> {
@@ -83,9 +83,7 @@ export function PatientViewModal({
             <div>{data.uhid || "-"}</div>
 
             <div>Name</div>
-            <div>
-              {[data.firstName, data.middleName, data.lastName].join(" ")}
-            </div>
+            <div>{fullName(data)}</div>
 
             <div>DOB</div>
             <div>{format(data.dob, "MMM dd, yyyy")}</div>

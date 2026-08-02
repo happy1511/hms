@@ -50,6 +50,7 @@ const getServices = createRequest<
     createdAt?: string | { from?: Date; to?: Date };
     status?: string;
     doctorId?: number;
+    billingSectionId?: number;
     isInvoiceOnly?: boolean;
   }
 >(SERVICES, "GET");
@@ -110,7 +111,7 @@ export const useInfiniteServicesList = (
             isInvoiceOnly: filters.isInvoiceOnly,
           }),
           ...(filters.billingSectionId && {
-            billingSectionId: filters.billingSectionId,
+            billingSectionId: Number(filters.billingSectionId),
           }),
         },
       }),

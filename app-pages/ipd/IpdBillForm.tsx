@@ -20,6 +20,7 @@ import {
   BloodGroup,
   ContactType,
   DiscountType,
+  DoctorType,
   Gender,
   IdentityType,
   IpdArrival,
@@ -36,6 +37,7 @@ import {
 } from "@/generated/prisma/enums";
 import { useInfiniteBedsList } from "@/hooks/query/bed";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import QuickCreateDoctorModal from "@/components/doctor/QuickCreateDoctorModal";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useCreateIpd } from "@/hooks/query/ipd";
 import { useProfile } from "@/hooks/query/auth";
@@ -48,7 +50,11 @@ import {
   PatientType,
   ServiceDataType,
 } from "@/lib/type";
-import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
+import {
+  fullName,
+  getDiscountTypeOptions,
+  hasActionPermission,
+} from "@/lib/utils";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -164,7 +170,7 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
     },
 
     arrivalState: OpdArrival.ROUTINE,
-    consultantDoctor: { userId: null },
+    consultantDoctor: { id: null },
   };
 };
 
@@ -232,6 +238,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
     },
   });
 
+  const selectedBillingSection = billingItemForm.watch("billingSection");
+  const billingSectionId = selectedBillingSection?.id;
   const service = billingItemForm.watch("service");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
@@ -248,7 +256,11 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   );
 
   const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, status: Status["active"] },
+    {
+      name: serviceSearch,
+      status: Status["active"],
+      billingSectionId: billingSectionId ? String(billingSectionId) : undefined,
+    },
     20,
   );
 
@@ -1188,40 +1200,62 @@ const IpdBillForm = () => {
             }))}
             required
           />
-          <FormInfiniteSelect<
-            Doctor,
-            PaginatedResponse<Doctor>,
-            string,
-            ipdValidatorType
-          >
-            label="Consultant"
-            name="consultantDoctor"
-            control={form.control}
-            query={consultingDoctorQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.user?.name}
-            valueKey={(item) => String(item?.userId)}
-            search={consultantValue}
-            onSearchChange={setConsultantValue}
-            required
-          />
-          <FormInfiniteSelect<
-            Doctor,
-            PaginatedResponse<Doctor>,
-            string,
-            ipdValidatorType
-          >
-            label="Referred By"
-            name="referredDoctor"
-            control={form.control}
-            query={referringDoctorQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.user?.name}
-            valueKey={(item) => String(item?.userId)}
-            search={referringValue}
-            onSearchChange={setReferringValue}
-            required
-          />
+          <div className="flex items-end gap-1">
+            <div className="flex-1">
+              <FormInfiniteSelect<
+                Doctor,
+                PaginatedResponse<Doctor>,
+                string,
+                ipdValidatorType
+              >
+                label="Consultant"
+                name="consultantDoctor"
+                control={form.control}
+                query={consultingDoctorQuery}
+                getItems={(data) => data?.data}
+                labelKey={(item: Doctor) => fullName(item)}
+                valueKey={(item: Doctor) => String(item?.id)}
+                search={consultantValue}
+                onSearchChange={setConsultantValue}
+                required
+              />
+            </div>
+            <QuickCreateDoctorModal
+              doctorType={DoctorType.consulting}
+              onSuccess={(newDoc) => {
+                form.setValue("consultantDoctor", newDoc);
+                consultingDoctorQuery.refetch();
+              }}
+            />
+          </div>
+
+          <div className="flex items-end gap-1">
+            <div className="flex-1">
+              <FormInfiniteSelect<
+                Doctor,
+                PaginatedResponse<Doctor>,
+                string,
+                ipdValidatorType
+              >
+                label="Referred By"
+                name="referredDoctor"
+                control={form.control}
+                query={referringDoctorQuery}
+                getItems={(data) => data?.data}
+                labelKey={(item: Doctor) => fullName(item)}
+                valueKey={(item: Doctor) => String(item?.id)}
+                search={referringValue}
+                onSearchChange={setReferringValue}
+              />
+            </div>
+            <QuickCreateDoctorModal
+              doctorType={DoctorType.referring}
+              onSuccess={(newDoc) => {
+                form.setValue("referredDoctor", newDoc);
+                referringDoctorQuery.refetch();
+              }}
+            />
+          </div>
           <FormField<ipdValidatorType>
             label="Care Type"
             name="careType"

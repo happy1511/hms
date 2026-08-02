@@ -4,7 +4,7 @@ import CustomerInfo from "@/components/invoice/CustomerInfo";
 import InvoiceTable from "@/components/invoice/InvoiceTable";
 import { formatAddress } from "@/lib/address";
 import { BillingSections, InvoiceGroupedBySection } from "@/lib/type";
-import { amount, cn, formatAge } from "@/lib/utils";
+import { amount, cn, formatAge, fullName } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMemo } from "react";
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
@@ -41,14 +41,16 @@ export const InvoicePrintDayWise = ({
     ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
     : "";
   const opdOrIpdNumber = data.opd?.id || data.ipd?.id;
-  const consultantName =
-    data.opd?.consultantDoctor?.user?.name ||
-    data.ipd?.consultantDoctor?.user?.name ||
-    "";
-  const referredByName =
-    data.opd?.referringDoctor?.user?.name ||
-    data.ipd?.referringDoctor?.user?.name ||
-    "";
+  const consultantDoctor =
+    data.opd?.consultantDoctor || data.ipd?.consultantDoctor;
+  const consultantName = consultantDoctor
+    ? fullName(consultantDoctor)
+    : "";
+  const referringDoctor =
+    data.opd?.referringDoctor || data.ipd?.referringDoctor;
+  const referredByName = referringDoctor
+    ? fullName(referringDoctor)
+    : "";
 
   return (
     <div className="bg-white text-black overflow-auto">

@@ -11,6 +11,7 @@ const importOptionalText = z.string().optional().default("");
 const serviceValidator = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
+  billingSectionId: z.coerce.number().min(1, "Billing Section is required"),
   isInvoiceOnly: z.coerce.boolean().default(false),
   isEditableRate: z.coerce.boolean().default(false),
   type: z.enum(ServiceType),
@@ -34,6 +35,7 @@ const partialServiceValidator = serviceValidator.partial().extend({
 
 const serviceListValidator = paginationValidator.extend({
   isInvoiceOnly: z.coerce.boolean().optional(),
+  billingSectionId: z.coerce.number().optional(),
 });
 
 const serviceImportRowValidator = z.object({

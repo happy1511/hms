@@ -223,7 +223,7 @@ const Services = () => {
       },
       cell: ({ row }) => (
         <Link
-          href={canUpdate ? `/billing-sections/${row.original.id}` : "#"}
+          href={canUpdate ? `/services/${row.original.id}` : "#"}
           className="hover:underline"
         >
           {row.original.name || "-"}

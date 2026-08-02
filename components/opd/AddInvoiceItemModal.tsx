@@ -57,6 +57,8 @@ const AddInvoiceItemModal = ({
     resolver: zodResolver(addInvoiceBillItemValidator),
   });
 
+  const selectedBillingSection = billingItemForm.watch("billingSection");
+  const billingSectionId = selectedBillingSection?.id;
   const service = billingItemForm.watch("service");
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
@@ -69,7 +71,11 @@ const AddInvoiceItemModal = ({
   );
 
   const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, status: Status["active"] },
+    {
+      name: serviceSearch,
+      status: Status["active"],
+      billingSectionId: billingSectionId as string | undefined,
+    },
     20,
   );
 

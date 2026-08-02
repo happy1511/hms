@@ -307,12 +307,7 @@ const ServiceRow = ({
   const { control, watch, setValue, getValues } = form;
   const [reasonOpen, setReasonOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
-  const previousServiceIdRef = useRef<number | null>(null);
-  const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, status: Status.active },
-    20,
-  );
-
+  const previousServiceIdRef = useRef(0);
   const rowPath = `${fieldName}.${index}` as Path<updateInvoiceValidatorType>;
 
   const service = watch(
@@ -344,15 +339,29 @@ const ServiceRow = ({
     `${rowPath}.maxDiscount` as Path<updateInvoiceValidatorType>,
   );
   const isEditableRate = Boolean(
-    (watch(
-      `${rowPath}.service` as Path<updateInvoiceValidatorType>,
-    ) as billingItemValidatorType["service"])?.isEditableRate,
+    (
+      watch(
+        `${rowPath}.service` as Path<updateInvoiceValidatorType>,
+      ) as billingItemValidatorType["service"]
+    )?.isEditableRate,
   );
   const total = watch(`${rowPath}.total` as Path<updateInvoiceValidatorType>);
   const itemId = watch(`${rowPath}.itemId` as Path<updateInvoiceValidatorType>);
   const updateReason = watch(
     `${rowPath}.updateReason` as Path<updateInvoiceValidatorType>,
   );
+
+  const servicesQuery = useInfiniteServicesList(
+    {
+      name: serviceSearch,
+      status: Status.active,
+      billingSectionId: billingSection?.id
+        ? String(billingSection.id)
+        : undefined,
+    },
+    20,
+  );
+
   const isOtherCharges = Boolean(billingSection?.isOtherCharges);
   const flatServices = useMemo(
     () =>
@@ -387,7 +396,9 @@ const ServiceRow = ({
     if (!existingService) return;
     if (previousServiceIdRef.current === selectedServiceId) return;
 
-    previousServiceIdRef.current = selectedServiceId;
+    if (previousServiceIdRef.current !== selectedServiceId) {
+      previousServiceIdRef.current = selectedServiceId;
+    }
 
     const currentServiceId = initialItemsMap.get(Number(itemId))?.serviceId;
     const shouldResetRow = !itemId || currentServiceId !== selectedServiceId;
@@ -1110,11 +1121,11 @@ const InvoiceDetails = () => {
           total: item.total,
           discountType: item.discountType,
           discountValue: item.discountValue,
-            service: {
-              ...item.service,
-              maxDiscount: item.service.maxDiscount ?? 0,
-              isEditableRate: Boolean(item.service.isEditableRate),
-            },
+          service: {
+            ...item.service,
+            maxDiscount: item.service.maxDiscount ?? 0,
+            isEditableRate: Boolean(item.service.isEditableRate),
+          },
           manualServiceName: null,
           rate: item.rate,
           billingSection: {

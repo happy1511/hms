@@ -20,6 +20,7 @@ export const getAPI = async (req: Request) => {
       const search = query.search ?? "";
       const status = query.status ?? "";
       const doctorId = query.doctorId;
+      const billingSectionId = query.billingSectionId;
       const isInvoiceOnly =
         typeof query.isInvoiceOnly === "boolean" ? query.isInvoiceOnly : false;
       const createdAtFrom = query["createdAt[from]"] ?? "";
@@ -43,6 +44,10 @@ export const getAPI = async (req: Request) => {
         and.push({ consultingDoctorId: { equals: doctorId } });
       }
 
+      if (billingSectionId) {
+        and.push({ billingSectionId: { equals: billingSectionId } });
+      }
+
       if (createdAtFrom || createdAtTo) {
         and.push({
           createdAt: {
@@ -64,6 +69,10 @@ export const getAPI = async (req: Request) => {
             id: true,
             name: true,
             description: true,
+            billingSectionId: true,
+            billingSection: {
+              select: { id: true, name: true },
+            },
             status: true,
             isInvoiceOnly: true,
             isEditableRate: true,
@@ -117,6 +126,8 @@ export const getDetailsAPI = async (
           id: true,
           name: true,
           description: true,
+          billingSectionId: true,
+          billingSection: { select: { id: true, name: true } },
           status: true,
           isInvoiceOnly: true,
           isEditableRate: true,
@@ -195,6 +206,7 @@ export const createAPI = async (req: Request, user: User) => {
         const {
           name,
           description,
+          billingSectionId,
           status,
           maxDiscount,
           price,
@@ -245,6 +257,7 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             name,
             description,
+            billingSectionId,
             isInvoiceOnly: Boolean(isInvoiceOnly),
             isEditableRate: Boolean(isEditableRate),
             status,
@@ -306,6 +319,7 @@ export const updateAPI = async (
         const {
           name,
           description,
+          billingSectionId,
           status,
           isInvoiceOnly,
           isEditableRate,
@@ -357,6 +371,7 @@ export const updateAPI = async (
           data: {
             name,
             description,
+            billingSectionId,
             isInvoiceOnly,
             isEditableRate,
             status,

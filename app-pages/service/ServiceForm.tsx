@@ -6,7 +6,7 @@ import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Form } from "@/components/ui/form";
-import { RadiologyTest } from "@/generated/prisma/client";
+import { BillingSection, RadiologyTest } from "@/generated/prisma/client";
 import {
   ActionType,
   ModuleType,
@@ -14,6 +14,7 @@ import {
   ServiceType,
   Status,
 } from "@/generated/prisma/enums";
+import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfinitePathologyTestsList } from "@/hooks/query/pathology";
 import { useInfiniteRadiologyTestsList } from "@/hooks/query/radiology";
@@ -41,6 +42,8 @@ import { useForm } from "react-hook-form";
 const getInitialValues = (data?: ServiceDataType): ServiceValidatorType => ({
   name: data?.name ?? "",
   description: data?.description ?? "",
+  billingSectionId:
+    (data as any)?.billingSectionId ?? (data as any)?.billingSection?.id ?? 0,
   type: data?.type ?? ServiceType["LAB_TEST"],
   status: data?.status ?? Status["active"],
   isEditableRate: data?.isEditableRate ?? false,
@@ -54,6 +57,7 @@ const getInitialValues = (data?: ServiceDataType): ServiceValidatorType => ({
 });
 
 const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
+  const [billingSectionSearch, setBillingSectionSearch] = useState("");
   const [pathologySearchValue, setPathologySearchValue] = useState("");
   const [radiologySearchValue, setRadiologySearchValue] = useState("");
   const { mutateAsync: create, isPending: creating } = useCreateService();
@@ -65,6 +69,11 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     defaultValues,
     resolver: zodResolver(serviceValidator),
   });
+
+  const billingSectionQuery = useInfiniteBillingSectionsList(
+    { name: billingSectionSearch, status: Status["active"] },
+    20,
+  );
 
   const discountAvailable = form.watch("discountAvailable");
   const type = form.watch("type");
@@ -104,6 +113,25 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             name="name"
             control={form.control}
             required
+          />
+
+          <FormInfiniteSelect<
+            BillingSection,
+            PaginatedResponse<BillingSection>,
+            string,
+            ServiceValidatorType
+          >
+            label="Billing Section"
+            control={form.control}
+            name="billingSectionId"
+            placeholder="Select Billing Section"
+            required
+            query={billingSectionQuery}
+            search={billingSectionSearch}
+            getItems={(data) => data?.data}
+            onSearchChange={setBillingSectionSearch}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) => i?.name}
           />
 
           <FormField<ServiceValidatorType>

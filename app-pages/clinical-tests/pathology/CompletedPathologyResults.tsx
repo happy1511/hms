@@ -166,7 +166,9 @@ const CompletedPathologyResults = ({
                         </td>
                         <td
                           className={`px-4 py-2 text-center font-semibold ${
-                            isOutOfRangeValue ? "text-red-600" : "text-gray-800"
+                            isOutOfRangeValue
+                              ? "font-extrabold text-red-600"
+                              : "text-gray-800"
                           }`}
                         >
                           {displayValue}

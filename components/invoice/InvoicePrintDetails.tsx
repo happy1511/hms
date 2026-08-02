@@ -2,7 +2,7 @@
 
 import { formatAddress } from "@/lib/address";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
-import { amount, cn, formatAge, lineNet } from "@/lib/utils";
+import { amount, cn, formatAge, fullName, lineNet } from "@/lib/utils";
 import CustomerInfo from "./CustomerInfo";
 import InvoiceTable from "./InvoiceTable";
 import { InvoiceGroupedBySection, InvoiceItem } from "@/lib/type";
@@ -32,14 +32,12 @@ const InvoicePrintDetails = ({
   const patientRelation = patient?.relations?.[0]
     ? `${String(patient.relations[0].type).replaceAll("_", " ")} ${patient.relations[0].name}`
     : "";
-  const consultantName =
-    data.opd?.consultantDoctor?.user?.name ||
-    data.ipd?.consultantDoctor?.user?.name ||
-    "";
-  const referredByName =
-    data.opd?.referringDoctor?.user?.name ||
-    data.ipd?.referringDoctor?.user?.name ||
-    "";
+  const consultantDoctor =
+    data.opd?.consultantDoctor || data.ipd?.consultantDoctor;
+  const consultantName = consultantDoctor ? fullName(consultantDoctor) : "";
+  const referringDoctor =
+    data.opd?.referringDoctor || data.ipd?.referringDoctor;
+  const referredByName = referringDoctor ? fullName(referringDoctor) : "";
   const opdOrIpdNumber = data.opd?.id || data.ipd?.id;
 
   const sectionsWithTotals = data.sections.map((section, idx) => {

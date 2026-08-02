@@ -29,7 +29,7 @@ import {
   PathologyOrderByPatientsType,
   PathologyOrderType,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -305,7 +305,7 @@ const PathologyOrders = ({
       },
       cell: ({ row }) => (
         <button onClick={() => setSelectedPatient(row.original.id)}>
-          {[row.original.firstName, row.original.lastName].join(" ")}
+          {fullName(row.original)}
         </button>
       ),
       headerClassName: "min-w-15 max-w-20",
@@ -343,7 +343,10 @@ const PathologyOrders = ({
           <SortableHeader<PathologyOrderType> label="Doctor" column={column} />
         );
       },
-      cell: ({ row }) => row.original.opd?.consultantDoctor.user.name || "-",
+      cell: ({ row }) =>
+        row.original.opd?.consultantDoctor
+          ? fullName(row.original.opd?.consultantDoctor)
+          : "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

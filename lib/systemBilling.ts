@@ -61,11 +61,16 @@ export const upsertConsultingDoctorService = async (
   },
 ) => {
   const serviceName = `consultation charges of ${doctorName}`;
+  const section = await upsertSystemBillingSection(tx, {
+    key: SYSTEM_BILLING_SECTION_KEYS.CONSULTATION_CHARGES,
+    actingUserId,
+  });
 
   return tx.service.upsert({
     where: { consultingDoctorId: doctorId },
     create: {
       consultingDoctorId: doctorId,
+      billingSectionId: section.id,
       name: serviceName,
       description: serviceName,
       type: ServiceType.OTHER,
@@ -79,6 +84,7 @@ export const upsertConsultingDoctorService = async (
     },
     update: {
       isDeleted: false,
+      billingSectionId: section.id,
       name: serviceName,
       description: serviceName,
       type: ServiceType.OTHER,
@@ -103,11 +109,13 @@ export const ensureConsultingDoctorService = async (
   },
 ) => {
   const doctor = await tx.doctor.findUnique({
-    where: { userId: doctorId },
+    where: { id: doctorId },
     select: {
-      userId: true,
+      id: true,
+      firstName: true,
+      lastName: true,
+      title: true,
       consultationCharges: true,
-      user: { select: { name: true } },
     },
   });
 
@@ -115,9 +123,13 @@ export const ensureConsultingDoctorService = async (
     throw new Error("Consulting doctor not found");
   }
 
+  const doctorName = [doctor.title, doctor.firstName, doctor.lastName]
+    .filter(Boolean)
+    .join(" ");
+
   return upsertConsultingDoctorService(tx, {
     doctorId,
-    doctorName: doctor.user.name ?? `Doctor ${doctorId}`,
+    doctorName: doctorName || `Doctor ${doctorId}`,
     consultationCharges: Number(doctor.consultationCharges ?? 0),
     actingUserId,
   });

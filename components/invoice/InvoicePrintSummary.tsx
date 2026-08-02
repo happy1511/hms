@@ -4,7 +4,7 @@ import InvoicePaymentHistory from "./InvoicePaymentHistory";
 import InvoicePaymentSummary from "./InvoicePaymentSummary";
 import { formatAddress } from "@/lib/address";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
-import { amount, cn, formatAge } from "@/lib/utils";
+import { amount, cn, formatAge, fullName } from "@/lib/utils";
 import { InvoiceGroupedBySection, sectionsWithTotals } from "@/lib/type";
 import { format } from "date-fns";
 import CustomerInfo from "./CustomerInfo";
@@ -71,13 +71,17 @@ const InvoicePrintSummary = ({ data, layoutClassName = "" }: Props) => {
         ? String(data.ipd.id)
         : "",
     consultant:
-      data.opd?.consultantDoctor?.user?.name ||
-      data.ipd?.consultantDoctor?.user?.name ||
-      "",
+      data.opd?.consultantDoctor || data.ipd?.consultantDoctor
+        ? fullName(
+            (data.opd?.consultantDoctor || data.ipd?.consultantDoctor)!,
+          )
+        : "",
     referredBy:
-      data.opd?.referringDoctor?.user?.name ||
-      data.ipd?.referringDoctor?.user?.name ||
-      "",
+      data.opd?.referringDoctor || data.ipd?.referringDoctor
+        ? fullName(
+            (data.opd?.referringDoctor || data.ipd?.referringDoctor)!,
+          )
+        : "",
     status: data.isPaid ? "Paid" : "Pending",
   };
 

@@ -11,6 +11,7 @@ import { LoaderIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { Button } from "../ui/button";
+import { fullName } from "@/lib/utils";
 
 interface Props {
   billId: number;
@@ -19,7 +20,12 @@ interface Props {
   trigger?: React.ReactNode;
 }
 
-const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) => {
+const ViewSaleInvoiceModal = ({
+  billId,
+  open,
+  onOpenChange,
+  trigger,
+}: Props) => {
   const router = useRouter();
   const [includePaymentHistory, setIncludePaymentHistory] = useState(false);
   const [includeRemarks, setIncludeRemarks] = useState(false);
@@ -33,10 +39,8 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
       billDate: format(new Date(data.invoice.createdAt), "dd/MM/yy hh:mm a"),
       patientName:
         data.customer?.name ??
-        (data.patient
-          ? `${data.patient.firstName} ${data.patient.lastName}`
-          : "Walk-in Customer"),
-      doctorName: data.doctor?.user?.name ?? undefined,
+        (data.patient ? fullName(data.patient) : "Walk-in Customer"),
+      doctorName: data.doctor ? fullName(data.doctor) : undefined,
       lines: data.saleItems.map((item) => ({
         name: item.inventoryItem.drug.name,
         batchNo: item.inventoryItem.batchNo,
@@ -70,7 +74,10 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="outline" className="h-auto shadow-none p-1 cursor-pointer">
+          <Button
+            variant="outline"
+            className="h-auto shadow-none p-1 cursor-pointer"
+          >
             <PlusIcon className="size-2.5 text-destructive" />
           </Button>
         )}
@@ -131,13 +138,17 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
           </CustomButton>
           <CustomButton
             type="button"
-            onClick={() => window.open(`/pharmacy/sale-transactions/${billId}`, "_blank")}
+            onClick={() =>
+              window.open(`/pharmacy/sale-transactions/${billId}`, "_blank")
+            }
           >
             Print Payment Receipt
           </CustomButton>
           <CustomButton
             type="button"
-            onClick={() => window.open(`/pharmacy/sale-invoice/${billId}`, "_blank")}
+            onClick={() =>
+              window.open(`/pharmacy/sale-invoice/${billId}`, "_blank")
+            }
           >
             Print Detailed Invoice
           </CustomButton>

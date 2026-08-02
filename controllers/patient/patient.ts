@@ -16,7 +16,7 @@ export const getPatientUhid = (id: number, createdAt: Date) => {
   const day = String(createdAt.getDate()).padStart(2, "0");
   const month = String(createdAt.getMonth() + 1).padStart(2, "0");
   const year = String(createdAt.getFullYear()).slice(-2);
-  return `UHID_${id}${day}${month}${year}`;
+  return `MGH_${id}${day}${month}${year}`;
 };
 
 export const getAPI = async (req: Request) => {

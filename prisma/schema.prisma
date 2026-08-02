@@ -571,7 +571,6 @@ model User {
   createdBy      Int?
   updatedBy      Int?
   deletedBy      Int?
-  doctor         Doctor?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -724,8 +723,13 @@ model User {
 }
 
 model Doctor {
-  userId                   Int        @id
-  user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                       Int        @id @default(autoincrement())
+  title                    String?
+  firstName                String
+  middleName               String?
+  lastName                 String?
+  gender                   Gender?
+  userType                 String?
   licenseNumber            String?    @unique
   specialization           String?
   qualifications           String?
@@ -739,9 +743,14 @@ model Doctor {
   emergencyContact         String?
   consultationStartingTime String?
   consultationEndingTime   String?
+  status                   Status     @default(active)
+  isDeleted                Boolean    @default(false)
   createdBy                Int?
   updatedBy                Int?
   deletedBy                Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdByUser User? @relation("DoctorCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User? @relation("DoctorUpdatedBy", fields: [updatedBy], references: [id])
@@ -758,13 +767,13 @@ model Doctor {
 
   @@index([createdBy])
   @@index([updatedBy])
-  @@index([userId])
+  @@index([isDeleted])
 }
 
 model DoctorAvailableDay {
   id       Int    @id @default(autoincrement())
   doctorId Int
-  doctor   Doctor @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   day      Days
 
   @@unique([doctorId, day])
@@ -1005,7 +1014,7 @@ model Appointment {
   patientId       Int
   patient         Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctorId        Int
-  doctor          Doctor            @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  doctor          Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   appointmentDate DateTime
   remarks         String?
   type            AppointmentType
@@ -1194,8 +1203,8 @@ model ReferenceRange {
   applicableGender ReferenceRangeSex
   lowerAgeInDays   Int?
   upperAgeInDays   Int?
-  lowerRange       Int?
-  upperRange       Int?
+  lowerRange       Float?
+  upperRange       Float?
   unit             String?
   isDeleted        Boolean           @default(false)
   createdBy        Int?
@@ -1452,12 +1461,15 @@ model BillingSection {
   deletedByUser          User?                   @relation("BillingSectionDeletedBy", fields: [deletedBy], references: [id])
   invoiceBillingSections InvoiceBillingSection[]
   invoiceBillingItems    InvoiceBillingItem[]
+  services               Service[]
 }
 
 model Service {
   id                Int                    @id @default(autoincrement())
   name              String
   description       String?
+  billingSectionId  Int
+  billingSection    BillingSection         @relation(fields: [billingSectionId], references: [id])
   isInvoiceOnly     Boolean                @default(false)
   isEditableRate    Boolean                @default(false)
   type              ServiceType
@@ -1480,7 +1492,7 @@ model Service {
   deletedByUser       User?                @relation("ServiceDeletedBy", fields: [deletedBy], references: [id])
   invoiceBillingItems InvoiceBillingItem[]
   consultingDoctorId  Int?                 @unique
-  consultingDoctor    Doctor?              @relation("ConsultingDoctorService", fields: [consultingDoctorId], references: [userId])
+  consultingDoctor    Doctor?              @relation("ConsultingDoctorService", fields: [consultingDoctorId], references: [id])
   roomId              Int?                 @unique
   room                Room?                @relation("RoomChargeService", fields: [roomId], references: [id])
 }
@@ -1753,8 +1765,8 @@ model Opd {
   createdByUser         User?                   @relation("OpdCreatedBy", fields: [createdBy], references: [id])
   updatedByUser         User?                   @relation("OpdUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser         User?                   @relation("OpdDeletedBy", fields: [deletedBy], references: [id])
-  consultantDoctor      Doctor                  @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
-  referringDoctor       Doctor?                 @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
+  consultantDoctor      Doctor                  @relation("ConsultantDoctorOpds", fields: [consultantDoctorId], references: [id], onDelete: Cascade)
+  referringDoctor       Doctor?                 @relation("ReferringDoctorOpds", fields: [referringDoctorId], references: [id], onDelete: Cascade)
   patient               Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
   invoice               Invoice                 @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   consultation          OpdConsultation?
@@ -1814,8 +1826,8 @@ model Ipd {
   mlcDeclaredByUser   User?                @relation("IpdMlcDeclaredBy", fields: [mlcDeclaredById], references: [id])
   bed                 Bed                  @relation("BedToIpd", fields: [bedId], references: [id], onDelete: Cascade)
   currentBedLink      Bed?                 @relation("CurrentIpd")
-  consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [userId], onDelete: Cascade)
-  referringDoctor     Doctor?              @relation("ReferringDoctorIpds", fields: [referringDoctorId], references: [userId], onDelete: Cascade)
+  consultantDoctor    Doctor               @relation("ConsultantDoctorIpds", fields: [consultantDoctorId], references: [id], onDelete: Cascade)
+  referringDoctor     Doctor?              @relation("ReferringDoctorIpds", fields: [referringDoctorId], references: [id], onDelete: Cascade)
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
   invoice             Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   dischargeSummary    IpdDischargeSummary?
@@ -1984,7 +1996,7 @@ model DrugBill {
   invoice       Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   patient       Patient?          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   customer      PharmacyCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  doctor        Doctor?           @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  doctor        Doctor?           @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   createdByUser User?             @relation("DrugBillCreatedBy", fields: [createdBy], references: [id])
   updatedByUser User?             @relation("DrugBillUpdatedBy", fields: [updatedBy], references: [id])
   deletedByUser User?             @relation("DrugBillDeletedBy", fields: [deletedBy], references: [id])

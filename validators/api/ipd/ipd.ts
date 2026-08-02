@@ -57,8 +57,8 @@ const ipdBaseValidator = z.object({
   room: z.object({ id: z.coerce.number() }).optional(),
   roomType: z.object({ id: z.coerce.number() }).optional(),
   department: z.object({ id: z.coerce.number() }).optional(),
-  consultantDoctor: z.object({ userId: z.coerce.number() }),
-  referredDoctor: z.object({ userId: z.coerce.number() }).optional(),
+  consultantDoctor: z.object({ id: z.coerce.number() }),
+  referredDoctor: z.object({ id: z.coerce.number() }).optional(),
   invoice: invoiceValidator,
 });
 
@@ -72,9 +72,9 @@ const partialIpdValidator = ipdBaseValidator.partial().extend({
 const ipdDoctorUpdateValidator = z
   .object({
     ipdId: z.coerce.number(),
-    consultantDoctor: z.object({ userId: z.coerce.number() }).optional(),
+    consultantDoctor: z.object({ id: z.coerce.number() }).optional(),
     referredDoctor: z
-      .object({ userId: z.coerce.number() })
+      .object({ id: z.coerce.number() })
       .optional()
       .nullable(),
   })
@@ -150,7 +150,9 @@ type ipdBillingTypeUpdateValidatorType = z.input<
   typeof ipdBillingTypeUpdateValidator
 >;
 type ipdBedUpdateValidatorType = z.input<typeof ipdBedUpdateValidator>;
-type ipdDateTimeUpdateValidatorType = z.input<typeof ipdDateTimeUpdateValidator>;
+type ipdDateTimeUpdateValidatorType = z.input<
+  typeof ipdDateTimeUpdateValidator
+>;
 type ipdMlcDeclareValidatorType = z.input<typeof ipdMlcDeclareValidator>;
 type ipdDischargeDrugValidatorType = z.input<typeof ipdDischargeDrugValidator>;
 type ipdDischargeSummaryValidatorType = z.input<

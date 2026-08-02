@@ -169,3 +169,14 @@ export const filterSections = (
         }),
       }
     : data;
+
+//make full name with optional fields middleName and title
+export const fullName = (user: {
+  title?: string | null;
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+}) =>
+  [user?.title, user?.firstName, user?.middleName, user?.lastName]
+    .filter(Boolean)
+    .join(" ");

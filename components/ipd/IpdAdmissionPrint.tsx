@@ -6,7 +6,7 @@ import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import { AddressType, ContactType } from "@/generated/prisma/enums";
 import { formatAddress } from "@/lib/address";
 import { IPDType } from "@/lib/type";
-import { cn, formatAge } from "@/lib/utils";
+import { cn, formatAge, fullName } from "@/lib/utils";
 import { useMemo, useState } from "react";
 
 const EN_DECLARATION_TEMPLATE = `I want to get my relative {{PATIENT_NAME}} admitted to MANASA GLOBAL HOSPITAL for treatment as per my wish. I have been fully informed about the possible risks involved in the related treatment and have strictly followed the rules of the hospital during admission. I have also been informed that :-
@@ -79,8 +79,8 @@ const IpdAdmissionPrint = ({
   const [fontSize, setFontSize] = useState(10);
 
   const patientName = useMemo(() => {
-    const p: any = data.patient;
-    return [p?.firstName, p?.lastName].filter(Boolean).join(" ");
+    const p = data.patient;
+    return p ? fullName(p) : "";
   }, [data]);
 
   const patientUhid = (data.patient as any)?.id;

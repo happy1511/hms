@@ -24,7 +24,7 @@ import {
   FilterConfig,
   FilterValues,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -96,19 +96,20 @@ const Actions = ({
 }) => {
   const { mutateAsync: deleteDoctor, isPending: deletePending } =
     useDeleteDoctor();
+  const doctorId = data.id;
+  const doctorName = fullName(data);
 
   return (
     <>
       {canView && (
         <DataViewModal<Doctor>
-          data={data}
+          data={{ ...data, firstName: doctorName }}
           title="Doctor Details"
           fields={[
-            { key: "userId", label: "UserId" },
-            { key: "loginId", label: "LoginId" },
-            { key: "password", label: "Password" },
-            { key: "name", label: "Name" },
+            { key: "id", label: "Doctor ID" },
+            { key: "firstName", label: "Name" },
             { key: "licenseNumber", label: "License Number" },
+            { key: "doctorType", label: "Doctor Type" },
             { key: "status", label: "Status" },
             { key: "createdAt", label: "Created At" },
             { key: "updatedAt", label: "Updated At" },
@@ -118,7 +119,7 @@ const Actions = ({
       {canEdit && (
         <Link
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 has-[>svg]:px-3 h-auto shadow-none p-1 cursor-pointer"
-          href={`/doctors/${data.userId}`}
+          href={`/doctors/${doctorId}`}
         >
           <Edit2 className="size-2.5" />
         </Link>
@@ -137,7 +138,7 @@ const Actions = ({
           description="Are you sure you want to delete doctor?"
           cancelText="Cancel"
           confirmText="Delete"
-          handleConfirm={() => deleteDoctor({ userId: Number(data.userId) })}
+          handleConfirm={() => deleteDoctor({ doctorId: Number(doctorId) })}
           pending={deletePending}
         />
       )}
@@ -151,11 +152,8 @@ const Doctors = () => {
   const [filters, setFilters] = useState<FilterValues>({});
 
   const { data: profile } = useProfile(false);
-  const { data, isLoading, isFetching, refetch, isError, error } = useDoctorsList(
-    filters,
-    page,
-    limit,
-  );
+  const { data, isLoading, isFetching, refetch, isError, error } =
+    useDoctorsList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -197,14 +195,18 @@ const Doctors = () => {
       header: ({ column }) => {
         return <SortableHeader<Doctor> label="Doctor Name" column={column} />;
       },
-      cell: ({ row }) => (
-        <Link
-          href={canUpdate ? `/doctors/${row.original.userId}` : "#"}
-          className="hover:underline"
-        >
-          {row.original.user.name || "-"}
-        </Link>
-      ),
+      cell: ({ row }) => {
+        const doctorId = row.original.id;
+        const name = fullName(row.original);
+        return (
+          <Link
+            href={canUpdate ? `/doctors/${doctorId}` : "#"}
+            className="hover:underline"
+          >
+            {name}
+          </Link>
+        );
+      },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -215,14 +217,17 @@ const Doctors = () => {
           <SortableHeader<Doctor> label="License Number" column={column} />
         );
       },
-      cell: ({ row }) => (
-        <Link
-          href={canUpdate ? `/doctors/${row.original.userId}` : "#"}
-          className="hover:underline"
-        >
-          {row.original.licenseNumber || "-"}
-        </Link>
-      ),
+      cell: ({ row }) => {
+        const doctorId = row.original.id;
+        return (
+          <Link
+            href={canUpdate ? `/doctors/${doctorId}` : "#"}
+            className="hover:underline"
+          >
+            {row.original.licenseNumber || "-"}
+          </Link>
+        );
+      },
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -242,7 +247,7 @@ const Doctors = () => {
       header: () => {
         return <button className="flex">Status</button>;
       },
-      cell: ({ row }) => <StatusBadge status={row.original.user.status} />,
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
       headerClassName: "min-w-20 max-w-30",
       cellClassName: "min-w-20 max-w-30",
     },
@@ -252,10 +257,10 @@ const Doctors = () => {
         return <SortableHeader<Doctor> label="Created at" column={column} />;
       },
       cell: ({ row }) => {
+        const createdDate = row.original.createdAt;
         return (
           <div className="flex">
-            {row.original.user.createdAt &&
-              format(row.original.user.createdAt, "MMM dd, yyyy")}
+            {createdDate && format(new Date(createdDate), "MMM dd, yyyy")}
           </div>
         );
       },
@@ -268,10 +273,10 @@ const Doctors = () => {
         return <SortableHeader<Doctor> label="Updated at" column={column} />;
       },
       cell: ({ row }) => {
+        const updatedDate = row.original.updatedAt;
         return (
           <div className="flex">
-            {row.original.user.updatedAt &&
-              format(row.original.user.updatedAt, "MMM dd, yyyy")}
+            {updatedDate && format(new Date(updatedDate), "MMM dd, yyyy")}
           </div>
         );
       },
@@ -327,7 +332,7 @@ const Doctors = () => {
             handleChangeLimit={setLimit}
             isError={isError}
             error={error}
-            getRowId={(data) => String(data.userId)}
+            getRowId={(data: Doctor) => String(data.id)}
           />
         </>
       )}

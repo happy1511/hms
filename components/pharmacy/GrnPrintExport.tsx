@@ -1,5 +1,6 @@
 "use client";
 
+import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { PharmacyGrnType } from "@/lib/type";
 import { cn } from "@/lib/utils";
@@ -190,6 +191,7 @@ const GrnPrintExport = ({
       >
         <div className="mx-auto bg-white p-4 print:p-2 print:w-[190mm] print:max-w-[190mm] print:overflow-hidden">
           <div>
+            <CompanyPrintHeader className="mb-2" />
             <div className="bg-[#efefef] px-3 py-1 text-center font-semibold">
               {title} - GRN NO: {props.grnNumber}
             </div>

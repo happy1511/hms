@@ -30,8 +30,10 @@ import {
   PaymentMode,
   RelationshipType,
   Status,
+  DoctorType,
 } from "@/generated/prisma/enums";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import QuickCreateDoctorModal from "@/components/doctor/QuickCreateDoctorModal";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useCreateOpd } from "@/hooks/query/opd";
 import { useProfile } from "@/hooks/query/auth";
@@ -48,7 +50,11 @@ import {
   ServiceDataType,
 } from "@/lib/type";
 import { SYSTEM_BILLING_SECTION_NAMES } from "@/lib/systemBillingConstants";
-import { getDiscountTypeOptions, hasActionPermission } from "@/lib/utils";
+import {
+  fullName,
+  getDiscountTypeOptions,
+  hasActionPermission,
+} from "@/lib/utils";
 import {
   billingItemValidator,
   billingItemValidatorType,
@@ -156,7 +162,7 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
     },
 
     arrivalState: OpdArrival.ROUTINE,
-    consultantDoctor: { userId: null },
+    consultantDoctor: { id: null },
   };
 };
 
@@ -246,14 +252,20 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     20,
   );
 
+  const selectedBillingSection = billingItemForm.watch("billingSection");
+  const billingSectionId = selectedBillingSection?.id;
   const servicesQuery = useInfiniteServicesList(
-    { name: serviceSearch, status: Status["active"] },
+    {
+      name: serviceSearch,
+      status: Status["active"],
+      billingSectionId: billingSectionId ? String(billingSectionId) : undefined,
+    },
     20,
   );
 
   const consultantDoctor = form.watch("consultantDoctor") as Doctor | null;
-  const consultantDoctorId = consultantDoctor?.userId
-    ? Number(consultantDoctor.userId)
+  const consultantDoctorId = consultantDoctor?.id
+    ? Number(consultantDoctor.id)
     : undefined;
   const { data: consultingDoctorService } =
     useConsultingDoctorService(consultantDoctorId);
@@ -1222,7 +1234,6 @@ const OpdBillForm = () => {
     );
   }
 
-  console.log(form.formState.errors);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -1265,41 +1276,64 @@ const OpdBillForm = () => {
             }))}
             required
           />
-          <FormInfiniteSelect<
-            Doctor,
-            PaginatedResponse<Doctor>,
-            string,
-            opdValidatorType
-          >
-            label="Consultant"
-            name="consultantDoctor"
-            control={form.control}
-            placeholder="Consultant Doctor"
-            query={consultingDoctorQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.user?.name}
-            valueKey={(item) => String(item?.userId)}
-            search={consultantValue}
-            onSearchChange={setConsultantValue}
-            required
-          />
-          <FormInfiniteSelect<
-            Doctor,
-            PaginatedResponse<Doctor>,
-            string,
-            opdValidatorType
-          >
-            label="Referred By"
-            name="referredDoctor"
-            placeholder="Referring Doctor"
-            control={form.control}
-            query={referringDoctorQuery}
-            getItems={(data) => data?.data}
-            labelKey={(item) => item?.user?.name}
-            valueKey={(item) => String(item?.userId)}
-            search={referringValue}
-            onSearchChange={setReferringValue}
-          />
+          <div className="flex items-end gap-1">
+            <div className="flex-1">
+              <FormInfiniteSelect<
+                Doctor,
+                PaginatedResponse<Doctor>,
+                string,
+                opdValidatorType
+              >
+                label="Consultant"
+                name="consultantDoctor"
+                control={form.control}
+                placeholder="Consultant Doctor"
+                query={consultingDoctorQuery}
+                getItems={(data) => data?.data}
+                labelKey={(item: Doctor) => fullName(item)}
+                valueKey={(item: Doctor) => String(item?.id)}
+                search={consultantValue}
+                onSearchChange={setConsultantValue}
+                required
+              />
+            </div>
+            <QuickCreateDoctorModal
+              doctorType={DoctorType.consulting}
+              onSuccess={(newDoc) => {
+                form.setValue("consultantDoctor", newDoc);
+                consultingDoctorQuery.refetch();
+              }}
+            />
+          </div>
+
+          <div className="flex items-end gap-1">
+            <div className="flex-1">
+              <FormInfiniteSelect<
+                Doctor,
+                PaginatedResponse<Doctor>,
+                string,
+                opdValidatorType
+              >
+                label="Referred By"
+                name="referredDoctor"
+                placeholder="Referring Doctor"
+                control={form.control}
+                query={referringDoctorQuery}
+                getItems={(data) => data?.data}
+                labelKey={(item: Doctor) => fullName(item)}
+                valueKey={(item: Doctor) => String(item?.id)}
+                search={referringValue}
+                onSearchChange={setReferringValue}
+              />
+            </div>
+            <QuickCreateDoctorModal
+              doctorType={DoctorType.referring}
+              onSuccess={(newDoc) => {
+                form.setValue("referredDoctor", newDoc);
+                referringDoctorQuery.refetch();
+              }}
+            />
+          </div>
         </CustomLayout>
         <BillingItems form={form} />
 

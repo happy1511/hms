@@ -125,7 +125,10 @@ export const useUpdateDoctor = () => {
   >({
     mutationKey: ["update-doctor"],
     mutationFn: (data) =>
-      updateDoctor({ body: data, urlHelpers: { id: data.userId.toString() } }),
+      updateDoctor({
+        body: data,
+        urlHelpers: { id: String(data.doctorId || data.userId || 0) },
+      }),
     onSuccess: () => {
       toast.success("Doctor Updated Successfully");
       queryClient.invalidateQueries({
@@ -147,7 +150,9 @@ export const useDeleteDoctor = () => {
   >({
     mutationKey: ["delete-doctor"],
     mutationFn: (data) =>
-      deleteDoctor({ urlHelpers: { id: data.userId.toString() } }),
+      deleteDoctor({
+        urlHelpers: { id: String(data.doctorId || data.userId || 0) },
+      }),
     onSuccess: () => {
       toast.success("User Deleted Successfully");
       queryClient.invalidateQueries({

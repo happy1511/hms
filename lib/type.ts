@@ -501,38 +501,23 @@ export interface User {
   createdAt: Date;
 }
 
-export interface Doctor extends Pick<
-  User,
-  | "permissions"
-  | "status"
-  | "loginId"
-  | "title"
-  | "roleType"
-  | "createdAt"
-  | "updatedAt"
-  | "name"
-  | "firstName"
-  | "middleName"
-  | "lastName"
-  | "preferredName"
-  | "gender"
-  | "dob"
-  | "maritalStatus"
-  | "locationId"
-  | "location"
-  | "contactNumber"
-  | "email"
-  | "identityType"
-  | "identityNumber"
-  | "qualifications"
-  | "department"
-  | "password"
-> {
-  user: User;
-  userId: string;
+export interface Doctor {
+  id: number;
+  title: NameTitle;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  gender: Gender;
+  userType: string;
   licenseNumber: string;
   specialization: string;
   yearsExperience: number;
+  qualifications: string;
+  department: string;
+  email: string;
+  contactNumber: string;
+  phoneNumber: string;
+  status: Status;
   designation: string;
   doctorType: DoctorType;
   consultationCharges?: number | null;
@@ -540,6 +525,8 @@ export interface Doctor extends Pick<
   consultationStartingTime: string;
   consultationEndingTime: string;
   availableDays?: { day: string; available: boolean }[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type PatientAddress = Prisma.PatientAddressGetPayload<{
@@ -809,11 +796,7 @@ export type PharmacySaleBillType = Prisma.DrugBillGetPayload<{
         patient: true;
       };
     };
-    doctor: {
-      include: {
-        user: true;
-      };
-    };
+    doctor: true;
     invoice: {
       include: {
         transactions: {
@@ -921,11 +904,7 @@ export type PharmacySaleReturnType = Prisma.SaleReturnGetPayload<{
           };
         };
         patient: true;
-        doctor: {
-          include: {
-            user: true;
-          };
-        };
+        doctor: true;
       };
     };
   };
@@ -964,11 +943,7 @@ export type PharmacyChallanType = Prisma.ChallanGetPayload<{
 export type AppointmentWithPatient = Prisma.AppointmentGetPayload<{
   include: {
     patient: true;
-    doctor: {
-      include: {
-        user: true;
-      };
-    };
+    doctor: true;
   };
 }>;
 
@@ -1026,18 +1001,12 @@ export type CertificateTemplateType = Prisma.CertificateTemplateGetPayload<{
 export type OpdCertificateType = Prisma.OpdCertificateGetPayload<{
   include: {
     opd: {
+      include: {
+        consultantDoctor: true;
+      };
       select: {
         id: true;
         opdDateTime: true;
-        consultantDoctor: {
-          select: {
-            user: {
-              select: {
-                name: true;
-              };
-            };
-          };
-        };
         patient: {
           select: {
             id: true;
@@ -1413,6 +1382,10 @@ export type PathologyParameterOptionType = Prisma.ParameterOptionsGetPayload<{
 }>;
 
 export type OPDType = Prisma.OpdGetPayload<{
+  include: {
+    consultantDoctor: true;
+    referringDoctor: true;
+  };
   select: {
     id: true;
     arrivalState: true;
@@ -1421,24 +1394,6 @@ export type OPDType = Prisma.OpdGetPayload<{
     invoice: {
       include: {
         transactions: { include: { receivedBy: { select: { name: true } } } };
-      };
-    };
-    consultantDoctor: {
-      select: {
-        user: {
-          omit: {
-            password: true;
-          };
-        };
-      };
-    };
-    referringDoctor: {
-      select: {
-        user: {
-          omit: {
-            password: true;
-          };
-        };
       };
     };
     patient: {
@@ -1504,24 +1459,8 @@ export type IPDType = Prisma.IpdGetPayload<{
         room: { include: { roomType: { include: { department: true } } } };
       };
     };
-    consultantDoctor: {
-      select: {
-        user: {
-          omit: {
-            password: true;
-          };
-        };
-      };
-    };
-    referringDoctor: {
-      select: {
-        user: {
-          omit: {
-            password: true;
-          };
-        };
-      };
-    };
+    consultantDoctor: true;
+    referringDoctor: true;
     patient: {
       select: {
         id: true;
@@ -1549,24 +1488,8 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
     billingItems: true;
     opd: {
       include: {
-        consultantDoctor: {
-          select: {
-            user: {
-              select: {
-                name: true;
-              };
-            };
-          };
-        };
-        referringDoctor: {
-          select: {
-            user: {
-              select: {
-                name: true;
-              };
-            };
-          };
-        };
+        consultantDoctor: true;
+        referringDoctor: true;
         patient: {
           include: {
             addresses: { include: { location: true } };
@@ -1578,24 +1501,8 @@ export type InvoiceType = Prisma.InvoiceGetPayload<{
     };
     ipd: {
       include: {
-        consultantDoctor: {
-          select: {
-            user: {
-              select: {
-                name: true;
-              };
-            };
-          };
-        };
-        referringDoctor: {
-          select: {
-            user: {
-              select: {
-                name: true;
-              };
-            };
-          };
-        };
+        consultantDoctor: true;
+        referringDoctor: true;
         patient: {
           include: {
             addresses: { include: { location: true } };
@@ -1681,17 +1588,8 @@ export type PathologyOrderByPatientsType = Prisma.PatientGetPayload<{
         };
 
         opd: {
-          select: {
-            consultantDoctor: {
-              select: {
-                user: {
-                  select: {
-                    id: true;
-                    name: true;
-                  };
-                };
-              };
-            };
+          include: {
+            consultantDoctor: true;
           };
         };
 
@@ -1755,17 +1653,8 @@ export type PathologyOrderType = Prisma.PathologyTestOrderGetPayload<{
     };
 
     opd: {
-      select: {
-        consultantDoctor: {
-          select: {
-            user: {
-              select: {
-                id: true;
-                name: true;
-              };
-            };
-          };
-        };
+      include: {
+        consultantDoctor: true;
       };
     };
 
@@ -1796,22 +1685,14 @@ export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
   include: {
     opd: {
       include: {
-        consultantDoctor: {
-          include: { user: { select: { name: true } } };
-        };
-        referringDoctor: {
-          include: { user: { select: { name: true } } };
-        };
+        consultantDoctor: true;
+        referringDoctor: true;
       };
     };
     ipd: {
       include: {
-        consultantDoctor: {
-          include: { user: { select: { name: true } } };
-        };
-        referringDoctor: {
-          include: { user: { select: { name: true } } };
-        };
+        consultantDoctor: true;
+        referringDoctor: true;
       };
     };
     patient: {
@@ -1874,17 +1755,8 @@ export type RadiologyOrderByPatientsType = Prisma.PatientGetPayload<{
         };
 
         opd: {
-          select: {
-            consultantDoctor: {
-              select: {
-                user: {
-                  select: {
-                    id: true;
-                    name: true;
-                  };
-                };
-              };
-            };
+          include: {
+            consultantDoctor: true;
           };
         };
 
@@ -1946,17 +1818,8 @@ export type RadiologyOrderType = Prisma.RadiologyTestOrderGetPayload<{
     };
 
     opd: {
-      select: {
-        consultantDoctor: {
-          select: {
-            user: {
-              select: {
-                id: true;
-                name: true;
-              };
-            };
-          };
-        };
+      include: {
+        consultantDoctor: true;
       };
     };
 

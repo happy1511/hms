@@ -3,7 +3,7 @@
 import CompanyPrintHeader from "@/components/common/CompanyPrintHeader";
 import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import { OpdCertificateType } from "@/lib/type";
-import { formatAge } from "@/lib/utils";
+import { formatAge, fullName } from "@/lib/utils";
 import { format } from "date-fns";
 import InfoRow from "../invoice/InfoRow";
 
@@ -50,7 +50,11 @@ const CertificateExport = ({ data }: { data: OpdCertificateType }) => {
         />
         <InfoRow
           leftLabel="Consultant"
-          leftValue={data.opd.consultantDoctor.user.name || "--"}
+          leftValue={
+            data.opd.consultantDoctor
+              ? fullName(data.opd.consultantDoctor)
+              : "--"
+          }
           rightLabel="OPD Date"
           rightValue={format(data.opd.opdDateTime, "dd/MM/yyyy hh:mm a")}
           cellClassName="border-b-0"

@@ -5,6 +5,7 @@ import { useCompanyDetails } from "@/hooks/query/company";
 import { cn } from "@/lib/utils";
 import { useContext } from "react";
 import { PrintPreferencesContext } from "@/components/common/PrintPreferencesProvider";
+import Image from "next/image";
 
 const CompanyPrintHeader = ({
   className = "",
@@ -42,15 +43,26 @@ const CompanyPrintHeader = ({
     >
       {shouldRenderContent ? (
         <div
-          className="flex w-full items-center justify-center border border-black px-3 py-2"
+          className="grid grid-cols-[100px_1fr_100px] w-full items-center border border-black px-3 py-2"
           style={
             letterheadHeightCm > 0
               ? { minHeight: `${letterheadHeightCm}cm` }
               : undefined
           }
         >
+          <div className="flex items-center justify-start">
+            <Image
+              src="/exported-logo.png"
+              alt="Logo"
+              height={60}
+              width={60}
+              className="h-14 w-auto max-h-16 object-contain"
+            />
+          </div>
           <div className="text-center leading-tight space-y-1">
-            {name && <div className="font-bold uppercase text-base">{name}</div>}
+            {name && (
+              <div className="font-bold uppercase text-base">{name}</div>
+            )}
             {address && <div className="text-[11px]">{address}</div>}
             {mobile && (
               <div className="text-[11px]">
@@ -58,6 +70,7 @@ const CompanyPrintHeader = ({
               </div>
             )}
           </div>
+          <div />
         </div>
       ) : null}
     </div>

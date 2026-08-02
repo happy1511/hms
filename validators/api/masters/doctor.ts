@@ -6,7 +6,6 @@ import {
   Status,
 } from "@/generated/prisma/enums";
 import { z } from "zod";
-import { userValidator } from "./user";
 
 const optionalText = z.string().optional().or(z.literal(""));
 const importOptionalNumberText = z.string().optional().default("");
@@ -16,119 +15,60 @@ const optionalPhone = z
   .optional()
   .or(z.literal(""));
 
-const doctorBaseValidator = userValidator.extend({
-  password: z.string().min(6).optional().or(z.literal("")),
-  status: z.enum(Status).optional().default(Status.active),
-  permissions: userValidator.shape.permissions.optional().default([]),
-  title: z.enum(NameTitle).default(NameTitle["DR"]).optional(),
+const doctorBaseValidator = z.object({
+  title: z.enum(NameTitle).optional(),
+  firstName: z.string().min(1, "First Name is required"),
+  middleName: optionalText,
+  lastName: optionalText,
+  gender: z.enum(Gender).optional(),
+  userType: z.string().optional().default("Doctor"),
+  doctorType: z.enum(DoctorType),
   licenseNumber: optionalText,
   specialization: optionalText,
-  yearsExperience: z.number().min(0, "Experience must be greater than zero").optional(),
+  qualifications: optionalText,
+  yearsExperience: z.coerce.number().min(0).optional(),
+  department: optionalText,
   designation: optionalText,
-  doctorType: z.enum(DoctorType),
-  consultationCharges: z.coerce.number().min(0, "Consultation charges must be greater than or equal to 0").optional(),
+  consultationCharges: z.coerce.number().min(0).optional(),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  phoneNumber: optionalPhone,
+  contactNumber: optionalPhone,
   emergencyContact: optionalPhone,
+  consultationStartingTime: optionalText,
+  consultationEndingTime: optionalText,
+  status: z.enum(Status).optional().default(Status.active),
   availableDays: z
     .array(z.object({ day: z.enum(Days), available: z.boolean() }))
     .optional(),
-  consultationStartingTime: optionalText,
-  consultationEndingTime: optionalText,
 });
 
 const doctorValidator = doctorBaseValidator.superRefine((data, ctx) => {
   if (data.doctorType === DoctorType.consulting) {
-    if (!data.password || !data.password.trim()) {
+    if (!data.title) {
       ctx.addIssue({
-        path: ["password"],
-        message: "Password is required for consulting doctors",
+        path: ["title"],
+        message: "Title is required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }
-
-    if (!data.licenseNumber || !data.licenseNumber.trim()) {
+    if (!data.lastName || !data.lastName.trim()) {
       ctx.addIssue({
-        path: ["licenseNumber"],
-        message: "License Number is required for consulting doctors",
+        path: ["lastName"],
+        message: "Last Name is required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }
-
-    if (!data.specialization || !data.specialization.trim()) {
+    if (!data.gender) {
       ctx.addIssue({
-        path: ["specialization"],
-        message: "Specialization is required for consulting doctors",
+        path: ["gender"],
+        message: "Gender is required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }
-
-    if (!data.qualifications || !data.qualifications.trim()) {
+    if (!data.userType || !data.userType.trim()) {
       ctx.addIssue({
-        path: ["qualifications"],
-        message: "Qualification is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (data.yearsExperience === undefined) {
-      ctx.addIssue({
-        path: ["yearsExperience"],
-        message: "Experience is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.email || !data.email.trim()) {
-      ctx.addIssue({
-        path: ["email"],
-        message: "Email is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.contactNumber || !data.contactNumber.trim()) {
-      ctx.addIssue({
-        path: ["contactNumber"],
-        message: "Contact number is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.emergencyContact || !data.emergencyContact.trim()) {
-      ctx.addIssue({
-        path: ["emergencyContact"],
-        message: "Emergency contact is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.availableDays || data.availableDays.length === 0) {
-      ctx.addIssue({
-        path: ["availableDays"],
-        message: "Available days are required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.consultationStartingTime || !data.consultationStartingTime.trim()) {
-      ctx.addIssue({
-        path: ["consultationStartingTime"],
-        message: "Consultation start time is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (!data.consultationEndingTime || !data.consultationEndingTime.trim()) {
-      ctx.addIssue({
-        path: ["consultationEndingTime"],
-        message: "Consultation end time is required for consulting doctors",
-        code: z.ZodIssueCode.custom,
-      });
-    }
-
-    if (data.consultationCharges === undefined) {
-      ctx.addIssue({
-        path: ["consultationCharges"],
-        message: "Consultation charges are required for consulting doctors",
+        path: ["userType"],
+        message: "User Type is required for consulting doctors",
         code: z.ZodIssueCode.custom,
       });
     }
@@ -136,23 +76,16 @@ const doctorValidator = doctorBaseValidator.superRefine((data, ctx) => {
 });
 
 const partialDoctorValidator = doctorBaseValidator.partial().extend({
-  userId: z.coerce.number().min(1, "Doctor Id is required"),
+  doctorId: z.coerce.number().optional(),
+  userId: z.coerce.number().optional(),
 });
 
 const doctorImportRowValidator = z.object({
   title: z.enum(NameTitle).optional().default(NameTitle.DR),
   firstName: z.string().min(1, "firstName is required"),
   middleName: optionalText,
-  lastName: z.string().min(1, "lastName is required"),
-  preferredName: z.string().min(1, "preferredName is required"),
-  gender: z.enum(Gender),
-  dob: optionalText,
-  locationId: importOptionalNumberText,
-  contactNumber: z
-    .string()
-    .regex(/^\d{10}$/, "contactNumber must be exactly 10 digits"),
-  email: optionalText,
-  password: optionalText,
+  lastName: optionalText,
+  gender: z.enum(Gender).optional(),
   status: z.enum(Status).optional().default(Status.active),
   licenseNumber: optionalText,
   specialization: optionalText,

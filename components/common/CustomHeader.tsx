@@ -13,7 +13,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ChevronDown, KeyRound, LogOut, UserCircle2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, fullName } from "@/lib/utils";
 
 const CustomHeader = ({
   hideSidebarToggle = false,
@@ -23,12 +23,9 @@ const CustomHeader = ({
   const { data: profile } = useProfile();
   const { mutateAsync, isPending } = useLogout();
   const user = profile?.data;
-  const displayName =
-    user?.preferredName ||
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-    user?.name ||
-    user?.loginId ||
-    "Account";
+  const displayName = user
+    ? user?.preferredName || fullName(user) || user?.name || user?.loginId
+    : "Account";
   const subtitle = user?.loginId || user?.userName || "";
 
   return (

@@ -7,8 +7,6 @@ import {
   DoctorValidatorType,
   partialDoctorValidator,
 } from "@/validators/api/masters/doctor";
-import { generateUUID } from "@/lib/utils";
-import { updatePermissions } from "../user/user";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   Days,
@@ -17,7 +15,6 @@ import {
   Status,
   User,
 } from "@/generated/prisma/client";
-import { buildUserName, trimOptionalString } from "@/lib/user";
 import { upsertConsultingDoctorService } from "@/lib/systemBilling";
 
 const softDeleteConsultingService = async (
@@ -49,23 +46,19 @@ const softDeleteConsultingService = async (
 
 export const updateAvailability = async (
   availableDays: DoctorValidatorType["availableDays"],
-  userId: number,
+  doctorId: number,
 ) => {
-  // 2️⃣ Extract assigned (moduleId, actionId) pairs
   const availabilityPairs = availableDays?.filter((p) => p.available);
 
-  // 4️⃣ Replace user permissions atomically
   await prisma.$transaction(async (tx) => {
-    // Remove existing permissions
     await tx.doctorAvailableDay.deleteMany({
-      where: { doctorId: userId },
+      where: { doctorId },
     });
 
-    // Assign new permissions
     if (availabilityPairs?.length) {
       await tx.doctorAvailableDay.createMany({
         data: availabilityPairs.map((p) => ({
-          doctorId: userId,
+          doctorId,
           day: p.day,
         })),
         skipDuplicates: true,
@@ -91,25 +84,29 @@ export const getAPI = async (req: Request) => {
       const and: Prisma.DoctorWhereInput[] = [];
 
       if (search) {
-        and.push({ user: { name: { contains: search } } });
+        and.push({
+          OR: [
+            { firstName: { contains: search } },
+            { lastName: { contains: search } },
+            { middleName: { contains: search } },
+          ],
+        });
       }
-      and.push({ user: { isDeleted: false } });
+      and.push({ isDeleted: false });
 
       if (status) {
-        and.push({ user: { status: { equals: status } } });
+        and.push({ status: { equals: status as Status } });
       }
 
       if (doctorType) {
-        and.push({ doctorType: { equals: doctorType } });
+        and.push({ doctorType: { equals: doctorType as DoctorType } });
       }
 
       if (createdAtFrom || createdAtTo) {
         and.push({
-          user: {
-            createdAt: {
-              ...(createdAtFrom && { gte: createdAtFrom }),
-              ...(createdAtTo && { lte: createdAtTo }),
-            },
+          createdAt: {
+            ...(createdAtFrom && { gte: new Date(createdAtFrom) }),
+            ...(createdAtTo && { lte: new Date(createdAtTo) }),
           },
         });
       }
@@ -120,10 +117,10 @@ export const getAPI = async (req: Request) => {
         prisma.doctor.findMany({
           skip,
           take: limit,
-          orderBy: { user: { createdAt: "desc" } },
+          orderBy: { createdAt: "desc" },
           where,
           include: {
-            user: true,
+            availableDays: true,
           },
         }),
         prisma.doctor.count({ where }),
@@ -141,60 +138,19 @@ export const getAPI = async (req: Request) => {
 
 export const getDetailsAPI = async (
   req: Request,
-  { params }: { params: { userId: string } },
+  { params }: { params: { userId?: string; doctorId?: string } },
 ) => {
   return validateRequest({
     paramsSchema: partialDoctorValidator,
     req,
     params,
     onSuccess: async ({ params }) => {
-      const id = params.userId;
+      const id = Number(params.doctorId || params.userId);
 
       const doctor = await prisma.doctor.findFirst({
-        where: { userId: id, user: { isDeleted: false } },
-        select: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              firstName: true,
-              middleName: true,
-              lastName: true,
-              preferredName: true,
-              gender: true,
-              dob: true,
-              maritalStatus: true,
-              location: true,
-              contactNumber: true,
-              email: true,
-              identityType: true,
-              identityNumber: true,
-              qualifications: true,
-              department: true,
-              title: true,
-              roleType: true,
-              password: true,
-              status: true,
-              loginId: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-          userId: true,
+        where: { id, isDeleted: false },
+        include: {
           availableDays: true,
-          licenseNumber: true,
-          consultationEndingTime: true,
-          consultationStartingTime: true,
-          department: true,
-          designation: true,
-          doctorType: true,
-          email: true,
-          emergencyContact: true,
-          phoneNumber: true,
-          qualifications: true,
-          specialization: true,
-          yearsExperience: true,
-          consultationCharges: true,
         },
       });
 
@@ -205,33 +161,6 @@ export const getDetailsAPI = async (
         });
       }
 
-      const permissions = await prisma.module.findMany({
-        include: {
-          permissions: {
-            include: {
-              action: true,
-              userPermissions: {
-                where: { userId: doctor?.userId },
-                select: { id: true },
-              },
-            },
-          },
-        },
-        orderBy: { id: "asc" },
-      });
-
-      const permissionsResult = permissions.map((module) => ({
-        module: {
-          id: module.id.toString(),
-          name: module.name,
-        },
-        actions: module.permissions.map((perm) => ({
-          id: perm.action.id.toString(),
-          name: perm.action.name,
-          assigned: perm.userPermissions.length > 0,
-        })),
-      }));
-
       const availabilityResult = Object.values(Days).map((d) => ({
         day: d,
         available:
@@ -240,10 +169,9 @@ export const getDetailsAPI = async (
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
-        message: "User Fetched Successfully",
+        message: "Doctor Fetched Successfully",
         data: {
           ...doctor,
-          user: { ...doctor.user, permissions: permissionsResult },
           availableDays: availabilityResult,
         },
       });
@@ -257,41 +185,14 @@ export const createAPI = async (req: Request, actingUser: User) => {
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      const phoneBasedLoginId = data.contactNumber?.trim();
-      let loginId = phoneBasedLoginId || "";
-
-      if (phoneBasedLoginId) {
-        const existingUserByLoginId = await prisma.user.findUnique({
-          where: { loginId: phoneBasedLoginId },
-        });
-
-        if (existingUserByLoginId) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "User already exists for this phone number",
-          });
-        }
-      } else {
-        while (!loginId) {
-          const id = generateUUID();
-
-          const existingUser = await prisma.user.findUnique({
-            where: { loginId: id },
-          });
-
-          if (existingUser) {
-            continue;
-          }
-          loginId = id;
-        }
-      }
 
       const duplicateChecks: Prisma.DoctorWhereInput[] = [];
       if (data.licenseNumber?.trim()) {
         duplicateChecks.push({ licenseNumber: data.licenseNumber.trim() });
       }
-      if (data.contactNumber?.trim()) {
-        duplicateChecks.push({ phoneNumber: data.contactNumber.trim() });
+      if (data.phoneNumber?.trim() || data.contactNumber?.trim()) {
+        const phone = (data.phoneNumber || data.contactNumber)?.trim();
+        if (phone) duplicateChecks.push({ phoneNumber: phone });
       }
       if (data.email?.trim()) {
         duplicateChecks.push({ email: data.email.trim() });
@@ -299,95 +200,59 @@ export const createAPI = async (req: Request, actingUser: User) => {
 
       if (duplicateChecks.length) {
         const existingDoctor = await prisma.doctor.findFirst({
-          where: { OR: duplicateChecks },
+          where: { OR: duplicateChecks, isDeleted: false },
         });
 
         if (existingDoctor) {
           return apiResponse({
             status: RESPONSE_STATUS.BAD_REQUEST,
             message:
-              "doctor with this license number, phone number or email already exists",
+              "Doctor with this license number, phone number or email already exists",
           });
         }
       }
-      const {
-        permissions,
-        status,
-        password,
-        availableDays,
-        title,
-        location,
-        ...rest
-      } = data;
-      const name = buildUserName(rest);
 
-      const user = await prisma.user.create({
-        data: {
-          password:
-            password ||
-            `Ref@${String(loginId)
-              .replace(/[^a-zA-Z0-9]/g, "")
-              .slice(0, 8)}`,
-          title,
-          roleType: rest.roleType,
-          name,
-          firstName: rest.firstName.trim(),
-          middleName: trimOptionalString(rest.middleName),
-          lastName: rest.lastName.trim(),
-          preferredName: rest.preferredName.trim(),
-          gender: rest.gender,
-          dob: rest.dob,
-          maritalStatus: rest.maritalStatus,
-          locationId: location?.id ?? null,
-          contactNumber: loginId,
-          email: trimOptionalString(rest.email),
-          identityType: rest.identityType,
-          identityNumber: trimOptionalString(rest.identityNumber),
-          qualifications: trimOptionalString(rest.qualifications),
-          department: trimOptionalString(rest.department),
-          loginId,
-          status: status ?? Status.active,
-          username: loginId,
-          createdBy: actingUser.id,
-          updatedBy: actingUser.id,
-        },
-      });
-
-      await updatePermissions(permissions || [], user.id);
-
-      const doctorData = {
-        licenseNumber: rest.licenseNumber?.trim() || null,
-        specialization: rest.specialization?.trim() || null,
-        qualifications: rest.qualifications?.trim() || null,
-        department: rest.department?.trim() || null,
-        yearsExperience: rest.yearsExperience ?? null,
-        doctorType: rest.doctorType,
-        consultationCharges:
-          rest.consultationCharges !== undefined
-            ? rest.consultationCharges
-            : null,
-        email: rest.email?.trim() || null,
-        phoneNumber: rest.contactNumber?.trim() || null,
-        designation: rest.designation?.trim() || null,
-        consultationStartingTime: rest.consultationStartingTime?.trim() || null,
-        consultationEndingTime: rest.consultationEndingTime?.trim() || null,
-        emergencyContact: rest.emergencyContact?.trim() || null,
-      };
+      const { availableDays, contactNumber, phoneNumber, ...rest } = data;
+      const phone = (phoneNumber || contactNumber)?.trim() || null;
+      const doctorName = [rest.title, rest.firstName, rest.lastName]
+        .filter(Boolean)
+        .join(" ");
 
       const doctor = await prisma.$transaction(async (tx) => {
         const createdDoctor = await tx.doctor.create({
           data: {
-            ...doctorData,
-            userId: user.id,
+            title: rest.title || null,
+            firstName: rest.firstName.trim(),
+            middleName: rest.middleName?.trim() || null,
+            lastName: rest.lastName?.trim() || null,
+            gender: rest.gender || null,
+            userType: rest.userType || "Doctor",
+            doctorType: rest.doctorType,
+            licenseNumber: rest.licenseNumber?.trim() || null,
+            specialization: rest.specialization?.trim() || null,
+            qualifications: rest.qualifications?.trim() || null,
+            department: rest.department?.trim() || null,
+            yearsExperience: rest.yearsExperience ?? null,
+            designation: rest.designation?.trim() || null,
+            consultationCharges:
+              rest.consultationCharges !== undefined
+                ? rest.consultationCharges
+                : null,
+            email: rest.email?.trim() || null,
+            phoneNumber: phone,
+            emergencyContact: rest.emergencyContact?.trim() || null,
+            consultationStartingTime: rest.consultationStartingTime?.trim() || null,
+            consultationEndingTime: rest.consultationEndingTime?.trim() || null,
+            status: rest.status ?? Status.active,
             createdBy: actingUser.id,
             updatedBy: actingUser.id,
           },
         });
 
-        if (rest.doctorType === DoctorType["consulting"]) {
+        if (rest.doctorType === DoctorType.consulting) {
           await upsertConsultingDoctorService(tx, {
-            doctorId: user.id,
-            doctorName: name,
+            doctorId: createdDoctor.id,
+            doctorName,
             consultationCharges: Number(rest.consultationCharges ?? 0),
             actingUserId: actingUser.id,
           });
@@ -396,15 +261,14 @@ export const createAPI = async (req: Request, actingUser: User) => {
         return createdDoctor;
       });
 
-      const availability = await updateAvailability(availableDays, user.id);
+      if (availableDays?.length) {
+        await updateAvailability(availableDays, doctor.id);
+      }
 
       return apiResponse({
         status: RESPONSE_STATUS.CREATED,
         message: "Doctor Created Successfully",
-        data: {
-          ...doctor,
-          availableDays: availability,
-        },
+        data: doctor,
       });
     },
   });
@@ -412,7 +276,7 @@ export const createAPI = async (req: Request, actingUser: User) => {
 
 export const updateAPI = async (
   req: Request,
-  { params }: { params: { userId: string } },
+  { params }: { params: { userId?: string; doctorId?: string } },
   actingUser: User,
 ) => {
   return validateRequest({
@@ -422,261 +286,86 @@ export const updateAPI = async (
     req,
     onSuccess: async ({ body }) => {
       const data = body;
-      const existingUser = await prisma.user.findFirst({
-        where: { id: data.userId, isDeleted: false },
-        include: { doctor: true },
+      const id = Number(data.doctorId || data.userId || params.doctorId || params.userId);
+
+      const existingDoctor = await prisma.doctor.findFirst({
+        where: { id, isDeleted: false },
       });
 
-      if (!existingUser || !existingUser.doctor) {
+      if (!existingDoctor) {
         return apiResponse({
           status: RESPONSE_STATUS.NOT_FOUND,
           message: "Doctor not found",
         });
       }
 
-      const {
-        availableDays,
-        password,
-        permissions,
-        status,
-        title,
-        location,
-        ...rest
-      } = data;
-      const nextContactNumber = rest.contactNumber?.trim();
+      const { availableDays, contactNumber, phoneNumber, ...rest } = data;
+      const phone = (phoneNumber || contactNumber)?.trim() || existingDoctor.phoneNumber;
+      const doctorName = [
+        rest.title ?? existingDoctor.title,
+        rest.firstName ?? existingDoctor.firstName,
+        rest.lastName ?? existingDoctor.lastName,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
-      if (
-        nextContactNumber &&
-        nextContactNumber !== existingUser.contactNumber
-      ) {
-        const duplicateUser = await prisma.user.findFirst({
-          where: {
-            contactNumber: nextContactNumber,
-            id: { not: data.userId },
-          },
-        });
-
-        if (duplicateUser) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message: "User already exists for this phone number",
-          });
-        }
-      }
-
-      const nextEmail = rest.email?.trim();
-      const nextLicenseNumber = rest.licenseNumber?.trim();
-      const doctorDuplicateChecks: Prisma.DoctorWhereInput[] = [];
-
-      if (
-        nextLicenseNumber &&
-        nextLicenseNumber !== existingUser.doctor.licenseNumber
-      ) {
-        doctorDuplicateChecks.push({
-          licenseNumber: nextLicenseNumber,
-          userId: { not: data.userId },
-        });
-      }
-
-      if (
-        nextContactNumber &&
-        nextContactNumber !== existingUser.doctor.phoneNumber
-      ) {
-        doctorDuplicateChecks.push({
-          phoneNumber: nextContactNumber,
-          userId: { not: data.userId },
-        });
-      }
-
-      if (nextEmail && nextEmail !== existingUser.doctor.email) {
-        doctorDuplicateChecks.push({
-          email: nextEmail,
-          userId: { not: data.userId },
-        });
-      }
-
-      if (doctorDuplicateChecks.length) {
-        const existingDoctorDuplicate = await prisma.doctor.findFirst({
-          where: { OR: doctorDuplicateChecks },
-        });
-
-        if (existingDoctorDuplicate) {
-          return apiResponse({
-            status: RESPONSE_STATUS.BAD_REQUEST,
-            message:
-              "doctor with this license number, phone number or email already exists",
-          });
-        }
-      }
-
-      const nextName =
-        rest.firstName || rest.middleName || rest.lastName
-          ? buildUserName({
-              firstName: rest.firstName ?? existingUser.firstName,
-              middleName: rest.middleName ?? existingUser.middleName,
-              lastName: rest.lastName ?? existingUser.lastName,
-            })
-          : existingUser.name;
-
-      const effectiveDoctorType =
-        rest.doctorType ?? existingUser.doctor.doctorType;
+      const effectiveDoctorType = rest.doctorType ?? existingDoctor.doctorType;
       const effectiveCharges =
-        rest.consultationCharges ?? existingUser.doctor.consultationCharges;
-
-      if (
-        effectiveDoctorType === DoctorType["consulting"] &&
-        (effectiveCharges === null || effectiveCharges === undefined)
-      ) {
-        return apiResponse({
-          status: RESPONSE_STATUS.BAD_REQUEST,
-          message: "Consultation charges are required for consulting doctors",
-        });
-      }
-
-      const updatedUser = await prisma.user.update({
-        where: { id: data.userId },
-        data: {
-          firstName: rest.firstName,
-          middleName:
-            rest.middleName !== undefined
-              ? trimOptionalString(rest.middleName)
-              : undefined,
-          lastName: rest.lastName,
-          preferredName: rest.preferredName,
-          gender: rest.gender,
-          dob: rest.dob,
-          maritalStatus: rest.maritalStatus,
-          locationId:
-            location !== undefined ? (location?.id ?? null) : undefined,
-          contactNumber: nextContactNumber,
-          email:
-            rest.email !== undefined
-              ? trimOptionalString(rest.email)
-              : undefined,
-          identityType: rest.identityType,
-          identityNumber:
-            rest.identityNumber !== undefined
-              ? trimOptionalString(rest.identityNumber)
-              : undefined,
-          qualifications:
-            rest.qualifications !== undefined
-              ? trimOptionalString(rest.qualifications)
-              : undefined,
-          department:
-            rest.department !== undefined
-              ? trimOptionalString(rest.department)
-              : undefined,
-          name: nextName,
-          password,
-          status,
-          title,
-          roleType: rest.roleType,
-          loginId: nextContactNumber,
-          username: nextContactNumber,
-          updatedBy: actingUser.id,
-        },
-      });
+        rest.consultationCharges ?? existingDoctor.consultationCharges;
 
       const updatedDoctor = await prisma.doctor.update({
-        where: { userId: existingUser.id },
+        where: { id },
         data: {
-          licenseNumber:
-            rest.licenseNumber !== undefined
-              ? trimOptionalString(rest.licenseNumber)
-              : undefined,
-          specialization:
-            rest.specialization !== undefined
-              ? trimOptionalString(rest.specialization)
-              : undefined,
-          qualifications:
-            rest.qualifications !== undefined
-              ? trimOptionalString(rest.qualifications)
-              : undefined,
-          yearsExperience: rest.yearsExperience,
-          department:
-            rest.department !== undefined
-              ? trimOptionalString(rest.department)
-              : undefined,
-          designation:
-            rest.designation !== undefined
-              ? trimOptionalString(rest.designation)
-              : undefined,
+          title: rest.title,
+          firstName: rest.firstName,
+          middleName: rest.middleName,
+          lastName: rest.lastName,
+          gender: rest.gender,
+          userType: rest.userType,
           doctorType: rest.doctorType,
-          consultationCharges:
-            rest.consultationCharges !== undefined
-              ? rest.consultationCharges
-              : undefined,
-          email:
-            rest.email !== undefined
-              ? trimOptionalString(rest.email)
-              : undefined,
-          phoneNumber: nextContactNumber,
-          emergencyContact:
-            rest.emergencyContact !== undefined
-              ? trimOptionalString(rest.emergencyContact)
-              : undefined,
-          consultationStartingTime:
-            rest.consultationStartingTime !== undefined
-              ? trimOptionalString(rest.consultationStartingTime)
-              : undefined,
-          consultationEndingTime:
-            rest.consultationEndingTime !== undefined
-              ? trimOptionalString(rest.consultationEndingTime)
-              : undefined,
+          licenseNumber: rest.licenseNumber,
+          specialization: rest.specialization,
+          qualifications: rest.qualifications,
+          yearsExperience: rest.yearsExperience,
+          department: rest.department,
+          designation: rest.designation,
+          consultationCharges: rest.consultationCharges,
+          email: rest.email,
+          phoneNumber: phone,
+          emergencyContact: rest.emergencyContact,
+          consultationStartingTime: rest.consultationStartingTime,
+          consultationEndingTime: rest.consultationEndingTime,
+          status: rest.status,
           updatedBy: actingUser.id,
         },
       });
 
-      if (effectiveDoctorType === DoctorType["consulting"]) {
+      if (effectiveDoctorType === DoctorType.consulting) {
         await prisma.$transaction((tx) =>
           upsertConsultingDoctorService(tx, {
-            doctorId: existingUser.id,
-            doctorName: (nextName ?? existingUser.name ?? "").trim(),
-            consultationCharges: Number(effectiveCharges),
+            doctorId: id,
+            doctorName,
+            consultationCharges: Number(effectiveCharges ?? 0),
             actingUserId: actingUser.id,
           }),
         );
       } else {
         await prisma.$transaction((tx) =>
           softDeleteConsultingService(tx, {
-            doctorId: existingUser.id,
+            doctorId: id,
             actingUserId: actingUser.id,
           }),
         );
       }
 
-      let updatedPermissions;
-      if (permissions?.length) {
-        updatedPermissions = await updatePermissions(permissions, data.userId);
-      } else {
-        updatedPermissions = await prisma.userPermission.findMany({
-          where: { userId: data.userId },
-          include: {
-            permission: true,
-          },
-        });
-      }
-
-      let updatedAvailability;
       if (availableDays?.length) {
-        updatedAvailability = await updateAvailability(
-          availableDays,
-          data.userId,
-        );
-      } else {
-        updatedAvailability = await prisma.doctorAvailableDay.findMany({
-          where: { doctorId: data.userId },
-        });
+        await updateAvailability(availableDays, id);
       }
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Doctor Updated Successfully",
-        data: {
-          ...updatedDoctor,
-          user: { ...updatedUser, permissions: updatedPermissions },
-          availableDays: updatedAvailability,
-        },
+        data: updatedDoctor,
       });
     },
   });
@@ -684,7 +373,7 @@ export const updateAPI = async (
 
 export const deleteAPI = async (
   req: Request,
-  { params }: { params: { userId: string } },
+  { params }: { params: { userId?: string; doctorId?: string } },
   actingUser: User,
 ) => {
   return validateRequest({
@@ -692,13 +381,12 @@ export const deleteAPI = async (
     params,
     req,
     onSuccess: async ({ params }) => {
-      const data = params;
-      const existingUser = await prisma.user.findFirst({
-        where: { id: data.userId, isDeleted: false },
-        include: { doctor: true },
+      const id = Number(params.doctorId || params.userId);
+      const existingDoctor = await prisma.doctor.findFirst({
+        where: { id, isDeleted: false },
       });
 
-      if (!existingUser || !existingUser.doctor) {
+      if (!existingDoctor) {
         return apiResponse({
           status: RESPONSE_STATUS.NOT_FOUND,
           message: "Doctor not found",
@@ -707,14 +395,7 @@ export const deleteAPI = async (
 
       await prisma.$transaction([
         prisma.doctor.update({
-          where: { userId: data.userId },
-          data: {
-            deletedBy: actingUser.id,
-            updatedBy: actingUser.id,
-          },
-        }),
-        prisma.user.update({
-          where: { id: data.userId },
+          where: { id },
           data: {
             isDeleted: true,
             deletedBy: actingUser.id,
@@ -722,7 +403,7 @@ export const deleteAPI = async (
           },
         }),
         prisma.service.updateMany({
-          where: { consultingDoctorId: data.userId, isDeleted: false },
+          where: { consultingDoctorId: id, isDeleted: false },
           data: {
             isDeleted: true,
             deletedBy: actingUser.id,

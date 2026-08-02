@@ -27,7 +27,7 @@ import {
   RadiologyOrderByPatientsType,
   RadiologyOrderType,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -209,19 +209,19 @@ const RadiologyOrders = ({
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
     useRadiologyOrdersList(
-    {
-      ...filters,
-      cancelled,
-      outsourced,
-      testStatus:
-        forcedTestStatus ??
-        (!cancelled && !outsourced
-          ? [RadiologyOrderStatus["RESULT_PENDING"]]
-          : []),
-    },
-    page,
-    limit,
-  );
+      {
+        ...filters,
+        cancelled,
+        outsourced,
+        testStatus:
+          forcedTestStatus ??
+          (!cancelled && !outsourced
+            ? [RadiologyOrderStatus["RESULT_PENDING"]]
+            : []),
+      },
+      page,
+      limit,
+    );
 
   const effectiveSelectedPatient =
     selectedPatient ?? data?.data?.[0]?.id ?? null;
@@ -270,7 +270,7 @@ const RadiologyOrders = ({
       },
       cell: ({ row }) => (
         <button onClick={() => setSelectedPatient(row.original.id)}>
-          {[row.original.firstName, row.original.lastName].join(" ")}
+          {fullName(row.original)}
         </button>
       ),
       headerClassName: "min-w-15 max-w-20",
@@ -308,7 +308,10 @@ const RadiologyOrders = ({
           <SortableHeader<RadiologyOrderType> label="Doctor" column={column} />
         );
       },
-      cell: ({ row }) => row.original.opd?.consultantDoctor.user.name || "-",
+      cell: ({ row }) =>
+        row.original.opd?.consultantDoctor
+          ? fullName(row.original.opd?.consultantDoctor)
+          : "-",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },

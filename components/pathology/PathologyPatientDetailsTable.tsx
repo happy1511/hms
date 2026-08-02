@@ -2,7 +2,7 @@
 
 import { formatAddress } from "@/lib/address";
 import { PathologyTestResultType } from "@/lib/type";
-import { formatAge } from "@/lib/utils";
+import { formatAge, fullName } from "@/lib/utils";
 import { format } from "date-fns";
 import InfoRow from "../invoice/InfoRow";
 
@@ -22,14 +22,12 @@ const PathologyPatientDetailsTable = ({
   const patientAge = patient?.dob ? formatAge(patient.dob) : "";
   const patientGender = patient?.gender ? String(patient.gender) : "";
 
-  const consultantName =
-    data.opd?.consultantDoctor?.user?.name ||
-    data.ipd?.consultantDoctor?.user?.name ||
-    "";
-  const referredByName =
-    data.opd?.referringDoctor?.user?.name ||
-    data.ipd?.referringDoctor?.user?.name ||
-    "";
+  const consultantDoctor =
+    data.opd?.consultantDoctor || data.ipd?.consultantDoctor;
+  const consultantName = consultantDoctor ? fullName(consultantDoctor) : "";
+  const referringDoctor =
+    data.opd?.referringDoctor || data.ipd?.referringDoctor;
+  const referredByName = referringDoctor ? fullName(referringDoctor) : "";
 
   return (
     <>

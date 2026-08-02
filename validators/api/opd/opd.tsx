@@ -58,16 +58,16 @@ const opdBaseValidator = z.object({
   arrivalState: z.enum(OpdArrival),
   remarks: z.string().max(500).optional(),
   consultantDoctor: z
-    .object({ userId: z.coerce.number() })
+    .object({ id: z.coerce.number() })
     .superRefine((data, ctx) => {
-      if (!data.userId) {
+      if (!data.id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Consultant is required`,
         });
       }
     }),
-  referredDoctor: z.object({ userId: z.coerce.number() }).optional(),
+  referredDoctor: z.object({ id: z.coerce.number() }).optional(),
   invoice: invoiceValidator,
 });
 
@@ -144,9 +144,9 @@ const consultationFileValidator = consultationValidator.extend({
 const opdDoctorUpdateValidator = z
   .object({
     opdId: z.coerce.number(),
-    consultantDoctor: z.object({ userId: z.coerce.number() }).optional(),
+    consultantDoctor: z.object({ id: z.coerce.number() }).optional(),
     referredDoctor: z
-      .object({ userId: z.coerce.number() })
+      .object({ id: z.coerce.number() })
       .optional()
       .nullable(),
   })

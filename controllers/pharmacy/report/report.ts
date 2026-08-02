@@ -1,10 +1,16 @@
 import { Prisma, User } from "@/generated/prisma/client";
-import { ActionType, ModuleType, PaymentCategory, TransactionType } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  ModuleType,
+  PaymentCategory,
+  TransactionType,
+} from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
 import { calculatePurchaseOrderLine } from "@/lib/pharmacyPurchaseOrder";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { hasUserPermission } from "@/lib/serverPermission";
+import { fullName } from "@/lib/utils";
 import {
   CounterSaleBillRowType,
   CounterSaleCollectionRowType,
@@ -45,7 +51,8 @@ const toPieces = ({
   quantity: number;
   isLooseQuantity: boolean;
   packSize: number;
-}) => (isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize);
+}) =>
+  isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize;
 
 const toDisplayLabel = (value: string) =>
   value
@@ -70,10 +77,17 @@ const getCustomerDisplayName = ({
     firstName?: string | null;
     middleName?: string | null;
     lastName?: string | null;
+    title?: string | null;
   } | null;
 }) =>
   customer?.name ||
-  [patient?.firstName, patient?.middleName, patient?.lastName].filter(Boolean).join(" ") ||
+  (patient?.firstName
+    ? fullName({
+        firstName: patient.firstName,
+        middleName: patient.middleName,
+        lastName: patient.lastName,
+      })
+    : null) ||
   name ||
   "-";
 
@@ -190,11 +204,23 @@ export const getAPI = async (req: Request, user: User) => {
         canViewGrn,
         canViewStock,
       ] = await Promise.all([
-        hasUserPermission(user.id, PHARMACY_REPORT_COUNTER_SALE_MODULE, ActionType.VIEW),
-        hasUserPermission(user.id, PHARMACY_REPORT_IPD_SALE_MODULE, ActionType.VIEW),
+        hasUserPermission(
+          user.id,
+          PHARMACY_REPORT_COUNTER_SALE_MODULE,
+          ActionType.VIEW,
+        ),
+        hasUserPermission(
+          user.id,
+          PHARMACY_REPORT_IPD_SALE_MODULE,
+          ActionType.VIEW,
+        ),
         hasUserPermission(user.id, PHARMACY_REPORT_PO_MODULE, ActionType.VIEW),
         hasUserPermission(user.id, PHARMACY_REPORT_GRN_MODULE, ActionType.VIEW),
-        hasUserPermission(user.id, PHARMACY_REPORT_STOCK_MODULE, ActionType.VIEW),
+        hasUserPermission(
+          user.id,
+          PHARMACY_REPORT_STOCK_MODULE,
+          ActionType.VIEW,
+        ),
       ]);
 
       const saleBillWhere: Prisma.DrugBillWhereInput = {
@@ -264,7 +290,7 @@ export const getAPI = async (req: Request, user: User) => {
           include: {
             patient: true,
             customer: { include: { patient: true } },
-            doctor: { include: { user: true } },
+            doctor: true,
             invoice: {
               include: {
                 transactions: true,
@@ -520,16 +546,28 @@ export const getAPI = async (req: Request, user: User) => {
             date: bill.invoice.createdAt,
             customer,
             taxableAmount: round2(
-              bill.saleItems.reduce((sum, item) => sum + Number(item.taxableAmount || 0), 0),
+              bill.saleItems.reduce(
+                (sum, item) => sum + Number(item.taxableAmount || 0),
+                0,
+              ),
             ),
             cGstAmount: round2(
-              bill.saleItems.reduce((sum, item) => sum + Number(item.cGstAmount || 0), 0),
+              bill.saleItems.reduce(
+                (sum, item) => sum + Number(item.cGstAmount || 0),
+                0,
+              ),
             ),
             sGstAmount: round2(
-              bill.saleItems.reduce((sum, item) => sum + Number(item.sGstAmount || 0), 0),
+              bill.saleItems.reduce(
+                (sum, item) => sum + Number(item.sGstAmount || 0),
+                0,
+              ),
             ),
             iGstAmount: round2(
-              bill.saleItems.reduce((sum, item) => sum + Number(item.iGstAmount || 0), 0),
+              bill.saleItems.reduce(
+                (sum, item) => sum + Number(item.iGstAmount || 0),
+                0,
+              ),
             ),
             rounding: 0,
             billTotal: round2(Number(bill.invoice.total || 0)),
@@ -541,7 +579,8 @@ export const getAPI = async (req: Request, user: User) => {
         }
 
         for (const txn of bill.invoice.transactions.filter(
-          (txn) => !txn.isDeleted && txn.transactionType === TransactionType.PAYMENT,
+          (txn) =>
+            !txn.isDeleted && txn.transactionType === TransactionType.PAYMENT,
         )) {
           if (!canViewCounterSale) continue;
           counterSaleCollections.push({
@@ -557,7 +596,10 @@ export const getAPI = async (req: Request, user: User) => {
         }
 
         for (const item of bill.saleItems) {
-          const packSize = Math.max(Number(item.inventoryItem.itemsPerPack || 1), 1);
+          const packSize = Math.max(
+            Number(item.inventoryItem.itemsPerPack || 1),
+            1,
+          );
           const pieces = toPieces({
             quantity: item.quantity,
             isLooseQuantity: Boolean(item.isLooseQuantity),
@@ -572,7 +614,9 @@ export const getAPI = async (req: Request, user: User) => {
             Number(item.iGstPercentage || 0);
           const ptrWithGst = round2(ptr + (ptr * gstPercent) / 100);
           const ptrTotal = round2(ptr * Number(item.quantity || 0));
-          const ptrWithGstTotal = round2(ptrWithGst * Number(item.quantity || 0));
+          const ptrWithGstTotal = round2(
+            ptrWithGst * Number(item.quantity || 0),
+          );
           const purchaseMeta = item.inventoryItem.grnItems[0]?.grn;
 
           if (canViewCounterSale) {
@@ -608,7 +652,7 @@ export const getAPI = async (req: Request, user: User) => {
               sGstPercentage: Number(item.sGstPercentage || 0),
               iGstPercentage: Number(item.iGstPercentage || 0),
               saleOrReturn: "SALE",
-              doctor: bill.doctor?.user?.name || "-",
+              doctor: bill.doctor ? fullName(bill.doctor) : "-",
               saleType: bill.isWholesaleBill ? "WHOLESALE" : "RETAIL",
               profitLoss: round2(Number(item.total || 0) - ptrWithGstTotal),
               supplier: item.inventoryItem.supplier.name,
@@ -632,7 +676,8 @@ export const getAPI = async (req: Request, user: User) => {
             map: counterSaleGstSummaryMap,
             hsnSacCode: String(item.inventoryItem.hsnSac?.code ?? "-"),
             gstRate: round2(
-              Number(item.cGstPercentage || 0) + Number(item.sGstPercentage || 0),
+              Number(item.cGstPercentage || 0) +
+                Number(item.sGstPercentage || 0),
             ),
             taxableAmount: Number(item.taxableAmount || 0),
             sGstAmount: Number(item.sGstAmount || 0),
@@ -654,17 +699,28 @@ export const getAPI = async (req: Request, user: User) => {
                 ),
               ),
               cGstAmount: round2(
-                saleReturn.items.reduce((sum, item) => sum + Number(item.cGstAmount || 0), 0),
+                saleReturn.items.reduce(
+                  (sum, item) => sum + Number(item.cGstAmount || 0),
+                  0,
+                ),
               ),
               sGstAmount: round2(
-                saleReturn.items.reduce((sum, item) => sum + Number(item.sGstAmount || 0), 0),
+                saleReturn.items.reduce(
+                  (sum, item) => sum + Number(item.sGstAmount || 0),
+                  0,
+                ),
               ),
               iGstAmount: round2(
-                saleReturn.items.reduce((sum, item) => sum + Number(item.iGstAmount || 0), 0),
+                saleReturn.items.reduce(
+                  (sum, item) => sum + Number(item.iGstAmount || 0),
+                  0,
+                ),
               ),
               rounding: 0,
               billTotal: round2(Number(saleReturn.refundAmount || 0)),
-              paidTotal: round2(Number(saleReturn.refundTransaction?.amount || 0)),
+              paidTotal: round2(
+                Number(saleReturn.refundTransaction?.amount || 0),
+              ),
               saleOrReturn: "RETURN",
               wholesaleRetail: bill.isWholesaleBill ? "WHOLESALE" : "RETAIL",
               corporate: getCorporateLabel(bill.invoice.billingType),
@@ -688,7 +744,9 @@ export const getAPI = async (req: Request, user: User) => {
               Number(item.iGstPercentage || 0);
             const ptrWithGst = round2(ptr + (ptr * gstPercent) / 100);
             const ptrTotal = round2(ptr * Number(item.quantity || 0));
-            const ptrWithGstTotal = round2(ptrWithGst * Number(item.quantity || 0));
+            const ptrWithGstTotal = round2(
+              ptrWithGst * Number(item.quantity || 0),
+            );
             const purchaseMeta = inventory.grnItems[0]?.grn;
 
             if (canViewCounterSale) {
@@ -724,7 +782,7 @@ export const getAPI = async (req: Request, user: User) => {
                 sGstPercentage: Number(item.sGstPercentage || 0),
                 iGstPercentage: Number(item.iGstPercentage || 0),
                 saleOrReturn: "RETURN",
-                doctor: bill.doctor?.user?.name || "-",
+                doctor: bill?.doctor ? fullName(bill.doctor) : "-",
                 saleType: bill.isWholesaleBill ? "WHOLESALE" : "RETAIL",
                 profitLoss: round2(Number(item.total || 0) - ptrWithGstTotal),
                 supplier: inventory.supplier.name,
@@ -749,7 +807,8 @@ export const getAPI = async (req: Request, user: User) => {
               map: counterSaleGstSummaryMap,
               hsnSacCode: String(inventory.hsnSac?.code ?? "-"),
               gstRate: round2(
-                Number(item.cGstPercentage || 0) + Number(item.sGstPercentage || 0),
+                Number(item.cGstPercentage || 0) +
+                  Number(item.sGstPercentage || 0),
               ),
               taxableAmount: Number(item.taxableAmount || 0),
               sGstAmount: Number(item.sGstAmount || 0),
@@ -765,13 +824,18 @@ export const getAPI = async (req: Request, user: User) => {
 
       for (const issue of ipdIssues) {
         for (const item of issue.items) {
-          const packSize = Math.max(Number(item.inventoryItem.itemsPerPack || 1), 1);
+          const packSize = Math.max(
+            Number(item.inventoryItem.itemsPerPack || 1),
+            1,
+          );
           if (canViewIpdSale) {
             ipdSaleItems.push({
               id: `ipd-issue-item-${item.id}`,
               date: issue.createdAt,
               invoiceNumber: formatIpdIssueNumber(issue.id),
-              billingType: toDisplayLabel(String(issue.ipd.invoice?.billingType || "SELF_PAY")),
+              billingType: toDisplayLabel(
+                String(issue.ipd.invoice?.billingType || "SELF_PAY"),
+              ),
               customer: getCustomerDisplayName({
                 patient: issue.ipd.patient,
               }),
@@ -799,28 +863,29 @@ export const getAPI = async (req: Request, user: User) => {
         }
       }
 
-      const purchaseOrderRows: PurchaseOrderReportRowType[] = purchaseOrders.map((order) => ({
-        id: order.id,
-        supplier: order.supplier.name,
-        poNumber: formatPoNumber(order.id),
-        poDate: order.orderDate,
-        items: order.items.length,
-        taxableAmount: Number(order.taxableAmount || 0),
-        packingForwarding: Number(order.packingForwarding || 0),
-        cGstAmount: Number(order.cGstAmount || 0),
-        sGstAmount: Number(order.sGstAmount || 0),
-        iGstAmount: Number(order.iGstAmount || 0),
-        tcsAmount: Number(order.tcsAmount || 0),
-        discountAmount: Number(order.discountAmount || 0),
-        roundOffAmount: Number(order.roundOffAmount || 0),
-        grandTotal: Number(order.grandTotal || 0),
-        linkedGrn: order.grn?.id ? formatGrnNumber(order.grn.id) : "-",
-      }));
+      const purchaseOrderRows: PurchaseOrderReportRowType[] =
+        purchaseOrders.map((order) => ({
+          id: order.id,
+          supplier: order.supplier.name,
+          poNumber: formatPoNumber(order.id),
+          poDate: order.orderDate,
+          items: order.items.length,
+          taxableAmount: Number(order.taxableAmount || 0),
+          packingForwarding: Number(order.packingForwarding || 0),
+          cGstAmount: Number(order.cGstAmount || 0),
+          sGstAmount: Number(order.sGstAmount || 0),
+          iGstAmount: Number(order.iGstAmount || 0),
+          tcsAmount: Number(order.tcsAmount || 0),
+          discountAmount: Number(order.discountAmount || 0),
+          roundOffAmount: Number(order.roundOffAmount || 0),
+          grandTotal: Number(order.grandTotal || 0),
+          linkedGrn: order.grn?.id ? formatGrnNumber(order.grn.id) : "-",
+        }));
 
       const poGstSummaryMap = new Map<string, GstSummaryRowType>();
 
-      const purchaseOrderItemRows: PurchaseOrderItemReportRowType[] = purchaseOrders.flatMap(
-        (order) =>
+      const purchaseOrderItemRows: PurchaseOrderItemReportRowType[] =
+        purchaseOrders.flatMap((order) =>
           order.items.map((item) => {
             const cGstPercentage = Number(item.hsnSac?.cGstPercentage || 0);
             const sGstPercentage = Number(item.hsnSac?.sGstPercentage || 0);
@@ -861,7 +926,7 @@ export const getAPI = async (req: Request, user: User) => {
               total: Number(item.total || 0),
             };
           }),
-      );
+        );
 
       const grnRows: GrnReportRowType[] = grns.map((grn) => {
         const supplier = grn.order?.supplier ?? grn.challan?.supplier;
@@ -905,12 +970,20 @@ export const getAPI = async (req: Request, user: User) => {
             supplier: supplier?.name || inventory.supplier.name,
             invoiceNumber: grn.invoiceNumber,
             grnDate: grn.createdAt,
-            item: purchaseItem?.drug.name || challanItem?.drug.name || inventory.drug.name,
-            category: purchaseItem?.category?.name || challanItem?.category?.name || "-",
+            item:
+              purchaseItem?.drug.name ||
+              challanItem?.drug.name ||
+              inventory.drug.name,
+            category:
+              purchaseItem?.category?.name ||
+              challanItem?.category?.name ||
+              "-",
             batch: String(inventory.batchNo),
             expiry: inventory.expiryDate,
             hsn: String(hsnCode),
-            quantity: Number(purchaseItem?.quantity ?? challanItem?.quantity ?? 0),
+            quantity: Number(
+              purchaseItem?.quantity ?? challanItem?.quantity ?? 0,
+            ),
             freeQuantity: Number(challanItem?.freeQuantity ?? 0),
             rate: Number(
               purchaseItem?.rate ??
@@ -941,75 +1014,78 @@ export const getAPI = async (req: Request, user: User) => {
         });
       });
 
-      const purchaseUtilisation: PurchaseUtilisationRowType[] = inventoryItems.map((inventory) => {
-        let purchasedQuantity = 0;
-        let purchaseAmount = 0;
+      const purchaseUtilisation: PurchaseUtilisationRowType[] =
+        inventoryItems.map((inventory) => {
+          let purchasedQuantity = 0;
+          let purchaseAmount = 0;
 
-        for (const grnItem of inventory.grnItems) {
-          const packSize = Math.max(Number(inventory.itemsPerPack || 1), 1);
-          const qty = grnItem.challanItem
-            ? (Number(grnItem.challanItem.quantity || 0) +
-                Number(grnItem.challanItem.freeQuantity || 0)) *
-              Math.max(Number(grnItem.challanItem.itemsPerPack || 1), 1)
-            : Number(grnItem.purchaseItem?.quantity || 0) * packSize;
-          const amount = grnItem.challanItem
-            ? Number(grnItem.challanItem.quantity || 0) *
-              Number(grnItem.challanItem.purchasePrice || 0)
-            : Number(grnItem.purchaseItem?.quantity || 0) *
-              Number(grnItem.purchaseItem?.rate || inventory.purchasePrice || 0);
+          for (const grnItem of inventory.grnItems) {
+            const packSize = Math.max(Number(inventory.itemsPerPack || 1), 1);
+            const qty = grnItem.challanItem
+              ? (Number(grnItem.challanItem.quantity || 0) +
+                  Number(grnItem.challanItem.freeQuantity || 0)) *
+                Math.max(Number(grnItem.challanItem.itemsPerPack || 1), 1)
+              : Number(grnItem.purchaseItem?.quantity || 0) * packSize;
+            const amount = grnItem.challanItem
+              ? Number(grnItem.challanItem.quantity || 0) *
+                Number(grnItem.challanItem.purchasePrice || 0)
+              : Number(grnItem.purchaseItem?.quantity || 0) *
+                Number(
+                  grnItem.purchaseItem?.rate || inventory.purchasePrice || 0,
+                );
 
-          purchasedQuantity += qty;
-          purchaseAmount = round2(purchaseAmount + amount);
-        }
+            purchasedQuantity += qty;
+            purchaseAmount = round2(purchaseAmount + amount);
+          }
 
-        let soldQuantity = 0;
-        let soldAmount = 0;
-        for (const saleItem of inventory.saleItems) {
-          const packSize = Math.max(Number(inventory.itemsPerPack || 1), 1);
-          const soldPieces = toPieces({
-            quantity: saleItem.quantity,
-            isLooseQuantity: Boolean(saleItem.isLooseQuantity),
-            packSize,
-          });
-          const returnedPieces = saleItem.returnItems.reduce(
-            (sum, returnItem) =>
-              sum +
-              toPieces({
-                quantity: returnItem.quantity,
-                isLooseQuantity: Boolean(returnItem.isLooseQuantity),
-                packSize,
-              }),
-            0,
-          );
-          soldQuantity += soldPieces - returnedPieces;
-          soldAmount = round2(
-            soldAmount +
-              Number(saleItem.total || 0) -
-              saleItem.returnItems.reduce(
-                (sum, returnItem) => sum + Number(returnItem.total || 0),
-                0,
-              ),
-          );
-        }
+          let soldQuantity = 0;
+          let soldAmount = 0;
+          for (const saleItem of inventory.saleItems) {
+            const packSize = Math.max(Number(inventory.itemsPerPack || 1), 1);
+            const soldPieces = toPieces({
+              quantity: saleItem.quantity,
+              isLooseQuantity: Boolean(saleItem.isLooseQuantity),
+              packSize,
+            });
+            const returnedPieces = saleItem.returnItems.reduce(
+              (sum, returnItem) =>
+                sum +
+                toPieces({
+                  quantity: returnItem.quantity,
+                  isLooseQuantity: Boolean(returnItem.isLooseQuantity),
+                  packSize,
+                }),
+              0,
+            );
+            soldQuantity += soldPieces - returnedPieces;
+            soldAmount = round2(
+              soldAmount +
+                Number(saleItem.total || 0) -
+                saleItem.returnItems.reduce(
+                  (sum, returnItem) => sum + Number(returnItem.total || 0),
+                  0,
+                ),
+            );
+          }
 
-        return {
-          id: inventory.id,
-          item: inventory.drug.name,
-          batch: String(inventory.batchNo),
-          expiry: inventory.expiryDate,
-          purchasedQuantity,
-          ptr: Number(inventory.purchasePrice || 0),
-          cGstPercentage: Number(inventory.hsnSac?.cGstPercentage || 0),
-          sGstPercentage: Number(inventory.hsnSac?.sGstPercentage || 0),
-          purchaseAmount: round2(purchaseAmount),
-          soldQuantity: round2(soldQuantity),
-          soldAmount: round2(soldAmount),
-          utilisationPercentage:
-            purchasedQuantity > 0
-              ? round2((soldQuantity / purchasedQuantity) * 100)
-              : 0,
-        };
-      });
+          return {
+            id: inventory.id,
+            item: inventory.drug.name,
+            batch: String(inventory.batchNo),
+            expiry: inventory.expiryDate,
+            purchasedQuantity,
+            ptr: Number(inventory.purchasePrice || 0),
+            cGstPercentage: Number(inventory.hsnSac?.cGstPercentage || 0),
+            sGstPercentage: Number(inventory.hsnSac?.sGstPercentage || 0),
+            purchaseAmount: round2(purchaseAmount),
+            soldQuantity: round2(soldQuantity),
+            soldAmount: round2(soldAmount),
+            utilisationPercentage:
+              purchasedQuantity > 0
+                ? round2((soldQuantity / purchasedQuantity) * 100)
+                : 0,
+          };
+        });
 
       const movementMap = new Map<string, StockItemMovementRowType>();
       const upsertMovement = (itemName: string) => {
@@ -1068,7 +1144,8 @@ export const getAPI = async (req: Request, user: User) => {
             });
             movement.counterReturnsQuantity += returnedPieces;
             movement.counterReturnsPurchaseValue = round2(
-              movement.counterReturnsPurchaseValue + returnedPieces * ptrPerPiece,
+              movement.counterReturnsPurchaseValue +
+                returnedPieces * ptrPerPiece,
             );
             movement.counterReturnsMrpValue = round2(
               movement.counterReturnsMrpValue + returnedPieces * mrpPerPiece,
@@ -1166,11 +1243,18 @@ export const getAPI = async (req: Request, user: User) => {
             id: String(item.id),
             item: item.drug.name,
             batch: String(item.batchNo),
-            expiringInDays: differenceInCalendarDays(new Date(item.expiryDate), now),
+            expiringInDays: differenceInCalendarDays(
+              new Date(item.expiryDate),
+              now,
+            ),
             ptr: round2(ptrPerPiece),
-            stockValuePtr: round2(Number(item.quantityInStock || 0) * ptrPerPiece),
+            stockValuePtr: round2(
+              Number(item.quantityInStock || 0) * ptrPerPiece,
+            ),
             mrp: round2(mrpPerPiece),
-            stockValueMrp: round2(Number(item.quantityInStock || 0) * mrpPerPiece),
+            stockValueMrp: round2(
+              Number(item.quantityInStock || 0) * mrpPerPiece,
+            ),
           };
         })
         .sort((a, b) => a.expiringInDays - b.expiringInDays);
@@ -1181,7 +1265,9 @@ export const getAPI = async (req: Request, user: User) => {
           items: canViewCounterSale ? counterSaleItems : [],
           collections: canViewCounterSale ? counterSaleCollections : [],
           hsnSummary: canViewCounterSale
-            ? Array.from(counterSaleHsnMap.values()).sort((a, b) => a.hsn.localeCompare(b.hsn))
+            ? Array.from(counterSaleHsnMap.values()).sort((a, b) =>
+                a.hsn.localeCompare(b.hsn),
+              )
             : [],
           gstSummary: canViewCounterSale
             ? Array.from(counterSaleGstSummaryMap.values()).sort((a, b) =>
@@ -1192,7 +1278,9 @@ export const getAPI = async (req: Request, user: User) => {
         ipdSale: {
           items: canViewIpdSale ? ipdSaleItems : [],
           hsnSummary: canViewIpdSale
-            ? Array.from(ipdSaleHsnMap.values()).sort((a, b) => a.hsn.localeCompare(b.hsn))
+            ? Array.from(ipdSaleHsnMap.values()).sort((a, b) =>
+                a.hsn.localeCompare(b.hsn),
+              )
             : [],
         },
         po: {

@@ -19,7 +19,7 @@ import {
   FilterValues,
   User,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -129,11 +129,7 @@ const Appointments = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useAppointmentsList(
-    filters,
-    page,
-    limit,
-  );
+    useAppointmentsList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -175,9 +171,7 @@ const Appointments = () => {
       },
       cell: ({ row }) => (
         <Link href="#" className="hover:underline">
-          {row.original.patient?.firstName +
-            " " +
-            row.original.patient?.lastName || "-"}
+          {row.original.patient ? fullName(row.original.patient) : "-"}
         </Link>
       ),
       headerClassName: "min-w-50",
@@ -193,7 +187,9 @@ const Appointments = () => {
           />
         );
       },
-      cell: ({ row }) => <span>{row.original.doctor.user?.name || "-"}</span>,
+      cell: ({ row }) => (
+        <span>{row.original.doctor ? fullName(row.original.doctor) : "-"}</span>
+      ),
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
