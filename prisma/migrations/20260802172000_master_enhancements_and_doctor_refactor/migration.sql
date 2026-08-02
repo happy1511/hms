@@ -5,7 +5,17 @@ ALTER TABLE `ReferenceRange` MODIFY COLUMN `lowerRange` DOUBLE NULL, MODIFY COLU
 ALTER TABLE `Service` ADD COLUMN `billingSectionId` INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE `Service` ADD CONSTRAINT `Service_billingSectionId_fkey` FOREIGN KEY (`billingSectionId`) REFERENCES `BillingSection`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- Update Doctor table structure and copy data from User
+-- Drop foreign keys referencing Doctor.userId
+ALTER TABLE `DoctorAvailableDay` DROP FOREIGN KEY `DoctorAvailableDay_doctorId_fkey`;
+ALTER TABLE `Appointment` DROP FOREIGN KEY `Appointment_doctorId_fkey`;
+ALTER TABLE `Service` DROP FOREIGN KEY `Service_consultingDoctorId_fkey`;
+ALTER TABLE `Opd` DROP FOREIGN KEY `Opd_consultantDoctorId_fkey`;
+ALTER TABLE `Opd` DROP FOREIGN KEY `Opd_referringDoctorId_fkey`;
+ALTER TABLE `Ipd` DROP FOREIGN KEY `Ipd_consultantDoctorId_fkey`;
+ALTER TABLE `Ipd` DROP FOREIGN KEY `Ipd_referringDoctorId_fkey`;
+ALTER TABLE `DrugBill` DROP FOREIGN KEY `DrugBill_doctorId_fkey`;
+
+-- Update Doctor table structure
 ALTER TABLE `Doctor`
   ADD COLUMN `title` VARCHAR(191) NULL,
   ADD COLUMN `firstName` VARCHAR(191) NOT NULL DEFAULT '',
@@ -30,6 +40,16 @@ SET
   d.`status` = u.`status`,
   d.`isDeleted` = u.`isDeleted`;
 
--- Rename userId to id in Doctor table while keeping existing values
+-- Rename userId to id in Doctor table
 ALTER TABLE `Doctor` DROP FOREIGN KEY `Doctor_userId_fkey`;
 ALTER TABLE `Doctor` CHANGE COLUMN `userId` `id` INTEGER NOT NULL AUTO_INCREMENT;
+
+-- Recreate foreign keys pointing to Doctor.id
+ALTER TABLE `DoctorAvailableDay` ADD CONSTRAINT `DoctorAvailableDay_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Appointment` ADD CONSTRAINT `Appointment_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Service` ADD CONSTRAINT `Service_consultingDoctorId_fkey` FOREIGN KEY (`consultingDoctorId`) REFERENCES `Doctor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `Opd` ADD CONSTRAINT `Opd_consultantDoctorId_fkey` FOREIGN KEY (`consultantDoctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Opd` ADD CONSTRAINT `Opd_referringDoctorId_fkey` FOREIGN KEY (`referringDoctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Ipd` ADD CONSTRAINT `Ipd_consultantDoctorId_fkey` FOREIGN KEY (`consultantDoctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Ipd` ADD CONSTRAINT `Ipd_referringDoctorId_fkey` FOREIGN KEY (`referringDoctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `DrugBill` ADD CONSTRAINT `DrugBill_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `Doctor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
