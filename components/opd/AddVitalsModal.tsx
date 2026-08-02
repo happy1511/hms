@@ -41,8 +41,9 @@ const AddVitalsModal = ({
     resolver: zodResolver(vitalsValidator),
   });
 
-  const onSubmit = (values: vitalValidatorType) => {
-    mutateAsync(values, { onSuccess: () => onOpenChange?.(false) });
+  const onSubmit = async (values: vitalValidatorType) => {
+    await mutateAsync(values);
+    onOpenChange?.(false);
   };
 
   useEffect(() => {
@@ -131,7 +132,7 @@ const AddVitalsModal = ({
               <div className="col-span-2 space-x-2">
                 <div className="w-full flex justify-end">
                   <CustomButton
-                    disabled={isPending}
+                    isLoading={isPending}
                     type="submit"
                     className="self-end"
                   >

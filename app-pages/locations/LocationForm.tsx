@@ -22,7 +22,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-const UpdateForm = ({ data }: { data?: Location }) => {
+const UpdateForm = ({
+  data,
+  onSuccess,
+}: {
+  data?: Location;
+  onSuccess: () => void;
+}) => {
   const { mutateAsync: create, isPending: creating } = useCreateLocation();
   const { mutateAsync: update, isPending: updating } = useUpdateLocation();
 
@@ -37,12 +43,14 @@ const UpdateForm = ({ data }: { data?: Location }) => {
     resolver: zodResolver(locationValidator),
   });
 
-  const onSubmit = (values: LocationValidatorType) => {
+  const onSubmit = async (values: LocationValidatorType) => {
     if (data) {
-      update({ ...values, id: Number(data.id) });
+      await update({ ...values, id: Number(data.id) });
     } else {
-      create({ ...values });
+      await create({ ...values });
     }
+    form.reset();
+    onSuccess();
   };
 
   return (
@@ -85,7 +93,7 @@ const UpdateForm = ({ data }: { data?: Location }) => {
             required
           />
         </div>
-        <CustomButton disabled={updating || creating} type="submit">
+        <CustomButton isLoading={updating || creating} type="submit">
           Submit
         </CustomButton>
       </form>
@@ -117,7 +125,7 @@ const LocationForm = ({
           </DialogDescription>
         </DialogHeader>
         <CustomLayout title={data ? "Edit Location" : "Create Location"}>
-          {data ? <UpdateForm data={data} /> : <UpdateForm />}
+          <UpdateForm data={data} onSuccess={() => setOpen(false)} />
         </CustomLayout>
       </DialogContent>
     </Dialog>

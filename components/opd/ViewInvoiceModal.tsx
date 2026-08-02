@@ -107,7 +107,10 @@ const ViewInvoiceModal = ({
               </CustomButton>
               <CustomButton
                 type="button"
-                onClick={() => router.push(`/invoice/${effectiveInvoiceId}`)}
+                onClick={() => {
+                  onOpenChange?.(false);
+                  router.push(`/invoice/${effectiveInvoiceId}`);
+                }}
               >
                 View More Details
               </CustomButton>

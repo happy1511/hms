@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CircleHelp, RotateCcw, Trash2Icon } from "lucide-react";
+import { CircleHelp, Loader2, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 
@@ -99,7 +99,8 @@ export function CustomAlert({
             onClick={onConfirm}
             variant={confirmVariant}
           >
-            {isPending ? <RotateCcw className="animate-spin" /> : confirmText}
+            {isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
+            {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

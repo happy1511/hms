@@ -122,7 +122,10 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
         <div className="flex justify-center gap-2 mt-3">
           <CustomButton
             type="button"
-            onClick={() => router.push(`/pharmacy/form/sale-bill/${billId}`)}
+            onClick={() => {
+              onOpenChange?.(false);
+              router.push(`/pharmacy/form/sale-bill/${billId}`);
+            }}
           >
             View More Details
           </CustomButton>
@@ -152,4 +155,3 @@ const ViewSaleInvoiceModal = ({ billId, open, onOpenChange, trigger }: Props) =>
 };
 
 export default ViewSaleInvoiceModal;
-

@@ -196,7 +196,12 @@ const PatientSearchModal = ({ trigger, actions }: Props) => {
                 </div>
                 <div className="flex gap-2">
                   {canCreate && (
-                    <CustomButton onClick={() => router.push("/patient/new")}>
+                    <CustomButton
+                      onClick={() => {
+                        setOpen(false);
+                        router.push("/patient/new");
+                      }}
+                    >
                       Register New Patient
                     </CustomButton>
                   )}

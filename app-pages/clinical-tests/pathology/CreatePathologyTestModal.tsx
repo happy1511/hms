@@ -23,23 +23,28 @@ import {
 } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
 
+import { useState } from "react";
+
 interface Props {
   trigger: React.ReactNode;
 }
 
 const CreatePathologyTestModal = ({ trigger }: Props) => {
+  const [open, setOpen] = useState(false);
   const { mutateAsync, isPending } = useCreatePathologyTest();
 
   const form = useForm<PathologyTestValidatorType>({
     resolver: zodResolver(pathologyTestValidator),
   });
 
-  const handleSubmit = (values: PathologyTestValidatorType) => {
-    mutateAsync(values);
+  const handleSubmit = async (values: PathologyTestValidatorType) => {
+    await mutateAsync(values);
+    form.reset();
+    setOpen(false);
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent
         showCloseButton={false}
@@ -116,7 +121,7 @@ const CreatePathologyTestModal = ({ trigger }: Props) => {
               />
 
               <div className="col-span-2">
-                <CustomButton disabled={isPending} type="submit">
+                <CustomButton isLoading={isPending} type="submit">
                   Create
                 </CustomButton>
               </div>

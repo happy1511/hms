@@ -98,7 +98,7 @@ const ChangeIpdDateTimeModal = ({ open, onOpenChange, ipd }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending || !ipdId}>
+              <CustomButton type="submit" disabled={!ipdId} isLoading={isPending}>
                 Save
               </CustomButton>
             </div>

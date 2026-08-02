@@ -143,7 +143,7 @@ const CreatePharmacyCustomerModal = ({
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending}>
+              <CustomButton type="submit" isLoading={isPending}>
                 Save Customer
               </CustomButton>
             </div>

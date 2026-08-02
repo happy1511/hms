@@ -56,7 +56,10 @@ const ViewGrnModal = ({ grnId, open, onOpenChange, trigger }: Props) => {
         <div className="mt-3 flex justify-center gap-2">
           <CustomButton
             type="button"
-            onClick={() => router.push(`/pharmacy/grn/print/${grnId}`)}
+            onClick={() => {
+              onOpenChange?.(false);
+              router.push(`/pharmacy/grn/print/${grnId}`);
+            }}
           >
             Print
           </CustomButton>

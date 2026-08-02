@@ -151,8 +151,8 @@ const MasterImportModal = ({
             <CustomButton type="button" variant="outline" onClick={() => setOpen(false)}>
               Close
             </CustomButton>
-            <CustomButton type="button" disabled={!file || isPending} onClick={handleImport}>
-              {isPending ? "Importing..." : "Import"}
+            <CustomButton type="button" disabled={!file} isLoading={isPending} onClick={handleImport}>
+              Import
             </CustomButton>
           </div>
         </div>

@@ -88,8 +88,10 @@ const AddInvoiceItemModal = ({
 
   const canEditRate = Boolean(service?.isEditableRate);
 
-  const onSubmit = (values: addInvoiceBillItemValidatorType) => {
-    mutateAsync(values);
+  const onSubmit = async (values: addInvoiceBillItemValidatorType) => {
+    await mutateAsync(values);
+    billingItemForm.reset();
+    onOpenChange?.(false);
   };
 
   useEffect(() => {
@@ -259,7 +261,7 @@ const AddInvoiceItemModal = ({
                 <div className="col-span-2 space-x-2">
                   <div className="w-full flex justify-end gap-2">
                     <CustomButton
-                      disabled={isPending}
+                      isLoading={isPending}
                       type="submit"
                       className="self-end"
                     >

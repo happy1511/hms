@@ -84,8 +84,8 @@ const CreateSupplierModal = ({ open, onOpenChange, onCreated }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending}>
-                {isPending ? "Saving..." : "Create Supplier"}
+              <CustomButton type="submit" isLoading={isPending}>
+                Create Supplier
               </CustomButton>
             </DialogFooter>
           </form>

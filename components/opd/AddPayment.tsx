@@ -169,7 +169,7 @@ const AddPaymentModal = ({
                 <div className="col-span-2 space-x-2">
                   <div className="w-full flex justify-end">
                     <CustomButton
-                      disabled={isPending}
+                      isLoading={isPending}
                       type="submit"
                       className="self-end"
                     >

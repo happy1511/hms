@@ -50,6 +50,7 @@ export function PatientViewModal({
   );
 
   const handleEdit = () => {
+    onOpenChange?.(false);
     router.push(`/patient/${data.id}`);
   };
 
@@ -108,11 +109,9 @@ export function PatientViewModal({
             <div>Relation</div>
             <div>
               {data.relations?.map((relation) => (
-                <>
-                  <div>
-                    {relation.type} of {relation.name}
-                  </div>
-                </>
+                <div key={relation.id || relation.name}>
+                  {relation.type} of {relation.name}
+                </div>
               ))}
             </div>
           </CustomLayout>
@@ -121,10 +120,10 @@ export function PatientViewModal({
             contentClassName="grid grid-cols-[40%_60%] space-y-1"
           >
             {data.addresses?.map((address) => (
-              <>
+              <React.Fragment key={address.id}>
                 <div>{address.type}</div>
                 <div>{formatAddress(address)}</div>
-              </>
+              </React.Fragment>
             ))}
           </CustomLayout>
           <CustomLayout
@@ -132,10 +131,10 @@ export function PatientViewModal({
             contentClassName="grid grid-cols-[40%_60%] space-y-1"
           >
             {data.contacts?.map((contact) => (
-              <>
+              <React.Fragment key={contact.id}>
                 <div>{contact.type}</div>
                 <div>{contact.value}</div>
-              </>
+              </React.Fragment>
             ))}
           </CustomLayout>
           {canEdit && (

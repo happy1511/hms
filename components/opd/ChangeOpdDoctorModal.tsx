@@ -142,7 +142,7 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending || !opdId}>
+              <CustomButton type="submit" disabled={!opdId} isLoading={isPending}>
                 Save
               </CustomButton>
             </div>

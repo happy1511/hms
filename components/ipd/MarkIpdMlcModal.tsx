@@ -128,7 +128,7 @@ const MarkIpdMlcModal = ({ open, onOpenChange, ipd }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={isPending || !ipd?.id}>
+              <CustomButton type="submit" disabled={!ipd?.id} isLoading={isPending}>
                 Save
               </CustomButton>
             </div>

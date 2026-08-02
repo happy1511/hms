@@ -23,12 +23,15 @@ import {
   useUpdateRadiologyTest,
 } from "@/hooks/query/radiology";
 
+import { useState } from "react";
+
 interface Props {
   trigger: React.ReactNode;
   data?: RadiologyTest;
 }
 
 const RadiologyTestForm = ({ trigger, data }: Props) => {
+  const [open, setOpen] = useState(false);
   const { mutateAsync: create, isPending: creating } = useCreateRadiologyTest();
   const { mutateAsync: update, isPending: updating } = useUpdateRadiologyTest();
 
@@ -43,16 +46,18 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
     resolver: zodResolver(radiologyTestValidator),
   });
 
-  const handleSubmit = (values: RadiologyTestValidatorType) => {
+  const handleSubmit = async (values: RadiologyTestValidatorType) => {
     if (data) {
-      update({ ...values, testId: data.id });
+      await update({ ...values, testId: data.id });
     } else {
-      create(values);
+      await create(values);
     }
+    form.reset();
+    setOpen(false);
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent
         showCloseButton={false}
@@ -110,7 +115,7 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
               />
 
               <div className="col-span-2">
-                <CustomButton disabled={creating || updating} type="submit">
+                <CustomButton isLoading={creating || updating} type="submit">
                   {data ? "Update" : "Create"}
                 </CustomButton>
               </div>

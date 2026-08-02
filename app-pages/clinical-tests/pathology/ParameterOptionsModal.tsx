@@ -73,8 +73,9 @@ const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
     resolver: zodResolver(addOptionToParameterValidator),
   });
 
-  const handleSubmit = (values: AddOptionToParameterValidatorType) => {
-    mutateAsync(values);
+  const handleSubmit = async (values: AddOptionToParameterValidatorType) => {
+    await mutateAsync(values);
+    form.reset({ parameterId: data.id, value: "" });
   };
 
   const columns: ColumnDefWithClass<ParameterOptions>[] = [
@@ -125,7 +126,7 @@ const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
               />
 
               <div className="col-span-2">
-                <CustomButton disabled={isPending} type="submit">
+                <CustomButton isLoading={isPending} type="submit">
                   Create
                 </CustomButton>
               </div>

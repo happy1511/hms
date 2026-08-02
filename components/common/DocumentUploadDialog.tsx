@@ -88,13 +88,14 @@ const DocumentUploadDialog = ({
             Cancel
           </CustomButton>
           <CustomButton
-            disabled={!file || uploading}
+            disabled={!file}
+            isLoading={uploading}
             onClick={async () => {
               if (!file) return;
               await onUpload(file);
             }}
           >
-            {uploading ? "Uploading..." : "Upload"}
+            Upload
           </CustomButton>
         </div>
       </DialogContent>

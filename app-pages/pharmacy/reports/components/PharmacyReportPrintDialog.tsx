@@ -66,7 +66,6 @@ const PharmacyReportPrintDialog = ({
     }
 
     window.open(`/pharmacy/reports/print?${params.toString()}`, "_blank");
-    setOpen(false);
   };
 
   return (

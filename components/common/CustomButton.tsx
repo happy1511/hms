@@ -40,7 +40,8 @@ const CustomButton = ({
       )}
       onClick={onClick}
     >
-      {isLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : children}
+      {isLoading && <Loader2 className="mr-1 size-4 animate-spin" />}
+      {children}
     </Button>
   );
 };
