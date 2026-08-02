@@ -6,16 +6,16 @@
 
 */
 -- DropIndex
-DROP INDEX `Doctor_userId_idx` ON `doctor`;
+-- DROP INDEX `Doctor_userId_idx` ON `Doctor`;
 
 -- AlterTable
-ALTER TABLE `doctor` ALTER COLUMN `firstName` DROP DEFAULT,
+ALTER TABLE `Doctor` ALTER COLUMN `firstName` DROP DEFAULT,
     MODIFY `gender` ENUM('Male', 'Female', 'Other') NULL,
     MODIFY `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `service` ALTER COLUMN `billingSectionId` DROP DEFAULT;
+ALTER TABLE `Service` ALTER COLUMN `billingSectionId` DROP DEFAULT;
 
 -- CreateIndex
 CREATE INDEX `Doctor_isDeleted_idx` ON `Doctor`(`isDeleted`);
