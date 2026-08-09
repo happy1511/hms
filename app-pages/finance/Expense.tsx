@@ -23,7 +23,7 @@ import {
   ExpenseWithCategory,
   useExpenseList,
 } from "@/hooks/query/expense";
-import { useFinanceCategoryList, useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
+import { useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { PaginatedResponse } from "@/lib/type";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
@@ -41,6 +41,7 @@ import { useForm } from "react-hook-form";
 import CustomButton from "@/components/common/CustomButton";
 import { Label } from "@/components/ui/label";
 import { ErrorMessage } from "@hookform/error-message";
+import { FinanceCategory } from "@/generated/prisma/client";
 
 const CreateExpenseForm = () => {
   const { mutateAsync: createExpense, isPending: creating } =
@@ -232,7 +233,10 @@ const CreateExpenseForm = () => {
               />
             </div>
           </div>
-          <CustomButton type="submit" disabled={creating || categoryQuery.isLoading}>
+          <CustomButton
+            type="submit"
+            disabled={creating || categoryQuery.isLoading}
+          >
             Create Expense
           </CustomButton>
         </form>
@@ -301,11 +305,7 @@ const ExpensePage = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useExpenseList(
-    filters,
-    page,
-    limit,
-  );
+    useExpenseList(filters, page, limit);
 
   if (!profile) return <div />;
 
@@ -368,7 +368,10 @@ const ExpensePage = () => {
     {
       accessorKey: "paymentMode",
       header: ({ column }) => (
-        <SortableHeader<ExpenseWithCategory> label="Payment Mode" column={column} />
+        <SortableHeader<ExpenseWithCategory>
+          label="Payment Mode"
+          column={column}
+        />
       ),
       headerClassName: "min-w-30",
       cellClassName: "min-w-30",
@@ -385,7 +388,10 @@ const ExpensePage = () => {
     {
       accessorKey: "dateTime",
       header: ({ column }) => (
-        <SortableHeader<ExpenseWithCategory> label="Date/Time" column={column} />
+        <SortableHeader<ExpenseWithCategory>
+          label="Date/Time"
+          column={column}
+        />
       ),
       cell: ({ row }) =>
         format(new Date(row.original.dateTime), "dd/MM/yyyy - h:mma"),
@@ -395,7 +401,10 @@ const ExpensePage = () => {
     {
       accessorKey: "description",
       header: ({ column }) => (
-        <SortableHeader<ExpenseWithCategory> label="Description" column={column} />
+        <SortableHeader<ExpenseWithCategory>
+          label="Description"
+          column={column}
+        />
       ),
       cell: ({ row }) => row.original.description || "--",
       headerClassName: "min-w-40",
