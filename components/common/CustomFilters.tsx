@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm, FieldValues, Path, DefaultValues } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import { FilterConfig } from "@/lib/type";
-import { FormInput } from "../form-inputs/FormInput";
-import { FormSelect } from "../form-inputs/FormSelect";
+import { cn } from "@/lib/utils";
+import { useIsFetching } from "@tanstack/react-query";
+import { endOfToday, startOfToday } from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DateRange } from "react-day-picker";
+import { DefaultValues, FieldValues, Path, useForm } from "react-hook-form";
 import { FormDatePicker } from "../form-inputs/FormDatePicker";
 import { FormDateRangePicker } from "../form-inputs/FormDateRange";
+import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
+import { FormInput } from "../form-inputs/FormInput";
+import { FormSelect } from "../form-inputs/FormSelect";
 import { Label } from "../ui/label";
 import CustomButton from "./CustomButton";
-import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
-import { cn } from "@/lib/utils";
-import { endOfToday, startOfToday } from "date-fns";
-import { DateRange } from "react-day-picker";
-import { useIsFetching } from "@tanstack/react-query";
 
 interface CustomFiltersProps<T extends FieldValues> {
   filters: FilterConfig<T>[];
@@ -201,7 +201,7 @@ const CustomFilters = <T extends FieldValues>({
                 valueKey={filter.valueKeyExtractor}
                 labelKey={filter.labelKey}
                 hideError
-                className="border-none!"
+                className="h-6! w-full bg-white shadow-none border-none text-tiny py-1"
                 searchValue={filter.searchValue}
                 onSearchChange={filter.onSearchChange}
               />
