@@ -1,4 +1,4 @@
-import { BloodGroup, Gender, MaritalStatus } from "@/generated/prisma/enums";
+import { BloodGroup, Gender, MaritalStatus, NameTitle } from "@/generated/prisma/enums";
 import { PatientType } from "@/lib/type";
 import {
   PatientAddressValidatorType,
@@ -21,6 +21,7 @@ import NotesInfoForm from "./NotesInfoForm";
 import { useCreatePatient, useUpdatePatient } from "@/hooks/query/patient";
 
 const getInitialValues = (data?: PatientType): PatientValidatorType => ({
+  title: data?.title ?? NameTitle.MR,
   firstName: data?.firstName ?? "",
   middleName: data?.middleName ?? null,
   lastName: data?.lastName ?? "",

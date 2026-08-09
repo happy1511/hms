@@ -1,256 +1,61 @@
-// "use client";
-
-// import * as React from "react";
-// import { ControllerRenderProps, FieldValues, Path } from "react-hook-form";
-// import { cn } from "@/lib/utils";
-// import clsx from "clsx";
-
-// import {
-//   FormField,
-//   FormItem,
-//   FormLabel,
-//   FormControl,
-//   FormMessage,
-// } from "@/components/ui/form";
-
-// import { AsyncPaginate, LoadOptions } from "react-select-async-paginate";
-// import { FormInfiniteSelectProps } from "@/lib/type";
-// import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
-// import { GroupBase } from "react-select";
-
-// type Option<TItem> = {
-//   label: string;
-//   value: string | number; // comparison key
-//   item: TItem; // full object
-// };
-
-// type InnerSelectProps<TItem, TPage, TFieldValues extends FieldValues> = {
-//   field: ControllerRenderProps<TFieldValues, Path<TFieldValues>>;
-//   items: readonly TItem[];
-//   multiple: boolean;
-//   valueKey: (item: TItem) => string | number;
-//   labelKey: (item: TItem) => string;
-//   placeholder?: string;
-//   className?: string;
-//   query: UseInfiniteQueryResult<InfiniteData<TPage>>;
-//   getItems: (page: TPage) => TItem[];
-//   search: string;
-//   onSearchChange: (val: string) => void;
-//   disabled?: boolean;
-// };
-
-// type Additional = { page: number };
-
-// function InnerSelect<TItem, TPage, TFieldValues extends FieldValues>({
-//   field,
-//   multiple,
-//   valueKey,
-//   labelKey,
-//   placeholder,
-//   className,
-//   query,
-//   getItems,
-//   search,
-//   onSearchChange,
-//   disabled,
-// }: InnerSelectProps<TItem, TPage, TFieldValues>) {
-//   const value = field.value as TItem | TItem[] | null | undefined;
-
-//   const mapToOption = React.useCallback(
-//     (item: TItem): Option<TItem> => ({
-//       label: labelKey(item),
-//       value: String(valueKey(item)),
-//       item,
-//     }),
-//     [labelKey, valueKey],
-//   );
-
-//   const loadOptions: LoadOptions<
-//     Option<TItem>,
-//     GroupBase<Option<TItem>>,
-//     Additional
-//   > = async (_inputValue, _loadedOptions, additional) => {
-//     const { page } = additional as Additional;
-//     const res =
-//       page === 1 ? await query.refetch() : await query.fetchNextPage();
-//     const lastPage = res.data?.pages[res.data.pages.length - 1];
-//     const newItems = lastPage ? getItems(lastPage) : [];
-
-//     return {
-//       options: newItems.map(mapToOption),
-//       hasMore: query.hasNextPage ?? false,
-//       additional: { page: page + 1 },
-//     };
-//   };
-
-//   const selectedValue = React.useMemo<
-//     Option<TItem> | Option<TItem>[] | null
-//   >(() => {
-//     if (multiple) {
-//       if (!Array.isArray(value)) return [];
-//       return value.map((v) => mapToOption(v));
-//     }
-
-//     if (!value) return null;
-//     return mapToOption(value as TItem);
-//   }, [value, mapToOption, multiple]);
-
-//   const menuPortalTarget =
-//     typeof document !== "undefined" ? document.body : undefined;
-
-//   return (
-//     <AsyncPaginate<Option<TItem>, GroupBase<Option<TItem>>, Additional>
-//       isMulti={multiple as any}
-//       isDisabled={disabled}
-//       value={selectedValue}
-//       loadOptions={loadOptions}
-//       additional={{ page: 1 }}
-//       inputValue={search}
-//       onInputChange={(val) => {
-//         onSearchChange(val);
-//         return val;
-//       }}
-//       debounceTimeout={300}
-//       placeholder={placeholder}
-//       menuPlacement="auto"
-//       menuPosition="fixed"
-//       menuPortalTarget={menuPortalTarget}
-//       menuShouldBlockScroll={false}
-//       menuShouldScrollIntoView={false}
-//       maxMenuHeight={240}
-//       classNamePrefix="react-select"
-//       classNames={{
-//         control: () => clsx("w-full rounded!", className),
-//         valueContainer: () => "h-6 text-tiny",
-//         input: () => "m-0!",
-//         option: () => "text-tiny! py-1!",
-//       }}
-//       onChange={(selected) => {
-//         if (multiple) {
-//           const items =
-//             (selected as Option<TItem>[] | null)?.map((o) => o.item) ?? [];
-//           field.onChange(items);
-//         } else {
-//           const item = (selected as Option<TItem> | null)?.item ?? null;
-//           field.onChange(item);
-//         }
-//       }}
-//       styles={{
-//         control: (base) => ({
-//           ...base,
-//           minHeight: 24,
-//           height: 24,
-//           fontSize: 12,
-//           borderRadius: 4,
-//         }),
-//         valueContainer: (base) => ({ ...base, padding: "0 6px" }),
-//         indicatorsContainer: (base) => ({ ...base, height: 24 }),
-//         dropdownIndicator: (base) => ({ ...base, padding: 4 }),
-//         clearIndicator: (base) => ({ ...base, padding: 4 }),
-//         menu: (base) => ({ ...base, zIndex: 9999 }),
-//         menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-//         menuList: (base) => ({
-//           ...base,
-//           maxHeight: 240,
-//           overflowY: "auto",
-//         }),
-//       }}
-//     />
-//   );
-// }
-
-// export function FormInfiniteSelect<
-//   TItem,
-//   TPage,
-//   TValue extends string | number,
-//   TFieldValues extends FieldValues,
-// >({
-//   name,
-//   control,
-//   label,
-//   required,
-//   multiple = false,
-//   formItemClassName,
-//   query,
-//   getItems,
-//   valueKey,
-//   labelKey,
-//   placeholder,
-//   hideError = false,
-//   className,
-//   search,
-//   onSearchChange,
-//   disabled,
-// }: FormInfiniteSelectProps<TItem, TPage, TValue, TFieldValues>) {
-//   const items: readonly TItem[] = query.data?.pages.flatMap(getItems) ?? [];
-
-//   return (
-//     <FormField
-//       name={name}
-//       control={control}
-//       render={({ field, fieldState }) => (
-//         <FormItem
-//           className={cn(
-//             "text-primary relative",
-//             fieldState.error || !hideError ? "pb-4 gap-1" : "",
-//             formItemClassName,
-//           )}
-//         >
-//           {label && (
-//             <FormLabel className="gap-0 font-semibold font-quicksand text-tiny">
-//               {label}
-//               {required && <span className="text-[#FFA600] text-tiny!">*</span>}
-//             </FormLabel>
-//           )}
-
-//           <FormControl className="h-6 flex items-center">
-//             <InnerSelect<TItem, TPage, TFieldValues>
-//               field={field}
-//               items={items}
-//               multiple={multiple}
-//               valueKey={valueKey}
-//               labelKey={labelKey}
-//               placeholder={placeholder}
-//               className={clsx(
-//                 "w-full",
-//                 fieldState.invalid
-//                   ? "border-destructive! focus-visible:border-destructive"
-//                   : "",
-//               )}
-//               query={query}
-//               getItems={getItems}
-//               search={search}
-//               onSearchChange={onSearchChange}
-//               disabled={disabled}
-//             />
-//           </FormControl>
-//           <FormMessage className="absolute bottom-1 font-semibold text-tiny! ms-1" />
-//         </FormItem>
-//       )}
-//     />
-//   );
-// }
-
 "use client";
 
-import { FieldValues } from "react-hook-form";
-import { cn } from "@/lib/utils";
-
+import { Button } from "@/components/ui/button";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
+import {
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { cn } from "@/lib/utils";
+import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
+import { ChevronDownIcon } from "lucide-react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Control, FieldPath, FieldValues } from "react-hook-form";
 
-import { FormInfiniteSelectProps } from "@/lib/type";
-import { InfiniteSelect } from "./InfiniteSelect";
+type Primitive = string | number;
+
+interface FormInfiniteSelectProps<
+  TItem,
+  TPage,
+  TValue extends Primitive,
+  TFieldValues extends FieldValues,
+> {
+  name: FieldPath<TFieldValues>;
+  control: Control<TFieldValues>;
+  label?: string;
+  required?: boolean;
+  placeholder?: string;
+  multiple?: boolean;
+  formItemClassName?: string;
+  query: UseInfiniteQueryResult<InfiniteData<TPage>>;
+  getItems: (page: TPage) => readonly TItem[];
+  valueKey: (item: TItem) => TValue;
+  labelKey: (item: TItem) => string;
+  initialItems?: readonly TItem[];
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  renderOption?: (item: TItem) => ReactNode;
+  disabled?: boolean;
+  readOnly?: boolean;
+  hideError?: boolean;
+}
 
 export function FormInfiniteSelect<
   TItem,
   TPage,
-  TValue extends string | number,
+  TValue extends Primitive,
   TFieldValues extends FieldValues,
 >({
   name,
@@ -264,55 +69,243 @@ export function FormInfiniteSelect<
   valueKey,
   labelKey,
   placeholder,
-  hideError = false,
-  className,
-  search,
+  initialItems = [],
+  searchValue,
   onSearchChange,
-  disabled,
+  renderOption,
+  disabled = false,
+  readOnly = false,
+  hideError = false,
 }: FormInfiniteSelectProps<TItem, TPage, TValue, TFieldValues>) {
+  const items = useMemo<readonly TItem[]>(() => {
+    const uniqueItems = new Map<TValue, TItem>();
+
+    for (const item of (query.data?.pages ?? []).flatMap(getItems)) {
+      const itemValue = valueKey(item);
+      if (!uniqueItems.has(itemValue)) {
+        uniqueItems.set(itemValue, item);
+      }
+    }
+
+    return Array.from(uniqueItems.values());
+  }, [query.data?.pages, getItems, valueKey]);
+  const cachedItemsRef = useRef<Map<TValue, TItem>>(new Map());
+  const [internalSearch, setInternalSearch] = useState("");
+  const search = searchValue ?? internalSearch;
+
+  useEffect(() => {
+    for (const item of initialItems) {
+      cachedItemsRef.current.set(valueKey(item), item);
+    }
+    for (const item of items) {
+      cachedItemsRef.current.set(valueKey(item), item);
+    }
+  }, [items, valueKey, initialItems]);
+
+  const resolveItem = (val: TValue | undefined | null) => {
+    if (val === undefined || val === null) return undefined;
+
+    const fromItems = items.find((i) => valueKey(i) === val);
+    if (fromItems) return fromItems;
+
+    const fromInitial = initialItems.find((i) => valueKey(i) === val);
+    if (fromInitial) return fromInitial;
+
+    return cachedItemsRef.current.get(val);
+  };
+
   return (
     <FormField
       name={name}
       control={control}
-      render={({ field, fieldState }) => (
-        <FormItem
-          className={cn(
-            "text-primary relative",
-            fieldState.error || !hideError ? "pb-4 gap-1" : "",
-            formItemClassName,
-          )}
-        >
-          {label && (
-            <FormLabel className="gap-0 font-semibold font-quicksand text-tiny">
-              {label}
-              {required && <span className="text-[#FFA600] text-tiny!">*</span>}
-            </FormLabel>
-          )}
+      render={({ field, fieldState }) => {
+        const value = field.value as TValue | TValue[] | undefined;
+        const hasValue =
+          value !== undefined &&
+          value !== null &&
+          (Array.isArray(value) ? value.length > 0 : value !== "");
 
-          <FormControl className="h-6 flex items-center">
-            <InfiniteSelect<TItem, TPage, TValue>
-              value={field.value}
-              onChange={field.onChange}
-              query={query}
-              getItems={getItems}
-              valueKey={valueKey}
-              labelKey={labelKey}
-              search={search}
-              onSearchChange={onSearchChange}
-              multiple={multiple}
-              placeholder={placeholder}
-              disabled={disabled}
-              className={`selection:text-white h-6 bg-white selection:bg-gray-500 focus-visible:border-accent-blue text-tiny! focus-visible:ring-0 border shadow-none ring-0 border-border ${
-                fieldState.invalid
-                  ? "border-destructive focus-visible:border-destructive"
-                  : ""
-              } ${className}`}
-            />
-          </FormControl>
+        // Keep Combobox controlled for its entire lifecycle.
+        const selectedItems = multiple
+          ? Array.isArray(value)
+            ? (value.map((val) => resolveItem(val)).filter(Boolean) as TItem[])
+            : []
+          : hasValue
+            ? (resolveItem(value as TValue) ?? null)
+            : null;
 
-          <FormMessage className="absolute bottom-1 ms-1 font-semibold text-tiny!" />
-        </FormItem>
-      )}
+        const itemsWithSelection = (() => {
+          const map = new Map<TValue, TItem>();
+
+          for (const item of initialItems) {
+            map.set(valueKey(item), item);
+          }
+
+          for (const item of items) {
+            map.set(valueKey(item), item);
+          }
+
+          const selectedArray = Array.isArray(selectedItems)
+            ? selectedItems
+            : selectedItems
+              ? [selectedItems]
+              : [];
+
+          for (const item of selectedArray) {
+            map.set(valueKey(item), item);
+          }
+
+          return Array.from(map.values());
+        })();
+
+        const filteredItems = (() => {
+          const term = search.trim().toLowerCase();
+          if (!term) return itemsWithSelection;
+          return itemsWithSelection.filter((item) =>
+            String(labelKey(item) ?? "")
+              .toLowerCase()
+              .includes(term),
+          );
+        })();
+
+        return (
+          <FormItem
+            className={cn(
+              "relative gap-1",
+              !hideError && "pb-5",
+              formItemClassName,
+            )}
+          >
+            {label && (
+              <FormLabel className="text-foreground text-sm font-medium">
+                {label}
+                {required && <span className="text-sm! text-[#FFA600]">*</span>}
+              </FormLabel>
+            )}
+            <FormControl>
+              <Combobox
+                items={itemsWithSelection}
+                multiple={multiple}
+                value={selectedItems}
+                itemToStringLabel={labelKey}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setInternalSearch("");
+                    onSearchChange?.("");
+                  }
+                }}
+                onValueChange={(selected) => {
+                  if (multiple) {
+                    field.onChange(
+                      Array.isArray(selected)
+                        ? selected.map((item) => valueKey(item))
+                        : [],
+                    );
+                  } else {
+                    field.onChange(
+                      selected ? valueKey(selected as TItem) : undefined,
+                    );
+                  }
+                }}
+              >
+                <ComboboxTrigger
+                  className="bg-input"
+                  render={
+                    <Button
+                      variant="outline"
+                      disabled={disabled || readOnly}
+                      className={cn(
+                        "w-full justify-between gap-2 text-sm bg-input disabled:cursor-not-allowed disabled:opacity-50",
+                        multiple && "h-auto min-h-10 py-2",
+                        !hasValue
+                          ? "text-muted-foreground font-normal"
+                          : "text-foreground font-normal",
+                        fieldState.invalid
+                          ? "border-red-500 focus-visible:border-red-500"
+                          : "",
+                      )}
+                    >
+                      <ComboboxValue placeholder={placeholder}>
+                        {(selected) => {
+                          if (
+                            !selected ||
+                            (Array.isArray(selected) && selected.length === 0)
+                          ) {
+                            return placeholder;
+                          }
+
+                          if (Array.isArray(selected)) {
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                {selected.map((item) => (
+                                  <span
+                                    key={String(valueKey(item))}
+                                    className="bg-input border-border flex items-center gap-1 rounded-xs border px-1.5 py-0.5 text-xs"
+                                  >
+                                    {labelKey(item)}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          }
+
+                          return labelKey(selected as TItem);
+                        }}
+                      </ComboboxValue>
+                      <ChevronDownIcon className="text-foreground size-4 opacity-50" />
+                    </Button>
+                  }
+                />
+
+                <ComboboxContent className="z-50 min-w-(--anchor-width) w-(--anchor-width)">
+                  <ComboboxInput
+                    placeholder="Search…"
+                    showTrigger={false}
+                    value={search}
+                    onChange={(e) => {
+                      setInternalSearch(e.target.value);
+                      onSearchChange?.(e.target.value);
+                    }}
+                  />
+
+                  <ComboboxEmpty className="text-foreground">
+                    {query.isLoading || query.isFetchingNextPage
+                      ? "Loading…"
+                      : "No results"}
+                  </ComboboxEmpty>
+                  <ComboboxList
+                    ref={(node: HTMLDivElement | null) => {
+                      if (!node) return;
+                      node.onscroll = (event) => {
+                        const target = event.currentTarget as HTMLDivElement;
+                        const isNearBottom =
+                          target.scrollTop + target.clientHeight >=
+                          target.scrollHeight - 50;
+                        if (
+                          isNearBottom &&
+                          query.hasNextPage &&
+                          !query.isFetchingNextPage
+                        ) {
+                          query.fetchNextPage();
+                        }
+                      };
+                    }}
+                  >
+                    {filteredItems.map((item) => (
+                      <ComboboxItem key={valueKey(item)} value={item}>
+                        {renderOption ? renderOption(item) : labelKey(item)}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </FormControl>
+            {!hideError && (
+              <FormMessage className="absolute bottom-1 ms-1 text-xs font-semibold text-red-500" />
+            )}
+          </FormItem>
+        );
+      }}
     />
   );
 }

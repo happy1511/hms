@@ -778,6 +778,11 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
 
   const transactionForm = useForm<transactionValidatorType>({
     resolver: zodResolver(transactionsValidator),
+    defaultValues: {
+      date: new Date(),
+      mode: PaymentMode.CASH,
+      amount: 0,
+    },
   });
 
   const addedTransactions = form.watch("invoice.transactions");
