@@ -132,7 +132,6 @@ export const updateProfile = async (req: NextRequest) => {
 
       const foundUser = await prisma.user.findFirst({
         where: { id: user.id, isDeleted: false },
-        include: { doctor: true },
       });
 
       if (!foundUser) {
@@ -144,23 +143,6 @@ export const updateProfile = async (req: NextRequest) => {
 
       const nextEmail = body.email?.trim();
       const doctorDuplicateChecks: Prisma.DoctorWhereInput[] = [];
-
-      if (
-        foundUser.doctor &&
-        contactNumber !== foundUser.doctor.phoneNumber
-      ) {
-        doctorDuplicateChecks.push({
-          phoneNumber: contactNumber,
-          userId: { not: user.id },
-        });
-      }
-
-      if (foundUser.doctor && nextEmail && nextEmail !== foundUser.doctor.email) {
-        doctorDuplicateChecks.push({
-          email: nextEmail,
-          userId: { not: user.id },
-        });
-      }
 
       if (doctorDuplicateChecks.length) {
         const duplicateDoctor = await prisma.doctor.findFirst({
@@ -193,18 +175,6 @@ export const updateProfile = async (req: NextRequest) => {
           name: buildUserName(profileData),
         },
       });
-
-      if (foundUser.doctor) {
-        await prisma.doctor.update({
-          where: { userId: user.id },
-          data: {
-            phoneNumber: contactNumber,
-            email: trimOptionalString(profileData.email),
-            qualifications: trimOptionalString(profileData.qualifications),
-            department: trimOptionalString(profileData.department),
-          },
-        });
-      }
 
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
