@@ -6,7 +6,13 @@ import {
   PartialUserValidatorType,
   UserValidatorType,
 } from "@/validators/api/masters/user";
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+  InfiniteData,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -83,11 +89,12 @@ export const useInfiniteUsersList = (
         },
       }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const nextPage = lastPage.metadata.hasNextPage
-        ? lastPage.metadata.page + 1
-        : undefined;
-      return nextPage;
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
     },
     enabled,
   });
