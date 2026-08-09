@@ -339,7 +339,7 @@ const Prescription = ({ form }: { form: UseFormReturn<ipdDischargeSummaryValidat
           getItems={(d) => d?.data}
           labelKey={(i) => i.name}
           valueKey={(i) => String(i.id)}
-          search={drugSearchValue}
+          searchValue={drugSearchValue}
           onSearchChange={setDrugSearchValue}
           placeholder="Search drug from master"
         />

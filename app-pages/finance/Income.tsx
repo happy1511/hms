@@ -133,7 +133,7 @@ const CreateIncomeForm = () => {
                     required
                     hideError
                     query={categoryQuery}
-                    search={categorySearch}
+                    searchValue={categorySearch}
                     getItems={(data) => data?.data}
                     onSearchChange={setCategorySearch}
                     valueKey={(i) => String(i?.id)}
@@ -240,7 +240,7 @@ const CreateIncomeForm = () => {
                     required
                     hideError
                     query={usersQuery}
-                    search={userSearch}
+                    searchValue={userSearch}
                     getItems={(data) => data?.data}
                     onSearchChange={setUserSearch}
                     valueKey={(i) => String(i?.id)}

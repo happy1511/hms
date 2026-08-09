@@ -99,7 +99,7 @@ const UpdateCreateForm = ({
             getItems={(p) => p?.data}
             valueKey={(i) => String(i?.id)}
             labelKey={(i) => i?.name}
-            search={roomTypeSearchValue}
+            searchValue={roomTypeSearchValue}
             onSearchChange={setRoomTypeSearchValue}
             required
           />

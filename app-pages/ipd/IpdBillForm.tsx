@@ -7,13 +7,14 @@ import { CustomTable } from "@/components/common/CustomTable";
 import NoPermission from "@/components/common/NoPermission";
 import PageState from "@/components/common/PageState";
 import { SortableHeader } from "@/components/common/SortableHeader";
+import QuickCreateDoctorModal from "@/components/doctor/QuickCreateDoctorModal";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import PostCreateIPDPrintDialog from "@/components/ipd/PostCreateIPDPrintDialog";
 import LocationCascadeFields from "@/components/patient/LocationCascadeFields";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { BillingSection } from "@/generated/prisma/client";
-import { BedGetPayload } from "@/generated/prisma/models";
 import {
   ActionType,
   AddressType,
@@ -35,12 +36,12 @@ import {
   RelationshipType,
   Status,
 } from "@/generated/prisma/enums";
+import { BedGetPayload } from "@/generated/prisma/models";
+import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteBedsList } from "@/hooks/query/bed";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
-import QuickCreateDoctorModal from "@/components/doctor/QuickCreateDoctorModal";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useCreateIpd } from "@/hooks/query/ipd";
-import { useProfile } from "@/hooks/query/auth";
 import { useGetPatient } from "@/hooks/query/patient";
 import { useInfiniteServicesList } from "@/hooks/query/service";
 import {
@@ -69,12 +70,12 @@ import { Edit2, LoaderIcon, Trash2 } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Control,
   useFieldArray,
   UseFieldArrayRemove,
   useForm,
   UseFormReturn,
 } from "react-hook-form";
-import PostCreateIPDPrintDialog from "@/components/ipd/PostCreateIPDPrintDialog";
 
 type IpdBed = BedGetPayload<{
   include: {
@@ -99,15 +100,15 @@ const getInitialValues = (data?: PatientType): ipdValidatorType => {
   const identificationRows = [
     data?.identifications?.[0]
       ? {
-          type: data.identifications[0].type,
-          number: data.identifications[0].number,
-          active: data.identifications[0].active,
-        }
+        type: data.identifications[0].type,
+        number: data.identifications[0].number,
+        active: data.identifications[0].active,
+      }
       : {
-          type: IdentityType.ADHAR_CARD,
-          number: "",
-          active: Status.active,
-        },
+        type: IdentityType.ADHAR_CARD,
+        number: "",
+        active: Status.active,
+      },
   ];
 
   // ---------------- HOME ADDRESS ----------------
@@ -181,8 +182,8 @@ const Actions = ({
   form,
 }: {
   form:
-    | UseFormReturn<billingItemValidatorType>
-    | UseFormReturn<transactionValidatorType>;
+  | UseFormReturn<billingItemValidatorType>
+  | UseFormReturn<transactionValidatorType>;
   data: billingItemValidatorType | transactionValidatorType;
   remove: UseFieldArrayRemove;
   index: number;
@@ -538,7 +539,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           valueKey={(i) => String(i?.id)}
           labelKey={(i) => i?.name}
           placeholder="billing section"
-          search={billingItemSearch}
+          searchValue={billingItemSearch}
           onSearchChange={setBillingItemSearch}
         />
         <div className="md:col-span-2">
@@ -556,7 +557,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             valueKey={(i) => String(i?.id)}
             labelKey={(i) => i?.name}
             placeholder="Select Services"
-            search={serviceSearch}
+            searchValue={serviceSearch}
             onSearchChange={setServiceSearch}
           />
         </div>
@@ -682,11 +683,12 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
   const transactionForm = useForm<transactionValidatorType>({
     resolver: zodResolver(transactionsValidator),
     defaultValues: {
-      date: new Date(),
       mode: PaymentMode.CASH,
       amount: 0,
     },
   });
+
+  const txControl = transactionForm.control as unknown as Control<transactionValidatorType>;
 
   const addedTransactions = form.watch("invoice.transactions");
   const isPaid = form.watch("invoice.isPaid");
@@ -790,19 +792,20 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           />
         )}
       </div>
+
       {isPaid === "true" && (
         <>
           <div>
-            <FormField
-              control={transactionForm.control}
+            <FormField<transactionValidatorType>
+              control={txControl}
               label="Amount"
               name="amount"
               type="number"
               required
             />
 
-            <FormField
-              control={transactionForm.control}
+            <FormField<transactionValidatorType>
+              control={txControl}
               label="Mode"
               name="mode"
               options={Object.values(PaymentMode).map((p) => ({
@@ -813,8 +816,8 @@ const Transactions = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
               required
             />
 
-            <FormField
-              control={transactionForm.control}
+            <FormField<transactionValidatorType>
+              control={txControl}
               label="Remarks"
               name="remarks"
               type="textarea"
@@ -1220,7 +1223,7 @@ const IpdBillForm = () => {
                 getItems={(data) => data?.data}
                 labelKey={(item: Doctor) => fullName(item)}
                 valueKey={(item: Doctor) => String(item?.id)}
-                search={consultantValue}
+                searchValue={consultantValue}
                 onSearchChange={setConsultantValue}
                 required
               />
@@ -1249,7 +1252,7 @@ const IpdBillForm = () => {
                 getItems={(data) => data?.data}
                 labelKey={(item: Doctor) => fullName(item)}
                 valueKey={(item: Doctor) => String(item?.id)}
-                search={referringValue}
+                searchValue={referringValue}
                 onSearchChange={setReferringValue}
               />
             </div>
@@ -1287,7 +1290,7 @@ const IpdBillForm = () => {
               `${item.bedNumber} | ${item.room?.roomType?.department?.name ?? "-"} | ${item.room?.roomType?.name ?? "-"} | ${item.room?.name ?? "-"}`
             }
             valueKey={(item) => String(item?.id)}
-            search={bedValue}
+            searchValue={bedValue}
             onSearchChange={setBedValue}
             required
           />

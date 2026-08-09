@@ -589,7 +589,7 @@ const ServiceRow = ({
                       getItems={(page) => page?.data}
                       valueKey={(item) => String(item.id)}
                       labelKey={(item) => item.name}
-                      search={serviceSearch}
+                      searchValue={serviceSearch}
                       onSearchChange={setServiceSearch}
                       placeholder="Service"
                       hideError

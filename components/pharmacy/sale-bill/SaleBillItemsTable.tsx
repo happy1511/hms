@@ -182,7 +182,7 @@ const SaleBillItemRow = ({
               "Discount 0",
             ].join(" | ")
           }
-          search={inventorySearch}
+          searchValue={inventorySearch}
           onSearchChange={setInventorySearch}
           placeholder="Select item"
           hideError

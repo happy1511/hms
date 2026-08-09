@@ -114,7 +114,7 @@ const CreateUpdateForm = ({
             getItems={(d) => d?.data}
             labelKey={(i) => i.name}
             valueKey={(i) => String(i?.id)}
-            search={radiologySearchValue}
+            searchValue={radiologySearchValue}
             onSearchChange={setRadiologySearchValue}
             multiple
           />

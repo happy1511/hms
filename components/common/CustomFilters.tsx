@@ -202,7 +202,7 @@ const CustomFilters = <T extends FieldValues>({
                 labelKey={filter.labelKey}
                 hideError
                 className="border-none!"
-                search={filter.search}
+                searchValue={filter.searchValue}
                 onSearchChange={filter.onSearchChange}
               />
             </div>

@@ -229,7 +229,7 @@ const SupplierLedgerEntryForm = ({
               labelKey={(item) =>
                 [item.name, item.phone || "No phone", item.gstIn || "No GST"].join(" | ")
               }
-              search={supplierSearch}
+              searchValue={supplierSearch}
               onSearchChange={setSupplierSearch}
               required
             />

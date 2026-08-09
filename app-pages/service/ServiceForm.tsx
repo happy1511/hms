@@ -127,7 +127,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             placeholder="Select Billing Section"
             required
             query={billingSectionQuery}
-            search={billingSectionSearch}
+            searchValue={billingSectionSearch}
             getItems={(data) => data?.data}
             onSearchChange={setBillingSectionSearch}
             valueKey={(i) => String(i?.id)}
@@ -213,7 +213,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
               getItems={(p) => p?.data}
               valueKey={(i) => String(i?.id)}
               labelKey={(i) => i?.name}
-              search={pathologySearchValue}
+              searchValue={pathologySearchValue}
               onSearchChange={setPathologySearchValue}
               required
               multiple
@@ -234,7 +234,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
               getItems={(p) => p?.data}
               valueKey={(i) => String(i?.id)}
               labelKey={(i) => i?.name}
-              search={radiologySearchValue}
+              searchValue={radiologySearchValue}
               onSearchChange={setRadiologySearchValue}
               required
               multiple

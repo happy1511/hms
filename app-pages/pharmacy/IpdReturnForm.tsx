@@ -432,7 +432,7 @@ const IpdReturnForm = () => {
               getItems={(page) => page?.data}
               valueKey={(row) => String(row.id)}
               labelKey={(row) => patientLabel(row)}
-              search={ipdSearch}
+              searchValue={ipdSearch}
               onSearchChange={setIpdSearch}
               required
             />

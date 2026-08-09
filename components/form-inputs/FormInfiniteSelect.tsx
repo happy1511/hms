@@ -26,7 +26,7 @@ import { Control, FieldPath, FieldValues } from "react-hook-form";
 
 type Primitive = string | number;
 
-interface FormInfiniteSelectProps<
+export interface FormInfiniteSelectProps<
   TItem,
   TPage,
   TValue extends Primitive,
@@ -34,6 +34,7 @@ interface FormInfiniteSelectProps<
 > {
   name: FieldPath<TFieldValues>;
   control: Control<TFieldValues>;
+  className?: string;
   label?: string;
   required?: boolean;
   placeholder?: string;

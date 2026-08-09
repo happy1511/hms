@@ -206,7 +206,7 @@ const Prescription = ({
           getItems={(d) => d?.data}
           labelKey={(i) => i.name}
           valueKey={(i) => String(i.id)}
-          search={drugSearchValue}
+          searchValue={drugSearchValue}
           onSearchChange={setDrugSearchValue}
           placeholder="Search drug from master"
         />
@@ -334,7 +334,7 @@ const Advice = ({ form }: { form: UseFormReturn<consultantFileType> }) => {
           getItems={(d) => d?.data}
           labelKey={(i) => i.name}
           valueKey={(i) => String(i?.id)}
-          search={pathologySearchValue}
+          searchValue={pathologySearchValue}
           onSearchChange={setPathologySearchValue}
           multiple
         />
@@ -351,7 +351,7 @@ const Advice = ({ form }: { form: UseFormReturn<consultantFileType> }) => {
           getItems={(d) => d?.data}
           labelKey={(i) => i.name}
           valueKey={(i) => String(i?.id)}
-          search={radiologySearchValue}
+          searchValue={radiologySearchValue}
           onSearchChange={setRadiologySearchValue}
           multiple
         />

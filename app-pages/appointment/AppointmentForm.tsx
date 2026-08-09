@@ -165,7 +165,7 @@ const AppointmentForm = () => {
                     getItems={(data) => data?.data}
                     labelKey={(data) => fullName(data)}
                     valueKey={(data) => data.id.toString()}
-                    search={doctorSearchValue}
+                    searchValue={doctorSearchValue}
                     onSearchChange={setDoctorSearchValue}
                     required
                     hideError

@@ -125,7 +125,7 @@ const ReallocateIpdBedModal = ({ open, onOpenChange, ipd }: Props) => {
                   .join(" / ");
               }}
               valueKey={(b) => String(b.id)}
-              search={bedSearch}
+              searchValue={bedSearch}
               onSearchChange={setBedSearch}
               placeholder="Search bed..."
               hideError

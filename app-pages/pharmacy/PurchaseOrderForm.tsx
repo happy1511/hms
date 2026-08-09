@@ -262,7 +262,7 @@ const PurchaseOrderRow = ({
           getItems={(page) => page?.data}
           valueKey={(drug) => String(drug.id)}
           labelKey={(drug) => drug.name}
-          search={drugSearch}
+          searchValue={drugSearch}
           onSearchChange={setDrugSearch}
           placeholder="Select Item"
           hideError
@@ -282,7 +282,7 @@ const PurchaseOrderRow = ({
           getItems={(page) => page?.data}
           valueKey={(category) => String(category.id)}
           labelKey={(category) => category.name}
-          search={categorySearch}
+          searchValue={categorySearch}
           onSearchChange={setCategorySearch}
           placeholder="Select Category"
           hideError
@@ -304,7 +304,7 @@ const PurchaseOrderRow = ({
           labelKey={(hsnSac) =>
             `${hsnSac.code} | CGST ${hsnSac.cGstPercentage}% | SGST ${hsnSac.sGstPercentage}% | IGST ${hsnSac.iGstPercentage}%`
           }
-          search={hsnSacSearch}
+          searchValue={hsnSacSearch}
           onSearchChange={setHsnSacSearch}
           placeholder="Select HSN/SAC"
           hideError
@@ -536,7 +536,7 @@ const UpdateCreateForm = ({ data }: { data?: PurchaseOrderData }) => {
                 getItems={(page) => page?.data}
                 valueKey={(supplier) => String(supplier.id)}
                 labelKey={(supplier) => supplier.name}
-                search={supplierSearchValue}
+                searchValue={supplierSearchValue}
                 onSearchChange={setSupplierSearchValue}
                 required
               />

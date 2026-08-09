@@ -200,7 +200,7 @@ const AddInvoiceItemModal = ({
                   valueKey={(i) => String(i?.id)}
                   labelKey={(i) => i?.name}
                   placeholder="billing section"
-                  search={billingItemSearch}
+                  searchValue={billingItemSearch}
                   onSearchChange={setBillingItemSearch}
                   required
                 />
@@ -219,7 +219,7 @@ const AddInvoiceItemModal = ({
                     valueKey={(i) => String(i?.id)}
                     labelKey={(i) => i?.name}
                     placeholder="Select Services"
-                    search={serviceSearch}
+                    searchValue={serviceSearch}
                     onSearchChange={setServiceSearch}
                     required
                   />

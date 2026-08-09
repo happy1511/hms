@@ -228,7 +228,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         valueKey={(i) => getLocationValue(i, "country")}
         labelKey={(i) => getLocationValue(i, "country")}
         placeholder="Country"
-        search={countrySearch}
+        searchValue={countrySearch}
         onSearchChange={setCountrySearch}
         required={required}
         disabled={postcodeFirstMode}
@@ -247,7 +247,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         valueKey={(i) => getLocationValue(i, "state")}
         labelKey={(i) => getLocationValue(i, "state")}
         placeholder="State"
-        search={stateSearch}
+        searchValue={stateSearch}
         onSearchChange={setStateSearch}
         required={required}
         disabled={!countryValue}
@@ -266,7 +266,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         valueKey={(i) => getLocationValue(i, "city")}
         labelKey={(i) => getLocationValue(i, "city")}
         placeholder="City"
-        search={citySearch}
+        searchValue={citySearch}
         onSearchChange={setCitySearch}
         required={required}
         disabled={!stateValue}
@@ -285,7 +285,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         valueKey={(i) => getLocationValue(i, "postcode")}
         labelKey={(i) => getLocationValue(i, "postcode")}
         placeholder="Pincode"
-        search={postcodeSearch}
+        searchValue={postcodeSearch}
         onSearchChange={setPostcodeSearch}
         required={required}
         disabled={Boolean(countryValue) && !cityValue}
@@ -304,7 +304,7 @@ const LocationCascadeFields = <TFieldValues extends FieldValues>({
         valueKey={(i) => String(i?.id ?? getLocationValue(i, "postName"))}
         labelKey={(i) => getLocationValue(i, "postName")}
         placeholder="Post Name"
-        search={postNameSearch}
+        searchValue={postNameSearch}
         onSearchChange={setPostNameSearch}
         required={required}
         disabled={!postcodeValue}

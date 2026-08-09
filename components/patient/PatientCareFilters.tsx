@@ -45,7 +45,7 @@ const PatientCareFilters = ({
       getItems: (data) => (data as PaginatedResponse<Doctor>)?.data,
       valueKeyExtractor: (item) => String((item as Doctor).id),
       labelKey: (item) => fullName(item as Doctor),
-      search: consultantValue,
+      searchValue: consultantValue,
       onSearchChange: setConsultantValue,
     },
   ];

@@ -127,7 +127,7 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
                 placeholder="Select Billing Section"
                 required
                 query={billingSectionQuery}
-                search={billingSectionSearch}
+                searchValue={billingSectionSearch}
                 getItems={(data) => data?.data}
                 onSearchChange={setBillingSectionSearch}
                 valueKey={(i) => String(i?.id)}

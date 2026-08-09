@@ -575,7 +575,7 @@ const OPDs = ({
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
       valueKeyExtractor: (i) => String((i as Doctor).id),
       labelKey: (i) => fullName(i as Doctor),
-      search: consultantValue,
+      searchValue: consultantValue,
       onSearchChange: setConsultantValue,
     },
   ];

@@ -355,7 +355,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                       item.gstNumber || "No GST",
                     ].join(" | ")
                   }
-                  search={customerSearch}
+                  searchValue={customerSearch}
                   onSearchChange={setCustomerSearch}
                   placeholder="Select customer"
                 />
@@ -382,7 +382,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                   getItems={(page) => page?.data}
                   valueKey={(item) => String(item.id)}
                   labelKey={(item) => fullName(item as Doctor)}
-                  search={doctorSearch}
+                  searchValue={doctorSearch}
                   onSearchChange={setDoctorSearch}
                   placeholder="Select doctor"
                 />

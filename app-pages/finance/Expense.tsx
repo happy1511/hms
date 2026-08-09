@@ -120,7 +120,7 @@ const CreateExpenseForm = () => {
                     required
                     hideError
                     query={categoryQuery}
-                    search={categorySearch}
+                    searchValue={categorySearch}
                     getItems={(data) => data?.data}
                     onSearchChange={setCategorySearch}
                     valueKey={(i) => String(i?.id)}

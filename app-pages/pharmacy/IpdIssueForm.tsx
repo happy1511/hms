@@ -185,7 +185,7 @@ const IssueItemRow = ({
               `Exp ${format(new Date(row.expiryDate), "MM/yy")}`,
             ].join(" | ")
           }
-          search={inventorySearch}
+          searchValue={inventorySearch}
           onSearchChange={setInventorySearch}
           placeholder="Select item"
           hideError
@@ -352,7 +352,7 @@ const IpdIssueForm = () => {
               getItems={(page) => page?.data}
               valueKey={(row) => String(row.id)}
               labelKey={(row) => patientLabel(row)}
-              search={ipdSearch}
+              searchValue={ipdSearch}
               onSearchChange={setIpdSearch}
               required
             />

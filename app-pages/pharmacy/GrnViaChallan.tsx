@@ -187,7 +187,7 @@ const GrnViaChallan = () => {
               getItems={(page) => page?.data}
               valueKey={(item) => String(item.id)}
               labelKey={(item) => item.name}
-              search={supplierSearch}
+              searchValue={supplierSearch}
               onSearchChange={setSupplierSearch}
               required
             />

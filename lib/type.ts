@@ -163,13 +163,16 @@ export interface FormInfiniteSelectProps<
   multiple?: boolean;
   formItemClassName?: string;
   query: UseInfiniteQueryResult<InfiniteData<TPage>>;
-  getItems: (page: TPage) => TItem[];
+  getItems: (page: TPage) => readonly TItem[] | TItem[];
   valueKey: (item: TItem) => TValue;
   labelKey: (item: TItem) => string;
   hideError?: boolean;
-  search: string;
-  onSearchChange: (val: string) => void;
+  searchValue?: string;
+  onSearchChange?: (val: string) => void;
   disabled?: boolean;
+  readOnly?: boolean;
+  initialItems?: readonly TItem[];
+  renderOption?: (item: TItem) => React.ReactNode;
 }
 
 export type LocationFieldName =
@@ -422,7 +425,7 @@ export interface InfiniteSelectFilterConfig<
   getItems: (page: TPage) => TItem[];
   valueKeyExtractor: (item: TItem) => TValue;
   labelKey: (item: TItem) => string;
-  search: string;
+  searchValue: string;
   onSearchChange: (value: string) => void;
 }
 

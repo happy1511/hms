@@ -298,7 +298,7 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
             getItems={(page) => page?.data}
             valueKey={(item) => String(item.id)}
             labelKey={(item) => item.name}
-            search={drugSearch}
+            searchValue={drugSearch}
             onSearchChange={setDrugSearch}
             placeholder="Select Item"
             hideError
@@ -328,7 +328,7 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
             getItems={(page) => page?.data}
             valueKey={(item) => String(item.id)}
             labelKey={(item) => item.name}
-            search={categorySearch}
+            searchValue={categorySearch}
             onSearchChange={setCategorySearch}
             placeholder="Select Category"
             hideError
@@ -351,7 +351,7 @@ const GrnRow = ({ index, form, readonlyFromSource, lineTotal }: RowProps) => {
           labelKey={(item) =>
             `${item.code} | CGST ${item.cGstPercentage}% | SGST ${item.sGstPercentage}% | IGST ${item.iGstPercentage}%`
           }
-          search={hsnSacSearch}
+          searchValue={hsnSacSearch}
           onSearchChange={setHsnSacSearch}
           placeholder="Select HSN/SAC"
           hideError
@@ -651,7 +651,7 @@ const UpdateCreateForm = ({
               getItems={(page) => page?.data}
               valueKey={(item) => String(item.id)}
               labelKey={(item) => item.name}
-              search={supplierSearch}
+              searchValue={supplierSearch}
               onSearchChange={setSupplierSearch}
               required
             />

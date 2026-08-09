@@ -67,7 +67,7 @@ const CreateForm = () => {
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
             valueKey={(data) => data.id}
-            search={roomSearchValue}
+            searchValue={roomSearchValue}
             onSearchChange={setRoomSearchValue}
             required
           />
@@ -135,7 +135,7 @@ const UpdateForm = ({
             getItems={(data) => data?.data}
             labelKey={(data) => data?.name}
             valueKey={(data) => data.id}
-            search={roomSearch}
+            searchValue={roomSearch}
             onSearchChange={setRoomSearch}
             required
           />

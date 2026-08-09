@@ -133,7 +133,7 @@ const ChangeOpdDoctorModal = ({ open, onOpenChange, opd, mode }: Props) => {
               getItems={(d) => d?.data}
               labelKey={(i) => fullName(i as Doctor)}
               valueKey={(i) => String((i as Doctor).id)}
-              search={doctorSearch}
+              searchValue={doctorSearch}
               onSearchChange={setDoctorSearch}
               placeholder="Search doctor by name..."
               hideError

@@ -108,7 +108,7 @@ const UpdateCreateForm = ({
             control={form.control}
             required
             query={categoryQuery}
-            search={categorySearch}
+            searchValue={categorySearch}
             getItems={(data) => data?.data}
             onSearchChange={setCategorySearch}
             valueKey={(i) => String(i?.id)}
@@ -151,7 +151,7 @@ const UpdateCreateForm = ({
             control={form.control}
             required
             query={usersQuery}
-            search={userSearch}
+            searchValue={userSearch}
             getItems={(data) => data?.data}
             onSearchChange={setUserSearch}
             valueKey={(i) => String(i?.id)}

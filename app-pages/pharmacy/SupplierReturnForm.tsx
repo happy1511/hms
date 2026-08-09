@@ -309,7 +309,7 @@ const SupplierReturnRow = ({
               `Rate ${money(row.purchasePrice)}`,
             ].join(" | ")
           }
-          search={inventorySearch}
+          searchValue={inventorySearch}
           onSearchChange={setInventorySearch}
           placeholder={supplierId ? "Select item" : "Select supplier first"}
           hideError
@@ -519,7 +519,7 @@ const SupplierReturnForm = () => {
                 getItems={(page) => page?.data}
                 valueKey={(item) => String(item.id)}
                 labelKey={(item) => item.name}
-                search={supplierSearch}
+                searchValue={supplierSearch}
                 onSearchChange={setSupplierSearch}
                 required
               />

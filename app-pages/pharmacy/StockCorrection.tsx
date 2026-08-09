@@ -165,7 +165,7 @@ const StockCorrection = () => {
               getItems={(page) => page?.data}
               valueKey={(item) => String(item.id)}
               labelKey={(item) => item.name}
-              search={drugSearch}
+              searchValue={drugSearch}
               onSearchChange={setDrugSearch}
               required
             />
