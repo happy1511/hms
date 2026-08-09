@@ -201,7 +201,7 @@ const neededFilters: FilterConfig<FilterValues>[] = [
   },
   {
     label: "Status",
-    valueKey: "status",
+    valueKey: "testStatus",
     type: "select",
     placeholder: "Select Status",
     options: Object.values(PathologyOrderStatus).map((s) => ({

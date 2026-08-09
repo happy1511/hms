@@ -10,7 +10,6 @@ import { SortableHeader } from "@/components/common/SortableHeader";
 import {
   ActionType,
   ModuleType,
-  PathologyOrderStatus,
   RadiologyOrderStatus,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -179,10 +178,10 @@ const neededFilters: FilterConfig<FilterValues>[] = [
   },
   {
     label: "Status",
-    valueKey: "status",
+    valueKey: "radiologyStatus",
     type: "select",
     placeholder: "Select Status",
-    options: Object.values(PathologyOrderStatus).map((s) => ({
+    options: Object.values(RadiologyOrderStatus).map((s) => ({
       label: s,
       value: s,
     })),

@@ -38,12 +38,18 @@ const getBaseRate = ({
   isWholesaleBill,
   isLooseQuantity,
 }: {
-  inventory: { wholeSalePrice: number; sellingPrice: number; itemsPerPack: number };
+  inventory: {
+    wholeSalePrice: number;
+    sellingPrice: number;
+    itemsPerPack: number;
+  };
   isWholesaleBill: boolean;
   isLooseQuantity?: boolean;
 }) => {
   const packageRate = Number(
-    isWholesaleBill ? inventory.wholeSalePrice || 0 : inventory.sellingPrice || 0,
+    isWholesaleBill
+      ? inventory.wholeSalePrice || 0
+      : inventory.sellingPrice || 0,
   );
   if (!isLooseQuantity) {
     return packageRate;
@@ -69,7 +75,9 @@ export const getAPI = async (req: Request) => {
       if (search) {
         and.push({
           OR: [
-            ...(Number.isFinite(Number(search)) ? [{ id: Number(search) }] : []),
+            ...(Number.isFinite(Number(search))
+              ? [{ id: Number(search) }]
+              : []),
             { name: { contains: search } },
             { customer: { name: { contains: search } } },
             { patient: { firstName: { contains: search } } },
@@ -101,7 +109,7 @@ export const getAPI = async (req: Request) => {
           include: {
             patient: true,
             customer: { include: { patient: true } },
-            doctor: { include: { user: true } },
+            doctor: true,
             invoice: {
               include: {
                 transactions: true,
@@ -158,10 +166,12 @@ export const getDetailsAPI = async (
         include: {
           patient: true,
           customer: { include: { patient: true } },
-          doctor: { include: { user: true } },
+          doctor: true,
           invoice: {
             include: {
-              transactions: { include: { receivedBy: { select: { name: true } } } },
+              transactions: {
+                include: { receivedBy: { select: { name: true } } },
+              },
             },
           },
           saleItems: {
@@ -237,8 +247,7 @@ export const createAPI = async (req: Request, user: User) => {
 
         if (body.doctorId) {
           const doctor = await tx.doctor.findUnique({
-            where: { userId: body.doctorId },
-            select: { userId: true },
+            where: { id: body.doctorId },
           });
           if (!doctor) {
             return apiResponse({
@@ -248,7 +257,9 @@ export const createAPI = async (req: Request, user: User) => {
           }
         }
 
-        const inventoryIds = [...new Set(body.items.map((item) => item.inventoryItem.id))];
+        const inventoryIds = [
+          ...new Set(body.items.map((item) => item.inventoryItem.id)),
+        ];
 
         const inventoryRows = await tx.inventoryItems.findMany({
           where: { id: { in: inventoryIds } },
@@ -369,8 +380,8 @@ export const createAPI = async (req: Request, user: User) => {
                   })),
             },
             createdAt: body.createdAt,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -383,8 +394,8 @@ export const createAPI = async (req: Request, user: User) => {
             invoiceId: invoice.id,
             isWholesaleBill: body.isWholesaleBill,
             isLooseBill: body.isLooseBill,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            createdBy: user.id,
+            updatedBy: user.id,
             saleItems: {
               create: preparedItems,
             },
@@ -393,7 +404,7 @@ export const createAPI = async (req: Request, user: User) => {
             invoice: true,
             patient: true,
             customer: { include: { patient: true } },
-            doctor: { include: { user: true } },
+            doctor: true,
             saleItems: {
               include: {
                 inventoryItem: {
@@ -414,7 +425,7 @@ export const createAPI = async (req: Request, user: User) => {
               quantityInStock: {
                 decrement: quantityInPieces,
               },
-              updatedBy: user.id ,
+              updatedBy: user.id,
             },
           });
         }
@@ -444,7 +455,11 @@ export const updateAPI = async (
       return prisma.$transaction(async (tx) => {
         const billId = Number(params.billId);
         const existingBill = await tx.drugBill.findFirst({
-          where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
+          where: {
+            id: billId,
+            isDeleted: false,
+            invoice: { isDeleted: false },
+          },
           include: {
             invoice: { include: { transactions: true } },
             saleItems: {
@@ -501,8 +516,7 @@ export const updateAPI = async (
 
         if (body.doctorId) {
           const doctor = await tx.doctor.findUnique({
-            where: { userId: body.doctorId },
-            select: { userId: true },
+            where: { id: body.doctorId },
           });
           if (!doctor) {
             return apiResponse({
@@ -540,7 +554,10 @@ export const updateAPI = async (
           const restoredPieces = existing.isLooseQuantity
             ? existing.quantity
             : existing.quantity * packSize;
-          existingPieces.set(existing.inventoryItemId, previous + restoredPieces);
+          existingPieces.set(
+            existing.inventoryItemId,
+            previous + restoredPieces,
+          );
         }
 
         for (const [inventoryId, requestedPieces] of requestedQty) {
@@ -609,10 +626,13 @@ export const updateAPI = async (
           };
         });
 
-        const discountType = body.discountType ?? existingBill.invoice.discountType;
-        const discountValue = body.discountValue ?? existingBill.invoice.discountValue;
+        const discountType =
+          body.discountType ?? existingBill.invoice.discountType;
+        const discountValue =
+          body.discountValue ?? existingBill.invoice.discountValue;
         const isFree = body.isFree ?? existingBill.invoice.isFree;
-        const billingType = body.billingType ?? existingBill.invoice.billingType;
+        const billingType =
+          body.billingType ?? existingBill.invoice.billingType;
         const transactions = body.transactions ?? [];
 
         const subtotal = round2(
@@ -662,7 +682,7 @@ export const updateAPI = async (
             isFree,
             isPaid: !isFree && transactions.length > 0,
             billingType,
-            updatedBy: user.id ,
+            updatedBy: user.id,
           },
         });
 
@@ -680,7 +700,7 @@ export const updateAPI = async (
             isWholesaleBill:
               body.isWholesaleBill ?? existingBill.isWholesaleBill,
             isLooseBill: body.isLooseBill ?? existingBill.isLooseBill,
-            updatedBy: user.id ,
+            updatedBy: user.id,
             saleItems: {
               create: preparedItems,
             },
@@ -697,7 +717,7 @@ export const updateAPI = async (
             where: { id: inventoryId },
             data: {
               quantityInStock: nextQty,
-              updatedBy: user.id ,
+              updatedBy: user.id,
             },
           });
         }
@@ -707,7 +727,7 @@ export const updateAPI = async (
           include: {
             patient: true,
             customer: { include: { patient: true } },
-            doctor: { include: { user: true } },
+            doctor: true,
             invoice: { include: { transactions: true } },
             saleItems: {
               include: {
@@ -746,7 +766,11 @@ export const deleteAPI = async (
       return prisma.$transaction(async (tx) => {
         const billId = Number(params.billId);
         const existingBill = await tx.drugBill.findFirst({
-          where: { id: billId, isDeleted: false, invoice: { isDeleted: false } },
+          where: {
+            id: billId,
+            isDeleted: false,
+            invoice: { isDeleted: false },
+          },
           include: {
             saleItems: {
               select: {
@@ -766,7 +790,9 @@ export const deleteAPI = async (
         }
 
         const restoreInventoryIds = [
-          ...new Set(existingBill.saleItems.map((item) => item.inventoryItemId)),
+          ...new Set(
+            existingBill.saleItems.map((item) => item.inventoryItemId),
+          ),
         ];
 
         const inventoryRows = await tx.inventoryItems.findMany({
@@ -774,7 +800,10 @@ export const deleteAPI = async (
           select: { id: true, itemsPerPack: true },
         });
         const packSizeByInventoryId = new Map(
-          inventoryRows.map((row) => [row.id, Math.max(Number(row.itemsPerPack || 1), 1)]),
+          inventoryRows.map((row) => [
+            row.id,
+            Math.max(Number(row.itemsPerPack || 1), 1),
+          ]),
         );
 
         for (const inventoryItemId of restoreInventoryIds) {
@@ -784,7 +813,9 @@ export const deleteAPI = async (
               const packSize = packSizeByInventoryId.get(inventoryItemId) ?? 1;
               return (
                 sum +
-                (item.isLooseQuantity ? item.quantity : item.quantity * packSize)
+                (item.isLooseQuantity
+                  ? item.quantity
+                  : item.quantity * packSize)
               );
             }, 0);
 
@@ -794,7 +825,7 @@ export const deleteAPI = async (
               quantityInStock: {
                 increment: restoredPieces,
               },
-              updatedBy: user.id ,
+              updatedBy: user.id,
             },
           });
         }
@@ -803,8 +834,8 @@ export const deleteAPI = async (
           where: { id: existingBill.invoiceId },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -812,8 +843,8 @@ export const deleteAPI = async (
           where: { id: existingBill.id },
           data: {
             isDeleted: true,
-            deletedBy: user.id ,
-            updatedBy: user.id ,
+            deletedBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -826,4 +857,3 @@ export const deleteAPI = async (
     },
   });
 };
-

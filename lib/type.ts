@@ -18,6 +18,7 @@ import {
   RoleType,
   Status,
   CertificateType,
+  RadiologyOrderStatus,
 } from "@/generated/prisma/enums";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -348,6 +349,7 @@ export interface FilterValues {
   outsourced?: boolean;
   consultantDoctor?: { id: string };
   defaultSelectedIds?: string[] | number[];
+  radiologyStatus?: RadiologyOrderStatus[];
   testStatus?: PathologyOrderStatus[];
   opdId?: number;
   ipdId?: number;
