@@ -25,9 +25,15 @@ import {
   useDeleteIncome,
   useIncomeList,
 } from "@/hooks/query/income";
-import { useUsersList, useInfiniteUsersList } from "@/hooks/query/user";
+import { useInfiniteUsersList } from "@/hooks/query/user";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
-import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
+import {
+  ColumnDefWithClass,
+  FilterConfig,
+  FilterValues,
+  PaginatedResponse,
+  User,
+} from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import {
   incomeValidator,
@@ -40,12 +46,16 @@ import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { FinanceCategory } from "@/generated/prisma/client";
 
 const CreateIncomeForm = () => {
   const { mutateAsync: createIncome, isPending: creating } = useCreateIncome();
   const { data: profile } = useProfile(false);
   const [userSearch, setUserSearch] = useState("");
-  const usersQuery = useInfiniteUsersList({ name: userSearch } as FilterValues, 20);
+  const usersQuery = useInfiniteUsersList(
+    { name: userSearch } as FilterValues,
+    20,
+  );
   const [categorySearch, setCategorySearch] = useState("");
   const categoryQuery = useInfiniteFinanceCategoryList(
     { type: FinanceCategoryType.INCOME, name: categorySearch },
@@ -234,7 +244,9 @@ const CreateIncomeForm = () => {
                     getItems={(data) => data?.data}
                     onSearchChange={setUserSearch}
                     valueKey={(i) => String(i?.id)}
-                    labelKey={(i) => `${i?.name || "Unknown"} ${i?.loginId ? `(${i.loginId})` : ""}`}
+                    labelKey={(i) =>
+                      `${i?.name || "Unknown"} ${i?.loginId ? `(${i.loginId})` : ""}`
+                    }
                     placeholder="Select User"
                   />
                 </div>
