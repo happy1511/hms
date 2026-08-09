@@ -271,14 +271,19 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
         p.data.flatMap((f) => ({
           ...f,
           isEditableRate: Boolean(f.isEditableRate),
-          label: f.name,
-          value: f.id,
         })),
       ),
     [servicesQuery.data],
   );
 
-  const canEditRate = Boolean(service?.isEditableRate);
+  const existingService = useMemo(
+    () => flatServices?.find((s) => s.id === Number(service?.id)),
+    [flatServices, service?.id],
+  );
+
+  const canEditRate = Boolean(
+    service?.isEditableRate ?? existingService?.isEditableRate,
+  );
 
   const columns: ColumnDefWithClass<billingItemValidatorType>[] = [
     {
@@ -444,25 +449,15 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
       return;
     }
 
-    const existingService = flatServices?.find(
-      (s) => s.id === Number(service.id),
-    );
-
-    if (!existingService) {
-      setIfChanged("rate", 0);
+    if (existingService) {
+      setIfChanged("rate", existingService.price);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
-      setIfChanged("total", 0);
-      setIfChanged("quantity", 0);
-      return;
+      const qty = Number(billingItemForm.getValues("quantity")) || 1;
+      setIfChanged("quantity", qty);
+      setIfChanged("total", existingService.price * qty);
     }
-
-    setIfChanged("rate", existingService.price);
-    setIfChanged("discountValue", 0);
-    setIfChanged("discountType", DiscountType["VALUE"]);
-    setIfChanged("total", existingService.price);
-    setIfChanged("quantity", 1);
-  }, [service, flatServices]);
+  }, [service?.id, existingService]);
 
   useEffect(() => {
     if (!service) return;
@@ -541,6 +536,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
           placeholder="billing section"
           searchValue={billingItemSearch}
           onSearchChange={setBillingItemSearch}
+          storeObject
         />
         <div className="md:col-span-2">
           <FormInfiniteSelect<
@@ -559,6 +555,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<ipdValidatorType> }) => {
             placeholder="Select Services"
             searchValue={serviceSearch}
             onSearchChange={setServiceSearch}
+            storeObject
           />
         </div>
         <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 space-x-2">
@@ -1208,7 +1205,7 @@ const IpdBillForm = () => {
             }))}
             required
           />
-          <div className="flex items-end gap-1">
+          <div className="flex items-start gap-1">
             <div className="flex-1">
               <FormInfiniteSelect<
                 Doctor,
@@ -1237,7 +1234,7 @@ const IpdBillForm = () => {
             />
           </div>
 
-          <div className="flex items-end gap-1">
+          <div className="flex items-start gap-1">
             <div className="flex-1">
               <FormInfiniteSelect<
                 Doctor,

@@ -169,25 +169,6 @@ const Actions = ({
   );
 };
 
-const neededFilters: FilterConfig<FilterValues>[] = [
-  {
-    label: "Name",
-    valueKey: "name",
-    type: "text",
-    placeholder: "Search by name here.",
-  },
-  {
-    label: "Status",
-    valueKey: "radiologyStatus",
-    type: "select",
-    placeholder: "Select Status",
-    options: Object.values(RadiologyOrderStatus).map((s) => ({
-      label: s,
-      value: s,
-    })),
-  },
-  { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
-];
 
 const RadiologyOrders = ({
   cancelled,
@@ -206,17 +187,44 @@ const RadiologyOrders = ({
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null);
 
   const { data: profile } = useProfile(false);
+  const neededFilters = useMemo(() => {
+    const filtersArr: FilterConfig<FilterValues>[] = [
+      {
+        label: "Name",
+        valueKey: "name",
+        type: "text",
+        placeholder: "Search by name here.",
+      },
+      { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
+    ];
+
+    if (!cancelled && !outsourced && title !== "Completed Orders") {
+      filtersArr.splice(1, 0, {
+        label: "Status",
+        valueKey: "radiologyOrderStatus",
+        type: "select",
+        placeholder: "Select Status",
+        options: [
+          { label: RadiologyOrderStatus["RESULT_PENDING"], value: RadiologyOrderStatus["RESULT_PENDING"] },
+        ],
+      });
+    }
+
+    return filtersArr;
+  }, [cancelled, outsourced, title]);
+
   const { data, isLoading, isFetching, refetch, isError, error } =
     useRadiologyOrdersList(
       {
         ...filters,
         cancelled,
         outsourced,
-        testStatus:
+        radiologyOrderStatus:
           forcedTestStatus ??
-          (!cancelled && !outsourced
-            ? [RadiologyOrderStatus["RESULT_PENDING"]]
-            : []),
+          (filters.radiologyOrderStatus ||
+            (!cancelled && !outsourced
+              ? [RadiologyOrderStatus["RESULT_PENDING"]]
+              : [])),
       },
       page,
       limit,

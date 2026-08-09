@@ -5,6 +5,7 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { FormInput } from "@/components/form-inputs/FormInput";
+import { FormSelect } from "@/components/form-inputs/FormSelect";
 import { Form } from "@/components/ui/form";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
@@ -13,7 +14,7 @@ import {
   useUpdatePathologyTestOrder,
 } from "@/hooks/query/pathology";
 import { PathologyTestResultType } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { formatReferenceRangeText, hasActionPermission } from "@/lib/utils";
 import {
   PathologyResultEntryValidatorType,
   pathologyResultsEntry,
@@ -33,6 +34,13 @@ const buildDefaultValues = (data: PathologyTestResultType) => {
         parameterId: param.id,
         optionId: undefined,
       });
+    });
+  });
+
+  data.test.parameters?.forEach((param) => {
+    params.push({
+      parameterId: param.id,
+      optionId: undefined,
     });
   });
 
@@ -88,9 +96,8 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
                   return (
                     <tr
                       key={param.id}
-                      className={`border-t ${
-                        rowIndex % 2 === 0 ? "bg-white" : "bg-muted/30"
-                      }`}
+                      className={`border-t ${rowIndex % 2 === 0 ? "bg-white" : "bg-muted/30"
+                        }`}
                     >
                       {/* Parameter */}
                       <td className="px-3 xfo py-1 nt-medium">{param.name}</td>
@@ -136,9 +143,7 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
 
                       {/* Range */}
                       <td className="px-3 xte py-1 xt-muted-foreground">
-                        {ref
-                          ? `${ref.lowerRange || "-"} - ${ref.upperRange || "-"}`
-                          : "-"}
+                        {formatReferenceRangeText(ref)}
                       </td>
                     </tr>
                   );
@@ -147,6 +152,84 @@ const ResultEntryForm = ({ data }: { data: PathologyTestResultType }) => {
             </table>
           </div>
         ))}
+
+        {!!data.test.parameters?.length && (
+          <div className="rounded-xl overflow-hidden">
+            {/* Table */}
+            <table className="w-full text-tiny border">
+              <thead className="bg-muted text-left sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-1  w-[35%]">Parameter</th>
+                  <th className="px-3 py-1  w-[25%]">Result</th>
+                  <th className="px-3 py-1  w-[15%]">Unit</th>
+                  <th className="px-3 py-1  w-[25%]">Reference Range</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {data.test.parameters.map((param, rowIndex) => {
+                  const index = globalIndex++;
+                  const ref = param.referenceRanges?.[0];
+
+                  return (
+                    <tr
+                      key={param.id}
+                      className={`border-t ${rowIndex % 2 === 0 ? "bg-white" : "bg-muted/30"
+                        }`}
+                    >
+                      {/* Parameter */}
+                      <td className="px-3 xfo py-1 nt-medium">{param.name}</td>
+
+                      {/* Result */}
+                      <td className="px-2 py-1">
+                        {param.isDescriptiveOnly ? (
+                          <FormInput
+                            control={control}
+                            type="text"
+                            name={`results.${index}.textValue`}
+                            hideError
+                          />
+                        ) : param.parameterOptions?.length ? (
+                          <>
+                            <FormField
+                              control={control}
+                              type="select"
+                              options={param.parameterOptions.map((o) => ({
+                                value: o.id,
+                                label: o.value,
+                              }))}
+                              name={`results.${index}.optionId`}
+                              hideError
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <FormInput
+                              control={control}
+                              type="number"
+                              name={`results.${index}.numericValue`}
+                              hideError
+                            />
+                          </>
+                        )}
+                      </td>
+
+                      {/* Unit */}
+                      <td className="px-3 xte py-1 xt-muted-foreground">
+                        {ref?.unit || "-"}
+                      </td>
+
+                      {/* Reference Range */}
+                      <td className="px-3 xte py-1 xt-muted-foreground">
+                        {formatReferenceRangeText(ref)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <CustomButton disabled={isPending} type="submit">
           Save Results

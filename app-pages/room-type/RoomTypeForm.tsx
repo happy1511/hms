@@ -105,7 +105,6 @@ const UpdateCreateForm = ({
             type="textarea"
             name="description"
             control={form.control}
-            required
           />
         </div>
         <CustomButton disabled={creating || updating} type="submit">

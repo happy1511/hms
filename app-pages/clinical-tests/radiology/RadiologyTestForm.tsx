@@ -52,6 +52,9 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
       price: data?.price || 0,
       section: data?.section,
       status: data?.status || Status["active"],
+      billingSectionId:
+        (data as any)?.billingSectionId ||
+        (data as any)?.radiologyTestServices?.[0]?.service?.billingSectionId,
     },
     resolver: zodResolver(radiologyTestValidator),
   });
@@ -67,9 +70,23 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {open && (
+        <div
+          data-state="open"
+          data-slot="dialog-overlay"
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setOpen(false);
+            }
+          }}
+        />
+      )}
       <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
         showCloseButton={false}
         className="max-w-4xl! border-secondary border-4 bg-white p-0 gap-0"
       >
@@ -132,6 +149,11 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
                 onSearchChange={setBillingSectionSearch}
                 valueKey={(i) => String(i?.id)}
                 labelKey={(i) => i?.name}
+                selectedItem={
+                  ((data as any)?.billingSection ||
+                    (data as any)?.radiologyTestServices?.[0]?.service
+                      ?.billingSection) as any
+                }
               />
               <FormField
                 label="Rate"

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatReferenceRangeText } from "@/lib/utils";
 import { PathologyTestResultType } from "@/lib/type";
 import { Fragment, useMemo } from "react";
 import Cell from "../invoice/Cell";
@@ -37,23 +38,27 @@ const PathologyReportContent = ({
   className?: string;
 }) => {
   const sectionRows = useMemo(() => {
-    return (
+    const headers =
       data.test?.testHeaders?.map((header) => ({
         name: header.name || "",
         parameters: (header.testParameters || []).map((param) => {
           const result = param.pathologyTestResults?.[0];
           const ref = param.referenceRanges?.[0];
-          const refString = ref
-            ? [ref.lowerRange, ref.upperRange, ref.unit ? ref.unit : ""]
-                .filter((v) => v !== undefined && v !== null && v !== "")
-                .join(" - ")
-            : "-";
+          const rangeFormatted = formatReferenceRangeText(ref);
+          const refString =
+            rangeFormatted !== "N/A"
+              ? `${rangeFormatted}${ref?.unit ? ` ${ref.unit}` : ""}`
+              : "-";
 
-          const resultValue =
-            result?.textValue ??
-            (result?.numericValue !== null && result?.numericValue !== undefined
-              ? result.numericValue
-              : "-");
+          let resultValue =
+            result?.numericValue ?? result?.textValue ?? "-";
+
+          if (result?.optionId) {
+            const opt = param.parameterOptions?.find(
+              (o: any) => o.id === result.optionId
+            );
+            if (opt) resultValue = opt.value;
+          }
 
           return {
             name: param.name,
@@ -63,8 +68,42 @@ const PathologyReportContent = ({
             max: ref?.upperRange ?? null,
           };
         }),
-      })) || []
-    );
+      })) || [];
+
+    if (data.test?.parameters && data.test.parameters.length > 0) {
+      headers.push({
+        name: "Other Parameters",
+        parameters: data.test.parameters.map((param) => {
+          const result = param.pathologyTestResults?.[0];
+          const ref = param.referenceRanges?.[0];
+          const rangeFormatted = formatReferenceRangeText(ref);
+          const refString =
+            rangeFormatted !== "N/A"
+              ? `${rangeFormatted}${ref?.unit ? ` ${ref.unit}` : ""}`
+              : "-";
+
+          let resultValue =
+            result?.numericValue ?? result?.textValue ?? "-";
+
+          if (result?.optionId) {
+            const opt = param.parameterOptions?.find(
+              (o: any) => o.id === result.optionId
+            );
+            if (opt) resultValue = opt.value;
+          }
+
+          return {
+            name: param.name,
+            result: resultValue,
+            reference: refString,
+            min: ref?.lowerRange ?? null,
+            max: ref?.upperRange ?? null,
+          };
+        }),
+      });
+    }
+
+    return headers;
   }, [data]);
 
   return (

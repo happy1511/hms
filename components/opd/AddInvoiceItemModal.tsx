@@ -1,4 +1,22 @@
+import { BillingSection } from "@/generated/prisma/client";
+import { DiscountType, Status } from "@/generated/prisma/enums";
+import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import { useCreateInvoiceBillingItem } from "@/hooks/query/invoice";
+import { useInfiniteServicesList } from "@/hooks/query/service";
+import { PaginatedResponse, ServiceDataType } from "@/lib/type";
+import { getDiscountTypeOptions } from "@/lib/utils";
+import {
+  addInvoiceBillItemValidator,
+  addInvoiceBillItemValidatorType,
+} from "@/validators/api/invoice/invoice";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PlusIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import CustomButton from "../common/CustomButton";
+import FormField from "../form-inputs/FormField";
+import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,26 +24,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { PlusIcon } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
-import { useInfiniteServicesList } from "@/hooks/query/service";
-import { useForm } from "react-hook-form";
 import { Form } from "../ui/form";
-import CustomButton from "../common/CustomButton";
-import FormField from "../form-inputs/FormField";
-import { DiscountType, Status } from "@/generated/prisma/enums";
 import AddPaymentModal from "./AddPayment";
-import { FormInfiniteSelect } from "../form-inputs/FormInfiniteSelect";
-import { PaginatedResponse, ServiceDataType } from "@/lib/type";
-import { getDiscountTypeOptions } from "@/lib/utils";
-import { BillingSection } from "@/generated/prisma/client";
-import { useCreateInvoiceBillingItem } from "@/hooks/query/invoice";
-import {
-  addInvoiceBillItemValidator,
-  addInvoiceBillItemValidatorType,
-} from "@/validators/api/invoice/invoice";
 
 interface Props {
   billId: number;
@@ -59,7 +59,10 @@ const AddInvoiceItemModal = ({
 
   const selectedBillingSection = billingItemForm.watch("billingSection");
   const billingSectionId = selectedBillingSection?.id;
+
   const service = billingItemForm.watch("service");
+  const serviceId = service?.id;
+
   const quantity = billingItemForm.watch("quantity");
   const rate = billingItemForm.watch("rate");
   const discountValue = billingItemForm.watch("discountValue");
@@ -74,7 +77,7 @@ const AddInvoiceItemModal = ({
     {
       name: serviceSearch,
       status: Status["active"],
-      billingSectionId: billingSectionId as string | undefined,
+      billingSectionId: billingSectionId ? String(billingSectionId) : undefined,
     },
     20,
   );
@@ -92,7 +95,12 @@ const AddInvoiceItemModal = ({
     [servicesQuery.data],
   );
 
-  const canEditRate = Boolean(service?.isEditableRate);
+  const existingService = useMemo(
+    () => flatServices?.find((s) => s.id === Number(serviceId)),
+    [flatServices, serviceId],
+  );
+
+  const canEditRate = Boolean(service?.isEditableRate ?? existingService?.isEditableRate);
 
   const onSubmit = async (values: addInvoiceBillItemValidatorType) => {
     await mutateAsync(values);
@@ -110,7 +118,7 @@ const AddInvoiceItemModal = ({
       }
     };
 
-    if (!service?.id) {
+    if (!serviceId) {
       setIfChanged("rate", 0);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
@@ -119,28 +127,18 @@ const AddInvoiceItemModal = ({
       return;
     }
 
-    const existingService = flatServices?.find(
-      (s) => s.id === Number(service.id),
-    );
-
-    if (!existingService) {
-      setIfChanged("rate", 0);
+    if (existingService) {
+      setIfChanged("rate", existingService.price);
       setIfChanged("discountValue", 0);
       setIfChanged("discountType", DiscountType["VALUE"]);
-      setIfChanged("total", 0);
-      setIfChanged("quantity", 0);
-      return;
+      const qty = Number(billingItemForm.getValues("quantity")) || 1;
+      setIfChanged("quantity", qty);
+      setIfChanged("total", existingService.price * qty);
     }
-
-    setIfChanged("rate", existingService.price);
-    setIfChanged("discountValue", 0);
-    setIfChanged("discountType", DiscountType["VALUE"]);
-    setIfChanged("total", existingService.price);
-    setIfChanged("quantity", 1);
-  }, [service, flatServices]);
+  }, [serviceId, existingService]);
 
   useEffect(() => {
-    if (!service?.id) return;
+    if (!serviceId) return;
 
     const gross = Number(quantity) * Number(rate);
 
@@ -152,10 +150,11 @@ const AddInvoiceItemModal = ({
     if (billingItemForm.getValues("total") !== total) {
       billingItemForm.setValue("total", total);
     }
-  }, [quantity, rate, discountType, discountValue, service]);
+  }, [quantity, rate, discountType, discountValue, serviceId]);
+
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button
@@ -166,8 +165,23 @@ const AddInvoiceItemModal = ({
           </Button>
         )}
       </DialogTrigger>
-
-      <DialogContent className="max-w-3xl! border-secondary border-4 bg-white">
+      {open && (
+        <div
+          data-state="open"
+          data-slot="dialog-overlay"
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              onOpenChange?.(false);
+            }
+          }}
+        />
+      )}
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="max-w-3xl! border-secondary border-4 bg-white"
+      >
         <DialogHeader>
           <DialogTitle className="text-black/60 text-sm">
             Add Invoice Item
@@ -202,6 +216,7 @@ const AddInvoiceItemModal = ({
                   placeholder="billing section"
                   searchValue={billingItemSearch}
                   onSearchChange={setBillingItemSearch}
+                  storeObject
                   required
                 />
                 <div className="col-span-2">
@@ -221,6 +236,7 @@ const AddInvoiceItemModal = ({
                     placeholder="Select Services"
                     searchValue={serviceSearch}
                     onSearchChange={setServiceSearch}
+                    storeObject
                     required
                   />
                 </div>

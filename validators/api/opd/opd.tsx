@@ -8,8 +8,8 @@ import {
   Status,
 } from "@/generated/prisma/enums";
 import { z } from "zod";
-import { patientValidator } from "../masters/patient";
 import { invoiceValidator } from "../invoice/invoice";
+import { patientValidator } from "../masters/patient";
 
 const opdPatientValidator = patientValidator.extend({
   addresses: z.array(
@@ -59,15 +59,17 @@ const opdBaseValidator = z.object({
   remarks: z.string().max(500).optional(),
   consultantDoctor: z
     .object({ id: z.coerce.number() })
+    .nullable()
+    .optional()
     .superRefine((data, ctx) => {
-      if (!data.id) {
+      if (!data?.id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Consultant is required`,
         });
       }
     }),
-  referredDoctor: z.object({ id: z.coerce.number() }).optional(),
+  referredDoctor: z.object({ id: z.coerce.number() }).nullable().optional(),
   invoice: invoiceValidator,
 });
 
@@ -172,22 +174,11 @@ type prescribedDrugType = z.input<typeof prescribedDrugValidator>;
 type opdDoctorUpdateValidatorType = z.input<typeof opdDoctorUpdateValidator>;
 
 export {
-  opdValidator,
-  partialOpdValidator,
-  opdStatusUpdateValidator,
-  opdDateTimeUpdateValidator,
-  vitalsValidator,
-  consultationFileValidator,
-  prescribedDrugValidator,
-  opdDoctorUpdateValidator,
+  consultationFileValidator, opdDateTimeUpdateValidator, opdDoctorUpdateValidator, opdStatusUpdateValidator, opdValidator,
+  partialOpdValidator, prescribedDrugValidator, vitalsValidator
 };
 export type {
-  opdValidatorType,
-  partialOpdValidatorType,
-  opdStatusUpdateValidatorType,
-  opdDateTimeUpdateValidatorType,
-  vitalValidatorType,
-  consultantFileType,
-  prescribedDrugType,
-  opdDoctorUpdateValidatorType,
+  consultantFileType, opdDateTimeUpdateValidatorType, opdDoctorUpdateValidatorType, opdStatusUpdateValidatorType, opdValidatorType,
+  partialOpdValidatorType, prescribedDrugType, vitalValidatorType
 };
+

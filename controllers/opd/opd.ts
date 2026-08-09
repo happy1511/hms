@@ -1,3 +1,4 @@
+import { getPatientUhid } from "@/controllers/patient/patient";
 import {
   AddressType,
   ContactType,
@@ -9,23 +10,22 @@ import {
 } from "@/generated/prisma/client";
 import { ActionType, ModuleType } from "@/generated/prisma/enums";
 import { apiResponse } from "@/lib/apiResponse";
-import { hasUserPermission } from "@/lib/serverPermission";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { hasUserPermission } from "@/lib/serverPermission";
+import { fullName } from "@/lib/utils";
 import { validateRequest } from "@/lib/validator";
 import { prisma } from "@/services/prisma";
-import { getPatientUhid } from "@/controllers/patient/patient";
 import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   consultationFileValidator,
-  opdValidator,
   opdDateTimeUpdateValidator,
   opdDoctorUpdateValidator,
   opdStatusUpdateValidator,
+  opdValidator,
   partialOpdValidator,
   vitalsValidator,
 } from "@/validators/api/opd/opd";
 import { isSameDay } from "date-fns";
-import { fullName } from "@/lib/utils";
 
 const getOpdDeleteErrorResponse = () =>
   apiResponse({
@@ -320,41 +320,41 @@ export const getConsultationAPI = async (
 
         const overrideConsultantDoctor = overrideConsultantDoctorId
           ? await tx.doctor.findUnique({
-              where: { id: overrideConsultantDoctorId },
-            })
+            where: { id: overrideConsultantDoctorId },
+          })
           : null;
 
         const previousOpds = consultation?.patientId
           ? await tx.opd.findMany({
-              where: {
-                patientId: consultation.patientId,
-                id: { not: opdId },
-                isDeleted: false,
-              },
-              orderBy: { createdAt: "desc" },
-              select: {
-                id: true,
-                opdDateTime: true,
-                advisedPathologyTests: {
-                  select: {
-                    test: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
-                advisedRadiologyTests: {
-                  select: {
-                    test: {
-                      select: {
-                        name: true,
-                      },
+            where: {
+              patientId: consultation.patientId,
+              id: { not: opdId },
+              isDeleted: false,
+            },
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              opdDateTime: true,
+              advisedPathologyTests: {
+                select: {
+                  test: {
+                    select: {
+                      name: true,
                     },
                   },
                 },
               },
-            })
+              advisedRadiologyTests: {
+                select: {
+                  test: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          })
           : [];
 
         return apiResponse({
@@ -667,6 +667,12 @@ export const createAPI = async (req: Request, user: User) => {
           existingSectionItems.push(item);
           groupedBillingItems.set(item.billingSection.id, existingSectionItems);
         });
+        if (!body.consultantDoctor) {
+          return apiResponse({
+            status: RESPONSE_STATUS.BAD_REQUEST,
+            message: "Consultant doctor is required",
+          })
+        }
 
         const invoice = await tx.invoice.create({
           data: {
@@ -687,8 +693,8 @@ export const createAPI = async (req: Request, user: User) => {
                 patientId: existingPatient.id,
                 arrivalState: body.arrivalState,
                 remarks: body.remarks,
-                consultantDoctorId: body.consultantDoctor.id,
-                referringDoctorId: body.referredDoctor?.id,
+                consultantDoctorId: body.consultantDoctor?.id,
+                referringDoctorId: body.referredDoctor?.id || null,
                 createdBy: user.id,
                 updatedBy: user.id,
                 opdDateTime: createdAt,

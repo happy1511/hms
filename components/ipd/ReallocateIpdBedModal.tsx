@@ -90,8 +90,25 @@ const ReallocateIpdBedModal = ({ open, onOpenChange, ipd }: Props) => {
     <Dialog
       open={open}
       onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}
+      modal={false}
     >
-      <DialogContent className="max-w-lg border-secondary border-4 bg-white">
+      {open && (
+        <div
+          data-state="open"
+          data-slot="dialog-overlay"
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleClose();
+            }
+          }}
+        />
+      )}
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="max-w-lg border-secondary border-4 bg-white"
+      >
         <DialogHeader>
           <DialogTitle className="text-sm text-black/70">
             Reallocate Bed

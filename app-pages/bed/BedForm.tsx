@@ -130,6 +130,7 @@ const UpdateForm = ({
             PartialBedValidatorType
           >
             name="room"
+            label="Room"
             control={form.control}
             query={roomQuery}
             getItems={(data) => data?.data}

@@ -192,26 +192,6 @@ const Actions = ({
   );
 };
 
-const neededFilters: FilterConfig<FilterValues>[] = [
-  {
-    label: "Name",
-    valueKey: "name",
-    type: "text",
-    placeholder: "Search by name here.",
-  },
-  {
-    label: "Status",
-    valueKey: "testStatus",
-    type: "select",
-    placeholder: "Select Status",
-    options: Object.values(PathologyOrderStatus).map((s) => ({
-      label: s,
-      value: s,
-    })),
-  },
-  { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
-];
-
 const PathologyOrders = ({
   cancelled,
   outsourced,
@@ -231,20 +211,48 @@ const PathologyOrders = ({
 
   const { data: profile } = useProfile(false);
   const router = useRouter();
+  const neededFilters = useMemo(() => {
+    const filtersArr: FilterConfig<FilterValues>[] = [
+      {
+        label: "Name",
+        valueKey: "name",
+        type: "text",
+        placeholder: "Search by name here.",
+      },
+      { label: "Created Date", valueKey: "createdAt", type: "dateRange" },
+    ];
+
+    if (!cancelled && !outsourced && title !== "Completed Orders") {
+      filtersArr.splice(1, 0, {
+        label: "Status",
+        valueKey: "pathologyOrderStatus",
+        type: "select",
+        placeholder: "Select Status",
+        options: [
+          { label: PathologyOrderStatus["RESULT_PENDING"], value: PathologyOrderStatus["RESULT_PENDING"] },
+          { label: PathologyOrderStatus["SAMPLE_PENDING"], value: PathologyOrderStatus["SAMPLE_PENDING"] },
+        ],
+      });
+    }
+
+    return filtersArr;
+  }, [cancelled, outsourced, title]);
+
   const { data, isLoading, isFetching, refetch, isError, error } =
     usePathologyOrdersList(
       {
         ...filters,
         cancelled,
         outsourced,
-        testStatus:
+        pathologyOrderStatus:
           forcedTestStatus ??
-          (!cancelled && !outsourced
-            ? [
-                PathologyOrderStatus["RESULT_PENDING"],
-                PathologyOrderStatus["SAMPLE_PENDING"],
-              ]
-            : []),
+          (filters.pathologyOrderStatus ||
+            (!cancelled && !outsourced
+              ? [
+                  PathologyOrderStatus["RESULT_PENDING"],
+                  PathologyOrderStatus["SAMPLE_PENDING"],
+                ]
+              : [])),
       },
       page,
       limit,

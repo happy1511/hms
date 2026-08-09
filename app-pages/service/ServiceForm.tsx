@@ -14,8 +14,8 @@ import {
   ServiceType,
   Status,
 } from "@/generated/prisma/enums";
-import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useProfile } from "@/hooks/query/auth";
+import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
 import { useInfinitePathologyTestsList } from "@/hooks/query/pathology";
 import { useInfiniteRadiologyTestsList } from "@/hooks/query/radiology";
 import {
@@ -103,6 +103,7 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
     }
   };
 
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -171,7 +172,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             type="checkbox"
             name="isEditableRate"
             control={form.control}
-            required
           />
 
           <div className="col-span-2 grid grid-cols-2 gap-x-2">
@@ -184,7 +184,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
                 label: s,
               }))}
               control={form.control}
-              required
             />
 
             {discountAvailable && (
@@ -193,53 +192,51 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
                 type="number"
                 name="maxDiscount"
                 control={form.control}
-                required
               />
             )}
           </div>
 
           {(type === ServiceType["LAB_TEST"] ||
             type === ServiceType["CLINICAL_TEST"]) && (
-            <FormInfiniteSelect<
-              PathologyTestDataType,
-              PaginatedResponse<PathologyTestDataType>,
-              string,
-              ServiceValidatorType
-            >
-              name="connectedLabTests"
-              label="Pathology Tests"
-              control={form.control}
-              query={pathologyQuery}
-              getItems={(p) => p?.data}
-              valueKey={(i) => String(i?.id)}
-              labelKey={(i) => i?.name}
-              searchValue={pathologySearchValue}
-              onSearchChange={setPathologySearchValue}
-              required
-              multiple
-            />
-          )}
+              <FormInfiniteSelect<
+                PathologyTestDataType,
+                PaginatedResponse<PathologyTestDataType>,
+                string,
+                ServiceValidatorType
+              >
+                name="connectedLabTests"
+                label="Pathology Tests"
+                control={form.control}
+                query={pathologyQuery}
+                getItems={(p) => p?.data}
+                valueKey={(i) => String(i?.id)}
+                labelKey={(i) => i?.name}
+                searchValue={pathologySearchValue}
+                onSearchChange={setPathologySearchValue}
+                storeObject
+                multiple
+              />
+            )}
           {(type === ServiceType["RADIOLOGY_TEST"] ||
             type === ServiceType["CLINICAL_TEST"]) && (
-            <FormInfiniteSelect<
-              RadiologyTest,
-              PaginatedResponse<RadiologyTest>,
-              string,
-              ServiceValidatorType
-            >
-              name="connectedRadiologyTests"
-              label="Radiology Tests"
-              control={form.control}
-              query={radiologyQuery}
-              getItems={(p) => p?.data}
-              valueKey={(i) => String(i?.id)}
-              labelKey={(i) => i?.name}
-              searchValue={radiologySearchValue}
-              onSearchChange={setRadiologySearchValue}
-              required
-              multiple
-            />
-          )}
+              <FormInfiniteSelect<
+                RadiologyTest,
+                PaginatedResponse<RadiologyTest>,
+                string,
+                ServiceValidatorType
+              >
+                name="connectedRadiologyTests"
+                label="Radiology Tests"
+                control={form.control}
+                query={radiologyQuery}
+                getItems={(p) => p?.data}
+                valueKey={(i) => String(i?.id)}
+                labelKey={(i) => i?.name}
+                searchValue={radiologySearchValue}
+                onSearchChange={setRadiologySearchValue}
+                multiple
+              />
+            )}
 
           <div className="col-span-2">
             <FormField<ServiceValidatorType>
@@ -256,7 +253,6 @@ const UpdateCreateForm = ({ data }: { data?: ServiceDataType }) => {
             type="checkbox"
             name="discountAvailable"
             control={form.control}
-            required
           />
         </div>
         <CustomButton disabled={creating || updating} type="submit">

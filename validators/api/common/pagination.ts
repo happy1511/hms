@@ -26,7 +26,8 @@ const paginationValidator = z.object({
     .string()
     .optional()
     .transform((t) => (t === "true" ? true : false)),
-  testStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
+  pathologyOrderStatus: z.array(z.enum(PathologyOrderStatus)).optional(),
+  radiologyOrderStatus: z.array(z.enum(RadiologyOrderStatus)).optional(),
   radiologyStatus: z.array(z.enum(RadiologyOrderStatus)).optional(),
   cancelled: z
     .string()

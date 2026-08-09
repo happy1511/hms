@@ -32,6 +32,7 @@ import {
   PaymentMode,
   RelationshipType,
   Status,
+  TransactionType,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
 import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
@@ -163,7 +164,8 @@ const getInitialValues = (data?: PatientType): opdValidatorType => {
     },
 
     arrivalState: OpdArrival.ROUTINE,
-    consultantDoctor: { id: null },
+    consultantDoctor: null as any,
+    referredDoctor: null as any,
   };
 };
 
@@ -222,6 +224,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const billingItemForm = useForm<billingItemValidatorType>({
     resolver: zodResolver(billingItemValidator),
     defaultValues: {
+      index: undefined as number | undefined,
       createdAt: new Date(),
       quantity: 1,
       rate: 0,
@@ -240,7 +243,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const invoiceDiscountType = form.watch("invoice.discountType");
   const invoiceDiscountValue = form.watch("invoice.discountValue");
   const editingIndex = billingItemForm.watch("index");
-
+  console.log(addedBillingItems, "addedBillingItems")
   const billingItemQuery = useInfiniteBillingSectionsList(
     { name: billingItemSearch, status: Status["active"] },
     20,
@@ -263,6 +266,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     },
     20,
   );
+
 
   const consultantDoctor = form.watch("consultantDoctor") as Doctor | null;
   const consultantDoctorId = consultantDoctor?.id
@@ -299,12 +303,13 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const canEditRate = Boolean(service?.isEditableRate);
 
   useEffect(() => {
-    const existingConsultationIndex = (addedBillingItems || []).findIndex(
+    const currentBillingItems = form.getValues("invoice.billingItems") || [];
+    const existingConsultationIndex = currentBillingItems.findIndex(
       (item) => Boolean(item?.billingSection?.isDoctorConsultationCharges),
     );
     const existingConsultationItem =
       existingConsultationIndex >= 0
-        ? addedBillingItems?.[existingConsultationIndex]
+        ? currentBillingItems?.[existingConsultationIndex]
         : null;
 
     if (!consultantDoctorId) {
@@ -365,8 +370,8 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
     }
 
     append(nextItem as billingItemValidatorType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    addedBillingItems,
     append,
     consultationBillingSection,
     consultantDoctorId,
@@ -508,20 +513,36 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   ];
 
   const handleAddUpdate = () => {
-    billingItemForm.handleSubmit(() => {
-      const values = billingItemForm.getValues();
-
-      if (typeof values.index === "number") {
-        update(values.index as number, {
-          ...values,
+    billingItemForm.handleSubmit(
+      (values) => {
+        const rawIndex = billingItemForm.getValues("index");
+        console.log(rawIndex, "rawIndex")
+        if (rawIndex !== undefined && rawIndex !== null && rawIndex !== "") {
+          console.log(rawIndex, "rawIndex1")
+          update(Number(rawIndex), {
+            ...values,
+          });
+        } else {
+          append({
+            ...values,
+          });
+        }
+        billingItemForm.reset({
+          index: undefined,
+          billingSection: undefined,
+          service: null as any,
+          createdAt: new Date(),
+          quantity: 1,
+          rate: 0,
+          discountType: DiscountType.VALUE,
+          discountValue: 0,
+          total: 0,
         });
-      } else {
-        append({
-          ...values,
-        });
+      },
+      (errors) => {
+        console.error("Validation failed:", errors);
       }
-      billingItemForm.reset({});
-    })();
+    )();
   };
 
   useEffect(() => {
@@ -530,6 +551,14 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
         billingItemForm.setValue(name, value);
       }
     };
+
+    // If we're editing an existing row and the service hasn't been manually changed,
+    // we don't want to overwrite the values that were populated via reset().
+    const isEditing = billingItemForm.getValues("index") !== undefined;
+    const isServiceDirty = billingItemForm.formState.dirtyFields.service;
+    if (isEditing && !isServiceDirty) {
+      return;
+    }
 
     if (!service?.id) {
       setIfChanged("rate", 0);
@@ -637,6 +666,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           placeholder="billing section"
           searchValue={billingItemSearch}
           onSearchChange={setBillingItemSearch}
+          storeObject
           required
         />
         <div className="md:col-span-2">
@@ -656,6 +686,7 @@ const BillingItems = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
             placeholder="Select Services"
             searchValue={serviceSearch}
             onSearchChange={setServiceSearch}
+            storeObject
             required
           />
         </div>
@@ -780,6 +811,7 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   const transactionForm = useForm<transactionValidatorType>({
     resolver: zodResolver(transactionsValidator),
     defaultValues: {
+      index: undefined as number | undefined,
       mode: PaymentMode.CASH,
       amount: 0,
     },
@@ -846,11 +878,10 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
   ];
 
   const handleAddUpdate = () => {
-    transactionForm.handleSubmit(() => {
-      const values = transactionForm.getValues();
-
-      if (typeof values.index === "number") {
-        update(values.index as number, {
+    transactionForm.handleSubmit((values) => {
+      const rawIndex = transactionForm.getValues("index");
+      if (rawIndex !== undefined && rawIndex !== null && rawIndex !== "") {
+        update(Number(rawIndex), {
           ...values,
         });
       } else {
@@ -858,7 +889,12 @@ const Transactions = ({ form }: { form: UseFormReturn<opdValidatorType> }) => {
           ...values,
         });
       }
-      transactionForm.reset({});
+      transactionForm.reset({
+        index: undefined,
+        amount: 0,
+        mode: PaymentMode.CASH,
+        transactionType: TransactionType.PAYMENT,
+      });
     })();
   };
 
@@ -1301,6 +1337,7 @@ const OpdBillForm = () => {
                 valueKey={(item: Doctor) => String(item?.id)}
                 searchValue={consultantValue}
                 onSearchChange={setConsultantValue}
+                storeObject={true}
                 required
               />
             </div>
@@ -1331,6 +1368,7 @@ const OpdBillForm = () => {
                 valueKey={(item: Doctor) => String(item?.id)}
                 searchValue={referringValue}
                 onSearchChange={setReferringValue}
+                storeObject={true}
               />
             </div>
             <QuickCreateDoctorModal

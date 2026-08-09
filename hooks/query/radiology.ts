@@ -180,7 +180,7 @@ export const useRadiologyOrdersList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.testStatus && { testStatus: filters.testStatus }),
+          ...(filters.radiologyOrderStatus && { radiologyOrderStatus: filters.radiologyOrderStatus }),
           ...(filters.outsourced !== undefined && {
             outsourced: filters.outsourced,
           }),

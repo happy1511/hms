@@ -1,36 +1,36 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import CustomButton from "@/components/common/CustomButton";
 import CustomLayout from "@/components/common/CustomLayout";
-import { Form } from "@/components/ui/form";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { Form } from "@/components/ui/form";
+import { RadiologyTest } from "@/generated/prisma/client";
 import {
   ActionType,
   ModuleType,
   RadiologySection,
   Status,
 } from "@/generated/prisma/enums";
-import CustomButton from "@/components/common/CustomButton";
-import { RadiologyTest } from "@/generated/prisma/client";
-import {
-  radiologyTemplateValidator,
-  RadiologyTemplateValidatorType,
-} from "@/validators/api/masters/radiologyTest";
+import { RadiologyTemplateGetPayload } from "@/generated/prisma/models";
+import { useProfile } from "@/hooks/query/auth";
 import {
   useCreateRadiologyTemplate,
   useInfiniteRadiologyTestsList,
   useRadiologyTemplate,
   useUpdateRadiologyTemplate,
 } from "@/hooks/query/radiology";
-import { useParams, useRouter } from "next/navigation";
-import { LoaderIcon } from "lucide-react";
-import { useProfile } from "@/hooks/query/auth";
-import { hasActionPermission } from "@/lib/utils";
-import { useState } from "react";
-import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { PaginatedResponse } from "@/lib/type";
-import { RadiologyTemplateGetPayload } from "@/generated/prisma/models";
+import { hasActionPermission } from "@/lib/utils";
+import {
+  radiologyTemplateValidator,
+  RadiologyTemplateValidatorType,
+} from "@/validators/api/masters/radiologyTest";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderIcon } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 const CreateUpdateForm = ({
   data,
@@ -61,6 +61,8 @@ const CreateUpdateForm = ({
     },
     resolver: zodResolver(radiologyTemplateValidator),
   });
+
+  console.log(form.formState.errors, "form.formState.errors")
 
   const onSubmit = (values: RadiologyTemplateValidatorType) => {
     if (data) {
@@ -99,7 +101,6 @@ const CreateUpdateForm = ({
             name="status"
             options={Object.values(Status).map((s) => ({ value: s, label: s }))}
             control={form.control}
-            required
           />
           <FormInfiniteSelect<
             RadiologyTest,
@@ -116,6 +117,7 @@ const CreateUpdateForm = ({
             valueKey={(i) => String(i?.id)}
             searchValue={radiologySearchValue}
             onSearchChange={setRadiologySearchValue}
+            storeObject
             multiple
           />
           <div className="col-span-2">

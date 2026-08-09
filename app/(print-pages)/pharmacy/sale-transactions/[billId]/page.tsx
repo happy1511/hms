@@ -6,7 +6,7 @@ const page = () => {
   return (
     <Suspense>
       <main>
-        <CustomHeader />
+        <CustomHeader hideSidebarToggle={true} />
 
         <div className="relative h-[calc(100dvh-48px)]">
           <PrintSaleTransactions />

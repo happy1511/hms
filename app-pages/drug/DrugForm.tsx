@@ -81,7 +81,6 @@ const UpdateCreateForm = ({ data }: { data?: PharmacyDrugType }) => {
             type="textarea"
             name="description"
             control={form.control}
-            required
           />
         </div>
         <CustomButton disabled={creating || updating} type="submit">

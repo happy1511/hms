@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import React from "react";
+import Cell from "../invoice/Cell";
 import InfoRow from "../invoice/InfoRow";
 
 const flag = (value: number | string, range: string) => {
@@ -139,43 +139,6 @@ const PathologyOrderExport = ({ data }: any) => (
   </div>
 );
 
-const InfoLine = ({
-  label,
-  value,
-  align = "left",
-}: {
-  label: string;
-  value: string;
-  align?: "left" | "right";
-}) => (
-  <p className={cn("text-[11px]", align === "right" ? "text-right" : "")}>
-    <span className="font-semibold">{label}:</span> {value || "-"}
-  </p>
-);
 
-const Cell = ({
-  children,
-  className = "",
-  as = "td",
-  colSpan,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  as?: "td" | "th";
-  colSpan?: number;
-}) => {
-  const Component = as;
-  return (
-    <Component
-      colSpan={colSpan}
-      className={cn(
-        "border border-black px-2 py-1 align-middle text-[11px] font-normal",
-        className,
-      )}
-    >
-      {children}
-    </Component>
-  );
-};
 
 export default PathologyOrderExport;

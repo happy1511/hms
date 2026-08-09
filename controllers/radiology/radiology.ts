@@ -1,8 +1,3 @@
-import { prisma } from "@/services/prisma";
-import { RESPONSE_STATUS } from "@/lib/responseStatus";
-import { validateRequest } from "@/lib/validator";
-import { apiResponse } from "@/lib/apiResponse";
-import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   DocumentStoreType,
   Prisma,
@@ -11,10 +6,15 @@ import {
   ServiceType,
   User,
 } from "@/generated/prisma/client";
+import { apiResponse } from "@/lib/apiResponse";
+import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { validateRequest } from "@/lib/validator";
 import {
   deletePublicDocument,
   savePublicDocument,
 } from "@/services/documentStore";
+import { prisma } from "@/services/prisma";
+import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   partialRadiologyTemplateValidator,
   partialRadiologyTestOrder,
@@ -82,15 +82,37 @@ export const getAPI = async (req: Request) => {
             status: true,
             createdAt: true,
             updatedAt: true,
+            radiologyTestServices: {
+              select: {
+                service: {
+                  select: {
+                    id: true,
+                    billingSectionId: true,
+                    billingSection: {
+                      select: { id: true, name: true },
+                    },
+                  },
+                },
+              },
+            },
           },
         }),
         prisma.radiologyTest.count({ where }),
       ]);
 
+      const formattedItems = items.map((item) => {
+        const service = item.radiologyTestServices?.[0]?.service;
+        return {
+          ...item,
+          billingSectionId: service?.billingSectionId || null,
+          billingSection: service?.billingSection || null,
+        };
+      });
+
       return apiResponse({
         status: RESPONSE_STATUS.SUCCESS,
         message: "Radiology Tests Fetched Successfully",
-        data: items,
+        data: formattedItems,
         total,
       });
     },
@@ -185,6 +207,65 @@ export const deleteAPI = async (req: Request, user: User) => {
           status: RESPONSE_STATUS.SUCCESS,
           message: "Radiology Test Deleted Successfully",
           data: null,
+        });
+      });
+    },
+  });
+};
+
+export const updateAPI = async (req: Request, user: User) => {
+  return validateRequest({
+    bodySchema: partialRadiologyTestValidator,
+    req,
+    onSuccess: async ({ body }) => {
+      const data = body;
+      return prisma.$transaction(async (tx) => {
+        const existingTest = await tx.radiologyTest.findFirst({
+          where: { id: data.testId, isDeleted: false },
+        });
+
+        if (!existingTest) {
+          return apiResponse({
+            status: RESPONSE_STATUS.NOT_FOUND,
+            message: "Radiology Test not found",
+          });
+        }
+
+        const updatedTest = await tx.radiologyTest.update({
+          where: { id: data.testId },
+          data: {
+            ...(data.name && { name: data.name }),
+            ...(data.alias && { alias: data.alias }),
+            ...(data.price !== undefined && { price: data.price }),
+            ...(data.status && { status: data.status }),
+            ...(data.section && { section: data.section }),
+            updatedBy: user.id,
+          },
+        });
+
+        const testService = await tx.radiologyTestService.findFirst({
+          where: { testId: data.testId },
+        });
+
+        if (testService) {
+          await tx.service.update({
+            where: { id: testService.serviceId },
+            data: {
+              ...(data.name && { name: data.name }),
+              ...(data.price !== undefined && { price: data.price }),
+              ...(data.status && { status: data.status }),
+              ...(data.billingSectionId && {
+                billingSectionId: data.billingSectionId,
+              }),
+              updatedBy: user.id,
+            },
+          });
+        }
+
+        return apiResponse({
+          status: RESPONSE_STATUS.SUCCESS,
+          message: "Radiology Test Updated Successfully",
+          data: updatedTest,
         });
       });
     },
@@ -486,9 +567,19 @@ export const getOrdersAPI = async (req: Request) => {
     querySchema: paginationValidator,
     req,
     onSuccess: async ({ query }) => {
+      const { searchParams } = new URL(req.url);
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
-      const status = query.radiologyStatus ?? "";
+
+      const rawStatuses =
+        searchParams.getAll("radiologyOrderStatus").length > 0
+          ? searchParams.getAll("radiologyOrderStatus")
+          : searchParams.getAll("radiologyOrderStatus[]").length > 0
+            ? searchParams.getAll("radiologyOrderStatus[]")
+            : (query.radiologyOrderStatus ?? "");
+
+      const statuses = rawStatuses;
+      const requestedStatuses = Array.isArray(statuses) ? statuses : statuses ? [statuses] : [];
       const name = query.search ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
@@ -497,19 +588,13 @@ export const getOrdersAPI = async (req: Request) => {
       const outsourced = query.outsourced;
       const opdId = query.opdId;
       const shouldExcludeCompleted = cancelled !== true && outsourced !== true;
-      const requestedStatuses = Array.isArray(status) ? status : [];
-      const effectiveStatuses = shouldExcludeCompleted
-        ? requestedStatuses.filter(
-            (item) => item !== RadiologyOrderStatus["COMPLETED"],
-          )
-        : requestedStatuses;
       const orderBaseWhere: Prisma.RadiologyTestOrderWhereInput = {
         isDeleted: false,
         isCancelled: cancelled === true ? true : false,
         isOutSourced: outsourced === true ? true : false,
         test: { isDeleted: false },
-        ...(effectiveStatuses.length
-          ? { status: { in: effectiveStatuses } }
+        ...(requestedStatuses.length
+          ? { status: { in: requestedStatuses as RadiologyOrderStatus[] } }
           : shouldExcludeCompleted
             ? { status: { not: RadiologyOrderStatus["COMPLETED"] } }
             : {}),
@@ -518,7 +603,7 @@ export const getOrdersAPI = async (req: Request) => {
       const skip = (page - 1) * limit;
       const and: Prisma.PatientWhereInput[] = [];
 
-      if (effectiveStatuses.length) {
+      if (requestedStatuses.length) {
         and.push({
           radiologyTestOrders: {
             some: orderBaseWhere,
@@ -559,7 +644,6 @@ export const getOrdersAPI = async (req: Request) => {
       });
 
       const where: Prisma.PatientWhereInput = and.length ? { AND: and } : {};
-
       const [items, total] = await prisma.$transaction([
         prisma.patient.findMany({
           skip,
@@ -893,11 +977,11 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
         await prisma.documentStore.delete({
           where: { id: order.scannedReportDocument.id },
         });
-      } catch {}
+      } catch { }
 
       try {
         await deletePublicDocument(order.scannedReportDocument.path);
-      } catch {}
+      } catch { }
     }
 
     return apiResponse({
@@ -908,7 +992,7 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
   } catch (e) {
     try {
       await deletePublicDocument(saved.publicPath);
-    } catch {}
+    } catch { }
 
     throw e;
   }

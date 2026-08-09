@@ -1,8 +1,3 @@
-import { prisma } from "@/services/prisma";
-import { RESPONSE_STATUS } from "@/lib/responseStatus";
-import { validateRequest } from "@/lib/validator";
-import { apiResponse } from "@/lib/apiResponse";
-import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   DocumentStoreType,
   PathologyOrderStatus,
@@ -12,6 +7,16 @@ import {
   ServiceType,
   User,
 } from "@/generated/prisma/client";
+import { apiResponse } from "@/lib/apiResponse";
+import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { toDays } from "@/lib/utils";
+import { validateRequest } from "@/lib/validator";
+import {
+  deletePublicDocument,
+  savePublicDocument,
+} from "@/services/documentStore";
+import { prisma } from "@/services/prisma";
+import { paginationValidator } from "@/validators/api/common/pagination";
 import {
   addOptionToParameterValidator,
   addParameterHeaderToTestValidator,
@@ -29,11 +34,6 @@ import {
   updateReferenceRangeToParameterValidator,
 } from "@/validators/api/masters/pathologyTest";
 import { differenceInDays } from "date-fns";
-import { toDays } from "@/lib/utils";
-import {
-  deletePublicDocument,
-  savePublicDocument,
-} from "@/services/documentStore";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -111,8 +111,8 @@ export const getAPI = async (req: Request) => {
         ...baseWhere,
         ...(defaultSelectedIds &&
           defaultSelectedIds.length > 0 && {
-            id: { notIn: defaultSelectedIds },
-          }),
+          id: { notIn: defaultSelectedIds },
+        }),
       };
 
       const [items, total] = await prisma.$transaction([
@@ -162,12 +162,17 @@ export const getOrdersAPI = async (req: Request) => {
       const { searchParams } = new URL(req.url);
       const page = Number(query.page ?? 1);
       const limit = Number(query.limit ?? 10);
+
       const rawStatuses =
-        searchParams.getAll("testStatus").length > 0
-          ? searchParams.getAll("testStatus")
-          : searchParams.getAll("testStatus[]").length > 0
-            ? searchParams.getAll("testStatus[]")
-            : (query.testStatus ?? "");
+        searchParams.getAll("pathologyOrderStatus").length > 0
+          ? searchParams.getAll("pathologyOrderStatus")
+          : searchParams.getAll("pathologyOrderStatus[]").length > 0
+            ? searchParams.getAll("pathologyOrderStatus[]")
+            : (query.pathologyOrderStatus ?? "");
+
+      const statuses = rawStatuses;
+      const requestedStatuses = Array.isArray(statuses) ? statuses : statuses ? [statuses] : [];
+
       const name = query.search ?? "";
       const createdAtFrom = query["createdAt[from]"] ?? "";
       const createdAtTo = query["createdAt[to]"] ?? "";
@@ -176,24 +181,13 @@ export const getOrdersAPI = async (req: Request) => {
       const outsourced = query.outsourced;
       const opdId = query.opdId;
       const shouldExcludeCompleted = cancelled !== true && outsourced !== true;
-      const requestedStatuses = (
-        Array.isArray(rawStatuses)
-          ? rawStatuses
-          : rawStatuses
-            ? [rawStatuses]
-            : []
-      ).filter((item): item is PathologyOrderStatus =>
-        Object.values(PathologyOrderStatus).includes(
-          item as PathologyOrderStatus,
-        ),
-      );
       const orderBaseWhere: Prisma.PathologyTestOrderWhereInput = {
         isDeleted: false,
         isCancelled: cancelled === true ? true : false,
         isOutSourced: outsourced === true ? true : false,
         test: { isDeleted: false },
         ...(requestedStatuses.length
-          ? { status: { in: requestedStatuses } }
+          ? { status: { in: requestedStatuses as PathologyOrderStatus[] } }
           : shouldExcludeCompleted
             ? { status: { not: PathologyOrderStatus["COMPLETED"] } }
             : {}),
@@ -386,13 +380,18 @@ export const getOrderDetailsAPI = async (req: Request) => {
             test: {
               include: {
                 testHeaders: {
+                  where: { isDeleted: false },
                   include: {
                     testParameters: {
+                      where: { isDeleted: false },
                       include: {
-                        parameterOptions: true,
-                        pathologyTestResults: true,
+                        parameterOptions: { where: { isDeleted: false } },
+                        pathologyTestResults: {
+                          where: { orderId: orderId },
+                        },
                         referenceRanges: {
                           where: {
+                            isDeleted: false,
                             OR: [
                               { applicableGender: gender },
                               { applicableGender: ReferenceRangeSex.Both },
@@ -413,6 +412,41 @@ export const getOrderDetailsAPI = async (req: Request) => {
                             ],
                           },
                         },
+                      },
+                    },
+                  },
+                },
+                parameters: {
+                  where: {
+                    isDeleted: false,
+                    OR: [{ headerId: null }, { header: { isDeleted: true } }],
+                  },
+                  include: {
+                    parameterOptions: { where: { isDeleted: false } },
+                    pathologyTestResults: {
+                      where: { orderId: orderId },
+                    },
+                    referenceRanges: {
+                      where: {
+                        isDeleted: false,
+                        OR: [
+                          { applicableGender: gender },
+                          { applicableGender: ReferenceRangeSex.Both },
+                        ],
+                        AND: [
+                          {
+                            OR: [
+                              { lowerAgeInDays: { lte: ageInDays } },
+                              { lowerAgeInDays: 0 },
+                            ],
+                          },
+                          {
+                            OR: [
+                              { upperAgeInDays: { gte: ageInDays } },
+                              { upperAgeInDays: 0 },
+                            ],
+                          },
+                        ],
                       },
                     },
                   },
@@ -646,11 +680,11 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
         await prisma.documentStore.delete({
           where: { id: order.scannedReportDocument.id },
         });
-      } catch {}
+      } catch { }
 
       try {
         await deletePublicDocument(order.scannedReportDocument.path);
-      } catch {}
+      } catch { }
     }
 
     return apiResponse({
@@ -661,7 +695,7 @@ export const uploadOutsourcedReportAPI = async (req: Request, user: User) => {
   } catch (e) {
     try {
       await deletePublicDocument(saved.publicPath);
-    } catch {}
+    } catch { }
 
     throw e;
   }
@@ -732,6 +766,19 @@ export const getDetailsAPI = async (
           status: true,
           createdAt: true,
           updatedAt: true,
+          services: {
+            select: {
+              service: {
+                select: {
+                  id: true,
+                  billingSectionId: true,
+                  billingSection: {
+                    select: { id: true, name: true },
+                  },
+                },
+              },
+            },
+          },
           testHeaders: {
             where: { isDeleted: false },
             select: {
@@ -1383,6 +1430,7 @@ export const updateReferenceRangeAPI = async (req: Request) => {
         }
 
         const {
+          referenceRangeId,
           parameterId,
           lowerAgeDay,
           lowerAgeMonth,
@@ -1556,54 +1604,116 @@ export const updateAPI = async (
           },
         });
 
-        /** ---------------- CLEAN EXISTING DATA ---------------- */
-        await tx.pathologyTestHeader.deleteMany({
+        const testService = await tx.pathologyTestService.findFirst({
           where: { testId: body.testId },
         });
 
-        await tx.pathologyTestParameter.deleteMany({
-          where: { testId: body.testId },
-        });
+        if (testService) {
+          await tx.service.update({
+            where: { id: testService.serviceId },
+            data: {
+              ...(body.name && { name: body.name }),
+              ...(body.price !== undefined && { price: body.price }),
+              ...(body.status && { status: body.status }),
+              ...(body.billingSectionId && {
+                billingSectionId: body.billingSectionId,
+              }),
+              updatedBy: user.id,
+            },
+          });
+        }
 
-        /** ---------------- RECREATE HEADERS + PARAMETERS ---------------- */
-        await tx.pathologyTestHeader.createMany({
-          data:
-            body.headers?.map((header) => ({
-              testId: body.testId,
-              name: header.name,
-              note: header.note,
-              displayOrder: header.displayOrder,
-            })) || [],
-        });
-
-        if (body.headers?.length) {
-          const createdHeaders = await tx.pathologyTestHeader.findMany({
+        /** ---------------- CLEAN EXISTING DATA (ONLY IF HEADERS OR PARAMETERS PROVIDED) ---------------- */
+        if (body.headers !== undefined || body.parameters !== undefined) {
+          await tx.pathologyTestHeader.deleteMany({
             where: { testId: body.testId },
           });
 
-          for (const header of body.headers) {
-            const dbHeader = createdHeaders.find(
-              (h) =>
-                h.name === header.name &&
-                h.displayOrder === header.displayOrder,
-            );
+          await tx.pathologyTestParameter.deleteMany({
+            where: { testId: body.testId },
+          });
 
-            if (!dbHeader) continue;
+          /** ---------------- RECREATE HEADERS + PARAMETERS ---------------- */
+          await tx.pathologyTestHeader.createMany({
+            data:
+              body.headers?.map((header) => ({
+                testId: body.testId,
+                name: header.name,
+                note: header.note,
+                displayOrder: header.displayOrder,
+              })) || [],
+          });
 
-            for (const param of header.parameters || []) {
+          if (body.headers?.length) {
+            const createdHeaders = await tx.pathologyTestHeader.findMany({
+              where: { testId: body.testId },
+            });
+
+            for (const header of body.headers) {
+              const dbHeader = createdHeaders.find(
+                (h) =>
+                  h.name === header.name &&
+                  h.displayOrder === header.displayOrder,
+              );
+
+              if (!dbHeader) continue;
+
+              for (const param of header.parameters || []) {
+                const createdParam = await tx.pathologyTestParameter.create({
+                  data: {
+                    name: param.name,
+                    displayOrder: param.displayOrder,
+                    isDescriptiveOnly: param.isDescriptiveOnly,
+                    testId: body.testId,
+                    headerId: dbHeader.id,
+                  },
+                });
+
+                if (param.referenceRanges?.length) {
+                  await tx.referenceRange.createMany({
+                    data: param.referenceRanges?.map((range) => ({
+                      testParameterId: createdParam.id,
+                      applicableGender: range.applicableGender,
+                      lowerAgeDay: range.lowerAgeDay,
+                      upperAgeDay: range.upperAgeDay,
+                      lowerAgeMonth: range.lowerAgeMonth,
+                      upperAgeMonth: range.upperAgeMonth,
+                      lowerAgeYear: range.lowerAgeYear,
+                      upperAgeYear: range.upperAgeYear,
+                      lowerRange: range.lowerRange,
+                      upperRange: range.upperRange,
+                      unit: range.unit,
+                    })),
+                  });
+                }
+
+                if (param.parameterOptions?.length) {
+                  await tx.parameterOptions.createMany({
+                    data: param.parameterOptions.map((opt) => ({
+                      testParameterId: createdParam.id,
+                      value: opt.value,
+                    })),
+                  });
+                }
+              }
+            }
+          }
+
+          /** ---------------- STANDALONE PARAMETERS ---------------- */
+          if (body.parameters?.length) {
+            for (const param of body.parameters) {
               const createdParam = await tx.pathologyTestParameter.create({
                 data: {
                   name: param.name,
                   displayOrder: param.displayOrder,
                   isDescriptiveOnly: param.isDescriptiveOnly,
                   testId: body.testId,
-                  headerId: dbHeader.id,
                 },
               });
 
               if (param.referenceRanges?.length) {
                 await tx.referenceRange.createMany({
-                  data: param.referenceRanges?.map((range) => ({
+                  data: param.referenceRanges.map((range) => ({
                     testParameterId: createdParam.id,
                     applicableGender: range.applicableGender,
                     lowerAgeDay: range.lowerAgeDay,
@@ -1627,47 +1737,6 @@ export const updateAPI = async (
                   })),
                 });
               }
-            }
-          }
-        }
-
-        /** ---------------- STANDALONE PARAMETERS ---------------- */
-        if (body.parameters?.length) {
-          for (const param of body.parameters) {
-            const createdParam = await tx.pathologyTestParameter.create({
-              data: {
-                name: param.name,
-                displayOrder: param.displayOrder,
-                isDescriptiveOnly: param.isDescriptiveOnly,
-                testId: body.testId,
-              },
-            });
-
-            if (param.referenceRanges?.length) {
-              await tx.referenceRange.createMany({
-                data: param.referenceRanges.map((range) => ({
-                  testParameterId: createdParam.id,
-                  applicableGender: range.applicableGender,
-                  lowerAgeDay: range.lowerAgeDay,
-                  upperAgeDay: range.upperAgeDay,
-                  lowerAgeMonth: range.lowerAgeMonth,
-                  upperAgeMonth: range.upperAgeMonth,
-                  lowerAgeYear: range.lowerAgeYear,
-                  upperAgeYear: range.upperAgeYear,
-                  lowerRange: range.lowerRange,
-                  upperRange: range.upperRange,
-                  unit: range.unit,
-                })),
-              });
-            }
-
-            if (param.parameterOptions?.length) {
-              await tx.parameterOptions.createMany({
-                data: param.parameterOptions.map((opt) => ({
-                  testParameterId: createdParam.id,
-                  value: opt.value,
-                })),
-              });
             }
           }
         }

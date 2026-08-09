@@ -69,7 +69,6 @@ const UpdateCreateForm = ({ data }: { data?: BillingSection }) => {
             name="status"
             options={Object.values(Status).map((s) => ({ value: s, label: s }))}
             control={form.control}
-            required
           />
 
           <FormField<BillingSectionValidatorType>

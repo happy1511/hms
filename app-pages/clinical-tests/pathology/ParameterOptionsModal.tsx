@@ -1,32 +1,34 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  addOptionToParameterValidator,
-  AddOptionToParameterValidatorType,
-} from "@/validators/api/masters/pathologyTest";
-import { useCreateOption, useDeleteOption } from "@/hooks/query/pathology";
+import { CustomAlert } from "@/components/common/CustomAlert";
+import CustomButton from "@/components/common/CustomButton";
+import CustomLayout from "@/components/common/CustomLayout";
+import { CustomTable } from "@/components/common/CustomTable";
+import FormField from "@/components/form-inputs/FormField";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import CustomLayout from "@/components/common/CustomLayout";
 import { Form } from "@/components/ui/form";
-import FormField from "@/components/form-inputs/FormField";
-import CustomButton from "@/components/common/CustomButton";
-import { ColumnDefWithClass } from "@/lib/type";
-import { CustomAlert } from "@/components/common/CustomAlert";
-import { Button } from "@/components/ui/button";
+import { useCreateOption, useDeleteOption } from "@/hooks/query/pathology";
+import { ColumnDefWithClass, PathologyTestDataType } from "@/lib/type";
+import {
+  addOptionToParameterValidator,
+  AddOptionToParameterValidatorType,
+} from "@/validators/api/masters/pathologyTest";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash2 } from "lucide-react";
-import { CustomTable } from "@/components/common/CustomTable";
-import { ParameterOptions } from "@/generated/prisma/client";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+
+type ParameterOptionItem = PathologyTestDataType["parameters"][number]["parameterOptions"][number];
 
 interface Props {
-  trigger: React.ReactNode;
-  data: { id: number; parameterOptions: ParameterOptions[] };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: { id: number; parameterOptions: ParameterOptionItem[] };
   testId: number;
 }
 
@@ -35,7 +37,7 @@ const Actions = ({
   testId,
   parameterId,
 }: {
-  data: ParameterOptions;
+  data: ParameterOptionItem;
   testId: number;
   parameterId: number;
 }) => {
@@ -65,7 +67,7 @@ const Actions = ({
     </>
   );
 };
-const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
+const ParameterOptionsModal = ({ open, onOpenChange, data, testId }: Props) => {
   const { mutateAsync, isPending } = useCreateOption(testId);
 
   const form = useForm<AddOptionToParameterValidatorType>({
@@ -73,19 +75,23 @@ const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
     resolver: zodResolver(addOptionToParameterValidator),
   });
 
+  useEffect(() => {
+    form.reset({ parameterId: data.id, value: "" });
+  }, [data.id, form]);
+
   const handleSubmit = async (values: AddOptionToParameterValidatorType) => {
     await mutateAsync(values);
     form.reset({ parameterId: data.id, value: "" });
   };
 
-  const columns: ColumnDefWithClass<ParameterOptions>[] = [
+  const columns: ColumnDefWithClass<ParameterOptionItem>[] = [
     {
       accessorKey: "value",
       header: "Option",
     },
 
     {
-      id: "action1s",
+      id: "options-delete",
       header: "Delete",
       cell: ({ row }) => (
         <Actions data={row.original} testId={testId} parameterId={data.id} />
@@ -94,21 +100,19 @@ const ParameterOptionsModal = ({ trigger, data, testId }: Props) => {
   ];
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        showCloseButton={false}
+        showCloseButton={true}
         className="max-w-4xl! border-secondary border-4 bg-white p-0 gap-0"
       >
         <DialogHeader>
-          <DialogTitle className="sr-only"></DialogTitle>
+          <DialogTitle className="sr-only">Parameter Options</DialogTitle>
           <DialogDescription className="sr-only">
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
+            Manage options for this parameter
           </DialogDescription>
         </DialogHeader>
         <CustomLayout
-          title="Create Pathology Test"
+          title="Parameter Options"
           contentClassName="space-y-3"
         >
           <Form {...form}>

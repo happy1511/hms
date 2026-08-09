@@ -5,23 +5,7 @@ import { PathologyTestOrderWithResults } from "@/lib/type";
 import { useCompletedPathologyOrdersWithResults } from "@/hooks/query/pathology";
 import { useState } from "react";
 import { LoaderIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const isOutOfRange = (
-  value: number | null | undefined,
-  ranges: Array<{ lowerRange?: number | null; upperRange?: number | null }>,
-): boolean => {
-  if (value === null || value === undefined || !ranges.length) return false;
-
-  const range = ranges[0];
-  if (range.lowerRange !== null && range.lowerRange !== undefined) {
-    if (value < range.lowerRange) return true;
-  }
-  if (range.upperRange !== null && range.upperRange !== undefined) {
-    if (value > range.upperRange) return true;
-  }
-  return false;
-};
+import { cn, formatReferenceRangeText, isResultOutOfRange } from "@/lib/utils";
 
 interface CompletedPathologyResultsProps {
   opdId: number;
@@ -132,18 +116,13 @@ const CompletedPathologyResults = ({
                       result.textValue !== undefined;
                     const isOutOfRangeValue =
                       isNumeric &&
-                      isOutOfRange(
+                      isResultOutOfRange(
                         result.numericValue,
                         result.applicableReferenceRanges,
                       );
 
-                    const refRange = result.applicableReferenceRanges[0];
-                    const rangeText =
-                      refRange &&
-                      (refRange.lowerRange !== null ||
-                        refRange.upperRange !== null)
-                        ? `${refRange.lowerRange ?? "-"} - ${refRange.upperRange ?? "-"}`
-                        : "N/A";
+                    const refRange = result.applicableReferenceRanges?.[0];
+                    const rangeText = formatReferenceRangeText(refRange);
 
                     let displayValue = "-";
                     if (isNumeric) {

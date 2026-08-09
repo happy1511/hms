@@ -45,12 +45,15 @@ export interface FormInfiniteSelectProps<
   valueKey: (item: TItem) => TValue;
   labelKey: (item: TItem) => string;
   initialItems?: readonly TItem[];
+  selectedItem?: TItem | readonly TItem[] | null;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   renderOption?: (item: TItem) => ReactNode;
   disabled?: boolean;
   readOnly?: boolean;
   hideError?: boolean;
+  /** When true, stores the full item object in the form field instead of just the valueKey primitive */
+  storeObject?: boolean;
 }
 
 export function FormInfiniteSelect<
@@ -65,18 +68,21 @@ export function FormInfiniteSelect<
   required,
   multiple = false,
   formItemClassName,
+  className,
   query,
   getItems,
   valueKey,
   labelKey,
   placeholder,
   initialItems = [],
+  selectedItem,
   searchValue,
   onSearchChange,
   renderOption,
   disabled = false,
   readOnly = false,
   hideError = false,
+  storeObject = false,
 }: FormInfiniteSelectProps<TItem, TPage, TValue, TFieldValues>) {
   const items = useMemo<readonly TItem[]>(() => {
     const uniqueItems = new Map<TValue, TItem>();
@@ -95,19 +101,37 @@ export function FormInfiniteSelect<
   const search = searchValue ?? internalSearch;
 
   useEffect(() => {
+    if (selectedItem) {
+      const selectedArray = Array.isArray(selectedItem)
+        ? selectedItem
+        : [selectedItem];
+      for (const item of selectedArray) {
+        if (item) cachedItemsRef.current.set(valueKey(item), item);
+      }
+    }
     for (const item of initialItems) {
-      cachedItemsRef.current.set(valueKey(item), item);
+      if (item) cachedItemsRef.current.set(valueKey(item), item);
     }
     for (const item of items) {
-      cachedItemsRef.current.set(valueKey(item), item);
+      if (item) cachedItemsRef.current.set(valueKey(item), item);
     }
-  }, [items, valueKey, initialItems]);
+  }, [items, valueKey, initialItems, selectedItem]);
 
   const resolveItem = (val: TValue | undefined | null) => {
-    if (val === undefined || val === null) return undefined;
+    if (val === undefined || val === null || val === "") return undefined;
 
     const fromItems = items.find((i) => valueKey(i) === val);
     if (fromItems) return fromItems;
+
+    if (selectedItem) {
+      const selectedPropArray = Array.isArray(selectedItem)
+        ? selectedItem
+        : [selectedItem];
+      const fromSelectedProp = selectedPropArray.find(
+        (i) => i && valueKey(i) === val,
+      );
+      if (fromSelectedProp) return fromSelectedProp;
+    }
 
     const fromInitial = initialItems.find((i) => valueKey(i) === val);
     if (fromInitial) return fromInitial;
@@ -120,30 +144,58 @@ export function FormInfiniteSelect<
       name={name}
       control={control}
       render={({ field, fieldState }) => {
-        const value = field.value as TValue | TValue[] | undefined;
+        const value = storeObject
+          ? (field.value as TItem | TItem[] | undefined)
+          : (field.value as TValue | TValue[] | undefined);
         const hasValue =
           value !== undefined &&
           value !== null &&
           (Array.isArray(value) ? value.length > 0 : value !== "");
 
         // Keep Combobox controlled for its entire lifecycle.
-        const selectedItems = multiple
-          ? Array.isArray(value)
-            ? (value.map((val) => resolveItem(val)).filter(Boolean) as TItem[])
-            : []
-          : hasValue
-            ? (resolveItem(value as TValue) ?? null)
-            : null;
+        const resolveStoredItem = (stored: TItem): TItem => {
+          const key = valueKey(stored);
+          return (
+            items.find((i) => valueKey(i) === key) ??
+            cachedItemsRef.current.get(key) ??
+            stored
+          );
+        };
+
+        const selectedItems = storeObject
+          ? multiple
+            ? Array.isArray(value)
+              ? (value as TItem[]).map(resolveStoredItem)
+              : []
+            : hasValue
+              ? resolveStoredItem(value as TItem)
+              : null
+          : multiple
+            ? Array.isArray(value)
+              ? ((value as TValue[]).map((val) => resolveItem(val)).filter(Boolean) as TItem[])
+              : []
+            : hasValue
+              ? (resolveItem(value as TValue) ?? null)
+              : null;
 
         const itemsWithSelection = (() => {
           const map = new Map<TValue, TItem>();
 
+          if (selectedItem) {
+            const selectedPropArray = Array.isArray(selectedItem)
+              ? selectedItem
+              : [selectedItem];
+            for (const item of selectedPropArray) {
+              if (item) map.set(valueKey(item), item);
+            }
+          }
+
           for (const item of initialItems) {
-            map.set(valueKey(item), item);
+            if (item) map.set(valueKey(item), item);
           }
 
           for (const item of items) {
-            map.set(valueKey(item), item);
+            if (item) map.set(valueKey(item), item);
           }
 
           const selectedArray = Array.isArray(selectedItems)
@@ -153,7 +205,7 @@ export function FormInfiniteSelect<
               : [];
 
           for (const item of selectedArray) {
-            map.set(valueKey(item), item);
+            if (item) map.set(valueKey(item), item);
           }
 
           return Array.from(map.values());
@@ -172,18 +224,20 @@ export function FormInfiniteSelect<
         return (
           <FormItem
             className={cn(
-              "relative gap-1",
-              !hideError && "pb-5",
+              "text-primary relative gap-1",
+              fieldState.error || !hideError ? "pb-4 gap-1" : "",
               formItemClassName,
             )}
           >
             {label && (
-              <FormLabel className="text-foreground text-sm font-medium">
+              <FormLabel className="text-tiny gap-0 font-semibold font-quicksand">
                 {label}
-                {required && <span className="text-sm! text-[#FFA600]">*</span>}
+                {required && (
+                  <span className="text-[#FFA600] text-tiny ms-1">*</span>
+                )}
               </FormLabel>
             )}
-            <FormControl>
+            <FormControl className="h-6 flex items-center">
               <Combobox
                 items={itemsWithSelection}
                 multiple={multiple}
@@ -197,33 +251,46 @@ export function FormInfiniteSelect<
                 }}
                 onValueChange={(selected) => {
                   if (multiple) {
-                    field.onChange(
-                      Array.isArray(selected)
-                        ? selected.map((item) => valueKey(item))
-                        : [],
-                    );
+                    if (storeObject) {
+                      const arr = Array.isArray(selected) ? (selected as TItem[]) : [];
+                      // Deduplicate by valueKey to prevent duplicate entries
+                      const seen = new Map<TValue, TItem>();
+                      for (const item of arr) {
+                        seen.set(valueKey(item), item);
+                      }
+                      field.onChange(Array.from(seen.values()));
+                    } else {
+                      field.onChange(
+                        Array.isArray(selected)
+                          ? selected.map((item) => valueKey(item))
+                          : [],
+                      );
+                    }
                   } else {
                     field.onChange(
-                      selected ? valueKey(selected as TItem) : undefined,
+                      storeObject
+                        ? (selected as TItem) ?? undefined
+                        : selected ? valueKey(selected as TItem) : undefined,
                     );
                   }
                 }}
               >
                 <ComboboxTrigger
-                  className="bg-input"
+                  className="w-full"
                   render={
                     <Button
                       variant="outline"
                       disabled={disabled || readOnly}
                       className={cn(
-                        "w-full justify-between gap-2 text-sm bg-input disabled:cursor-not-allowed disabled:opacity-50",
-                        multiple && "h-auto min-h-10 py-2",
+                        "h-6! w-full justify-between gap-2 text-tiny! font-normal bg-white border border-border shadow-none focus-visible:border-accent-blue focus-visible:ring-0 selection:bg-gray-500 selection:text-white disabled:cursor-not-allowed disabled:opacity-50 px-2 py-0",
+                        multiple && "h-auto min-h-6 py-0.5",
                         !hasValue
                           ? "text-muted-foreground font-normal"
                           : "text-foreground font-normal",
                         fieldState.invalid
-                          ? "border-red-500 focus-visible:border-red-500"
+                          ? "border-destructive focus-visible:border-destructive"
                           : "",
+                        className,
                       )}
                     >
                       <ComboboxValue placeholder={placeholder}>
@@ -232,7 +299,20 @@ export function FormInfiniteSelect<
                             !selected ||
                             (Array.isArray(selected) && selected.length === 0)
                           ) {
-                            return placeholder;
+                            if (hasValue) {
+                              return (
+                                <span className="text-foreground">
+                                  {Array.isArray(value)
+                                    ? value.join(", ")
+                                    : String(value)}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-muted-foreground">
+                                {placeholder}
+                              </span>
+                            );
                           }
 
                           if (Array.isArray(selected)) {
@@ -241,7 +321,7 @@ export function FormInfiniteSelect<
                                 {selected.map((item) => (
                                   <span
                                     key={String(valueKey(item))}
-                                    className="bg-input border-border flex items-center gap-1 rounded-xs border px-1.5 py-0.5 text-xs"
+                                    className="bg-gray-100 border-border flex items-center gap-1 rounded-xs border px-1.5 py-0.25 text-tiny"
                                   >
                                     {labelKey(item)}
                                   </span>
@@ -253,23 +333,26 @@ export function FormInfiniteSelect<
                           return labelKey(selected as TItem);
                         }}
                       </ComboboxValue>
-                      <ChevronDownIcon className="text-foreground size-4 opacity-50" />
+                      <ChevronDownIcon className="text-muted-foreground size-3 shrink-0 opacity-50" />
                     </Button>
                   }
                 />
 
-                <ComboboxContent className="z-50 min-w-(--anchor-width) w-(--anchor-width)">
-                  <ComboboxInput
-                    placeholder="Search…"
-                    showTrigger={false}
-                    value={search}
-                    onChange={(e) => {
-                      setInternalSearch(e.target.value);
-                      onSearchChange?.(e.target.value);
-                    }}
-                  />
+                <ComboboxContent className="z-50 min-w-(--anchor-width) w-(--anchor-width) p-1">
+                  <div className="p-1 border-b border-border bg-white mb-1">
+                    <ComboboxInput
+                      placeholder="Search…"
+                      showTrigger={false}
+                      value={search}
+                      className="h-6 bg-white selection:bg-gray-500 selection:text-white focus-within:border-accent-blue focus-within:ring-0 focus-visible:border-accent-blue focus-visible:ring-0 border shadow-none ring-0 border-border rounded-xs px-2 py-0 text-tiny! w-full"
+                      onChange={(e) => {
+                        setInternalSearch(e.target.value);
+                        onSearchChange?.(e.target.value);
+                      }}
+                    />
+                  </div>
 
-                  <ComboboxEmpty className="text-foreground">
+                  <ComboboxEmpty className="text-muted-foreground text-tiny py-2">
                     {query.isLoading || query.isFetchingNextPage
                       ? "Loading…"
                       : "No results"}
@@ -293,7 +376,11 @@ export function FormInfiniteSelect<
                     }}
                   >
                     {filteredItems.map((item) => (
-                      <ComboboxItem key={valueKey(item)} value={item}>
+                      <ComboboxItem
+                        key={valueKey(item)}
+                        value={item}
+                        className="text-tiny py-1 capitalize"
+                      >
                         {renderOption ? renderOption(item) : labelKey(item)}
                       </ComboboxItem>
                     ))}
@@ -302,7 +389,7 @@ export function FormInfiniteSelect<
               </Combobox>
             </FormControl>
             {!hideError && (
-              <FormMessage className="absolute bottom-1 ms-1 text-xs font-semibold text-red-500" />
+              <FormMessage className="absolute bottom-1 left-1 text-tiny font-semibold text-destructive" />
             )}
           </FormItem>
         );

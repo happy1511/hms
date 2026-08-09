@@ -180,3 +180,69 @@ export const fullName = (user: {
   [user?.title, user?.firstName, user?.middleName, user?.lastName]
     .filter(Boolean)
     .join(" ");
+
+export interface ReferenceRangeLike {
+  applicableGender?: string | null;
+  lowerAgeInDays?: number | null;
+  upperAgeInDays?: number | null;
+  lowerRange?: number | null;
+  upperRange?: number | null;
+  unit?: string | null;
+}
+
+export const isReferenceRangeApplicable = (
+  range: ReferenceRangeLike,
+  gender: string,
+  ageInDays: number,
+): boolean => {
+  const matchesGender =
+    !range.applicableGender ||
+    range.applicableGender === "Both" ||
+    range.applicableGender === gender;
+
+  const matchesLowerAge =
+    !range.lowerAgeInDays || range.lowerAgeInDays <= ageInDays;
+
+  const matchesUpperAge =
+    !range.upperAgeInDays || range.upperAgeInDays >= ageInDays;
+
+  return matchesGender && matchesLowerAge && matchesUpperAge;
+};
+
+export const formatReferenceRangeText = (
+  range?: ReferenceRangeLike | null,
+): string => {
+  if (!range) return "N/A";
+  const { lowerRange, upperRange } = range;
+  const hasLower = lowerRange !== null && lowerRange !== undefined;
+  const hasUpper = upperRange !== null && upperRange !== undefined;
+
+  if (hasLower && hasUpper) return `${lowerRange} - ${upperRange}`;
+  if (hasLower) return `>= ${lowerRange}`;
+  if (hasUpper) return `<= ${upperRange}`;
+  return "N/A";
+};
+
+export const isResultOutOfRange = (
+  value: number | null | undefined,
+  ranges?: ReferenceRangeLike[] | null,
+): boolean => {
+  if (value === null || value === undefined || !ranges || !ranges.length)
+    return false;
+  const range = ranges[0];
+  if (
+    range.lowerRange !== null &&
+    range.lowerRange !== undefined &&
+    value < range.lowerRange
+  ) {
+    return true;
+  }
+  if (
+    range.upperRange !== null &&
+    range.upperRange !== undefined &&
+    value > range.upperRange
+  ) {
+    return true;
+  }
+  return false;
+};

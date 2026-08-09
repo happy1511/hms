@@ -1,14 +1,15 @@
-import { prisma } from "@/services/prisma";
-import { RESPONSE_STATUS } from "@/lib/responseStatus";
-import { validateRequest } from "@/lib/validator";
-import { apiResponse } from "@/lib/apiResponse";
 import { Prisma, ServiceApplicableOn, User } from "@/generated/prisma/client";
+import { apiResponse } from "@/lib/apiResponse";
+import { RESPONSE_STATUS } from "@/lib/responseStatus";
+import { isProtectedService } from "@/lib/systemBillingConstants";
+import { validateRequest } from "@/lib/validator";
+import { prisma } from "@/services/prisma";
 import {
   partialServiceValidator,
   serviceListValidator,
   serviceValidator,
 } from "@/validators/api/masters/service";
-import { isProtectedService } from "@/lib/systemBillingConstants";
+import console from "console";
 
 export const getAPI = async (req: Request) => {
   return validateRequest({
@@ -45,7 +46,7 @@ export const getAPI = async (req: Request) => {
       }
 
       if (billingSectionId) {
-        and.push({ billingSectionId: { equals: billingSectionId } });
+        and.push({ billingSectionId: { equals: Number(billingSectionId) } });
       }
 
       if (createdAtFrom || createdAtTo) {
@@ -58,7 +59,7 @@ export const getAPI = async (req: Request) => {
       }
 
       const where: Prisma.ServiceWhereInput = and.length ? { AND: and } : {};
-
+      console.log(where);
       const [items, total] = await prisma.$transaction([
         prisma.service.findMany({
           skip,

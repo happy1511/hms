@@ -218,7 +218,7 @@ export const usePathologyOrdersList = (
           ...(filters.createdAt && { createdAt: filters.createdAt }),
           ...(filters.name && { search: filters.name }),
           ...(filters.status && { status: filters.status }),
-          ...(filters.testStatus && { testStatus: filters.testStatus }),
+          ...(filters.pathologyOrderStatus && { pathologyOrderStatus: filters.pathologyOrderStatus }),
           ...(filters.outsourced !== undefined && {
             outsourced: filters.outsourced,
           }),
@@ -306,6 +306,76 @@ export const useGetPathologyTest = (id?: string) => {
   });
 };
 
+export const useGetPathologyTestInfo = (id?: string) => {
+  return useQuery<
+    ApiResponse<PathologyTestDataType>,
+    AxiosError<ApiResponse<null>>,
+    Partial<PathologyTestDataType>,
+    [string, string | undefined]
+  >({
+    queryKey: ["get-pathology-test", id],
+    queryFn: () =>
+      getPathologyTest({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (res) => {
+      const d = res.data;
+      return {
+        id: d.id,
+        name: d.name,
+        alias: d.alias,
+        container: d.container,
+        sampleType: d.sampleType,
+        section: d.section,
+        price: d.price,
+        footerNotes: d.footerNotes,
+      };
+    },
+    enabled: !!id,
+  });
+};
+
+export const useGetPathologyTestHeaders = (id?: string) => {
+  return useQuery<
+    ApiResponse<PathologyTestDataType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyTestDataType["testHeaders"],
+    [string, string | undefined]
+  >({
+    queryKey: ["get-pathology-test", id],
+    queryFn: () =>
+      getPathologyTest({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (res) => res.data.testHeaders,
+    enabled: !!id,
+  });
+};
+
+export const useGetPathologyTestParameters = (id?: string) => {
+  return useQuery<
+    ApiResponse<PathologyTestDataType>,
+    AxiosError<ApiResponse<null>>,
+    PathologyTestDataType["parameters"],
+    [string, string | undefined]
+  >({
+    queryKey: ["get-pathology-test", id],
+    queryFn: () =>
+      getPathologyTest({
+        urlHelpers: {
+          id: id as string,
+        },
+      }),
+    select: (res) => res.data.parameters,
+    enabled: !!id,
+  });
+};
+
+
 export const useGetPathologyOrderParameters = (id?: string) => {
   return useQuery<
     ApiResponse<PathologyTestResultType>,
@@ -334,13 +404,20 @@ export const useCreatePathologyTest = () => {
   >({
     mutationKey: ["create-pathology-test"],
     mutationFn: (data) => createPathologyTest({ body: data }),
-    onSuccess: () => {
-      toast.success("Test Created Successfully");
+    onSuccess: (data, variables) => {
+      console.log("[Pathology Query Hook: useCreatePathologyTest] Success:", {
+        variables,
+        newTest: data.data,
+      });
+      toast.success("Test created Successfully");
       queryClient.invalidateQueries({
         queryKey: ["pathology-tests"],
       });
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useCreatePathologyTest] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -362,18 +439,27 @@ export const useCreateTestParameter = () => {
         ["get-pathology-test", String(variables.testId)],
         (oldData) => {
           if (!oldData) return oldData;
-
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
               parameters: [...oldData.data.parameters, newParameter],
             },
           };
+          console.log("[Pathology Query Hook: useCreateTestParameter] Updated Cache:", {
+            variables,
+            oldParametersCount: oldData.data.parameters.length,
+            newParametersCount: updated.data.parameters.length,
+            newParameter,
+          });
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useCreateTestParameter] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -396,11 +482,12 @@ export const useCreateReferenceRange = (testId: number) => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
               parameters: oldData.data.parameters.map((param) => {
+                console.log(param, parameterId, "param,parameterId")
                 if (param.id !== parameterId) return param;
 
                 return {
@@ -413,10 +500,21 @@ export const useCreateReferenceRange = (testId: number) => {
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useCreateReferenceRange] Updated Cache:", oldData, updated, {
+            testId,
+            parameterId,
+            newRange,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useCreateReferenceRange] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -439,7 +537,7 @@ export const useCreateOption = (testId: number) => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -453,10 +551,21 @@ export const useCreateOption = (testId: number) => {
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useCreateOption] Updated Cache:", {
+            testId,
+            parameterId,
+            newOption,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useCreateOption] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -485,11 +594,20 @@ export const useCreateTestParameterHeader = () => {
               testHeaders: [...oldData.data.testHeaders, newHeader],
             },
           };
+          console.log("[Pathology Query Hook: useCreateTestParameterHeader] Updated Cache:", {
+            variables,
+            oldHeadersCount: oldData.data.testHeaders.length,
+            newHeadersCount: newData.data.testHeaders.length,
+            newHeader,
+          });
           return newData;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useCreateTestParameterHeader] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -511,10 +629,9 @@ export const useUpdateReferenceRange = (testId: number) => {
       queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
         ["get-pathology-test", String(testId)],
         (oldData) => {
-          console.log(oldData, "oldData");
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -530,10 +647,21 @@ export const useUpdateReferenceRange = (testId: number) => {
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useUpdateReferenceRange] Updated Cache:", {
+            testId,
+            parameterId,
+            updatedRange,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useUpdateReferenceRange] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -555,7 +683,7 @@ export const useUpdateTestParameterHeader = () => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -564,10 +692,20 @@ export const useUpdateTestParameterHeader = () => {
               ),
             },
           };
+
+          console.log("[Pathology Query Hook: useUpdateTestParameterHeader] Updated Cache:", {
+            variables,
+            updatedHeader,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useUpdateTestParameterHeader] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -584,13 +722,37 @@ export const useUpdatePathologyTest = () => {
         body: data,
         urlHelpers: { id: Number(data.testId) },
       }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast.success("Test updated Successfully");
+      const updatedTest = data.data;
+
+      queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
+        ["get-pathology-test", String(variables.testId)],
+        (oldData) => {
+          if (!oldData) return oldData;
+          console.log("[Pathology Query Hook: useUpdatePathologyTest] Updating Test Info:", {
+            variables,
+            oldTest: oldData.data,
+            newTest: updatedTest,
+          });
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              ...updatedTest,
+            },
+          };
+        },
+      );
+
       queryClient.invalidateQueries({
         queryKey: ["pathology-tests"],
       });
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useUpdatePathologyTest] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -701,7 +863,7 @@ export const useUpdateTestParameter = () => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -715,10 +877,20 @@ export const useUpdateTestParameter = () => {
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useUpdateTestParameter] Updated Cache:", {
+            variables,
+            updatedParameter,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useUpdateTestParameter] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -733,13 +905,17 @@ export const useDeletePathologyTest = () => {
     mutationKey: ["delete-pathology-test"],
     mutationFn: (data) =>
       deletePathologyTest({ urlHelpers: { id: data.testId as string } }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      console.log("[Pathology Query Hook: useDeletePathologyTest] Success:", { variables });
       toast.success("Test Deleted Successfully");
       queryClient.invalidateQueries({
         queryKey: ["pathology-tests"],
       });
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useDeletePathologyTest] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -761,7 +937,7 @@ export const useDeletePathologyTestParameterHeader = (testId: number) => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -770,10 +946,24 @@ export const useDeletePathologyTestParameterHeader = (testId: number) => {
               ),
             },
           };
+
+          console.log("[Pathology Query Hook: useDeletePathologyTestParameterHeader] Updated Cache:", {
+            testId,
+            deletedHeaderId: variables.headerId,
+            remainingHeadersCount: updated.data.testHeaders.length,
+          });
+
+          return updated;
         },
       );
+      queryClient.invalidateQueries({
+        queryKey: ["get-pathology-test", String(testId)],
+      });
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useDeletePathologyTestParameterHeader] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -794,7 +984,7 @@ export const useDeletePathologyTestParameter = (testId: number) => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -803,10 +993,24 @@ export const useDeletePathologyTestParameter = (testId: number) => {
               ),
             },
           };
+
+          console.log("[Pathology Query Hook: useDeletePathologyTestParameter] Updated Cache:", {
+            testId,
+            deletedParameterId: variables.parameterId,
+            remainingParametersCount: updated.data.parameters.length,
+          });
+
+          return updated;
         },
       );
+      queryClient.invalidateQueries({
+        queryKey: ["get-pathology-test", String(testId)],
+      });
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useDeletePathologyTestParameter] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -833,7 +1037,7 @@ export const useDeleteReferenceRange = (
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -849,10 +1053,21 @@ export const useDeleteReferenceRange = (
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useDeleteReferenceRange] Updated Cache:", {
+            testId,
+            parameterId,
+            deletedRangeId: referenceRangeId,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useDeleteReferenceRange] Error:", err);
+      showError(err);
+    },
   });
 };
 
@@ -876,7 +1091,7 @@ export const useDeleteOption = (testId: number, parameterId: number) => {
         (oldData) => {
           if (!oldData) return oldData;
 
-          return {
+          const updated = {
             ...oldData,
             data: {
               ...oldData.data,
@@ -892,10 +1107,21 @@ export const useDeleteOption = (testId: number, parameterId: number) => {
               }),
             },
           };
+
+          console.log("[Pathology Query Hook: useDeleteOption] Updated Cache:", {
+            testId,
+            parameterId,
+            deletedOptionId: optionId,
+          });
+
+          return updated;
         },
       );
     },
-    onError: showError,
+    onError: (err) => {
+      console.error("[Pathology Query Hook: useDeleteOption] Error:", err);
+      showError(err);
+    },
   });
 };
 

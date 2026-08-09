@@ -15,12 +15,12 @@ const parameterOptionValidator = z.object({
 const referenceRangeValidator = z.object({
   applicableGender: z.enum(ReferenceRangeSex),
 
-  lowerAgeDay: z.coerce.number().optional().nullable(),
-  upperAgeDay: z.coerce.number().optional().nullable(),
-  lowerAgeMonth: z.coerce.number().optional().nullable(),
-  upperAgeMonth: z.coerce.number().optional().nullable(),
-  lowerAgeYear: z.coerce.number().optional().nullable(),
-  upperAgeYear: z.coerce.number().optional().nullable(),
+  lowerAgeDay: z.coerce.number().int("Age day must be a whole number").optional().nullable(),
+  upperAgeDay: z.coerce.number().int("Age day must be a whole number").optional().nullable(),
+  lowerAgeMonth: z.coerce.number().int("Age month must be a whole number").optional().nullable(),
+  upperAgeMonth: z.coerce.number().int("Age month must be a whole number").optional().nullable(),
+  lowerAgeYear: z.coerce.number().int("Age year must be a whole number").optional().nullable(),
+  upperAgeYear: z.coerce.number().int("Age year must be a whole number").optional().nullable(),
 
   lowerRange: z.coerce.number().optional().nullable(),
   upperRange: z.coerce.number().optional().nullable(),

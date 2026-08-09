@@ -353,7 +353,8 @@ export interface FilterValues {
   consultantDoctor?: { id: string };
   defaultSelectedIds?: string[] | number[];
   radiologyStatus?: RadiologyOrderStatus[];
-  testStatus?: PathologyOrderStatus[];
+  pathologyOrderStatus?: PathologyOrderStatus[];
+  radiologyOrderStatus?: RadiologyOrderStatus[];
   opdId?: number;
   ipdId?: number;
   invoiceId?: number;
@@ -1303,6 +1304,19 @@ export type ServiceDataType = Prisma.ServiceGetPayload<{
 
 export type PathologyTestDataType = Prisma.PathologyTestGetPayload<{
   include: {
+    services: {
+      select: {
+        service: {
+          select: {
+            id: true;
+            billingSectionId: true;
+            billingSection: {
+              select: { id: true; name: true };
+            };
+          };
+        };
+      };
+    };
     testHeaders: {
       select: {
         id: true;
@@ -1718,6 +1732,13 @@ export type PathologyTestResultType = Prisma.PathologyTestOrderGetPayload<{
                 referenceRanges: true;
               };
             };
+          };
+        };
+        parameters: {
+          include: {
+            parameterOptions: true;
+            pathologyTestResults: true;
+            referenceRanges: true;
           };
         };
       };
