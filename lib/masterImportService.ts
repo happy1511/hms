@@ -11,7 +11,7 @@ import {
   upsertConsultingDoctorService,
   upsertRoomChargeService,
 } from "@/lib/systemBilling";
-import { buildUserName, trimOptionalString } from "@/lib/user";
+import { trimOptionalString } from "@/lib/user";
 import { toDays } from "@/lib/utils";
 import { prisma } from "@/services/prisma";
 import type { BedImportRow } from "@/validators/api/masters/bed";
@@ -1384,11 +1384,23 @@ const importPathologyTests = async (
         }
       }
 
+      const billingSection = await tx.billingSection.findFirst({
+        where: { name: row.billingSection, isDeleted: false },
+        select: { id: true },
+      });
+
+      if (!billingSection) {
+        throw new Error(
+          `Row ${getRowNumber(row)}: billing section '${row.billingSection}' not found`,
+        );
+      }
+
       const serviceData = {
         name: row.name,
         description: row.alias,
         type: ServiceType.LAB_TEST,
         price: row.price,
+        billingSectionId: billingSection.id,
         applicableOn: ServiceApplicableOn.BOTH,
         status: row.status,
         isDeleted: false,
@@ -1404,6 +1416,7 @@ const importPathologyTests = async (
         await tx.service.create({
           data: {
             ...serviceData,
+
             createdBy: userId,
             pathologyTests: {
               create: {
@@ -1445,7 +1458,7 @@ const importDoctors = async (
       const phoneNumber = toNullableString(row.phoneNumber);
       const email = toNullableString(row.email);
       const licenseNumber = toNullableString(row.licenseNumber);
-      
+
       const duplicateChecks: Prisma.DoctorWhereInput[] = [];
       if (licenseNumber) duplicateChecks.push({ licenseNumber });
       if (phoneNumber) duplicateChecks.push({ phoneNumber });
@@ -1461,7 +1474,7 @@ const importDoctors = async (
       const firstName = row.firstName;
       const lastName = toNullableString(row.lastName);
       const doctorType = row.doctorType;
-      
+
       const doctorData = {
         title: row.title || null,
         firstName,
@@ -1541,7 +1554,7 @@ const importDoctors = async (
         });
       } else {
         await tx.service.updateMany({
-          where: { consultingDoctorId: userRecordId, isDeleted: false },
+          where: { consultingDoctorId: doctorRecordId, isDeleted: false },
           data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
         });
       }
@@ -1881,11 +1894,23 @@ const importRadiologyTests = async (
             },
           });
 
+      const billingSection = await tx.billingSection.findFirst({
+        where: { name: row.billingSection, isDeleted: false },
+        select: { id: true },
+      });
+
+      if (!billingSection) {
+        throw new Error(
+          `Row ${getRowNumber(row)}: billing section '${row.billingSection}' not found`,
+        );
+      }
+
       const linkedServiceId = existing?.radiologyTestServices[0]?.serviceId;
       const serviceData = {
         name: row.name.trim(),
         type: ServiceType.RADIOLOGY_TEST,
         price: row.price,
+        billingSectionId: billingSection.id,
         applicableOn: ServiceApplicableOn.BOTH,
         status: row.status ?? Status.active,
         isDeleted: false,

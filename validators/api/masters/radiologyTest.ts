@@ -24,6 +24,7 @@ const radiologyTestImportRowValidator = z.object({
   section: z.enum(RadiologySection),
   status: z.enum(Status).optional().default(Status.active),
   price: z.coerce.number().min(0, "price must be a positive number"),
+  billingSection: z.string().min(1, "billing section is required"),
 });
 
 const radiologyTemplateImportRowValidator = z.object({

@@ -227,6 +227,7 @@ export const MASTER_IMPORT_CONFIG: Record<
     columns: [
       { key: "name", required: true, example: "CBC" },
       { key: "alias", required: true, example: "Complete Blood Count" },
+      { key: "billingSection", required: true, example: "Pathology Charges" },
       {
         key: "section",
         required: true,
@@ -264,6 +265,7 @@ export const MASTER_IMPORT_CONFIG: Record<
     columns: [
       { key: "name", required: true, example: "Chest X-Ray" },
       { key: "alias", required: true, example: "CXR" },
+      { key: "billingSection", required: true, example: "Radiology Charges" },
       { key: "section", required: true, example: "XRAY" },
       { key: "status", example: Status.active },
       { key: "price", required: true, example: "500" },

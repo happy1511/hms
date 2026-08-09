@@ -69,6 +69,7 @@ const pathologyTestImportRowValidator = z.object({
   footerNotes: z.string().optional().nullable().default(""),
   status: z.enum(Status).optional().default(Status.active),
   price: z.coerce.number().min(0, "price must be a positive number"),
+  billingSection: z.string().min(1, "billing section is required"),
   headers: z.string().optional().default(""),
   parameters: z.string().optional().default(""),
 });
