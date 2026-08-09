@@ -13,6 +13,7 @@ import { Form } from "@/components/ui/form";
 import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { useUpdateIpdDoctors } from "@/hooks/query/ipd";
 import { Doctor, IPDType, PaginatedResponse } from "@/lib/type";
+import { fullName } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -51,8 +52,12 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
     mode === "consultant" ? "Change Consultant" : "Change Referred By";
   const currentName =
     mode === "consultant"
-      ? ipd?.consultantDoctor?.user?.name
-      : ipd?.referringDoctor?.user?.name;
+      ? ipd?.consultantDoctor
+        ? fullName(ipd?.consultantDoctor)
+        : "-- none --"
+      : ipd?.referringDoctor
+        ? fullName(ipd?.referringDoctor)
+        : "-- none --";
 
   const ipdId = useMemo(() => (ipd?.id ? Number(ipd.id) : null), [ipd?.id]);
 
@@ -64,12 +69,12 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
 
   const onSubmit = async (values: FormValues) => {
     if (!ipdId) return;
-    if (!values.doctor?.userId) {
+    if (!values.doctor?.id) {
       toast.error("Please select a doctor");
       return;
     }
 
-    const selectedUserId = Number(values.doctor.userId);
+    const selectedUserId = Number(values.doctor.id);
     if (!Number.isFinite(selectedUserId) || selectedUserId <= 0) {
       toast.error("Invalid doctor selected");
       return;
@@ -78,12 +83,12 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
     if (mode === "consultant") {
       await mutateAsync({
         ipdId,
-        consultantDoctor: { userId: selectedUserId },
+        consultantDoctor: { id: selectedUserId },
       });
     } else {
       await mutateAsync({
         ipdId,
-        referredDoctor: { userId: selectedUserId },
+        referredDoctor: { id: selectedUserId },
       });
     }
 
@@ -126,8 +131,8 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
               control={form.control}
               query={doctorQuery}
               getItems={(d) => d?.data}
-              labelKey={(i) => i.user.name}
-              valueKey={(i) => String(i.userId)}
+              labelKey={(i) => fullName(i as Doctor)}
+              valueKey={(i) => String((i as Doctor).id)}
               search={doctorSearch}
               onSearchChange={setDoctorSearch}
               placeholder="Search doctor by name..."
@@ -142,7 +147,11 @@ const ChangeIpdDoctorModal = ({ open, onOpenChange, ipd, mode }: Props) => {
               >
                 Cancel
               </CustomButton>
-              <CustomButton type="submit" disabled={!ipdId} isLoading={isPending}>
+              <CustomButton
+                type="submit"
+                disabled={!ipdId}
+                isLoading={isPending}
+              >
                 Save
               </CustomButton>
             </div>

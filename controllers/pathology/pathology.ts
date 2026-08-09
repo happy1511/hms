@@ -964,6 +964,7 @@ export const createAPI = async (req: Request, user: User) => {
             name: body.name,
             type: ServiceType["LAB_TEST"],
             price: body.price,
+            billingSectionId: body.billingSectionId,
             applicableOn: ServiceApplicableOn["BOTH"],
             status: body.status,
             createdBy: user.id,

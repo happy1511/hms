@@ -20,7 +20,7 @@ import {
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format, formatDuration, intervalToDuration, isAfter } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -74,11 +74,7 @@ const WalkInQueue = () => {
   );
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useOpdQueueList(
-    filters,
-    page,
-    limit,
-  );
+    useOpdQueueList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -134,11 +130,7 @@ const WalkInQueue = () => {
         return <SortableHeader<OPDType> label="Consultant" column={column} />;
       },
       cell: ({ row }) =>
-        [
-          row.original.consultantDoctor.user.name,
-          row.original.consultantDoctor.user.name,
-          row.original.consultantDoctor.user.name,
-        ].join(" "),
+        fullName(row.original.consultantDoctor) || "-- none --",
       headerClassName: "min-w-50",
       cellClassName: "min-w-50",
     },
@@ -191,8 +183,8 @@ const WalkInQueue = () => {
       placeholder: "Search by name here.",
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
-      valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).user.name,
+      valueKeyExtractor: (i) => String((i as Doctor).id),
+      labelKey: (i) => fullName(i as Doctor),
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

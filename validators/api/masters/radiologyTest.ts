@@ -14,6 +14,7 @@ const radiologyTestValidator = z.object({
   alias: z.string().min(1, "Alias is required"),
   section: z.enum(RadiologySection),
   status: z.enum(Status).optional(),
+  billingSectionId: z.coerce.number().min(1, "Billing Section is required"),
   price: z.number().min(0, "Price must be a positive number"),
 });
 

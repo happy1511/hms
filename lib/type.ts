@@ -346,7 +346,7 @@ export interface FilterValues {
   referringDoctorId?: string;
   cancelled?: boolean;
   outsourced?: boolean;
-  consultantDoctor?: { userId: string };
+  consultantDoctor?: { id: string };
   defaultSelectedIds?: string[] | number[];
   testStatus?: PathologyOrderStatus[];
   opdId?: number;

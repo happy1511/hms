@@ -37,7 +37,7 @@ import {
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
-import { formatAge, hasActionPermission } from "@/lib/utils";
+import { formatAge, fullName, hasActionPermission } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -528,7 +528,7 @@ const IPDs = ({
           ),
           cell: ({ row }) => (
             <div className="flex items-center text-tiny gap-2">
-              {row.original.consultantDoctor.user.name}
+              {fullName(row.original.consultantDoctor)}
             </div>
           ),
         },
@@ -590,7 +590,7 @@ const IPDs = ({
             <div>
               <div className="flex items-center text-tiny gap-2">
                 {row.original.referringDoctor
-                  ? row.original.referringDoctor.user.name
+                  ? fullName(row.original.referringDoctor)
                   : "-- none --"}
               </div>
               {canUpdate && (
@@ -728,7 +728,7 @@ const IPDs = ({
             <div>
               <div className="flex items-center text-tiny gap-2">
                 {row.original.referringDoctor
-                  ? row.original.referringDoctor.user.name
+                  ? fullName(row.original.referringDoctor)
                   : "-- none --"}
               </div>
               {canUpdate && (
@@ -756,7 +756,7 @@ const IPDs = ({
           cell: ({ row }) => (
             <div>
               <div className="flex items-center text-tiny gap-2">
-                {row.original.consultantDoctor.user.name}
+                {fullName(row.original.consultantDoctor)}
               </div>
               {canUpdate && (
                 <div
@@ -805,8 +805,8 @@ const IPDs = ({
       placeholder: "Search by name here.",
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
-      valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).user.name,
+      valueKeyExtractor: (i) => String((i as Doctor).id),
+      labelKey: (i) => fullName(i as Doctor),
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

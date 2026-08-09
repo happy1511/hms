@@ -150,11 +150,16 @@ export const upsertRoomChargeService = async (
   },
 ) => {
   const serviceName = `${roomName} charges`;
+  const section = await upsertSystemBillingSection(tx, {
+    key: SYSTEM_BILLING_SECTION_KEYS.ROOM_CHARGES,
+    actingUserId,
+  });
 
   return tx.service.upsert({
     where: { roomId },
     create: {
       roomId,
+      billingSectionId: section.id,
       name: serviceName,
       description: serviceName,
       type: ServiceType.OTHER,
@@ -168,6 +173,7 @@ export const upsertRoomChargeService = async (
     },
     update: {
       isDeleted: false,
+      billingSectionId: section.id,
       name: serviceName,
       description: serviceName,
       type: ServiceType.OTHER,

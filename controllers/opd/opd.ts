@@ -25,6 +25,7 @@ import {
   vitalsValidator,
 } from "@/validators/api/opd/opd";
 import { isSameDay } from "date-fns";
+import { fullName } from "@/lib/utils";
 
 const getOpdDeleteErrorResponse = () =>
   apiResponse({
@@ -89,24 +90,8 @@ export const getAPI = async (req: Request) => {
             },
             status: true,
             opdDateTime: true,
-            consultantDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
             patient: {
               select: {
                 id: true,
@@ -193,24 +178,8 @@ export const getQueueAPI = async (req: Request) => {
             invoice: { include: { transactions: true } },
             status: true,
             opdDateTime: true,
-            consultantDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
             patient: {
               select: {
                 id: true,
@@ -308,24 +277,8 @@ export const getConsultationAPI = async (
                 },
               },
             },
-            consultantDoctor: {
-              select: {
-                user: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
             consultation: true,
             vital: true,
             advisedPathologyTests: {
@@ -368,7 +321,6 @@ export const getConsultationAPI = async (
         const overrideConsultantDoctor = overrideConsultantDoctorId
           ? await tx.doctor.findUnique({
               where: { id: overrideConsultantDoctorId },
-              select: { user: { select: { name: true } } },
             })
           : null;
 
@@ -423,10 +375,12 @@ export const getConsultationAPI = async (
               opdId: consultation?.id,
             },
             patient: consultation?.patient,
-            consultantDoctorName:
-              overrideConsultantDoctor?.user?.name ??
-              consultation?.consultantDoctor?.user?.name,
-            referringDoctorName: consultation?.referringDoctor?.user?.name,
+            consultantDoctorName: overrideConsultantDoctor
+              ? fullName(overrideConsultantDoctor)
+              : fullName(consultation?.consultantDoctor) || "-- none --",
+            referringDoctorName: consultation?.referringDoctor
+              ? fullName(consultation.referringDoctor)
+              : "-- none --",
             createdAt: consultation?.opdDateTime,
             previousOpdHistory: previousOpds.map((opd) => ({
               opdId: opd.id,
@@ -513,7 +467,9 @@ export const createAPI = async (req: Request, user: User) => {
               });
             }
 
-            const homeAddress = addresses.find((a) => a.type === AddressType.HOME);
+            const homeAddress = addresses.find(
+              (a) => a.type === AddressType.HOME,
+            );
 
             if (homeAddress) {
               const locationId = homeAddress.location?.id;
@@ -932,12 +888,8 @@ export const updateOpdDoctorsAPI = async (req: Request, user: User) => {
           },
           select: {
             id: true,
-            consultantDoctor: {
-              select: { user: { select: { id: true, name: true } } },
-            },
-            referringDoctor: {
-              select: { user: { select: { id: true, name: true } } },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
           },
         });
 

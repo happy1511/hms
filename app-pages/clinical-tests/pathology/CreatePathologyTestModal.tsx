@@ -16,6 +16,10 @@ import {
 import CustomLayout from "@/components/common/CustomLayout";
 import { Form } from "@/components/ui/form";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import { BillingSection } from "@/generated/prisma/client";
+import { PaginatedResponse } from "@/lib/type";
 import {
   ContainerType,
   PathologyTestSection,
@@ -32,6 +36,11 @@ interface Props {
 const CreatePathologyTestModal = ({ trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const { mutateAsync, isPending } = useCreatePathologyTest();
+  const [billingSectionSearch, setBillingSectionSearch] = useState("");
+  const billingSectionQuery = useInfiniteBillingSectionsList(
+    { name: billingSectionSearch, status: "ACTIVE" },
+    15,
+  );
 
   const form = useForm<PathologyTestValidatorType>({
     resolver: zodResolver(pathologyTestValidator),
@@ -111,6 +120,24 @@ const CreatePathologyTestModal = ({ trigger }: Props) => {
                   label: s,
                 }))}
                 required
+              />
+              <FormInfiniteSelect<
+                BillingSection,
+                PaginatedResponse<BillingSection>,
+                string,
+                PathologyTestValidatorType
+              >
+                label="Billing Section"
+                control={form.control}
+                name="billingSectionId"
+                placeholder="Select Billing Section"
+                required
+                query={billingSectionQuery}
+                search={billingSectionSearch}
+                getItems={(data) => data?.data}
+                onSearchChange={setBillingSectionSearch}
+                valueKey={(i) => String(i?.id)}
+                labelKey={(i) => i?.name}
               />
               <FormField
                 label="Rate"

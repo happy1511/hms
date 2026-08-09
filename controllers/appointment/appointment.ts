@@ -71,7 +71,6 @@ export const getAPI = async (req: Request) => {
           where,
           select: {
             id: true,
-            doctor: { select: { user: { select: { name: true } } } },
             patient: true,
             status: true,
             appointmentDate: true,
@@ -79,6 +78,7 @@ export const getAPI = async (req: Request) => {
             type: true,
             createdAt: true,
             updatedAt: true,
+            doctor: true,
           },
         }),
         prisma.appointment.count({ where }),
@@ -116,7 +116,7 @@ export const createAPI = async (req: Request, user: User) => {
         const existingAppointment = await tx.appointment.findFirst({
           where: {
             patientId: data.patientId,
-            doctorId: doctor.userId,
+            doctorId: doctor.id,
             appointmentDate: data.appointmentDate,
             status: AppointmentStatus.SCHEDULED,
           },
@@ -130,7 +130,7 @@ export const createAPI = async (req: Request, user: User) => {
         }
 
         const existingDoctor = await tx.doctor.findUnique({
-          where: { userId: doctor.userId },
+          where: { id: doctor.id },
         });
 
         if (!existingDoctor) {
@@ -144,9 +144,9 @@ export const createAPI = async (req: Request, user: User) => {
           data: {
             ...rest,
             patientId: existingPatient.id,
-            doctorId: existingDoctor.userId,
-            createdBy: user.id ,
-            updatedBy: user.id ,
+            doctorId: existingDoctor.id,
+            createdBy: user.id,
+            updatedBy: user.id,
           },
         });
 
@@ -189,7 +189,7 @@ export const updateAPI = async (
         let existingDoctor: Doctor | null = null;
         if (doctor) {
           existingDoctor = await tx.doctor.findUnique({
-            where: { userId: doctor?.userId },
+            where: { id: doctor?.id },
           });
 
           if (!existingDoctor) {
@@ -204,8 +204,8 @@ export const updateAPI = async (
           where: { id: data.appointmentId },
           data: {
             ...rest,
-            ...(existingDoctor && { doctorId: existingDoctor.userId }),
-            updatedBy: user.id ,
+            ...(existingDoctor && { doctorId: existingDoctor.id }),
+            updatedBy: user.id,
           },
         });
 
@@ -218,4 +218,3 @@ export const updateAPI = async (
     },
   });
 };
-

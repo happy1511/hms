@@ -41,6 +41,7 @@ const serviceListValidator = paginationValidator.extend({
 const serviceImportRowValidator = z.object({
   name: z.string().min(1, "name is required"),
   description: z.string().min(1, "description is required"),
+  billingSection: z.string().min(1, "billingSection is required"),
   isInvoiceOnly: importOptionalText,
   isEditableRate: importOptionalText,
   type: z.enum(ServiceType),

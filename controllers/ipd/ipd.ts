@@ -192,24 +192,9 @@ export const getAPI = async (req: Request, user: User) => {
                 },
               },
             },
-            consultantDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
+
+            consultantDoctor: true,
+            referringDoctor: true,
             patient: {
               select: {
                 id: true,
@@ -311,12 +296,8 @@ export const getAdmissionPrintAPI = async (
                 billingType: true,
               },
             },
-            consultantDoctor: {
-              select: { user: { select: { name: true } } },
-            },
-            referringDoctor: {
-              select: { user: { select: { name: true } } },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
             bed: {
               select: {
                 id: true,
@@ -586,12 +567,8 @@ export const getIpdDischargePrintAPI = async (
                 billingType: true,
               },
             },
-            consultantDoctor: {
-              select: { user: { select: { name: true } } },
-            },
-            referringDoctor: {
-              select: { user: { select: { name: true } } },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
             bed: {
               select: {
                 id: true,
@@ -761,7 +738,9 @@ export const createAPI = async (req: Request, user: User) => {
               });
             }
 
-            const homeAddress = addresses.find((a) => a.type === AddressType.HOME);
+            const homeAddress = addresses.find(
+              (a) => a.type === AddressType.HOME,
+            );
 
             if (homeAddress) {
               const locationId = homeAddress.location?.id;
@@ -1424,12 +1403,8 @@ export const updateIpdDoctorsAPI = async (req: Request, user: User) => {
           },
           select: {
             id: true,
-            consultantDoctor: {
-              select: { user: { select: { id: true, name: true } } },
-            },
-            referringDoctor: {
-              select: { user: { select: { id: true, name: true } } },
-            },
+            consultantDoctor: true,
+            referringDoctor: true,
           },
         });
 

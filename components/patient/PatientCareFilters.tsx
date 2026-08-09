@@ -8,6 +8,7 @@ import {
   FilterValues,
   PaginatedResponse,
 } from "@/lib/type";
+import { fullName } from "@/lib/utils";
 import { useState } from "react";
 
 interface PatientCareFiltersProps {
@@ -42,8 +43,8 @@ const PatientCareFilters = ({
       placeholder: "Search by name here.",
       query: consultantQuery,
       getItems: (data) => (data as PaginatedResponse<Doctor>)?.data,
-      valueKeyExtractor: (item) => String((item as Doctor).userId),
-      labelKey: (item) => (item as Doctor).user.name,
+      valueKeyExtractor: (item) => String((item as Doctor).id),
+      labelKey: (item) => fullName(item as Doctor),
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },

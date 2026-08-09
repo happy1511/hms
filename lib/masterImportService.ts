@@ -374,11 +374,10 @@ const archiveRadiologyTests = async (tx: typeof prisma, userId: number) => {
   return tests.length;
 };
 
-const archiveRadiologyTemplates = async (
-  tx: typeof prisma,
-  userId: number,
-) => {
-  const count = await tx.radiologyTemplate.count({ where: { isDeleted: false } });
+const archiveRadiologyTemplates = async (tx: typeof prisma, userId: number) => {
+  const count = await tx.radiologyTemplate.count({
+    where: { isDeleted: false },
+  });
   await tx.radiologyTemplate.updateMany({
     where: { isDeleted: false },
     data: { isDeleted: true, deletedBy: userId, updatedBy: userId },
@@ -399,10 +398,9 @@ const archiveServices = async (tx: typeof prisma, userId: number) => {
 
 const archiveDoctors = async (tx: typeof prisma, userId: number) => {
   const doctors = await tx.doctor.findMany({
-    where: { user: { isDeleted: false } },
-    include: { user: true },
+    where: { isDeleted: false },
   });
-  const doctorIds = doctors.map((doctor) => doctor.userId);
+  const doctorIds = doctors.map((doctor) => doctor.id);
 
   if (doctorIds.length) {
     await tx.service.updateMany({
@@ -417,9 +415,9 @@ const archiveDoctors = async (tx: typeof prisma, userId: number) => {
   }
 
   for (const doctor of doctors) {
-    const suffix = deleteSuffix(doctor.userId);
+    const suffix = deleteSuffix(doctor.id);
     await tx.doctor.update({
-      where: { userId: doctor.userId },
+      where: { id: doctor.id },
       data: {
         licenseNumber: doctor.licenseNumber
           ? `${doctor.licenseNumber}_${suffix}`
@@ -428,17 +426,6 @@ const archiveDoctors = async (tx: typeof prisma, userId: number) => {
         phoneNumber: doctor.phoneNumber
           ? `${doctor.phoneNumber}_${suffix}`
           : null,
-        deletedBy: userId,
-        updatedBy: userId,
-      },
-    });
-    await tx.user.update({
-      where: { id: doctor.userId },
-      data: {
-        username: `${doctor.user.username}_${suffix}`,
-        loginId: `${doctor.user.loginId}_${suffix}`,
-        contactNumber: `${doctor.user.contactNumber}_${suffix}`,
-        email: doctor.user.email ? `${suffix}_${doctor.user.email}` : null,
         isDeleted: true,
         deletedBy: userId,
         updatedBy: userId,
@@ -1120,6 +1107,17 @@ const importServices = async (
         );
       }
 
+      const billingSection = await tx.billingSection.findFirst({
+        where: { name: row.billingSection, isDeleted: false },
+        select: { id: true },
+      });
+
+      if (!billingSection) {
+        throw new Error(
+          `Row ${getRowNumber(row)}: billing section '${row.billingSection}' not found`,
+        );
+      }
+
       const existing =
         mode === "append"
           ? await tx.service.findFirst({
@@ -1134,6 +1132,7 @@ const importServices = async (
       const baseData = {
         name: row.name,
         description: row.description,
+        billingSectionId: billingSection.id,
         isInvoiceOnly: parseBoolean(row.isInvoiceOnly),
         isEditableRate: parseBoolean(row.isEditableRate),
         type: row.type,
@@ -1170,7 +1169,10 @@ const importServices = async (
       };
 
       const record = existing
-        ? await tx.service.update({ where: { id: existing.id }, data: updateData })
+        ? await tx.service.update({
+            where: { id: existing.id },
+            data: updateData,
+          })
         : await tx.service.create({ data: createData });
       if (existing) updated += 1;
       else created += 1;
@@ -1262,7 +1264,7 @@ const importPathologyTests = async (
         where: { testId: test.id },
       });
 
-      for (const header of (headers || [])) {
+      for (const header of headers || []) {
         const createdHeader = await tx.pathologyTestHeader.create({
           data: {
             testId: test.id,
@@ -1328,7 +1330,7 @@ const importPathologyTests = async (
         }
       }
 
-      for (const parameter of (parameters || [])) {
+      for (const parameter of parameters || []) {
         if (parameter) {
           const createdParameter = await tx.pathologyTestParameter.create({
             data: {
@@ -1440,50 +1442,33 @@ const importDoctors = async (
     }
 
     for (const row of rows) {
-      const contactNumber = row.contactNumber;
+      const phoneNumber = toNullableString(row.phoneNumber);
       const email = toNullableString(row.email);
       const licenseNumber = toNullableString(row.licenseNumber);
-      const existingUser =
-        mode === "append"
-          ? await tx.user.findFirst({
-              where: { OR: [{ contactNumber }, { loginId: contactNumber }] },
-              include: { doctor: true },
+      
+      const duplicateChecks: Prisma.DoctorWhereInput[] = [];
+      if (licenseNumber) duplicateChecks.push({ licenseNumber });
+      if (phoneNumber) duplicateChecks.push({ phoneNumber });
+      if (email) duplicateChecks.push({ email });
+
+      const existingDoctor =
+        mode === "append" && duplicateChecks.length > 0
+          ? await tx.doctor.findFirst({
+              where: { OR: duplicateChecks, isDeleted: false },
             })
           : null;
 
       const firstName = row.firstName;
-      const lastName = row.lastName;
-      const preferredName = row.preferredName;
+      const lastName = toNullableString(row.lastName);
       const doctorType = row.doctorType;
-      const name = buildUserName({
-        firstName,
-        middleName: row.middleName,
-        lastName,
-      });
-
-      const userData = {
-        title: row.title,
-        name,
+      
+      const doctorData = {
+        title: row.title || null,
         firstName,
         middleName: toNullableString(row.middleName),
         lastName,
-        preferredName,
-        gender: row.gender,
-        dob: row.dob ? new Date(row.dob) : null,
-        locationId: row.locationId ? Number(row.locationId) : null,
-        contactNumber,
-        email,
-        qualifications: toNullableString(row.qualifications),
-        department: toNullableString(row.department),
-        password: row.password || `Ref@${contactNumber.slice(0, 8)}`,
-        status: row.status,
-        loginId: contactNumber,
-        username: contactNumber,
-        isDeleted: false,
-        updatedBy: userId,
-      };
-
-      const doctorData = {
+        gender: row.gender || null,
+        userType: toNullableString(row.userType) || "Doctor",
         licenseNumber,
         specialization: toNullableString(row.specialization),
         qualifications: toNullableString(row.qualifications),
@@ -1497,44 +1482,38 @@ const importDoctors = async (
           ? Number(row.consultationCharges)
           : null,
         email,
-        phoneNumber: contactNumber,
+        phoneNumber,
         emergencyContact: toNullableString(row.emergencyContact),
         consultationStartingTime: toNullableString(
           row.consultationStartingTime,
         ),
         consultationEndingTime: toNullableString(row.consultationEndingTime),
+        status: row.status ?? Status.active,
         updatedBy: userId,
       };
 
-      let userRecordId = existingUser?.id;
+      let doctorRecordId = existingDoctor?.id;
 
-      if (existingUser?.doctor) {
-        await tx.user.update({
-          where: { id: existingUser.id },
-          data: userData,
-        });
+      if (existingDoctor) {
         await tx.doctor.update({
-          where: { userId: existingUser.id },
+          where: { id: existingDoctor.id },
           data: doctorData,
         });
         updated += 1;
       } else {
-        const createdUser = await tx.user.create({
-          data: { ...userData, createdBy: userId },
+        const createdDoctor = await tx.doctor.create({
+          data: { ...doctorData, createdBy: userId },
         });
-        userRecordId = createdUser.id;
-        await tx.doctor.create({
-          data: { ...doctorData, userId: createdUser.id, createdBy: userId },
-        });
+        doctorRecordId = createdDoctor.id;
         created += 1;
       }
 
-      if (!userRecordId) {
+      if (!doctorRecordId) {
         throw new Error(`Row ${getRowNumber(row)}: unable to create doctor`);
       }
 
       await tx.doctorAvailableDay.deleteMany({
-        where: { doctorId: userRecordId },
+        where: { doctorId: doctorRecordId },
       });
       const availableDays = splitList(row.availableDays).map((day) =>
         parseEnum(day, Object.values(Days), "availableDays", getRowNumber(row)),
@@ -1542,17 +1521,21 @@ const importDoctors = async (
       if (availableDays.length) {
         await tx.doctorAvailableDay.createMany({
           data: availableDays.map((day) => ({
-            doctorId: userRecordId as number,
+            doctorId: doctorRecordId as number,
             day,
           })),
           skipDuplicates: true,
         });
       }
 
+      const doctorName = [row.title, firstName, lastName]
+        .filter(Boolean)
+        .join(" ");
+
       if (doctorType === DoctorType.consulting) {
         await upsertConsultingDoctorService(tx, {
-          doctorId: userRecordId,
-          doctorName: name,
+          doctorId: doctorRecordId,
+          doctorName,
           consultationCharges: Number(doctorData.consultationCharges || 0),
           actingUserId: userId,
         });

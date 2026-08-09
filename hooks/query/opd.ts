@@ -112,7 +112,7 @@ export const useOpdList = (
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
           ...(filters.consultantDoctor && {
-            consultantDoctorId: filters.consultantDoctor.userId,
+            consultantDoctorId: filters.consultantDoctor.id,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,
@@ -144,7 +144,7 @@ export const useOpdQueueList = (
           ...(filters.status && { status: filters.status }),
           ...(filters.doctorType && { doctorType: filters.doctorType }),
           ...(filters.consultantDoctor && {
-            consultantDoctorId: filters.consultantDoctor.userId,
+            consultantDoctorId: filters.consultantDoctor.id,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,

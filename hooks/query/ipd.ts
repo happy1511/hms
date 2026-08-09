@@ -113,13 +113,19 @@ const cancelDischargeIpd = createRequest<ApiResponse<IPDType>>(
   IPD_CANCEL_DISCHARGE,
   "PUT",
 );
-const updateIpdDoctors = createRequest<ApiResponse<unknown>>(IPD_DOCTORS, "PUT");
+const updateIpdDoctors = createRequest<ApiResponse<unknown>>(
+  IPD_DOCTORS,
+  "PUT",
+);
 const updateIpdBillingType = createRequest<ApiResponse<unknown>>(
   IPD_BILLING_TYPE,
   "PUT",
 );
 const updateIpdBed = createRequest<ApiResponse<unknown>>(IPD_BED, "PUT");
-const updateIpdDateTime = createRequest<ApiResponse<unknown>>(IPD_DATETIME, "PUT");
+const updateIpdDateTime = createRequest<ApiResponse<unknown>>(
+  IPD_DATETIME,
+  "PUT",
+);
 const declareIpdMlc = createRequest<ApiResponse<unknown>>(IPD_MLC, "PUT");
 const deleteIpd = createRequest<ApiResponse<IPDType>>(IPD, "DELETE");
 
@@ -170,7 +176,7 @@ export const useIpdList = (
             isMlcPatient: filters.isMlcPatient,
           }),
           ...(filters.consultantDoctor && {
-            consultantDoctorId: filters.consultantDoctor.userId,
+            consultantDoctorId: filters.consultantDoctor.id,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,
@@ -229,7 +235,7 @@ export const useInfiniteIpdList = (filters: FilterValues, limit: number) => {
             isMlcPatient: filters.isMlcPatient,
           }),
           ...(filters.consultantDoctor && {
-            consultantDoctorId: filters.consultantDoctor.userId,
+            consultantDoctorId: filters.consultantDoctor.id,
           }),
           ...(filters.referringDoctorId && {
             referringDoctorId: filters.referringDoctorId,

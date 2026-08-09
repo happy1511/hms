@@ -4,7 +4,7 @@ import { z } from "zod";
 const appointmentValidator = z.object({
   patientId: z.number().min(1, "Patient is required"),
   patientName: z.string().optional(),
-  doctor: z.object({ userId: z.number().min(1, "Doctor is required") }),
+  doctor: z.object({ id: z.number().min(1, "Doctor is required") }),
   type: z.enum(AppointmentType),
   status: z.enum(AppointmentStatus).default(AppointmentStatus.SCHEDULED),
   appointmentDate: z.coerce.date(),

@@ -51,6 +51,7 @@ const pathologyTestValidator = z.object({
   container: z.enum(ContainerType),
   sampleType: z.enum(SampleType),
   footerNotes: z.string().optional().nullable(),
+  billingSectionId: z.coerce.number().min(1, "Billing Section is required"),
 
   status: z.enum(Status).optional(),
   price: z.number().min(0, "Price must be a positive number"),

@@ -39,7 +39,7 @@ import {
   PharmacySaleBillType,
   PharmacyCustomerType,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -104,7 +104,10 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
     (sum, txn) => sum + Number(txn.amount || 0),
     0,
   );
-  const outstandingDue = Math.max(Number(data.invoice?.total || 0) - transactionTotal, 0);
+  const outstandingDue = Math.max(
+    Number(data.invoice?.total || 0) - transactionTotal,
+    0,
+  );
 
   return {
     billDate: toValidDate(data.invoice?.createdAt),
@@ -126,11 +129,11 @@ const getInitialValues = (data?: SaleBillData): SaleBillFormValues => {
       discountValue: Number(item.discountValue || 0),
       taxableAmount: Number(item.taxableAmount || 0),
       gstAmount: Number(item.gstAmount || 0),
-        cGstAmount: Number(item.cGstAmount || 0),
-        sGstAmount: Number(item.sGstAmount || 0),
-        iGstAmount: Number(item.iGstAmount || 0),
-        total: Number(item.total || 0),
-      })) ?? [emptyItem()],
+      cGstAmount: Number(item.cGstAmount || 0),
+      sGstAmount: Number(item.sGstAmount || 0),
+      iGstAmount: Number(item.iGstAmount || 0),
+      total: Number(item.total || 0),
+    })) ?? [emptyItem()],
     paymentAmount: outstandingDue,
     paymentMode: firstTransaction?.mode ?? PaymentMode.CASH,
     paymentRemarks: firstTransaction?.remarks ?? "",
@@ -244,19 +247,17 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       return;
     }
 
-    const hasOverStock = validItems.some(
-      (item) => {
-        const packSize = Math.max(
-          Number(item.inventoryItem?.itemsPerPack || 1),
-          1,
-        );
-        const requestedPieces = Boolean(item.isLooseQuantity)
-          ? Number(item.quantity || 0)
-          : Number(item.quantity || 0) * packSize;
+    const hasOverStock = validItems.some((item) => {
+      const packSize = Math.max(
+        Number(item.inventoryItem?.itemsPerPack || 1),
+        1,
+      );
+      const requestedPieces = Boolean(item.isLooseQuantity)
+        ? Number(item.quantity || 0)
+        : Number(item.quantity || 0) * packSize;
 
-        return requestedPieces > Number(item.inventoryItem?.quantityInStock || 0);
-      },
-    );
+      return requestedPieces > Number(item.inventoryItem?.quantityInStock || 0);
+    });
     if (hasOverStock) {
       toast.error("One or more rows exceed available stock");
       return;
@@ -272,9 +273,7 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
       name: selectedCustomerName,
       customerId: values.customer?.id ? Number(values.customer.id) : undefined,
       patientId: values.patient?.id ? Number(values.patient.id) : undefined,
-      doctorId: values.doctor?.userId
-        ? Number(values.doctor.userId)
-        : undefined,
+      doctorId: values.doctor?.id ? Number(values.doctor.id) : undefined,
       isWholesaleBill: Boolean(values.isWholesaleBill),
       isLooseBill: Boolean(values.isLooseBill),
       billingType: values.billingType,
@@ -381,8 +380,8 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
                   control={form.control}
                   query={doctorQuery}
                   getItems={(page) => page?.data}
-                  valueKey={(item) => String(item.userId)}
-                  labelKey={(item) => item.user?.name ?? ""}
+                  valueKey={(item) => String(item.id)}
+                  labelKey={(item) => fullName(item as Doctor)}
                   search={doctorSearch}
                   onSearchChange={setDoctorSearch}
                   placeholder="Select doctor"
@@ -453,10 +452,16 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
               <div />
 
               <div className="overflow-hidden rounded-sm border border-black/20 bg-background/50">
-                <PharmacySummaryRow label="Discount" value={money(totalDiscount)} />
+                <PharmacySummaryRow
+                  label="Discount"
+                  value={money(totalDiscount)}
+                />
                 <PharmacySummaryRow label="Tax" value={money(totalTax)} />
                 <PharmacySummaryRow label="Total" value={money(subtotal)} />
-                <PharmacySummaryRow label="Paid" value={money(effectivePaidAmount)} />
+                <PharmacySummaryRow
+                  label="Paid"
+                  value={money(effectivePaidAmount)}
+                />
                 <PharmacySummaryRow label="Due" value={money(dueAmount)} />
               </div>
 
@@ -503,7 +508,9 @@ const UpdateCreateForm = ({ data }: { data?: SaleBillData }) => {
 
             <div className="flex justify-end">
               <CustomButton disabled={creating || updating} type="submit">
-                {params?.billId ? "Update Sale Bill" : "Payment & Save Sale Bill"}
+                {params?.billId
+                  ? "Update Sale Bill"
+                  : "Payment & Save Sale Bill"}
               </CustomButton>
             </div>
           </div>

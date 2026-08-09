@@ -32,7 +32,7 @@ import {
   PaginatedResponse,
   PatientType,
 } from "@/lib/type";
-import { formatAge, hasActionPermission } from "@/lib/utils";
+import { formatAge, fullName, hasActionPermission } from "@/lib/utils";
 import { endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -81,7 +81,8 @@ const Actions = ({
   const [viewDocumentsOpen, setViewDocumentsOpen] = useState(false);
   const router = useRouter();
   const { mutateAsync: deleteOpd, isPending: deletePending } = useDeleteOpd();
-  const canDeleteToday = canDelete && isSameDay(new Date(data.createdAt), new Date());
+  const canDeleteToday =
+    canDelete && isSameDay(new Date(data.createdAt), new Date());
   const invoiceItems: DropdownItem[] = [
     {
       label: "View Invoice",
@@ -120,12 +121,16 @@ const Actions = ({
       {
         label: "Create Medical Certificate",
         onClick: () =>
-          router.push(`/certificates?opdId=${data.id}&tab=${encodeURIComponent("MEDICAL")}`),
+          router.push(
+            `/certificates?opdId=${data.id}&tab=${encodeURIComponent("MEDICAL")}`,
+          ),
       },
       {
         label: "Create Fitness Certificate",
         onClick: () =>
-          router.push(`/certificates?opdId=${data.id}&tab=${encodeURIComponent("FITNESS")}`),
+          router.push(
+            `/certificates?opdId=${data.id}&tab=${encodeURIComponent("FITNESS")}`,
+          ),
       },
     );
   }
@@ -146,7 +151,10 @@ const Actions = ({
               .filter(Boolean)
               .join(" "),
           });
-          window.open(`/patient/documents/upload?${params.toString()}`, "_blank");
+          window.open(
+            `/patient/documents/upload?${params.toString()}`,
+            "_blank",
+          );
         },
       },
       {
@@ -426,8 +434,7 @@ const OPDs = ({
       cell: ({ row }) => (
         <div>
           <div className="flex items-center text-tiny gap-2">
-            {row.original.patient.title + "."}{" "}
-            {row.original.consultantDoctor.user.name}
+            {fullName(row.original.consultantDoctor)}
           </div>
           {canUpdate && (
             <div
@@ -453,9 +460,7 @@ const OPDs = ({
         <div>
           <div className="flex items-center text-tiny gap-2">
             {row.original.referringDoctor
-              ? row.original.referringDoctor.user.title +
-                ". " +
-                row.original.referringDoctor.user.name
+              ? fullName(row.original.referringDoctor)
               : "-- none --"}
           </div>
           {canUpdate && (
@@ -568,8 +573,8 @@ const OPDs = ({
       placeholder: "Search by name here.",
       query: consultantQuery,
       getItems: (d) => (d as PaginatedResponse<Doctor>)?.data,
-      valueKeyExtractor: (i) => String((i as Doctor).userId),
-      labelKey: (i) => (i as Doctor).user.name,
+      valueKeyExtractor: (i) => String((i as Doctor).id),
+      labelKey: (i) => fullName(i as Doctor),
       search: consultantValue,
       onSearchChange: setConsultantValue,
     },
@@ -613,7 +618,9 @@ const OPDs = ({
         }}
         opdId={printConsultOpd?.id ?? null}
         currentConsultantName={
-          printConsultOpd?.consultantDoctor?.user?.name ?? null
+          printConsultOpd?.consultantDoctor
+            ? fullName(printConsultOpd?.consultantDoctor)
+            : null
         }
       />
       <ChangeOpdDoctorModal

@@ -14,6 +14,7 @@ import { useInfiniteDoctorList } from "@/hooks/query/doctor";
 import { Doctor, PaginatedResponse } from "@/lib/type";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { fullName } from "@/lib/utils";
 
 type PrintConsultationFormValues = {
   doctor: Doctor | null;
@@ -58,9 +59,7 @@ const PrintConsultationModal = ({
   const onSubmit = (values: PrintConsultationFormValues) => {
     if (!resolvedOpdId) return;
 
-    const selectedDoctorId = values.doctor?.userId
-      ? String(values.doctor.userId)
-      : "";
+    const selectedDoctorId = values.doctor?.id ? String(values.doctor.id) : "";
     const url = selectedDoctorId
       ? `/opd/consultation-print/${resolvedOpdId}?doctorId=${encodeURIComponent(selectedDoctorId)}`
       : `/opd/consultation-print/${resolvedOpdId}`;
@@ -109,8 +108,8 @@ const PrintConsultationModal = ({
               control={form.control}
               query={doctorQuery}
               getItems={(d) => d?.data}
-              labelKey={(i) => i.user.name}
-              valueKey={(i) => String(i.userId)}
+              labelKey={(i) => fullName(i as Doctor)}
+              valueKey={(i) => String((i as Doctor).id)}
               search={doctorSearch}
               onSearchChange={setDoctorSearch}
               placeholder="Search doctor by name..."

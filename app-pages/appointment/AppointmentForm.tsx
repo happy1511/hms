@@ -21,6 +21,7 @@ import PatientSearchModal from "@/components/patient/PatientSearchModal";
 import { useCreateAppointment } from "@/hooks/query/appointment";
 import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { Doctor, PaginatedResponse } from "@/lib/type";
+import { fullName } from "@/lib/utils";
 
 const AppointmentForm = () => {
   const [doctorSearchValue, setDoctorSearchValue] = useState("");
@@ -162,8 +163,8 @@ const AppointmentForm = () => {
                     control={form.control}
                     query={doctorQuery}
                     getItems={(data) => data?.data}
-                    labelKey={(data) => data.user?.name}
-                    valueKey={(data) => data.userId}
+                    labelKey={(data) => fullName(data)}
+                    valueKey={(data) => data.id.toString()}
                     search={doctorSearchValue}
                     onSearchChange={setDoctorSearchValue}
                     required

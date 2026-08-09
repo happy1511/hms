@@ -11,6 +11,10 @@ import {
 import CustomLayout from "@/components/common/CustomLayout";
 import { Form } from "@/components/ui/form";
 import FormField from "@/components/form-inputs/FormField";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { useInfiniteBillingSectionsList } from "@/hooks/query/bllingSection";
+import { BillingSection } from "@/generated/prisma/client";
+import { PaginatedResponse } from "@/lib/type";
 import { RadiologySection, Status } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
 import { RadiologyTest } from "@/generated/prisma/client";
@@ -34,6 +38,12 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
   const [open, setOpen] = useState(false);
   const { mutateAsync: create, isPending: creating } = useCreateRadiologyTest();
   const { mutateAsync: update, isPending: updating } = useUpdateRadiologyTest();
+  
+  const [billingSectionSearch, setBillingSectionSearch] = useState("");
+  const billingSectionQuery = useInfiniteBillingSectionsList(
+    { name: billingSectionSearch, status: "ACTIVE" },
+    15,
+  );
 
   const form = useForm<RadiologyTestValidatorType>({
     defaultValues: {
@@ -105,7 +115,24 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
                 }))}
                 required
               />
-
+              <FormInfiniteSelect<
+                BillingSection,
+                PaginatedResponse<BillingSection>,
+                string,
+                RadiologyTestValidatorType
+              >
+                label="Billing Section"
+                control={form.control}
+                name="billingSectionId"
+                placeholder="Select Billing Section"
+                required
+                query={billingSectionQuery}
+                search={billingSectionSearch}
+                getItems={(data) => data?.data}
+                onSearchChange={setBillingSectionSearch}
+                valueKey={(i) => String(i?.id)}
+                labelKey={(i) => i?.name}
+              />
               <FormField
                 label="Rate"
                 type="number"
