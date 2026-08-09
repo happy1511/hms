@@ -289,6 +289,28 @@ const seedSystemBillingSections = async () => {
       isDoctorConsultationCharges: false,
     },
   });
+
+  await prisma.billingSection.upsert({
+    where: {
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.OTHER_CHARGES,
+    },
+    update: {
+      name: SYSTEM_BILLING_SECTION_NAMES.OTHER_CHARGES,
+      description: "Other Charges system section",
+      status: "active",
+      isDeleted: false,
+      isDoctorConsultationCharges: false,
+      isOtherCharges: true,
+    },
+    create: {
+      name: SYSTEM_BILLING_SECTION_NAMES.OTHER_CHARGES,
+      systemKey: SYSTEM_BILLING_SECTION_KEYS.OTHER_CHARGES,
+      description: "Other Charges system section",
+      status: "active",
+      isDoctorConsultationCharges: false,
+      isOtherCharges: true,
+    },
+  });
 };
 
 const seedFinanceCategories = async () => {

@@ -176,24 +176,9 @@ export const getIpdPatientListAPI = async (req: Request) => {
                 },
               },
             },
-            consultantDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
-            referringDoctor: {
-              select: {
-                user: {
-                  omit: {
-                    password: true,
-                  },
-                },
-              },
-            },
+            
+            consultantDoctor: true,
+            referringDoctor: true,
             patient: {
               select: {
                 id: true,

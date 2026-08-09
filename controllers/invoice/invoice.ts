@@ -21,6 +21,8 @@ import {
   partialInvoiceValidator,
   updateInvoiceValidator,
 } from "@/validators/api/invoice/invoice";
+import { SYSTEM_BILLING_SECTION_KEYS } from "@/lib/systemBillingConstants";
+import { fullName } from "@/lib/utils";
 
 type InvoiceTx = Omit<
   typeof prisma,
@@ -244,12 +246,8 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
             },
             opd: {
               include: {
-                consultantDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
                 patient: {
                   include: {
                     addresses: {
@@ -264,12 +262,8 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
             },
             ipd: {
               include: {
-                consultantDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
                 patient: {
                   include: {
                     addresses: {
@@ -309,12 +303,8 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
               },
               opd: {
                 include: {
-                  consultantDoctor: {
-                    select: { user: { select: { name: true } } },
-                  },
-                  referringDoctor: {
-                    select: { user: { select: { name: true } } },
-                  },
+                  consultantDoctor: true,
+                  referringDoctor: true,
                   patient: {
                     include: {
                       addresses: {
@@ -329,12 +319,8 @@ export const getInvoiceDetailsAPI = async (req: Request) => {
               },
               ipd: {
                 include: {
-                  consultantDoctor: {
-                    select: { user: { select: { name: true } } },
-                  },
-                  referringDoctor: {
-                    select: { user: { select: { name: true } } },
-                  },
+                  consultantDoctor: true,
+                  referringDoctor: true,
                   patient: {
                     include: {
                       addresses: {
@@ -435,10 +421,19 @@ const resolveInvoiceItemService = async (
     return existingService;
   }
 
+  const otherChargesSection = await tx.billingSection.findFirst({
+    where: { systemKey: SYSTEM_BILLING_SECTION_KEYS.OTHER_CHARGES },
+  });
+
+  if (!otherChargesSection) {
+    throw new Error("System billing section for OTHER_CHARGES not found");
+  }
+
   return tx.service.create({
     data: {
       name: manualServiceName,
       description: `Manual invoice service for ${item.billingSection.name}`,
+      billingSectionId: otherChargesSection.id,
       isInvoiceOnly: true,
       type: ServiceType.OTHER,
       price: Number(item.rate || 0),
@@ -526,12 +521,8 @@ export const getInvoiceListAPI = async (req: Request) => {
             transactions: { select: { amount: true, transactionType: true } },
             opd: {
               include: {
-                consultantDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
                 patient: {
                   include: {
                     addresses: { include: { location: true } },
@@ -543,12 +534,8 @@ export const getInvoiceListAPI = async (req: Request) => {
             },
             ipd: {
               include: {
-                consultantDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  select: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
                 patient: {
                   include: {
                     addresses: { include: { location: true } },
@@ -572,14 +559,16 @@ export const getInvoiceListAPI = async (req: Request) => {
         );
 
         const patient = invoice.opd?.patient ?? invoice.ipd?.patient ?? null;
-        const consultantDoctorName =
-          invoice.opd?.consultantDoctor?.user?.name ??
-          invoice.ipd?.consultantDoctor?.user?.name ??
-          null;
-        const referredByName =
-          invoice.opd?.referringDoctor?.user?.name ??
-          invoice.ipd?.referringDoctor?.user?.name ??
-          null;
+        const consultantDoctorName = invoice.opd?.consultantDoctor
+          ? fullName(invoice.opd.consultantDoctor)
+          : invoice.ipd?.consultantDoctor
+            ? fullName(invoice.ipd.consultantDoctor)
+            : null;
+        const referredByName = invoice.opd?.referringDoctor
+          ? fullName(invoice.opd.referringDoctor)
+          : invoice.ipd?.referringDoctor
+            ? fullName(invoice.ipd.referringDoctor)
+            : null;
 
         return {
           id: invoice.id,

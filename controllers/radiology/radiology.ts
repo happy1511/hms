@@ -11,7 +11,10 @@ import {
   ServiceType,
   User,
 } from "@/generated/prisma/client";
-import { deletePublicDocument, savePublicDocument } from "@/services/documentStore";
+import {
+  deletePublicDocument,
+  savePublicDocument,
+} from "@/services/documentStore";
 import {
   partialRadiologyTemplateValidator,
   partialRadiologyTestOrder,
@@ -493,8 +496,7 @@ export const getOrdersAPI = async (req: Request) => {
       const cancelled = query.cancelled;
       const outsourced = query.outsourced;
       const opdId = query.opdId;
-      const shouldExcludeCompleted =
-        cancelled !== true && outsourced !== true;
+      const shouldExcludeCompleted = cancelled !== true && outsourced !== true;
       const requestedStatuses = Array.isArray(status) ? status : [];
       const effectiveStatuses = shouldExcludeCompleted
         ? requestedStatuses.filter(
@@ -600,17 +602,8 @@ export const getOrdersAPI = async (req: Request) => {
                 },
 
                 opd: {
-                  select: {
-                    consultantDoctor: {
-                      select: {
-                        user: {
-                          select: {
-                            id: true,
-                            name: true,
-                          },
-                        },
-                      },
-                    },
+                  include: {
+                    consultantDoctor: true,
                   },
                 },
 

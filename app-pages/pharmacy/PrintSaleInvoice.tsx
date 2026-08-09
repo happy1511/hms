@@ -2,6 +2,7 @@
 
 import SalePrintExport from "@/components/pharmacy/SalePrintExport";
 import { useGetSaleBill } from "@/hooks/query/pharmacySaleBill";
+import { fullName } from "@/lib/utils";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 
@@ -25,11 +26,9 @@ const PrintSaleInvoice = () => {
       billDate={data.invoice.createdAt}
       patientName={
         data.customer?.name ??
-        (data.patient
-          ? `${data.patient.firstName} ${data.patient.lastName}`
-          : "Walk-in Customer")
+        (data.patient ? fullName(data.patient) : "Walk-in Customer")
       }
-      doctorName={data.doctor?.user?.name ?? undefined}
+      doctorName={data.doctor ? fullName(data.doctor) : undefined}
       lines={data.saleItems.map((item) => ({
         name: item.inventoryItem.drug.name,
         batchNo: item.inventoryItem.batchNo,

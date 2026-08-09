@@ -5,7 +5,7 @@ import PrintBarcodeValue from "@/components/common/PrintBarcodeValue";
 import PrintToolbar from "@/components/common/PrintToolbar";
 import { IpdDischargePrintResponse } from "@/hooks/query/ipd";
 import { formatAddress } from "@/lib/address";
-import { cn, formatAge } from "@/lib/utils";
+import { cn, formatAge, fullName } from "@/lib/utils";
 import { type ReactNode, useMemo, useState } from "react";
 
 const valueOrDash = (value?: unknown) => {
@@ -94,8 +94,12 @@ const IpdDischargePrint = ({
     return formatAddress(home) || "--";
   }, [data.patient?.addresses]);
 
-  const consultantName = data.consultantDoctor?.user?.name;
-  const referredByName = data.referringDoctor?.user?.name;
+  const consultantName = data.consultantDoctor
+    ? fullName(data.consultantDoctor)
+    : "--";
+  const referredByName = data.referringDoctor
+    ? fullName(data.referringDoctor)
+    : "--";
 
   const bedText = useMemo(() => {
     const bed = data.bed;

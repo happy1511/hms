@@ -26,18 +26,12 @@ const certificateSelect = {
   createdAt: true,
   updatedAt: true,
   opd: {
+    include: {
+      consultantDoctor: true,
+    },
     select: {
       id: true,
       opdDateTime: true,
-      consultantDoctor: {
-        select: {
-          user: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
       patient: {
         select: {
           id: true,

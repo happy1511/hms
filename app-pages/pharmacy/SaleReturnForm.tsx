@@ -14,7 +14,7 @@ import { useGetSaleBill } from "@/hooks/query/pharmacySaleBill";
 import { useCreateSaleReturn } from "@/hooks/query/pharmacySaleReturn";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { PharmacySaleBillType } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -28,7 +28,8 @@ const toPieces = (
   quantity: number,
   isLooseQuantity: boolean,
   packSize: number,
-) => (isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize);
+) =>
+  isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize;
 
 const formatQty = ({
   pieces,
@@ -46,19 +47,19 @@ const formatQty = ({
 };
 
 const getPatientDisplayName = (
-  patient?:
-    | {
-        title: string;
-        firstName: string;
-        lastName: string;
-      }
-    | null,
+  patient?: {
+    title: string;
+    firstName: string;
+    lastName: string;
+  } | null,
 ) =>
   patient
     ? [`${patient.title}.`, patient.firstName, patient.lastName].join(" ")
     : "";
 
-const getInitialValues = (bill?: PharmacySaleBillType): SaleReturnFormValues => {
+const getInitialValues = (
+  bill?: PharmacySaleBillType,
+): SaleReturnFormValues => {
   if (!bill) {
     return {
       returnDate: new Date(),
@@ -78,14 +79,17 @@ const getInitialValues = (bill?: PharmacySaleBillType): SaleReturnFormValues => 
     billNumber: `#${bill.id}`,
     customerName: bill.customer?.name ?? bill.name,
     originalBillDate: format(new Date(bill.invoice.createdAt), "dd/MM/yyyy"),
-    doctorName: bill.doctor?.user?.name ?? "-",
+    doctorName: bill.doctor ? fullName(bill.doctor) : "-",
     patientDisplay: bill.patient
       ? `${bill.patient.uhid || "-"} | ${getPatientDisplayName(bill.patient)}`
       : "-",
     refundMode: PaymentMode.CASH,
     remarks: "",
     items: bill.saleItems.map((item) => {
-      const packSize = Math.max(Number(item.inventoryItem.itemsPerPack || 1), 1);
+      const packSize = Math.max(
+        Number(item.inventoryItem.itemsPerPack || 1),
+        1,
+      );
       const soldPieces = toPieces(
         Number(item.quantity || 0),
         Boolean(item.isLooseQuantity),
@@ -154,9 +158,16 @@ const SaleReturnForm = () => {
     if (!data) return [];
 
     return (watchedItems || []).map((row) => {
-      const saleItem = data.saleItems.find((item) => item.id === row.saleItemId);
-      const packSize = Math.max(Number(row.inventoryItem?.itemsPerPack || 1), 1);
-      const maxPackQty = Math.floor(Number(row.remainingPieces || 0) / packSize);
+      const saleItem = data.saleItems.find(
+        (item) => item.id === row.saleItemId,
+      );
+      const packSize = Math.max(
+        Number(row.inventoryItem?.itemsPerPack || 1),
+        1,
+      );
+      const maxPackQty = Math.floor(
+        Number(row.remainingPieces || 0) / packSize,
+      );
       const requestedPieces = toPieces(
         Number(row.quantity || 0),
         Boolean(row.isLooseQuantity),
@@ -195,7 +206,8 @@ const SaleReturnForm = () => {
   }, [data, watchedItems]);
 
   const refundAmount = useMemo(
-    () => round2(derivedRows.reduce((sum, row) => sum + Number(row.total || 0), 0)),
+    () =>
+      round2(derivedRows.reduce((sum, row) => sum + Number(row.total || 0), 0)),
     [derivedRows],
   );
   const netPaid = useMemo(
@@ -209,7 +221,9 @@ const SaleReturnForm = () => {
   const onSubmit = async (values: SaleReturnFormValues) => {
     if (!data) return;
 
-    const selectedRows = derivedRows.filter((row) => Number(row.quantity || 0) > 0);
+    const selectedRows = derivedRows.filter(
+      (row) => Number(row.quantity || 0) > 0,
+    );
 
     if (!selectedRows.length) {
       toast.error("Enter return quantity for at least one item");
@@ -332,114 +346,154 @@ const SaleReturnForm = () => {
 
             <div className="rounded-sm border border-black/20">
               <div className="overflow-x-auto overflow-y-hidden">
-                  <table className="w-full min-w-[1450px] border-collapse text-tiny">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">No.</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Item</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Mfg</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Batch</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Exp</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Pack</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Purchased</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Returned</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Returnable</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Loose</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Qty</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">Rate</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">CGST</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">SGST</th>
-                        <th className="border-r border-black/20 px-2 py-2 text-left">IGST</th>
-                        <th className="px-2 py-2 text-left">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {derivedRows.map((row, index) => {
-                        const inventory = row.inventoryItem;
-                        const forceLoose =
-                          Boolean(data.isLooseBill) || row.remainingPieces < row.packSize;
+                <table className="w-full min-w-[1450px] border-collapse text-tiny">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        No.
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Item
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Mfg
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Batch
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Exp
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Pack
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Purchased
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Returned
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Returnable
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Loose
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Qty
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        Rate
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        CGST
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        SGST
+                      </th>
+                      <th className="border-r border-black/20 px-2 py-2 text-left">
+                        IGST
+                      </th>
+                      <th className="px-2 py-2 text-left">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {derivedRows.map((row, index) => {
+                      const inventory = row.inventoryItem;
+                      const forceLoose =
+                        Boolean(data.isLooseBill) ||
+                        row.remainingPieces < row.packSize;
 
-                        return (
-                          <tr key={row.saleItemId} className="border-t align-middle">
-                            <td className="px-2 py-1.5">{index + 1}</td>
-                            <td className="px-2 py-1.5 min-w-52 font-medium">
-                              {inventory?.drug.name}
-                            </td>
-                            <td className="px-2 py-1.5">
-                              {inventory?.drug.manufacturer || "-"}
-                            </td>
-                            <td className="px-2 py-1.5">{inventory?.batchNo}</td>
-                            <td className="px-2 py-1.5">
-                              {inventory?.expiryDate
-                                ? format(new Date(inventory.expiryDate), "MM/yy")
-                                : "-"}
-                            </td>
-                            <td className="px-2 py-1.5">{row.packSize}</td>
-                            <td className="px-2 py-1.5 whitespace-nowrap">
+                      return (
+                        <tr
+                          key={row.saleItemId}
+                          className="border-t align-middle"
+                        >
+                          <td className="px-2 py-1.5">{index + 1}</td>
+                          <td className="px-2 py-1.5 min-w-52 font-medium">
+                            {inventory?.drug.name}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            {inventory?.drug.manufacturer || "-"}
+                          </td>
+                          <td className="px-2 py-1.5">{inventory?.batchNo}</td>
+                          <td className="px-2 py-1.5">
+                            {inventory?.expiryDate
+                              ? format(new Date(inventory.expiryDate), "MM/yy")
+                              : "-"}
+                          </td>
+                          <td className="px-2 py-1.5">{row.packSize}</td>
+                          <td className="px-2 py-1.5 whitespace-nowrap">
+                            {formatQty({
+                              pieces: toPieces(
+                                row.soldQuantity,
+                                row.soldIsLooseQuantity,
+                                row.packSize,
+                              ),
+                              packSize: row.packSize,
+                            })}
+                          </td>
+                          <td className="px-2 py-1.5 whitespace-nowrap">
+                            {formatQty({
+                              pieces: row.returnedQuantity,
+                              packSize: row.packSize,
+                            })}
+                          </td>
+                          <td className="px-2 py-1.5 whitespace-nowrap">
+                            <div>
                               {formatQty({
-                                pieces: toPieces(
-                                  row.soldQuantity,
-                                  row.soldIsLooseQuantity,
-                                  row.packSize,
-                                ),
+                                pieces: row.remainingPieces,
                                 packSize: row.packSize,
                               })}
-                            </td>
-                            <td className="px-2 py-1.5 whitespace-nowrap">
-                              {formatQty({
-                                pieces: row.returnedQuantity,
-                                packSize: row.packSize,
-                              })}
-                            </td>
-                            <td className="px-2 py-1.5 whitespace-nowrap">
-                              <div>
-                                {formatQty({
-                                  pieces: row.remainingPieces,
-                                  packSize: row.packSize,
-                                })}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {row.isLooseQuantity
+                                ? `Max ${row.remainingPieces} pcs`
+                                : `Max ${row.maxPackQty} pack`}
+                            </div>
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            <FormCheckbox<SaleReturnFormValues>
+                              control={form.control}
+                              name={`items.${index}.isLooseQuantity`}
+                              label=""
+                              hideLabel
+                              hideError
+                              className="mx-auto mt-0"
+                              formItemClassName="justify-center pb-0"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5 min-w-20">
+                            <FormField<SaleReturnFormValues>
+                              type="number"
+                              name={`items.${index}.quantity`}
+                              control={form.control}
+                              hideError
+                            />
+                            {row.exceedsRemaining && (
+                              <div className="mt-1 text-[10px] text-destructive">
+                                Exceeds returnable quantity
                               </div>
-                              <div className="text-[10px] text-muted-foreground">
-                                {row.isLooseQuantity
-                                  ? `Max ${row.remainingPieces} pcs`
-                                  : `Max ${row.maxPackQty} pack`}
-                              </div>
-                            </td>
-                            <td className="px-2 py-1.5 text-center">
-                              <FormCheckbox<SaleReturnFormValues>
-                                control={form.control}
-                                name={`items.${index}.isLooseQuantity`}
-                                label=""
-                                hideLabel
-                                hideError
-                                className="mx-auto mt-0"
-                                formItemClassName="justify-center pb-0"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5 min-w-20">
-                              <FormField<SaleReturnFormValues>
-                                type="number"
-                                name={`items.${index}.quantity`}
-                                control={form.control}
-                                hideError
-                              />
-                              {row.exceedsRemaining && (
-                                <div className="mt-1 text-[10px] text-destructive">
-                                  Exceeds returnable quantity
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-2 py-1.5">{row.rate.toFixed(2)}</td>
-                            <td className="px-2 py-1.5">{row.cGstAmount.toFixed(2)}</td>
-                            <td className="px-2 py-1.5">{row.sGstAmount.toFixed(2)}</td>
-                            <td className="px-2 py-1.5">{row.iGstAmount.toFixed(2)}</td>
-                            <td className="px-2 py-1.5 font-semibold">
-                              {row.total.toFixed(2)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5">{row.rate.toFixed(2)}</td>
+                          <td className="px-2 py-1.5">
+                            {row.cGstAmount.toFixed(2)}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            {row.sGstAmount.toFixed(2)}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            {row.iGstAmount.toFixed(2)}
+                          </td>
+                          <td className="px-2 py-1.5 font-semibold">
+                            {row.total.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               <div className="border-t border-black/20 p-3">
@@ -450,8 +504,14 @@ const SaleReturnForm = () => {
                         label="Bill Total"
                         value={Number(data.invoice.total || 0).toFixed(2)}
                       />
-                      <PharmacySummaryRow label="Collected" value={netPaid.toFixed(2)} />
-                      <PharmacySummaryRow label="Refund" value={refundAmount.toFixed(2)} />
+                      <PharmacySummaryRow
+                        label="Collected"
+                        value={netPaid.toFixed(2)}
+                      />
+                      <PharmacySummaryRow
+                        label="Refund"
+                        value={refundAmount.toFixed(2)}
+                      />
                       <PharmacySummaryRow
                         label="Balance"
                         value={Math.max(netPaid - refundAmount, 0).toFixed(2)}
@@ -497,7 +557,8 @@ const SaleReturnForm = () => {
 
                     {refundExceedsPaid && (
                       <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                        Refund exceeds collected amount. Reduce return quantity before saving.
+                        Refund exceeds collected amount. Reduce return quantity
+                        before saving.
                       </div>
                     )}
                   </div>
@@ -508,10 +569,7 @@ const SaleReturnForm = () => {
             <div className="flex justify-end">
               <CustomButton
                 disabled={
-                  isPending ||
-                  !hasAnyReturn ||
-                  hasRowError ||
-                  refundExceedsPaid
+                  isPending || !hasAnyReturn || hasRowError || refundExceedsPaid
                 }
                 type="submit"
               >

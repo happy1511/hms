@@ -19,7 +19,7 @@ import {
   FilterValues,
   PharmacySaleBillType,
 } from "@/lib/type";
-import { hasActionPermission } from "@/lib/utils";
+import { fullName, hasActionPermission } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -44,12 +44,16 @@ const Buttons = ({
       {(canCreateSaleBill || canCreateSaleReturn) && (
         <div className="flex gap-2">
           {canCreateSaleReturn && (
-            <CustomButton onClick={() => router.push("/pharmacy/sale-return/select")}>
+            <CustomButton
+              onClick={() => router.push("/pharmacy/sale-return/select")}
+            >
               Sale Return
             </CustomButton>
           )}
           {canCreateSaleBill && (
-            <CustomButton onClick={() => router.push("/pharmacy/form/sale-bill/new")}>
+            <CustomButton
+              onClick={() => router.push("/pharmacy/form/sale-bill/new")}
+            >
               New Sale Bill
             </CustomButton>
           )}
@@ -88,7 +92,8 @@ const Actions = ({
   if (canCreateSaleReturn) {
     actions.push({
       label: "Return Sale",
-      onClick: () => router.push(`/pharmacy/sale-return/select?billId=${data.id}`),
+      onClick: () =>
+        router.push(`/pharmacy/sale-return/select?billId=${data.id}`),
     });
   }
 
@@ -120,11 +125,7 @@ const SaleBills = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useSaleBillList(
-    filters,
-    page,
-    limit,
-  );
+    useSaleBillList(filters, page, limit);
 
   if (!profile) {
     return <div />;
@@ -192,7 +193,8 @@ const SaleBills = () => {
       header: ({ column }) => (
         <SortableHeader<SaleBillData> label="Doctor" column={column} />
       ),
-      cell: ({ row }) => row.original.doctor?.user?.name ?? "-",
+      cell: ({ row }) =>
+        row.original.doctor ? fullName(row.original.doctor) : "-",
       headerClassName: "min-w-40",
       cellClassName: "min-w-40",
     },

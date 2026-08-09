@@ -288,17 +288,8 @@ export const getOrdersAPI = async (req: Request) => {
                 },
 
                 opd: {
-                  select: {
-                    consultantDoctor: {
-                      select: {
-                        user: {
-                          select: {
-                            id: true,
-                            name: true,
-                          },
-                        },
-                      },
-                    },
+                  include: {
+                    consultantDoctor: true,
                   },
                 },
 
@@ -375,22 +366,14 @@ export const getOrderDetailsAPI = async (req: Request) => {
           include: {
             opd: {
               include: {
-                consultantDoctor: {
-                  include: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  include: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
               },
             },
             ipd: {
               include: {
-                consultantDoctor: {
-                  include: { user: { select: { name: true } } },
-                },
-                referringDoctor: {
-                  include: { user: { select: { name: true } } },
-                },
+                consultantDoctor: true,
+                referringDoctor: true,
               },
             },
             patient: {
