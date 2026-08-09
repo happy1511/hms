@@ -1,14 +1,14 @@
-import { signAccessToken, signRefreshToken } from "@/services/jwt";
-import { prisma } from "@/services/prisma";
+import { Status } from "@/generated/prisma/enums";
+import { apiResponse } from "@/lib/apiResponse";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
 import { validateRequest } from "@/lib/validator";
+import { signAccessToken, signRefreshToken } from "@/services/jwt";
+import { prisma } from "@/services/prisma";
 import {
   authValidator,
   refreshTokenValidator,
 } from "@/validators/api/auth/auth";
 import { cookies } from "next/headers";
-import { apiResponse } from "@/lib/apiResponse";
-import { Status } from "@/generated/prisma/enums";
 
 export const auth = async (req: Request) => {
   return validateRequest({
@@ -59,6 +59,7 @@ export const auth = async (req: Request) => {
       });
 
       return apiResponse({
+        data: process.env,
         status: RESPONSE_STATUS.SUCCESS,
         message: "Login Success",
       });
