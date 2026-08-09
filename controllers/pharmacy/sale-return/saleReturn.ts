@@ -1,4 +1,8 @@
-import { TransactionType, type Prisma, type User } from "@/generated/prisma/client";
+import {
+  TransactionType,
+  type Prisma,
+  type User,
+} from "@/generated/prisma/client";
 import { apiResponse } from "@/lib/apiResponse";
 import { getNetInvoicePaidAmount } from "@/lib/invoiceTransactions";
 import { RESPONSE_STATUS } from "@/lib/responseStatus";
@@ -16,7 +20,8 @@ const toPieces = ({
   quantity: number;
   isLooseQuantity: boolean;
   packSize: number;
-}) => (isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize);
+}) =>
+  isLooseQuantity ? Number(quantity || 0) : Number(quantity || 0) * packSize;
 
 const saleReturnInclude = {
   items: {
@@ -63,11 +68,7 @@ const saleReturnInclude = {
         },
       },
       patient: true,
-      doctor: {
-        include: {
-          user: true,
-        },
-      },
+      doctor: true,
     },
   },
 } satisfies Prisma.SaleReturnInclude;
@@ -88,7 +89,7 @@ export const createAPI = async (req: Request, user: User) => {
           include: {
             patient: true,
             customer: { include: { patient: true } },
-            doctor: { include: { user: true } },
+            doctor: true,
             invoice: {
               include: {
                 transactions: true,
@@ -125,14 +126,16 @@ export const createAPI = async (req: Request, user: User) => {
         const selectedItems = body.items.filter(
           (item) => Number(item.quantity || 0) > 0,
         );
-        const saleItemsById = new Map(bill.saleItems.map((item) => [item.id, item]));
+        const saleItemsById = new Map(
+          bill.saleItems.map((item) => [item.id, item]),
+        );
         const preparedItems: Array<{
           drugSaleItemId: number;
           inventoryItemId: number;
           quantity: number;
           isLooseQuantity: boolean;
           rate: number;
-          discountType: typeof bill.saleItems[number]["discountType"];
+          discountType: (typeof bill.saleItems)[number]["discountType"];
           discountValue: number;
           taxableAmount: number;
           gstPercentage: number;
@@ -236,7 +239,9 @@ export const createAPI = async (req: Request, user: User) => {
           });
         }
 
-        const currentNetPaid = getNetInvoicePaidAmount(bill.invoice.transactions);
+        const currentNetPaid = getNetInvoicePaidAmount(
+          bill.invoice.transactions,
+        );
         if (refundAmount > currentNetPaid) {
           return apiResponse({
             status: RESPONSE_STATUS.BAD_REQUEST,
