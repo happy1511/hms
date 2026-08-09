@@ -38,10 +38,10 @@ const RadiologyTestForm = ({ trigger, data }: Props) => {
   const [open, setOpen] = useState(false);
   const { mutateAsync: create, isPending: creating } = useCreateRadiologyTest();
   const { mutateAsync: update, isPending: updating } = useUpdateRadiologyTest();
-  
+
   const [billingSectionSearch, setBillingSectionSearch] = useState("");
   const billingSectionQuery = useInfiniteBillingSectionsList(
-    { name: billingSectionSearch, status: "ACTIVE" },
+    { name: billingSectionSearch, status: Status.active },
     15,
   );
 

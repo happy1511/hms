@@ -6,7 +6,7 @@ import {
   PartialUserValidatorType,
   UserValidatorType,
 } from "@/validators/api/masters/user";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -57,6 +57,39 @@ export const useUsersList = (
           ...(filters.status && { status: filters.status }),
         },
       }),
+  });
+};
+
+export const useInfiniteUsersList = (
+  filters: FilterValues,
+  limit: number,
+  enabled: boolean = true,
+) => {
+  return useInfiniteQuery<
+    PaginatedResponse<User>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<User>>,
+    [string, FilterValues, number]
+  >({
+    queryKey: ["users-infinite", filters, limit],
+    queryFn: ({ pageParam }) =>
+      getUsers({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.status && { status: filters.status }),
+        },
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const nextPage = lastPage.metadata.hasNextPage
+        ? lastPage.metadata.page + 1
+        : undefined;
+      return nextPage;
+    },
+    enabled,
   });
 };
 

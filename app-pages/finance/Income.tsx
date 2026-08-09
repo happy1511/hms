@@ -18,14 +18,15 @@ import {
   PaymentMode,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
+import { useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
 import {
   IncomeWithCollector,
   useCreateIncome,
   useDeleteIncome,
   useIncomeList,
 } from "@/hooks/query/income";
-import { useUsersList } from "@/hooks/query/user";
+import { useUsersList, useInfiniteUsersList } from "@/hooks/query/user";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import {
@@ -43,30 +44,13 @@ import { useForm } from "react-hook-form";
 const CreateIncomeForm = () => {
   const { mutateAsync: createIncome, isPending: creating } = useCreateIncome();
   const { data: profile } = useProfile(false);
-  const usersQuery = useUsersList({} as FilterValues, 1, 200);
-  const categoryQuery = useFinanceCategoryList(
-    { type: FinanceCategoryType.INCOME },
-    1,
-    100,
+  const [userSearch, setUserSearch] = useState("");
+  const usersQuery = useInfiniteUsersList({ name: userSearch } as FilterValues, 20);
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoryQuery = useInfiniteFinanceCategoryList(
+    { type: FinanceCategoryType.INCOME, name: categorySearch },
+    20,
   );
-  const userOptions = (usersQuery.data?.data || []).map((u) => ({
-    label: `${u.name || "Unknown"}`,
-    value: String(u.id),
-  }));
-  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
-    label: category.name,
-    value: String(category.id),
-  }));
-
-  if (profile?.data?.id) {
-    const currentValue = String(profile.data.id);
-    if (!userOptions.some((option) => option.value === currentValue)) {
-      userOptions.unshift({
-        label: `${profile.data.name || "Current User"} (${profile.data.loginId})`,
-        value: currentValue,
-      });
-    }
-  }
 
   const form = useForm<IncomeValidatorType>({
     defaultValues: {
@@ -128,13 +112,23 @@ const CreateIncomeForm = () => {
                   Category
                 </Label>
                 <div className="col-span-3">
-                  <FormField<IncomeValidatorType>
-                    type="select"
+                  <FormInfiniteSelect<
+                    FinanceCategory,
+                    PaginatedResponse<FinanceCategory>,
+                    string,
+                    IncomeValidatorType
+                  >
                     name="categoryId"
                     control={form.control}
                     required
                     hideError
-                    options={categoryOptions}
+                    query={categoryQuery}
+                    search={categorySearch}
+                    getItems={(data) => data?.data}
+                    onSearchChange={setCategorySearch}
+                    valueKey={(i) => String(i?.id)}
+                    labelKey={(i) => i?.name || ""}
+                    placeholder="Select Category"
                   />
                 </div>
               </div>
@@ -225,13 +219,23 @@ const CreateIncomeForm = () => {
                   Collected By
                 </Label>
                 <div className="col-span-3">
-                  <FormField<IncomeValidatorType>
-                    type="select"
+                  <FormInfiniteSelect<
+                    User,
+                    PaginatedResponse<User>,
+                    string,
+                    IncomeValidatorType
+                  >
                     name="collectedById"
                     control={form.control}
                     required
                     hideError
-                    options={userOptions}
+                    query={usersQuery}
+                    search={userSearch}
+                    getItems={(data) => data?.data}
+                    onSearchChange={setUserSearch}
+                    valueKey={(i) => String(i?.id)}
+                    labelKey={(i) => `${i?.name || "Unknown"} ${i?.loginId ? `(${i.loginId})` : ""}`}
+                    placeholder="Select User"
                   />
                 </div>
               </div>
@@ -268,7 +272,9 @@ const CreateIncomeForm = () => {
           </div>
           <CustomButton
             type="submit"
-            disabled={creating || usersQuery.isLoading || categoryQuery.isLoading}
+            disabled={
+              creating || usersQuery.isLoading || categoryQuery.isLoading
+            }
           >
             Create Income
           </CustomButton>

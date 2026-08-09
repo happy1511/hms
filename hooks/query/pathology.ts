@@ -511,6 +511,7 @@ export const useUpdateReferenceRange = (testId: number) => {
       queryClient.setQueryData<ApiResponse<PathologyTestDataType> | undefined>(
         ["get-pathology-test", String(testId)],
         (oldData) => {
+          console.log(oldData, "oldData");
           if (!oldData) return oldData;
 
           return {

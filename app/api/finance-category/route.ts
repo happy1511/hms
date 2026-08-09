@@ -7,7 +7,15 @@ export async function GET(request: Request) {
   return withErrorHandling(() =>
     checkPermission(
       request,
-      [{ module: ModuleType.FINANCE_CATEGORY_MASTER, action: ActionType.VIEW }],
+      [
+        { module: ModuleType.FINANCE_CATEGORY_MASTER, action: ActionType.VIEW },
+        { module: ModuleType.INCOME, action: ActionType.VIEW },
+        { module: ModuleType.INCOME, action: ActionType.CREATE },
+        { module: ModuleType.INCOME, action: ActionType.UPDATE },
+        { module: ModuleType.EXPENSE, action: ActionType.VIEW },
+        { module: ModuleType.EXPENSE, action: ActionType.CREATE },
+        { module: ModuleType.EXPENSE, action: ActionType.UPDATE },
+      ],
       () => getAPI(request),
     ),
   );

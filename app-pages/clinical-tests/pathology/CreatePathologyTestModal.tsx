@@ -24,6 +24,7 @@ import {
   ContainerType,
   PathologyTestSection,
   SampleType,
+  Status,
 } from "@/generated/prisma/enums";
 import CustomButton from "@/components/common/CustomButton";
 
@@ -38,7 +39,7 @@ const CreatePathologyTestModal = ({ trigger }: Props) => {
   const { mutateAsync, isPending } = useCreatePathologyTest();
   const [billingSectionSearch, setBillingSectionSearch] = useState("");
   const billingSectionQuery = useInfiniteBillingSectionsList(
-    { name: billingSectionSearch, status: "ACTIVE" },
+    { name: billingSectionSearch, status: Status.active },
     15,
   );
 

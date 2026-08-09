@@ -5,12 +5,23 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { ActionType, FinanceCategoryType, ModuleType, PaymentMode } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  FinanceCategoryType,
+  ModuleType,
+  PaymentMode,
+} from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
-import { useCreateIncome, useGetIncome, useUpdateIncome } from "@/hooks/query/income";
-import { useUsersList } from "@/hooks/query/user";
-import { FilterValues } from "@/lib/type";
+import { useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
+import {
+  useCreateIncome,
+  useGetIncome,
+  useUpdateIncome,
+} from "@/hooks/query/income";
+import { useInfiniteUsersList } from "@/hooks/query/user";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { PaginatedResponse, User, FilterValues } from "@/lib/type";
+import { useState } from "react";
 import { hasActionPermission } from "@/lib/utils";
 import {
   incomeValidator,
@@ -20,6 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { FinanceCategory } from "@/generated/prisma/client";
 
 const toDate = (value: unknown) => {
   if (value instanceof Date) return value;
@@ -30,7 +42,9 @@ const toDate = (value: unknown) => {
   return undefined;
 };
 
-const getInitialValues = (data?: Partial<IncomeValidatorType>): IncomeValidatorType => ({
+const getInitialValues = (
+  data?: Partial<IncomeValidatorType>,
+): IncomeValidatorType => ({
   title: data?.title ?? "",
   mode: data?.mode ?? PaymentMode.CASH,
   amount: Number(data?.amount || 0),
@@ -40,36 +54,24 @@ const getInitialValues = (data?: Partial<IncomeValidatorType>): IncomeValidatorT
   categoryId: Number(data?.categoryId || 0),
 });
 
-const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => {
+const UpdateCreateForm = ({
+  data,
+}: {
+  data?: Partial<IncomeValidatorType>;
+}) => {
   const { mutateAsync: create, isPending: creating } = useCreateIncome();
   const { mutateAsync: update, isPending: updating } = useUpdateIncome();
   const { incomeId }: { incomeId?: string } = useParams();
-  const { data: profile } = useProfile(false);
-  const categoryQuery = useFinanceCategoryList(
-    { type: FinanceCategoryType.INCOME },
-    1,
-    100,
+  const [userSearch, setUserSearch] = useState("");
+  const usersQuery = useInfiniteUsersList(
+    { name: userSearch } as FilterValues,
+    20,
   );
-
-  const usersQuery = useUsersList({} as FilterValues, 1, 200);
-  const userOptions = (usersQuery.data?.data || []).map((u) => ({
-    label: `${u.name || "Unknown"} (${u.loginId})`,
-    value: String(u.id),
-  }));
-  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
-    label: category.name,
-    value: String(category.id),
-  }));
-
-  if (profile?.data?.id) {
-    const currentValue = String(profile.data.id);
-    if (!userOptions.some((option) => option.value === currentValue)) {
-      userOptions.unshift({
-        label: `${profile.data.name || "Current User"} (${profile.data.loginId})`,
-        value: currentValue,
-      });
-    }
-  }
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoryQuery = useInfiniteFinanceCategoryList(
+    { type: FinanceCategoryType.INCOME, name: categorySearch },
+    20,
+  );
 
   const form = useForm<IncomeValidatorType>({
     defaultValues: getInitialValues(data),
@@ -95,13 +97,23 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
             control={form.control}
             required
           />
-          <FormField<IncomeValidatorType>
+          <FormInfiniteSelect<
+            FinanceCategory,
+            PaginatedResponse<FinanceCategory>,
+            string,
+            IncomeValidatorType
+          >
             label="Category"
-            type="select"
             name="categoryId"
             control={form.control}
             required
-            options={categoryOptions}
+            query={categoryQuery}
+            search={categorySearch}
+            getItems={(data) => data?.data}
+            onSearchChange={setCategorySearch}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) => i?.name || ""}
+            placeholder="Select Category"
           />
           <FormField<IncomeValidatorType>
             label="Mode"
@@ -128,13 +140,25 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
             control={form.control}
             required
           />
-          <FormField<IncomeValidatorType>
+          <FormInfiniteSelect<
+            User,
+            PaginatedResponse<User>,
+            string,
+            IncomeValidatorType
+          >
             label="Collected By"
-            type="select"
             name="collectedById"
             control={form.control}
             required
-            options={userOptions}
+            query={usersQuery}
+            search={userSearch}
+            getItems={(data) => data?.data}
+            onSearchChange={setUserSearch}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) =>
+              `${i?.name || "Unknown"} ${i?.loginId ? `(${i.loginId})` : ""}`
+            }
+            placeholder="Select User"
           />
           <div className="col-span-2">
             <FormField<IncomeValidatorType>
@@ -148,7 +172,10 @@ const UpdateCreateForm = ({ data }: { data?: Partial<IncomeValidatorType> }) => 
 
         <CustomButton
           disabled={
-            creating || updating || usersQuery.isLoading || categoryQuery.isLoading
+            creating ||
+            updating ||
+            usersQuery.isLoading ||
+            categoryQuery.isLoading
           }
           type="submit"
         >
@@ -167,7 +194,11 @@ const IncomeForm = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <LoaderIcon role="status" aria-label="Loading" className="size-4 animate-spin" />
+        <LoaderIcon
+          role="status"
+          aria-label="Loading"
+          className="size-4 animate-spin"
+        />
       </div>
     );
   }
@@ -176,8 +207,16 @@ const IncomeForm = () => {
     return <div />;
   }
 
-  const canCreate = hasActionPermission(profile.data, ModuleType.INCOME, ActionType.CREATE);
-  const canUpdate = hasActionPermission(profile.data, ModuleType.INCOME, ActionType.UPDATE);
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.INCOME,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.INCOME,
+    ActionType.UPDATE,
+  );
 
   if ((incomeId && !canUpdate) || (!incomeId && !canCreate)) {
     return (

@@ -141,11 +141,7 @@ const BillingSections = () => {
 
   const { data: profile } = useProfile(false);
   const { data, isLoading, isFetching, refetch, isError, error } =
-    useBillingSectionsList(
-    filters,
-    page,
-    limit,
-  );
+    useBillingSectionsList(filters, page, limit);
 
   if (!profile) {
     return <div />;

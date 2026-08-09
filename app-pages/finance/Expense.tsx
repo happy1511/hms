@@ -16,13 +16,16 @@ import {
   PaymentMode,
 } from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
+
 import {
   useCreateExpense,
   useDeleteExpense,
   ExpenseWithCategory,
   useExpenseList,
 } from "@/hooks/query/expense";
+import { useFinanceCategoryList, useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { PaginatedResponse } from "@/lib/type";
 import { ColumnDefWithClass, FilterConfig, FilterValues } from "@/lib/type";
 import { hasActionPermission } from "@/lib/utils";
 import {
@@ -42,15 +45,11 @@ import { ErrorMessage } from "@hookform/error-message";
 const CreateExpenseForm = () => {
   const { mutateAsync: createExpense, isPending: creating } =
     useCreateExpense();
-  const categoryQuery = useFinanceCategoryList(
-    { type: FinanceCategoryType.EXPENSE },
-    1,
-    100,
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoryQuery = useInfiniteFinanceCategoryList(
+    { type: FinanceCategoryType.EXPENSE, name: categorySearch },
+    20,
   );
-  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
-    label: category.name,
-    value: String(category.id),
-  }));
   const form = useForm<ExpenseValidatorType>({
     defaultValues: {
       title: "",
@@ -109,13 +108,23 @@ const CreateExpenseForm = () => {
                   Category
                 </Label>
                 <div className="col-span-3">
-                  <FormField<ExpenseValidatorType>
-                    type="select"
+                  <FormInfiniteSelect<
+                    FinanceCategory,
+                    PaginatedResponse<FinanceCategory>,
+                    string,
+                    ExpenseValidatorType
+                  >
                     name="categoryId"
                     control={form.control}
                     required
                     hideError
-                    options={categoryOptions}
+                    query={categoryQuery}
+                    search={categorySearch}
+                    getItems={(data) => data?.data}
+                    onSearchChange={setCategorySearch}
+                    valueKey={(i) => String(i?.id)}
+                    labelKey={(i) => i?.name || ""}
+                    placeholder="Select Category"
                   />
                 </div>
               </div>

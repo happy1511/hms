@@ -1,4 +1,7 @@
-import { FinanceCategory, FinanceCategoryType } from "@/generated/prisma/client";
+import {
+  FinanceCategory,
+  FinanceCategoryType,
+} from "@/generated/prisma/client";
 import { FINANCE_CATEGORY } from "@/lib/apiDefinations";
 import { ApiResponse, FilterValues, PaginatedResponse } from "@/lib/type";
 import { showError } from "@/lib/utils";
@@ -7,7 +10,13 @@ import {
   FinanceCategoryValidatorType,
   PartialFinanceCategoryValidatorType,
 } from "@/validators/api/finance/category";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+  InfiniteData,
+} from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -67,6 +76,41 @@ export const useFinanceCategoryList = (
           ...(filters.type && { type: filters.type }),
         },
       }),
+  });
+};
+
+export const useInfiniteFinanceCategoryList = (
+  filters: FinanceCategoryFilters,
+  limit: number,
+  enabled: boolean = true,
+) => {
+  return useInfiniteQuery<
+    PaginatedResponse<FinanceCategory>,
+    AxiosError<ApiResponse<null>>,
+    InfiniteData<PaginatedResponse<FinanceCategory>>,
+    [string, FinanceCategoryFilters, number]
+  >({
+    queryKey: ["finance-categories-infinite", filters, limit],
+    queryFn: ({ pageParam }) =>
+      getFinanceCategories({
+        pageParam: pageParam as number,
+        params: {
+          limit,
+          ...(filters.createdAt && { createdAt: filters.createdAt }),
+          ...(filters.name && { search: filters.name }),
+          ...(filters.type && { type: filters.type }),
+        },
+      }),
+    initialPageParam: 1,
+
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (acc, page) => acc + page.data.length,
+        0,
+      );
+      return totalFetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    enabled,
   });
 };
 

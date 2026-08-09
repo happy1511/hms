@@ -5,10 +5,22 @@ import CustomLayout from "@/components/common/CustomLayout";
 import NoPermission from "@/components/common/NoPermission";
 import FormField from "@/components/form-inputs/FormField";
 import { Form } from "@/components/ui/form";
-import { ActionType, FinanceCategoryType, ModuleType, PaymentMode } from "@/generated/prisma/enums";
+import {
+  ActionType,
+  FinanceCategoryType,
+  ModuleType,
+  PaymentMode,
+} from "@/generated/prisma/enums";
 import { useProfile } from "@/hooks/query/auth";
-import { useFinanceCategoryList } from "@/hooks/query/financeCategory";
-import { useCreateExpense, useGetExpense, useUpdateExpense } from "@/hooks/query/expense";
+import { FormInfiniteSelect } from "@/components/form-inputs/FormInfiniteSelect";
+import { PaginatedResponse } from "@/lib/type";
+import { useState } from "react";
+import { useInfiniteFinanceCategoryList } from "@/hooks/query/financeCategory";
+import {
+  useCreateExpense,
+  useGetExpense,
+  useUpdateExpense,
+} from "@/hooks/query/expense";
 import { hasActionPermission } from "@/lib/utils";
 import {
   expenseValidator,
@@ -18,6 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { FinanceCategory } from "@/generated/prisma/client";
 
 const toDate = (value: unknown) => {
   if (value instanceof Date) return value;
@@ -28,7 +41,9 @@ const toDate = (value: unknown) => {
   return undefined;
 };
 
-const getInitialValues = (data?: Partial<ExpenseValidatorType>): ExpenseValidatorType => ({
+const getInitialValues = (
+  data?: Partial<ExpenseValidatorType>,
+): ExpenseValidatorType => ({
   title: data?.title ?? "",
   categoryId: Number(data?.categoryId || 0),
   amount: Number(data?.amount || 0),
@@ -37,19 +52,19 @@ const getInitialValues = (data?: Partial<ExpenseValidatorType>): ExpenseValidato
   description: data?.description ?? "",
 });
 
-const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) => {
+const UpdateCreateForm = ({
+  data,
+}: {
+  data?: Partial<ExpenseValidatorType>;
+}) => {
   const { mutateAsync: create, isPending: creating } = useCreateExpense();
   const { mutateAsync: update, isPending: updating } = useUpdateExpense();
   const { expenseId }: { expenseId?: string } = useParams();
-  const categoryQuery = useFinanceCategoryList(
-    { type: FinanceCategoryType.EXPENSE },
-    1,
-    100,
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoryQuery = useInfiniteFinanceCategoryList(
+    { type: FinanceCategoryType.EXPENSE, name: categorySearch },
+    20,
   );
-  const categoryOptions = (categoryQuery.data?.data || []).map((category) => ({
-    label: category.name,
-    value: String(category.id),
-  }));
 
   const form = useForm<ExpenseValidatorType>({
     defaultValues: getInitialValues(data),
@@ -75,13 +90,23 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
             control={form.control}
             required
           />
-          <FormField<ExpenseValidatorType>
+          <FormInfiniteSelect<
+            FinanceCategory,
+            PaginatedResponse<FinanceCategory>,
+            string,
+            ExpenseValidatorType
+          >
             label="Category"
-            type="select"
             name="categoryId"
             control={form.control}
             required
-            options={categoryOptions}
+            query={categoryQuery}
+            search={categorySearch}
+            getItems={(data) => data?.data}
+            onSearchChange={setCategorySearch}
+            valueKey={(i) => String(i?.id)}
+            labelKey={(i) => i?.name || ""}
+            placeholder="Select Category"
           />
           <FormField<ExpenseValidatorType>
             label="Amount"
@@ -117,7 +142,10 @@ const UpdateCreateForm = ({ data }: { data?: Partial<ExpenseValidatorType> }) =>
             />
           </div>
         </div>
-        <CustomButton disabled={creating || updating || categoryQuery.isLoading} type="submit">
+        <CustomButton
+          disabled={creating || updating || categoryQuery.isLoading}
+          type="submit"
+        >
           Submit
         </CustomButton>
       </form>
@@ -133,7 +161,11 @@ const ExpenseForm = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <LoaderIcon role="status" aria-label="Loading" className="size-4 animate-spin" />
+        <LoaderIcon
+          role="status"
+          aria-label="Loading"
+          className="size-4 animate-spin"
+        />
       </div>
     );
   }
@@ -142,8 +174,16 @@ const ExpenseForm = () => {
     return <div />;
   }
 
-  const canCreate = hasActionPermission(profile.data, ModuleType.EXPENSE, ActionType.CREATE);
-  const canUpdate = hasActionPermission(profile.data, ModuleType.EXPENSE, ActionType.UPDATE);
+  const canCreate = hasActionPermission(
+    profile.data,
+    ModuleType.EXPENSE,
+    ActionType.CREATE,
+  );
+  const canUpdate = hasActionPermission(
+    profile.data,
+    ModuleType.EXPENSE,
+    ActionType.UPDATE,
+  );
 
   if ((expenseId && !canUpdate) || (!expenseId && !canCreate)) {
     return (
